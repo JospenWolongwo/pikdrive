@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 45 40% 98%;
+    --foreground: 45 10% 10%;
+    --card: 45 40% 100%;
+    --card-foreground: 45 10% 10%;
+    --popover: 45 40% 100%;
+    --popover-foreground: 45 10% 10%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 45 10% 10%;
+    --secondary: 45 20% 90%;
+    --secondary-foreground: 45 10% 10%;
+    --muted: 45 20% 90%;
+    --muted-foreground: 45 10% 40%;
+    --accent: 45 20% 90%;
+    --accent-foreground: 45 10% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 45 20% 85%;
+    --input: 45 20% 85%;
+    --ring: 45 100% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 45 10% 10%;
+    --foreground: 45 40% 98%;
+    --card: 45 10% 12%;
+    --card-foreground: 45 40% 98%;
+    --popover: 45 10% 12%;
+    --popover-foreground: 45 40% 98%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 45 10% 10%;
+    --secondary: 45 20% 20%;
+    --secondary-foreground: 45 40% 98%;
+    --muted: 45 20% 20%;
+    --muted-foreground: 45 40% 60%;
+    --accent: 45 20% 20%;
+    --accent-foreground: 45 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 45 40% 98%;
+    --border: 45 20% 20%;
+    --input: 45 20% 20%;
+    --ring: 45 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  
+  /* Enhanced Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+  
+  /* Container Padding */
+  .container {
+    @apply px-4 md:px-6 lg:px-8 max-w-7xl mx-auto;
+  }
+  
+  /* Card Enhancements */
+  .card {
+    @apply transition-shadow hover:shadow-lg;
+  }
+  
+  /* Button Improvements */
+  .button {
+    @apply transition-all active:scale-95;
+  }
+  
+  /* Section Spacing */
+  section {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+}
+
+/* Custom Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
