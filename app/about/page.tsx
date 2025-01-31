@@ -1,10 +1,10 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MapPin, Users, Shield, Clock, Heart } from 'lucide-react'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 export default function AboutPage() {
   const fadeIn = {
@@ -15,22 +15,22 @@ export default function AboutPage() {
 
   const teamMembers = [
     {
-      name: "John Doe",
-      role: "Founder & CEO",
-      image: "/team/john.jpg",
-      bio: "Passionate about connecting people and making travel accessible."
+      name: "Wilfred Tchudjo",
+      role: "Co-founder & CEO",
+      initials: "WT",
+      bio: "Visionary leader driving PikDrive's mission to revolutionize intercity travel in Cameroon."
     },
     {
-      name: "Sarah Smith",
+      name: "Jospen Wolongwo",
+      role: "Co-founder & Lead Software Engineer",
+      initials: "JW",
+      bio: "Tech innovator building the future of transportation technology in Cameroon."
+    },
+    {
+      name: "Coming Soon",
       role: "Head of Operations",
-      image: "/team/sarah.jpg",
-      bio: "Expert in logistics and customer experience optimization."
-    },
-    {
-      name: "Mike Johnson",
-      role: "Tech Lead",
-      image: "/team/mike.jpg",
-      bio: "Building the technology that powers our platform."
+      initials: "CS",
+      bio: "Future team member who will help scale our operations across Cameroon."
     }
   ]
 
@@ -140,7 +140,7 @@ export default function AboutPage() {
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl font-bold text-center mb-12"
+            className="text-3xl font-bold text-center mb-12"
           >
             Meet Our Team
           </motion.h2>
@@ -152,14 +152,13 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="p-6 text-center">
-                  <div className="relative w-32 h-32 mx-auto mb-4">
-                    <Image
-                      src={member.image}
-                      alt={member.name}
-                      fill
-                      className="rounded-full object-cover"
-                    />
+                <Card className="text-center p-6">
+                  <div className="flex justify-center mb-4">
+                    <Avatar className="w-32 h-32">
+                      <AvatarFallback className="text-2xl bg-primary/10">
+                        {member.initials}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{member.name}</h3>
                   <p className="text-primary mb-4">{member.role}</p>

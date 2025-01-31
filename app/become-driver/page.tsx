@@ -500,7 +500,7 @@ export default function BecomeDriverPage() {
                   <FormLabel>Background Information</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Tell us about your driving experience and why you want to join WakaYamo"
+                      placeholder="Tell us about your driving experience and why you want to join PikDrive"
                       {...field}
                     />
                   </FormControl>
@@ -518,7 +518,7 @@ export default function BecomeDriverPage() {
   return (
     <div className="container py-16 space-y-16">
       <div className="text-center space-y-6">
-        <h1 className="text-4xl font-bold">Become a WakaYamo Driver</h1>
+        <h1 className="text-4xl font-bold">Become a PikDrive Driver</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Join our growing community of professional drivers and earn money on your own schedule.
         </p>

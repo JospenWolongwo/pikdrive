@@ -1,208 +1,225 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { motion } from 'framer-motion'
-import { Phone, ArrowRight, Lock } from 'lucide-react'
+import { Phone, ArrowRight, Lock, Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function AuthPage() {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showVerification, setShowVerification] = useState(false)
+  const [error, setError] = useState('')
+  const [savedPhone, setSavedPhone] = useState<string | null>(null)
   const { signIn, verifyOTP } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Check for saved phone number
+    const lastPhone = localStorage.getItem('lastPhoneNumber')
+    if (lastPhone) {
+      setSavedPhone(lastPhone)
+    }
+  }, [])
+
+  const formatPhoneNumber = (phone: string) => {
+    return phone.startsWith('+') 
+      ? phone 
+      : `+237${phone.replace(/^237/, '')}`
+  }
+
+  const maskPhoneNumber = (phone: string) => {
+    const formatted = formatPhoneNumber(phone)
+    return `****${formatted.slice(-4)}`
+  }
 
   const handleContinue = async () => {
-    if (!phone) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please enter your phone number",
-      })
+    setError('')
+    
+    if (!phone && !savedPhone) {
+      setError('Please enter your phone number')
       return
     }
 
     setIsLoading(true)
     try {
-      const formattedPhone = phone.startsWith('+') 
-        ? phone 
-        : `+237${phone.replace(/^237/, '')}`
+      const phoneToUse = phone || savedPhone || ''
+      const formattedPhone = formatPhoneNumber(phoneToUse)
 
-      const { error } = await signIn(formattedPhone)
+      const { error: signInError } = await signIn(formattedPhone)
+      if (signInError) throw new Error(signInError)
 
-      if (error) throw new Error(error)
-
+      // Save phone number for future use
+      localStorage.setItem('lastPhoneNumber', formattedPhone)
+      
       setShowVerification(true)
       toast({
         title: "Code sent!",
         description: "Please check your phone for the verification code",
       })
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      })
+      setError(error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleVerify = async () => {
+    setError('')
+    
     if (!code) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please enter the verification code",
-      })
+      setError('Please enter the verification code')
       return
     }
 
     setIsLoading(true)
     try {
-      const formattedPhone = phone.startsWith('+') 
-        ? phone 
-        : `+237${phone.replace(/^237/, '')}`
+      const phoneToUse = phone || savedPhone || ''
+      const formattedPhone = formatPhoneNumber(phoneToUse)
 
-      const { error, data } = await verifyOTP(formattedPhone, code)
-
-      if (error) throw new Error(error)
+      const { error: verifyError, data } = await verifyOTP(formattedPhone, code)
+      if (verifyError) throw new Error(verifyError)
 
       if (!data?.user) {
         throw new Error('Verification successful but no user returned')
       }
 
       toast({
-        title: "Welcome!",
+        title: "Welcome back!",
         description: "You've successfully signed in",
       })
 
-      router.push('/')
+      const redirectTo = searchParams.get('redirectTo')
+      router.push(redirectTo || '/')
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      })
+      setError(error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
-      <motion.div 
+    <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md space-y-6 p-6 bg-card rounded-lg border shadow-sm"
       >
-        <div className="bg-card rounded-lg shadow-xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">
-              {showVerification 
-                ? "Enter the code we sent to your phone"
-                : "Sign in with your phone number"
-              }
-            </p>
-          </div>
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold tracking-tight">Welcome to PickDrive</h1>
+          <p className="text-muted-foreground">
+            {showVerification
+              ? "Enter the verification code sent to your phone"
+              : savedPhone
+              ? "Welcome back! Should we send a code to your phone?"
+              : "Enter your phone number to continue"}
+          </p>
+        </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: showVerification ? 50 : -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            {!showVerification ? (
-              <div className="space-y-6">
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="tel"
-                    placeholder="Phone number (e.g., 698805890)"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    disabled={isLoading}
-                    className="pl-10"
-                  />
-                </div>
-                <Button 
-                  className="w-full" 
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="space-y-4">
+          {!showVerification && !savedPhone && (
+            <div className="space-y-2">
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Enter phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="pl-9"
+                  type="tel"
+                />
+              </div>
+            </div>
+          )}
+
+          {!showVerification && savedPhone && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-center">
+                Send code to {maskPhoneNumber(savedPhone)}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setSavedPhone(null)}
+                >
+                  Use different number
+                </Button>
+                <Button
+                  className="w-full"
                   onClick={handleContinue}
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    >
-                      ⟳
-                    </motion.div>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <>
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
+                    "Send Code"
                   )}
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Enter verification code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    disabled={isLoading}
-                    className="pl-10"
-                    maxLength={6}
-                  />
-                </div>
-                <Button 
-                  className="w-full" 
-                  onClick={handleVerify}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    >
-                      ⟳
-                    </motion.div>
-                  ) : (
-                    <>
-                      Verify & Sign In
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-                <button
-                  onClick={() => setShowVerification(false)}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors w-full text-center mt-4"
-                >
-                  ← Back to phone number
-                </button>
-              </div>
-            )}
-          </motion.div>
+            </div>
+          )}
 
-          <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p>
-              By continuing, you agree to our{' '}
-              <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
-              {' '}and{' '}
-              <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
-            </p>
-          </div>
+          {showVerification && (
+            <div className="space-y-2">
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Enter verification code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="pl-9"
+                  type="number"
+                  maxLength={6}
+                />
+              </div>
+            </div>
+          )}
+
+          {!showVerification && !savedPhone && (
+            <Button
+              className="w-full"
+              onClick={handleContinue}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          )}
+
+          {showVerification && (
+            <Button
+              className="w-full"
+              onClick={handleVerify}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Verify"
+              )}
+            </Button>
+          )}
         </div>
       </motion.div>
     </div>

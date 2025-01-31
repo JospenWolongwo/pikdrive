@@ -2,20 +2,11 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
-const supabase = createClient(
+const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      persistSession: true,
-      storageKey: 'wakayamo-auth',
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  }
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 interface AuthState {
@@ -33,6 +24,7 @@ export const useAuth = create<AuthState>()(
 
       signIn: async (phone: string) => {
         try {
+          console.log('Signing in with phone:', phone)
           const { error } = await supabase.auth.signInWithOtp({
             phone,
             options: {
@@ -41,15 +33,17 @@ export const useAuth = create<AuthState>()(
           })
 
           if (error) throw error
-
+          console.log('OTP sent successfully')
           return { error: null }
         } catch (error: any) {
+          console.error('Sign in error:', error)
           return { error: error.message }
         }
       },
 
       verifyOTP: async (phone: string, token: string) => {
         try {
+          console.log('Verifying OTP for phone:', phone, 'token:', token)
           const { data, error } = await supabase.auth.verifyOtp({
             phone,
             token,
@@ -58,9 +52,11 @@ export const useAuth = create<AuthState>()(
 
           if (error) throw error
 
+          console.log('OTP verification successful:', data)
           set({ user: data.user })
           return { error: null, data }
         } catch (error: any) {
+          console.error('OTP verification error:', error)
           return { error: error.message, data: null }
         }
       },
@@ -90,6 +86,7 @@ if (typeof window !== 'undefined') {
 
   // Set up auth state change listener
   supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state changed:', event, session)
     if (session?.user) {
       useAuth.setState({ user: session.user })
     } else {

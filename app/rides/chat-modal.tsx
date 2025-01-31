@@ -1,168 +1,178 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { ChatWindow } from '@/components/chat/chat-window'
-import { getConversation, createConversation } from '@/lib/messages'
+import { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Star } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { Textarea } from '@/components/ui/textarea'
+import { useSupabase } from '@/providers/SupabaseProvider'
+import { toast } from '@/components/ui/use-toast'
+import { format } from 'date-fns'
+
+interface Message {
+  id: string
+  content: string
+  sender_id: string
+  receiver_id: string
+  ride_id: string
+  created_at: string
+  sender?: {
+    name: string
+    avatar_url?: string
+  }
+}
 
 interface ChatModalProps {
   isOpen: boolean
   onClose: () => void
-  ride: {
-    id: string
-    driver: {
-      id: string
-      name: string
-      image: string
-      rating: number
-      trips: number
-    }
-  }
+  rideId: string
+  driverId: string
 }
 
-export function ChatModal({ isOpen, onClose, ride }: ChatModalProps) {
-  const { user } = useAuth()
-  const [conversationId, setConversationId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function ChatModal({ isOpen, onClose, rideId, driverId }: ChatModalProps) {
+  const { supabase, user } = useSupabase()
+  const [messages, setMessages] = useState<Message[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const initializeChat = async () => {
-      if (!user || !ride) return
-
-      try {
-        setIsLoading(true)
-        setError(null)
-        console.log('Initializing chat with ride:', ride)
-        console.log('Current user:', user)
-
-        // Try to get existing conversation
-        const conversation = await getConversation(ride.id, user.id)
-        console.log('Existing conversation:', conversation)
-        
-        if (conversation) {
-          setConversationId(conversation.id)
-        } else {
-          // Create new conversation
-          console.log('Creating new conversation...')
-          const newConversation = await createConversation(ride.id, [user.id, ride.driver.id])
-          console.log('New conversation:', newConversation)
-          
-          if (newConversation) {
-            setConversationId(newConversation.id)
-          } else {
-            setError('Failed to create conversation')
+    if (isOpen && user) {
+      loadMessages()
+      // Subscribe to new messages
+      const channel = supabase
+        .channel(`chat:${rideId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `ride_id=eq.${rideId}`
+          },
+          (payload) => {
+            const newMessage = payload.new as Message
+            setMessages(prev => [...prev, newMessage])
           }
-        }
-      } catch (error) {
-        console.error('Error initializing chat:', error)
-        setError('Failed to initialize chat')
-      } finally {
-        setIsLoading(false)
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
       }
     }
+  }, [isOpen, rideId, user])
 
-    if (isOpen && ride) {
-      initializeChat()
-    }
-  }, [isOpen, user, ride])
-
-  // Add a function to create a test ride if needed
-  const createTestRide = async () => {
+  const loadMessages = async () => {
     if (!user) return
-    
+
     try {
-      const { data: ride, error } = await supabase
-        .from('rides')
-        .insert([
-          {
-            driver_id: ride.driver.id,
-            from_city: 'Test From',
-            to_city: 'Test To',
-            departure_time: new Date().toISOString(),
-            price: 5000,
-            seats_available: 4,
-            car_model: 'Test Car',
-            car_color: 'Black',
-            car_year: '2024'
-          }
-        ])
-        .select()
-        .single()
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:profiles!messages_sender_id_fkey(name, avatar_url)
+        `)
+        .eq('ride_id', rideId)
+        .order('created_at', { ascending: true })
 
       if (error) throw error
-      console.log('Created test ride:', ride)
+
+      setMessages(data || [])
     } catch (error) {
-      console.error('Error creating test ride:', error)
+      console.error('Error loading messages:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load messages. Please try again."
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
-  if (!user) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Sign In Required</DialogTitle>
-          </DialogHeader>
-          <div className="text-center py-6">
-            <p className="text-muted-foreground mb-4">
-              Please sign in to chat with the driver.
-            </p>
-            <Button asChild>
-              <a href="/auth">Sign In</a>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
+  const handleSendMessage = async () => {
+    if (!user || !newMessage.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert([
+          {
+            sender_id: user.id,
+            receiver_id: driverId,
+            ride_id: rideId,
+            content: newMessage.trim(),
+            status: 'sent'
+          }
+        ])
+
+      if (error) throw error
+
+      setNewMessage('')
+    } catch (error) {
+      console.error('Error sending message:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message. Please try again."
+      })
+    }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center space-x-3">
-            <Avatar>
-              <AvatarImage src={ride?.driver?.image} alt={ride?.driver?.name} />
-              <AvatarFallback>{ride?.driver?.name?.slice(0, 2)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <DialogTitle>{ride?.driver?.name}</DialogTitle>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Star className="h-3 w-3 fill-primary text-primary mr-1" />
-                {ride?.driver?.rating} • {ride?.driver?.trips} trips
-              </div>
-            </div>
-          </div>
+          <DialogTitle>Chat with Driver</DialogTitle>
+          <DialogDescription>
+            Send messages to coordinate your ride. Do not share personal contact information.
+          </DialogDescription>
         </DialogHeader>
-        {isLoading ? (
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        
+        <div className="flex flex-col space-y-4">
+          <div className="flex-1 overflow-y-auto max-h-[300px] space-y-4 p-4 border rounded-md">
+            {loading ? (
+              <div className="text-center text-muted-foreground">Loading messages...</div>
+            ) : messages.length === 0 ? (
+              <div className="text-center text-muted-foreground">No messages yet</div>
+            ) : (
+              messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-lg p-3 ${
+                      message.sender_id === user?.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
+                  >
+                    <div className="text-sm font-medium mb-1">
+                      {message.sender?.name || 'Unknown'}
+                    </div>
+                    <div className="text-sm">{message.content}</div>
+                    <div className="text-xs opacity-70 mt-1">
+                      {format(new Date(message.created_at), 'HH:mm')}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        ) : error ? (
-          <div className="text-center py-6">
-            <p className="text-red-500 mb-4">{error}</p>
-            <Button onClick={createTestRide}>Create Test Ride</Button>
+
+          <div className="flex gap-2">
+            <Textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1"
+            />
+            <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+              Send
+            </Button>
           </div>
-        ) : conversationId ? (
-          <ChatWindow conversationId={conversationId} />
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-muted-foreground">
-              Unable to start chat. Please try again later.
-            </p>
-          </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   )

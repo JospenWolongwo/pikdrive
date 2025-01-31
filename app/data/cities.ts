@@ -1,0 +1,101 @@
+// Urban Communes (Major Cities)
+export const urbanCommunes = [
+  'Douala',
+  'Yaoundé',
+  'Garoua',
+  'Bamenda',
+  'Maroua',
+  'Nkongsamba',
+  'Bafoussam',
+  'Ngaoundéré',
+  'Bertoua',
+  'Loum',
+  'Kumba',
+] as const;
+
+// Rural Communes by Region (excluding urban communes)
+export const cameroonCities = [
+  // Adamawa Region
+  'Bankim', 'Banyo', 'Belel', 'Dir', 'Djohong', 'Kontcha', 'Mayo-Baléo', 'Meiganga', 'Ngaoundal', 'Tibati', 'Tignère',
+
+  // Centre Region (excluding Yaoundé)
+  'Akonolinga', 'Awae', 'Ayos', 'Bafia', 'Bibey', 'Biyouha', 'Bokito', 'Botmakak', 'Dibang', 'Deuk', 
+  'Dzeng', 'Ebebda', 'Ekali', 'Eseka', 'Evodoula', 'Kobdombo', 'Lolodorf', 'Makak', 'Matomb', 'Mbalmayo', 'Mbandjock',
+  'Mbangassina', 'Mfou', 'Monatélé', 'Nanga-Eboko', 'Ndikinimeki', 'Ngambè-Tikar', 'Ngomedzap', 'Ngoro', 'Nkoteng',
+  'Ntui', 'Obala', 'Okola', 'Ombessa', 'Sa\'a', 'Soa', 'Yoko',
+
+  // East Region (excluding Bertoua)
+  'Abong-Mbang', 'Angossas', 'Atok', 'Batouri', 'Bélabo', 'Betaré-Oya', 'Dimako', 'Doumaintang', 'Doumé',
+  'Garoua-Boulaï', 'Kentzou', 'Kette', 'Lomié', 'Mbang', 'Messamena', 'Mindourou', 'Moloundou', 'Ndelele', 'Nguelebok',
+  'Ngoura', 'Yokadouma',
+
+  // Far North Region (excluding Maroua)
+  'Bogo', 'Darak', 'Goulfey', 'Hile-Alifa', 'Kaélé', 'Kar-Hay', 'Kolofata', 'Kousseri', 'Lagdo', 'Logone-Birni',
+  'Makary', 'Maga', 'Mindif', 'Mokolo', 'Mora', 'Moulvoudaye', 'Mayo-Danay', 'Mayo-Kani', 'Mayo-Sava', 'Mayo-Tsanaga',
+  'Tokombéré', 'Waza', 'Yagoua',
+
+  // Littoral Region (excluding Douala, Loum, Nkongsamba)
+  'Dibombari', 'Dizangué', 'Edéa', 'Manjo', 'Mbanga', 'Melong', 'Ndom', 'Ngambe',
+  'Nyanon', 'Pouma', 'Yabassi', 'Yingui',
+
+  // North Region (excluding Garoua)
+  'Baschéo', 'Beka', 'Bibemi', 'Dembo', 'Figuil', 'Gaschiga', 'Golombé', 'Guider', 'Lagdo', 'Madingring',
+  'Mayo-Oulo', 'Ngong', 'Pitoa', 'Poli', 'Rey-Bouba', 'Tchollire', 'Touboro',
+
+  // Northwest Region (excluding Bamenda)
+  'Ako', 'Bali', 'Batibo', 'Belo', 'Benakuma', 'Fonfuka', 'Fundong', 'Jakiri', 'Kumbo', 'Mbengwi',
+  'Ndop', 'Ndu', 'Nkambe', 'Nwa', 'Santa', 'Tubah', 'Wum',
+
+  // South Region
+  'Ebolowa', 'Akom II', 'Ambam', 'Bengbis', 'Biwong-Bane', 'Campo', 'Djoum', 'Kribi', 'Lolodorf', 'Mengong',
+  'Meyomessala', 'Mintom', 'Mvangan', 'Niete', 'Olamze', 'Oveng', 'Sangmélima', 'Zoétélé',
+
+  // Southwest Region (excluding Kumba)
+  'Buea', 'Akwaya', 'Alou', 'Bangem', 'Eyumodjock', 'Fontem', 'Idenau', 'Kombo-Abedimo', 'Kombo-Itindi', 'Konye',
+  'Limbe', 'Mbonge', 'Mundemba', 'Muyuka', 'Nguti', 'Tiko', 'Tombel', 'Upper Bayang', 'Wabane',
+
+  // West Region (excluding Bafoussam)
+  'Bafang', 'Bana', 'Bandja', 'Bandjoun', 'Bangangté', 'Bangou', 'Batcham', 'Foumban', 'Foumbot',
+  'Galim', 'Kouoptamo', 'Koutaba', 'Magba', 'Malantouen', 'Massangam', 'Mbouda', 'Penka-Michel', 'Santchou'
+] as const;
+
+// Create a sorted version of the cities array for dropdown navigation
+export const sortedCameroonCities = [...cameroonCities].sort();
+
+type Region = 
+  | 'Adamawa' 
+  | 'Centre' 
+  | 'East' 
+  | 'Far North' 
+  | 'Littoral' 
+  | 'North' 
+  | 'Northwest' 
+  | 'South' 
+  | 'Southwest' 
+  | 'West';
+
+export const citiesByRegion: Record<Region, readonly string[]> = {
+  'Adamawa': ['Bankim', 'Banyo', 'Belel', 'Dir', 'Djohong', 'Kontcha', 'Mayo-Baléo', 'Meiganga', 'Ngaoundal', 'Tibati', 'Tignère'],
+  'Centre': ['Akonolinga', 'Awae', 'Ayos', 'Bafia', 'Bibey', 'Biyouha', 'Bokito', 'Botmakak', 'Dibang', 'Deuk', 
+    'Dzeng', 'Ebebda', 'Ekali', 'Eseka', 'Evodoula', 'Kobdombo', 'Lolodorf', 'Makak', 'Matomb', 'Mbalmayo', 'Mbandjock',
+    'Mbangassina', 'Mfou', 'Monatélé', 'Nanga-Eboko', 'Ndikinimeki', 'Ngambè-Tikar', 'Ngomedzap', 'Ngoro', 'Nkoteng',
+    'Ntui', 'Obala', 'Okola', 'Ombessa', 'Sa\'a', 'Soa', 'Yoko'],
+  'East': ['Abong-Mbang', 'Angossas', 'Atok', 'Batouri', 'Bélabo', 'Betaré-Oya', 'Dimako', 'Doumaintang', 'Doumé',
+    'Garoua-Boulaï', 'Kentzou', 'Kette', 'Lomié', 'Mbang', 'Messamena', 'Mindourou', 'Moloundou', 'Ndelele', 'Nguelebok',
+    'Ngoura', 'Yokadouma'],
+  'Far North': ['Bogo', 'Darak', 'Goulfey', 'Hile-Alifa', 'Kaélé', 'Kar-Hay', 'Kolofata', 'Kousseri', 'Lagdo', 'Logone-Birni',
+    'Makary', 'Maga', 'Mindif', 'Mokolo', 'Mora', 'Moulvoudaye', 'Mayo-Danay', 'Mayo-Kani', 'Mayo-Sava', 'Mayo-Tsanaga',
+    'Tokombéré', 'Waza', 'Yagoua'],
+  'Littoral': ['Dibombari', 'Dizangué', 'Edéa', 'Manjo', 'Mbanga', 'Melong', 'Ndom', 'Ngambe',
+    'Nyanon', 'Pouma', 'Yabassi', 'Yingui'],
+  'North': ['Baschéo', 'Beka', 'Bibemi', 'Dembo', 'Figuil', 'Gaschiga', 'Golombé', 'Guider', 'Lagdo', 'Madingring',
+    'Mayo-Oulo', 'Ngong', 'Pitoa', 'Poli', 'Rey-Bouba', 'Tchollire', 'Touboro'],
+  'Northwest': ['Ako', 'Bali', 'Batibo', 'Belo', 'Benakuma', 'Fonfuka', 'Fundong', 'Jakiri', 'Kumbo', 'Mbengwi',
+    'Ndop', 'Ndu', 'Nkambe', 'Nwa', 'Santa', 'Tubah', 'Wum'],
+  'South': ['Ebolowa', 'Akom II', 'Ambam', 'Bengbis', 'Biwong-Bane', 'Campo', 'Djoum', 'Kribi', 'Lolodorf', 'Mengong',
+    'Meyomessala', 'Mintom', 'Mvangan', 'Niete', 'Olamze', 'Oveng', 'Sangmélima', 'Zoétélé'],
+  'Southwest': ['Buea', 'Akwaya', 'Alou', 'Bangem', 'Eyumodjock', 'Fontem', 'Idenau', 'Kombo-Abedimo', 'Kombo-Itindi', 'Konye',
+    'Limbe', 'Mbonge', 'Mundemba', 'Muyuka', 'Nguti', 'Tiko', 'Tombel', 'Upper Bayang', 'Wabane'],
+  'West': ['Bafang', 'Bana', 'Bandja', 'Bandjoun', 'Bangangté', 'Bangou', 'Batcham', 'Foumban', 'Foumbot',
+    'Galim', 'Kouoptamo', 'Koutaba', 'Magba', 'Malantouen', 'Massangam', 'Mbouda', 'Penka-Michel', 'Santchou']
+} as const;

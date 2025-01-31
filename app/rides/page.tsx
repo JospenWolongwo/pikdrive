@@ -1,329 +1,499 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSupabase } from '@/providers/SupabaseProvider'
 import { Button } from '@/components/ui/button'
-import { Combobox } from '@/components/ui/combobox'
-import { cameroonTowns } from '@/lib/towns'
-import { Card } from '@/components/ui/card'
-import { Calendar } from '@/components/ui/calendar'
+import { MapPin, Calendar, Users, MessageCircle, Phone, Search, Filter } from 'lucide-react'
 import { format } from 'date-fns'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { CalendarIcon, MapPin, Users, Clock, Car, MessageCircle, Star, Plus } from 'lucide-react'
-import { BookingModal } from './booking-modal'
-import { ChatModal } from './chat-modal'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { toast } from '@/components/ui/use-toast'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { cameroonCities, citiesByRegion, urbanCommunes } from '@/app/data/cities'
+import { Slider } from '@/components/ui/slider'
+import { ChatModal } from './chat-modal'
+
+interface Ride {
+  id: string;
+  driver_id: string;
+  from_city: string;
+  to_city: string;
+  price: number;
+  departure_time: string;
+  estimated_duration: string;
+  seats_available: number;
+  car_model?: string;
+  car_color?: string;
+  bookings?: Array<{ seats?: number }>;
+  driver?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+    image?: string;
+    rating?: number;
+    trips?: number;
+  };
+}
+
+const sortedCameroonCities = [...Array.from(urbanCommunes), ...Array.from(cameroonCities)].sort((a, b) => a.localeCompare(b))
 
 export default function RidesPage() {
-  const { user } = useAuth()
-  const [departure, setDeparture] = useState('')
-  const [destination, setDestination] = useState('')
-  const [date, setDate] = useState<Date>()
-  const [selectedRide, setSelectedRide] = useState<any>(null)
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false)
-  const [rides, setRides] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  const townOptions = cameroonTowns.map(town => ({
-    value: town.toLowerCase(),
-    label: town
-  }))
+  const { supabase, user } = useSupabase()
+  const router = useRouter()
+  const [rides, setRides] = useState<Ride[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedRide, setSelectedRide] = useState<Ride | null>(null)
+  const [message, setMessage] = useState('')
+  const [seats, setSeats] = useState(1)
+  
+  // Search filters
+  const [fromCity, setFromCity] = useState<string | null>(null)
+  const [toCity, setToCity] = useState<string | null>(null)
+  const [minPrice, setMinPrice] = useState(0)
+  const [maxPrice, setMaxPrice] = useState(20000)
+  const [minSeats, setMinSeats] = useState(1)
+  const [showFilters, setShowFilters] = useState(false)
 
   const loadRides = async () => {
     try {
-      setIsLoading(true)
-      // First, try to get existing rides
-      const { data: existingRides, error: fetchError } = await supabase
+      setLoading(true);
+      let query = supabase
         .from('rides')
         .select(`
           *,
-          driver:profiles!rides_driver_id_fkey (
-            id,
-            name,
-            phone
-          )
+          driver:profiles(id, full_name, avatar_url),
+          bookings(id, seats)
         `)
+        .gt('departure_time', new Date().toISOString())
+        .order('departure_time', { ascending: true })
 
-      if (fetchError) {
-        console.error('Error fetching rides:', fetchError)
-        throw fetchError
+      // Apply filters
+      if (fromCity && fromCity !== 'any') {
+        query = query.eq('from_city', fromCity)
+      }
+      if (toCity && toCity !== 'any') {
+        query = query.eq('to_city', toCity)
+      }
+      if (minPrice > 0) {
+        query = query.gte('price', minPrice)
+      }
+      if (maxPrice < 20000) {
+        query = query.lte('price', maxPrice)
       }
 
-      console.log('Loaded rides:', existingRides)
-      setRides(existingRides || [])
+      const { data, error } = await query
+
+      if (error) {
+        throw error
+      }
+
+      // Set empty array if no data
+      if (!data) {
+        setRides([])
+        return
+      }
+
+      // Calculate remaining seats and filter rides
+      const ridesWithSeats = data
+        .map((ride: any) => {
+          const totalBookedSeats = (ride.bookings || []).reduce((acc: number, booking: any) => {
+            return acc + (booking?.seats || 0)
+          }, 0)
+
+          const remainingSeats = Math.max(0, ride.seats_available - totalBookedSeats)
+
+          if (remainingSeats < minSeats) {
+            return null
+          }
+
+          return {
+            ...ride,
+            seats_available: remainingSeats,
+            driver: {
+              ...ride.driver,
+              name: ride.driver?.full_name || 'Unknown Driver'
+            }
+          }
+        })
+        .filter(Boolean)
+
+      setRides(ridesWithSeats)
     } catch (error) {
       console.error('Error loading rides:', error)
+      toast({
+        variant: "destructive",
+        title: "Error loading rides",
+        description: error instanceof Error ? error.message : "Please try again later."
+      })
+      setRides([])
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadRides()
-  }, [])
+    const fetchRides = async () => {
+      await loadRides();
+    };
 
-  const createTestRide = async () => {
-    if (!user) return
-    
+    fetchRides();
+  }, [fromCity, toCity, minPrice, maxPrice, minSeats]);
+
+  const handleBooking = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to book rides.",
+        variant: "destructive"
+      })
+      router.push('/auth?redirect=/rides')
+      return
+    }
+
+    if (!selectedRide) {
+      toast({
+        title: "Error",
+        description: "Please select a ride first."
+      })
+      return
+    }
+
     try {
-      setIsLoading(true)
-      console.log('Creating test ride for user:', user.id)
-
-      // First check if the user exists in the profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (profileError) {
-        // Create profile if it doesn't exist
-        const { error: createProfileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: user.id,
-              name: 'Test Driver',
-              phone: user.phone || '',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          ])
-
-        if (createProfileError) {
-          console.error('Error creating profile:', createProfileError)
-          throw createProfileError
-        }
-      }
-
-      // Now create the ride
-      const { data: newRide, error: createError } = await supabase
-        .from('rides')
+      const { error } = await supabase
+        .from('bookings')
         .insert([
           {
-            driver_id: user.id,
-            from_city: 'Douala',
-            to_city: 'Yaoundé',
-            departure_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            price: 5000,
-            seats_available: 4,
-            car_model: 'Toyota Corolla',
-            car_color: 'Silver',
-            car_year: '2019'
+            ride_id: selectedRide.id,
+            user_id: user.id,
+            seats: seats,
+            status: 'pending'
           }
         ])
-        .select(`
-          *,
-          driver:profiles!rides_driver_id_fkey (
-            id,
-            name,
-            phone
-          )
-        `)
-        .single()
 
-      if (createError) {
-        console.error('Error creating ride:', createError)
-        throw createError
-      }
+      if (error) throw error
 
-      console.log('Created test ride:', newRide)
-      await loadRides()
+      toast({
+        title: "Success",
+        description: "Your booking request has been sent."
+      })
+
+      // Refresh the rides list
+      loadRides()
     } catch (error) {
-      console.error('Error in createTestRide:', error)
-    } finally {
-      setIsLoading(false)
+      console.error('Error booking ride:', error)
+      toast({
+        variant: "destructive",
+        title: "Error booking ride",
+        description: error instanceof Error ? error.message : "Please try again later."
+      })
     }
   }
 
-  const handleBookNow = (ride: any) => {
+  const handleOpenChat = async (ride: Ride) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to send messages to drivers.",
+        variant: "destructive"
+      })
+      router.push('/auth?redirect=/rides')
+      return
+    }
+
     setSelectedRide(ride)
-    setIsBookingModalOpen(true)
   }
 
-  const handleChat = (ride: any) => {
-    setSelectedRide({
-      ...ride,
-      driver: {
-        ...ride.driver,
-        id: ride.driver_id,
-        name: ride.driver?.name || 'Driver',
-        image: '/placeholder-avatar.png',
-        rating: 4.8,
-        trips: 156
-      }
-    })
-    setIsChatModalOpen(true)
+  const handleSendMessage = async () => {
+    if (!user || !selectedRide) return
+
+    // Filter sensitive content
+    const filteredMessage = filterSensitiveContent(message)
+    
+    if (filteredMessage !== message) {
+      toast({
+        title: "Message Modified",
+        description: "Your message was modified to remove sensitive information.",
+        variant: "default"
+      })
+    }
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert([
+          {
+            sender_id: user.id,
+            receiver_id: selectedRide.driver_id,
+            ride_id: selectedRide.id,
+            content: filteredMessage,
+            status: 'sent'
+          }
+        ])
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Message sent successfully!"
+      })
+
+      setMessage('')
+      setSelectedRide(null)
+    } catch (error) {
+      console.error('Error sending message:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message. Please try again."
+      })
+    }
+  }
+
+  const filterSensitiveContent = (text: string): string => {
+    // Filter phone numbers
+    text = text.replace(/\b\d{10}\b|\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[phone number removed]')
+    
+    // Filter email addresses
+    text = text.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[email removed]')
+    
+    // Filter WhatsApp mentions
+    text = text.replace(/\b(?:whatsapp|whats app|wa)\b/gi, '[messaging app]')
+    
+    // Filter common meeting places or arrangements
+    const sensitiveWords = [
+      'meet',
+      'meetup',
+      'meeting',
+      'contact',
+      'call me',
+      'text me',
+      'message me',
+      'telegram',
+      'signal',
+      'facebook',
+      'fb',
+      'instagram',
+      'ig',
+      'dm'
+    ]
+    
+    const sensitivePattern = new RegExp(`\\b(${sensitiveWords.join('|')})\\b`, 'gi')
+    text = text.replace(sensitivePattern, '[arrangement removed]')
+    
+    return text
+  }
+
+  if (loading) {
+    return (
+      <div className="container py-10">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="container py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Find a Ride</h1>
-        {user && (
-          <Button onClick={createTestRide} disabled={isLoading}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Test Ride
-          </Button>
-        )}
-      </div>
-      
-      {/* Search Form */}
-      <Card className="p-6">
-        <div className="grid gap-4 md:grid-cols-4">
-          <div>
-            <Combobox
-              value={departure}
-              onChange={setDeparture}
-              options={townOptions}
-              placeholder="From"
-            />
-          </div>
-          <div>
-            <Combobox
-              value={destination}
-              onChange={setDestination}
-              options={townOptions}
-              placeholder="To"
-            />
-          </div>
-          <div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !date && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, 'PPP') : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <Button>Search</Button>
+      <div className="flex flex-col gap-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Available Rides</h1>
+          <p className="text-muted-foreground">Find and book your next ride</p>
         </div>
-      </Card>
 
-      {/* Rides List */}
-      <div className="mt-12">
-        <h2 className="text-2xl font-semibold mb-6">Available Rides</h2>
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          </div>
-        ) : rides.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No rides available at the moment.</p>
-            {user && (
-              <Button onClick={createTestRide}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Test Ride
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-start gap-4 flex-wrap">
+              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 min-w-[280px]">
+                <Label htmlFor="from-city" className="md:text-right">
+                  From
+                </Label>
+                <div className="md:col-span-3 w-full">
+                  <SearchableSelect
+                    options={sortedCameroonCities}
+                    value={fromCity || ''}
+                    onValueChange={setFromCity}
+                    placeholder="Select departure city"
+                    searchPlaceholder="Search departure city..."
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 min-w-[280px]">
+                <Label htmlFor="to-city" className="md:text-right">
+                  To
+                </Label>
+                <div className="md:col-span-3 w-full">
+                  <SearchableSelect
+                    options={sortedCameroonCities}
+                    value={toCity || ''}
+                    onValueChange={setToCity}
+                    placeholder="Select destination city"
+                    searchPlaceholder="Search destination city..."
+                  />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowFilters(!showFilters)}
+                className={showFilters ? 'bg-secondary' : ''}
+              >
+                <Filter className="h-4 w-4" />
               </Button>
-            )}
+            </div>
+          </div>
+
+          {showFilters && (
+            <div className="grid gap-6 p-6 border rounded-lg">
+              <div className="space-y-2">
+                <Label>Price Range (FCFA)</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="number"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(Number(e.target.value))}
+                    className="w-24"
+                    min={0}
+                    max={maxPrice}
+                  />
+                  <span>to</span>
+                  <Input
+                    type="number"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    className="w-24"
+                    min={minPrice}
+                    max={20000}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Minimum Seats</Label>
+                <Input
+                  type="number"
+                  value={minSeats}
+                  onChange={(e) => setMinSeats(Math.max(1, Math.min(4, Number(e.target.value))))}
+                  min={1}
+                  max={4}
+                  className="w-24"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {rides.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground">
+              {(fromCity && fromCity !== 'any') || (toCity && toCity !== 'any') 
+                ? 'No rides found matching your search.' 
+                : 'No rides available at the moment.'}
+            </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {rides.map((ride) => (
-              <Card key={ride.id} className="p-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start">
+              <Card key={ride.id} className="overflow-hidden">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarImage src={ride.driver?.avatar_url} />
+                      <AvatarFallback>{ride.driver?.full_name?.charAt(0) || 'D'}</AvatarFallback>
+                    </Avatar>
                     <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <span className="font-medium">{ride.from_city}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span className="font-medium">{ride.to_city}</span>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <div className="flex items-center">
-                          <Clock className="mr-1 h-4 w-4" />
-                          {format(new Date(ride.departure_time), 'HH:mm')}
-                        </div>
-                        <div className="flex items-center">
-                          <Users className="mr-1 h-4 w-4" />
-                          {ride.seats_available} seats
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-primary mb-2">
-                        {ride.price} FCFA
-                      </div>
+                      <CardTitle className="text-lg">{ride.driver?.full_name || 'Driver'}</CardTitle>
+                      <CardDescription>{ride.car_model} • {ride.car_color}</CardDescription>
                     </div>
                   </div>
-
-                  <Separator />
-
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarImage src="/placeholder-avatar.png" alt={ride.driver?.name} />
-                        <AvatarFallback>{ride.driver?.name?.slice(0, 2) || 'DR'}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{ride.driver?.name || 'Driver'}</div>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Star className="h-3 w-3 fill-primary text-primary mr-1" />
-                          4.8 • 156 trips
-                        </div>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <div className="font-medium">{ride.from_city}</div>
+                        <Separator className="my-2" />
+                        <div className="font-medium">{ride.to_city}</div>
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground text-right">
-                      <div>{ride.car_model}</div>
-                      <div>{ride.car_color} • {ride.car_year}</div>
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                      <div>{format(new Date(ride.departure_time), 'PPP p')}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                      <div>{ride.seats_available} seats available</div>
                     </div>
                   </div>
-
-                  <div className="flex justify-end space-x-2">
+                </CardContent>
+                <CardFooter className="flex justify-between items-center pt-4 border-t">
+                  <Badge variant="secondary">{ride.price.toLocaleString()} FCFA</Badge>
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleChat(ride)}
+                      onClick={() => handleOpenChat(ride)}
                     >
-                      <MessageCircle className="h-4 w-4" />
-                      <span className="sr-only">Chat with driver</span>
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Message {ride.driver?.full_name?.split(' ')[0] || 'Driver'}
                     </Button>
-                    <Button size="sm" onClick={() => handleBookNow(ride)}>
-                      Book Now
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="default"
+                          size="sm"
+                          disabled={ride.seats_available === 0}
+                        >
+                          {ride.seats_available === 0 ? 'Full' : 'Book Now'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Book a Ride</DialogTitle>
+                          <DialogDescription>
+                            Enter the number of seats you want to book.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label>Number of Seats</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={ride?.seats_available || 1}
+                              value={seats}
+                              onChange={(e) => setSeats(parseInt(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={() => handleBooking()}>Book Now</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
-                </div>
+                </CardFooter>
               </Card>
             ))}
           </div>
         )}
       </div>
-
-      <BookingModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-        ride={selectedRide}
-      />
-
-      <ChatModal
-        isOpen={isChatModalOpen}
-        onClose={() => setIsChatModalOpen(false)}
-        ride={selectedRide}
-      />
+      {selectedRide && (
+        <ChatModal
+          isOpen={!!selectedRide}
+          onClose={() => setSelectedRide(null)}
+          rideId={selectedRide.id}
+          driverId={selectedRide.driver_id}
+        />
+      )}
     </div>
   )
 }

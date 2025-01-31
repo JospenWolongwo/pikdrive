@@ -1,17 +1,27 @@
-import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
-import SupabaseProvider from "@/providers/SupabaseProvider"
+import './globals.css'
+import { Providers } from '@/app/providers'
+import { Navbar } from '@/components/navbar'
+import { Footer } from '@/components/footer'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Wakayamo',
-  description: 'Your trusted ride-sharing platform',
+  title: 'PikDrive - Intercity Ride-Sharing Platform',
+  description: 'Connect with trusted drivers for safe and affordable intercity travel in Cameroon.',
+  icons: {
+    icon: [
+      {
+        url: '/brand/favicon.svg',
+        type: 'image/svg+xml',
+      },
+      {
+        url: '/favicon.ico',
+      },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({
@@ -21,24 +31,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SupabaseProvider>
-            <div className="flex min-h-screen flex-col">
-              <Navbar />
-              <main className="flex-1 flex flex-col">
-                {children}
-              </main>
-              <Footer />
-            </div>
-            <Toaster />
-          </SupabaseProvider>
-        </ThemeProvider>
+      <head />
+      <body className={inter.className}>
+        <Providers>
+          <div className="relative flex min-h-screen flex-col">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </Providers>
       </body>
     </html>
   )

@@ -38,7 +38,7 @@ export default function ContactPage() {
     {
       icon: Mail,
       title: "Email",
-      details: ["support@wakayamo.com", "info@wakayamo.com"],
+      details: ["support@pikdrive.com", "info@pikdrive.com"],
     },
     {
       icon: MapPin,

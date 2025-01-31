@@ -92,7 +92,7 @@ export default function Home() {
               variants={fadeIn}
               className="text-muted-foreground max-w-2xl mx-auto"
             >
-              Getting started with Wakayamo is easy as 1-2-3
+              Getting started with PikDrive is easy as 1-2-3
             </motion.p>
           </motion.div>
 
@@ -236,7 +236,7 @@ export default function Home() {
               variants={fadeIn}
               className="text-muted-foreground max-w-2xl mx-auto"
             >
-              Don't just take our word for it
+              Trusted by thousands of travelers across Cameroon
             </motion.p>
           </motion.div>
 
@@ -249,38 +249,89 @@ export default function Home() {
           >
             {[
               {
-                name: "Jean Paul",
-                role: "Regular Traveler",
-                comment: "The best way to travel between cities. Safe and reliable!"
+                name: "Jean Paul Nana",
+                role: "Business Professional",
+                image: "/testimonials/user1.jpg",
+                comment: "As someone who travels frequently for business between Douala and Yaoundé, PikDrive has been a game-changer. The drivers are professional and the booking process is seamless.",
+                rating: 5,
+                verified: true
               },
               {
-                name: "Marie Claire",
-                role: "Business Traveler",
-                comment: "Perfect for my weekly trips to Yaoundé. Always on time!"
+                name: "Marie Claire Foka",
+                role: "Medical Doctor",
+                image: "/testimonials/user2.jpg",
+                comment: "The safety features and driver verification process give me peace of mind. I've been using PikDrive for my weekly hospital visits to different cities, and it's been excellent.",
+                rating: 5,
+                verified: true
               },
               {
-                name: "Emmanuel",
-                role: "Student",
-                comment: "Affordable and comfortable. Great for weekend trips home!"
+                name: "Emmanuel Tamba",
+                role: "University Student",
+                image: "/testimonials/user3.jpg",
+                comment: "Perfect for students! Affordable prices and the ability to share rides with other students makes traveling home for holidays much easier. The app is super user-friendly too!",
+                rating: 5,
+                verified: true
               }
             ].map((testimonial, index) => (
               <motion.div
                 key={index}
-                variants={fadeIn}
-                className="bg-background p-8 rounded-lg shadow-lg"
+                variants={{
+                  initial: { opacity: 0, y: 20 },
+                  animate: { 
+                    opacity: 1, 
+                    y: 0,
+                    transition: { 
+                      duration: 0.5,
+                      delay: index * 0.2 
+                    }
+                  }
+                }}
+                whileHover={{ y: -5 }}
+                className="bg-background p-8 rounded-lg shadow-lg relative"
               >
+                {testimonial.verified && (
+                  <div className="absolute top-4 right-4 text-primary">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                )}
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10">
+                      <img 
+                        src={testimonial.image} 
+                        alt={testimonial.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/defaults/avatar.svg'
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{testimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </div>
                 <div className="flex items-center mb-4">
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <Star className="w-5 h-5 text-yellow-400" />
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-5 h-5 ${
+                        star <= testimonial.rating
+                          ? 'text-yellow-400 fill-current'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
                 </div>
-                <p className="text-muted-foreground mb-4">{testimonial.comment}</p>
-                <div>
-                  <p className="font-semibold">{testimonial.name}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                </div>
+                <motion.p 
+                  className="text-muted-foreground mb-4 italic"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  "{testimonial.comment}"
+                </motion.p>
               </motion.div>
             ))}
           </motion.div>
@@ -300,7 +351,7 @@ export default function Home() {
               Ready to Get Started?
             </h2>
             <p className="text-lg mb-8 max-w-2xl mx-auto">
-              Join thousands of satisfied travelers who trust Wakayamo for their intercity journeys
+              Join thousands of satisfied travelers who trust PikDrive for their intercity journeys
             </p>
             {!user && (
               <Button

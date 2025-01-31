@@ -112,7 +112,7 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
               }`}
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder-avatar.png" />
+                <AvatarImage src="/placeholder-avatar.svg" />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
               <div
