@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen } from 'lucide-react'
+import { BsWhatsapp } from 'react-icons/bs'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -55,6 +56,7 @@ export function Navbar() {
     { href: '/', label: 'Home' },
     { href: '/rides', label: 'Find Rides' },
     { href: '/about', label: 'About' },
+    { href: '/advice', label: 'Safety & FAQ' },
     { href: '/contact', label: 'Contact' },
   ]
 
@@ -114,16 +116,23 @@ export function Navbar() {
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="mr-2"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            >
-              <Sun className="h-6 w-6 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-6 w-6 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.open('https://wa.me/+237YOUR_PHONE_NUMBER', '_blank')}
+                className="text-green-500 hover:text-green-600 hover:bg-green-100"
+              >
+                <BsWhatsapp className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              >
+                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
           {user ? (
             <DropdownMenu>

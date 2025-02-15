@@ -18,12 +18,14 @@ export default function AboutPage() {
       name: "Wilfred Tchudjo",
       role: "Co-founder & CEO",
       initials: "WT",
+      image: "/team/wilfred.jpg",
       bio: "Visionary leader driving PikDrive's mission to revolutionize intercity travel in Cameroon."
     },
     {
       name: "Jospen Wolongwo",
       role: "Co-founder & Lead Software Engineer",
       initials: "JW",
+      image: "/team/jospen.jpg",
       bio: "Tech innovator building the future of transportation technology in Cameroon."
     },
     {
@@ -155,6 +157,7 @@ export default function AboutPage() {
                 <Card className="text-center p-6">
                   <div className="flex justify-center mb-4">
                     <Avatar className="w-32 h-32">
+                      {member.image && <AvatarImage src={member.image} alt={member.name} />}
                       <AvatarFallback className="text-2xl bg-primary/10">
                         {member.initials}
                       </AvatarFallback>
