@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/providers/SupabaseProvider'
+import { useChat } from '@/providers/ChatProvider'
 import { Button } from '@/components/ui/button'
 import { MapPin, Calendar, Users, MessageCircle, Phone, Search, Filter } from 'lucide-react'
 import { format } from 'date-fns'
@@ -18,7 +19,8 @@ import { toast } from '@/components/ui/use-toast'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { cameroonCities, citiesByRegion, urbanCommunes } from '@/app/data/cities'
 import { Slider } from '@/components/ui/slider'
-import { ChatModal } from './chat-modal'
+import { ChatDialog } from '@/components/chat/chat-dialog'
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination'
 
 interface Ride {
   id: string;
@@ -46,6 +48,7 @@ const sortedCameroonCities = [...Array.from(urbanCommunes), ...Array.from(camero
 
 export default function RidesPage() {
   const { supabase, user } = useSupabase()
+  const { unreadCounts, subscribeToRide } = useChat()
   const router = useRouter()
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,9 +64,41 @@ export default function RidesPage() {
   const [minSeats, setMinSeats] = useState(1)
   const [showFilters, setShowFilters] = useState(false)
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const itemsPerPage = 10
+
   const loadRides = async () => {
     try {
       setLoading(true);
+      
+      // First get total count for pagination
+      let countQuery = supabase
+        .from('rides')
+        .select('id', { count: 'exact' })
+        .gt('departure_time', new Date().toISOString())
+
+      // Apply filters to count query
+      if (fromCity && fromCity !== 'any') {
+        countQuery = countQuery.eq('from_city', fromCity)
+      }
+      if (toCity && toCity !== 'any') {
+        countQuery = countQuery.eq('to_city', toCity)
+      }
+      if (minPrice > 0) {
+        countQuery = countQuery.gte('price', minPrice)
+      }
+      if (maxPrice < 20000) {
+        countQuery = countQuery.lte('price', maxPrice)
+      }
+
+      const { count, error: countError } = await countQuery
+
+      if (countError) throw countError
+      
+      setTotalPages(Math.ceil((count || 0) / itemsPerPage))
+
+      // Then get paginated data
       let query = supabase
         .from('rides')
         .select(`
@@ -73,6 +108,7 @@ export default function RidesPage() {
         `)
         .gt('departure_time', new Date().toISOString())
         .order('departure_time', { ascending: true })
+        .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
 
       // Apply filters
       if (fromCity && fromCity !== 'any') {
@@ -100,39 +136,19 @@ export default function RidesPage() {
         return
       }
 
-      // Calculate remaining seats and filter rides
-      const ridesWithSeats = data
-        .map((ride: any) => {
-          const totalBookedSeats = (ride.bookings || []).reduce((acc: number, booking: any) => {
-            return acc + (booking?.seats || 0)
-          }, 0)
+      const processedRides = data.map(ride => ({
+        ...ride,
+        seats_available: ride.total_seats - (ride.bookings?.reduce((sum, b) => sum + (b.seats || 0), 0) || 0)
+      }))
 
-          const remainingSeats = Math.max(0, ride.seats_available - totalBookedSeats)
-
-          if (remainingSeats < minSeats) {
-            return null
-          }
-
-          return {
-            ...ride,
-            seats_available: remainingSeats,
-            driver: {
-              ...ride.driver,
-              name: ride.driver?.full_name || 'Unknown Driver'
-            }
-          }
-        })
-        .filter(Boolean)
-
-      setRides(ridesWithSeats)
+      setRides(processedRides)
     } catch (error) {
-      console.error('Error loading rides:', error)
+      console.error('Error:', error)
       toast({
         variant: "destructive",
         title: "Error loading rides",
-        description: error instanceof Error ? error.message : "Please try again later."
+        description: "Please try again later."
       })
-      setRides([])
     } finally {
       setLoading(false)
     }
@@ -144,7 +160,13 @@ export default function RidesPage() {
     };
 
     fetchRides();
-  }, [fromCity, toCity, minPrice, maxPrice, minSeats]);
+  }, [fromCity, toCity, minPrice, maxPrice, currentPage]);
+
+  useEffect(() => {
+    rides.forEach(ride => {
+      subscribeToRide(ride.id)
+    })
+  }, [rides, subscribeToRide])
 
   const handleBooking = async () => {
     if (!user) {
@@ -200,7 +222,7 @@ export default function RidesPage() {
     if (!user) {
       toast({
         title: "Authentication Required",
-        description: "Please log in to send messages to drivers.",
+        description: "Please log in to message drivers.",
         variant: "destructive"
       })
       router.push('/auth?redirect=/rides')
@@ -301,7 +323,7 @@ export default function RidesPage() {
   }
 
   return (
-    <div className="container py-10">
+    <div className="container py-6 space-y-6">
       <div className="flex flex-col gap-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Available Rides</h1>
@@ -441,9 +463,18 @@ export default function RidesPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleOpenChat(ride)}
+                      className="relative"
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Message {ride.driver?.full_name?.split(' ')[0] || 'Driver'}
+                      {unreadCounts.find(c => c.rideId === ride.id)?.count > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center"
+                        >
+                          {unreadCounts.find(c => c.rideId === ride.id)?.count}
+                        </Badge>
+                      )}
                     </Button>
                     <Dialog>
                       <DialogTrigger asChild>
@@ -486,12 +517,71 @@ export default function RidesPage() {
           </div>
         )}
       </div>
+      {!loading && rides.length > 0 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            {currentPage > 1 && (
+              <PaginationItem>
+                <PaginationPrevious 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setCurrentPage(prev => Math.max(1, prev - 1))
+                  }} 
+                />
+              </PaginationItem>
+            )}
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNumber: number
+              if (totalPages <= 5) {
+                pageNumber = i + 1
+              } else if (currentPage <= 3) {
+                pageNumber = i + 1
+              } else if (currentPage >= totalPages - 2) {
+                pageNumber = totalPages - 4 + i
+              } else {
+                pageNumber = currentPage - 2 + i
+              }
+
+              return (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setCurrentPage(pageNumber)
+                    }}
+                    isActive={currentPage === pageNumber}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            })}
+
+            {currentPage < totalPages && (
+              <PaginationItem>
+                <PaginationNext 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setCurrentPage(prev => Math.min(totalPages, prev + 1))
+                  }} 
+                />
+              </PaginationItem>
+            )}
+          </PaginationContent>
+        </Pagination>
+      )}
       {selectedRide && (
-        <ChatModal
+        <ChatDialog
           isOpen={!!selectedRide}
           onClose={() => setSelectedRide(null)}
           rideId={selectedRide.id}
-          driverId={selectedRide.driver_id}
+          otherUserId={selectedRide.driver_id}
+          otherUserName={selectedRide.driver?.full_name || 'Driver'}
+          otherUserAvatar={selectedRide.driver?.avatar_url}
         />
       )}
     </div>

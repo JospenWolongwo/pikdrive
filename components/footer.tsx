@@ -13,7 +13,7 @@ export function Footer() {
           <div className="flex flex-col gap-2">
             <Link href="/" className="flex items-center space-x-2">
               <Car className="h-6 w-6" />
-              <span className="font-bold">PickDrive</span>
+              <span className="font-bold">PikDrive</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Your trusted ride-sharing platform in Cameroon
@@ -103,7 +103,7 @@ export function Footer() {
 
         <div className="mt-8 border-t pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            {currentYear} PickDrive. All rights reserved.
+            {currentYear} PikDrive. All rights reserved.
           </p>
         </div>
       </div>
