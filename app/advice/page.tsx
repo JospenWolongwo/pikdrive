@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Card } from '@/components/ui/card'
-import { Shield, AlertTriangle, HelpCircle, PhoneCall, Mail } from 'lucide-react'
+import { Shield, AlertTriangle, HelpCircle, PhoneCall, Mail, Clock } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
 
 export default function AdvicePage() {
@@ -109,24 +109,50 @@ export default function AdvicePage() {
           <p className="text-muted-foreground text-lg">Our support team is always ready to assist you.</p>
         </motion.div>
 
-        <div className="flex justify-center gap-6">
-          <Card className="p-6 text-center">
-            <PhoneCall className="w-8 h-8 text-primary mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">Call Us</h3>
-            <p className="text-muted-foreground">+237 YOUR_PHONE</p>
-          </Card>
-          
-          <Card className="p-6 text-center">
-            <BsWhatsapp className="w-8 h-8 text-green-500 mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">WhatsApp</h3>
-            <p className="text-muted-foreground">+237 YOUR_PHONE</p>
-          </Card>
+        <div className="space-y-8">
+          <h2 className="text-2xl font-semibold text-center">Need Help?</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mx-auto max-w-6xl px-4">
+            <Card className="p-6 text-center">
+              <PhoneCall className="w-8 h-8 text-primary mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Call Us</h3>
+              <a 
+                href="tel:+237698805890" 
+                className="text-muted-foreground break-words hover:text-primary transition-colors"
+              >
+                +237 698805890
+              </a>
+            </Card>
+            
+            <Card className="p-6 text-center">
+              <BsWhatsapp className="w-8 h-8 text-green-500 mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">WhatsApp</h3>
+              <a 
+                href="https://wa.me/+237698805890" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground break-words hover:text-green-500 transition-colors"
+              >
+                +237 698805890
+              </a>
+            </Card>
 
-          <Card className="p-6 text-center">
-            <Mail className="w-8 h-8 text-primary mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">Email</h3>
-            <p className="text-muted-foreground">support@pikdrive.com</p>
-          </Card>
+            <Card className="p-6 text-center">
+              <Mail className="w-8 h-8 text-primary mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Email</h3>
+              <a 
+                href="mailto:support@pikdrive.com"
+                className="text-muted-foreground break-words hover:text-primary transition-colors"
+              >
+                support@pikdrive.com
+              </a>
+            </Card>
+
+            <Card className="p-6 text-center">
+              <Clock className="w-8 h-8 text-primary mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Working Hours</h3>
+              <p className="text-muted-foreground">24/7</p>
+            </Card>
+          </div>
         </div>
       </section>
     </main>

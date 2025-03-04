@@ -21,6 +21,9 @@ import { cameroonCities, citiesByRegion, urbanCommunes } from '@/app/data/cities
 import { Slider } from '@/components/ui/slider'
 import { ChatDialog } from '@/components/chat/chat-dialog'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination'
+import { BookingModal } from './booking-modal'
+import { motion } from 'framer-motion'
+import { Clock } from 'lucide-react'
 
 interface Ride {
   id: string;
@@ -53,6 +56,7 @@ export default function RidesPage() {
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null)
+  const [selectedChatRide, setSelectedChatRide] = useState<Ride | null>(null)
   const [message, setMessage] = useState('')
   const [seats, setSeats] = useState(1)
   
@@ -168,7 +172,7 @@ export default function RidesPage() {
     })
   }, [rides, subscribeToRide])
 
-  const handleBooking = async () => {
+  const handleBooking = (ride: Ride) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -178,44 +182,11 @@ export default function RidesPage() {
       router.push('/auth?redirect=/rides')
       return
     }
+    setSelectedRide(ride)
+  }
 
-    if (!selectedRide) {
-      toast({
-        title: "Error",
-        description: "Please select a ride first."
-      })
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .insert([
-          {
-            ride_id: selectedRide.id,
-            user_id: user.id,
-            seats: seats,
-            status: 'pending'
-          }
-        ])
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: "Your booking request has been sent."
-      })
-
-      // Refresh the rides list
-      loadRides()
-    } catch (error) {
-      console.error('Error booking ride:', error)
-      toast({
-        variant: "destructive",
-        title: "Error booking ride",
-        description: error instanceof Error ? error.message : "Please try again later."
-      })
-    }
+  const handleBookingComplete = () => {
+    loadRides() // Refresh the rides list
   }
 
   const handleOpenChat = async (ride: Ride) => {
@@ -229,7 +200,7 @@ export default function RidesPage() {
       return
     }
 
-    setSelectedRide(ride)
+    setSelectedChatRide(ride)
   }
 
   const handleSendMessage = async () => {
@@ -423,96 +394,79 @@ export default function RidesPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {rides.map((ride) => (
-              <Card key={ride.id} className="overflow-hidden">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={ride.driver?.avatar_url} />
-                      <AvatarFallback>{ride.driver?.full_name?.charAt(0) || 'D'}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-lg">{ride.driver?.full_name || 'Driver'}</CardTitle>
-                      <CardDescription>{ride.car_model} • {ride.car_color}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-4">
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <div className="font-medium">{ride.from_city}</div>
-                        <Separator className="my-2" />
-                        <div className="font-medium">{ride.to_city}</div>
+              <motion.div
+                key={ride.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="overflow-hidden">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar>
+                        <AvatarImage src={ride.driver?.avatar_url} />
+                        <AvatarFallback>{ride.driver?.full_name?.charAt(0) || 'D'}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="text-lg">{ride.driver?.full_name || 'Driver'}</CardTitle>
+                        <CardDescription>{ride.car_model} • {ride.car_color}</CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <div>{format(new Date(ride.departure_time), 'PPP p')}</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-muted-foreground" />
-                      <div>{ride.seats_available} seats available</div>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center pt-4 border-t">
-                  <Badge variant="secondary">{ride.price.toLocaleString()} FCFA</Badge>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenChat(ride)}
-                      className="relative"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Message {ride.driver?.full_name?.split(' ')[0] || 'Driver'}
-                      {unreadCounts.find(c => c.rideId === ride.id)?.count > 0 && (
-                        <Badge 
-                          variant="destructive" 
-                          className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center"
-                        >
-                          {unreadCounts.find(c => c.rideId === ride.id)?.count}
-                        </Badge>
-                      )}
-                    </Button>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="default"
-                          size="sm"
-                          disabled={ride.seats_available === 0}
-                        >
-                          {ride.seats_available === 0 ? 'Full' : 'Book Now'}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Book a Ride</DialogTitle>
-                          <DialogDescription>
-                            Enter the number of seats you want to book.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid gap-2">
-                            <Label>Number of Seats</Label>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={ride?.seats_available || 1}
-                              value={seats}
-                              onChange={(e) => setSeats(parseInt(e.target.value))}
-                            />
-                          </div>
+                  </CardHeader>
+                  <CardContent className="pb-4">
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <div className="font-medium">{ride.from_city}</div>
+                          <Separator className="my-2" />
+                          <div className="font-medium">{ride.to_city}</div>
                         </div>
-                        <DialogFooter>
-                          <Button onClick={() => handleBooking()}>Book Now</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardFooter>
-              </Card>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <div>{format(new Date(ride.departure_time), 'PPP p')}</div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <div>{ride.seats_available} seats available</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between items-center pt-4 border-t">
+                    <Badge variant="secondary">{ride.price.toLocaleString()} FCFA</Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenChat(ride)}
+                        className="relative"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Message {ride.driver?.full_name?.split(' ')[0] || 'Driver'}
+                        {unreadCounts[ride.id] > 0 && (
+                          <Badge 
+                            variant="destructive" 
+                            className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center"
+                          >
+                            {unreadCounts[ride.id]}
+                          </Badge>
+                        )}
+                      </Button>
+                      <Button 
+                        variant="default"
+                        size="sm"
+                        disabled={ride.seats_available === 0}
+                        onClick={() => handleBooking(ride)}
+                      >
+                        {ride.seats_available === 0 ? 'Full' : 'Book Now'}
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              </motion.div>
             ))}
           </div>
         )}
@@ -575,13 +529,21 @@ export default function RidesPage() {
         </Pagination>
       )}
       {selectedRide && (
-        <ChatDialog
+        <BookingModal
           isOpen={!!selectedRide}
           onClose={() => setSelectedRide(null)}
-          rideId={selectedRide.id}
-          otherUserId={selectedRide.driver_id}
-          otherUserName={selectedRide.driver?.full_name || 'Driver'}
-          otherUserAvatar={selectedRide.driver?.avatar_url}
+          ride={selectedRide}
+          onBookingComplete={handleBookingComplete}
+        />
+      )}
+      {selectedChatRide && (
+        <ChatDialog
+          isOpen={!!selectedChatRide}
+          onClose={() => setSelectedChatRide(null)}
+          rideId={selectedChatRide.id}
+          otherUserId={selectedChatRide.driver_id}
+          otherUserName={selectedChatRide.driver?.full_name || 'Driver'}
+          otherUserAvatar={selectedChatRide.driver?.avatar_url}
         />
       )}
     </div>

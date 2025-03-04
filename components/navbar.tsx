@@ -16,6 +16,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
+import { PhoneCall, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -116,19 +117,53 @@ export function Navbar() {
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {/* WhatsApp */}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => window.open('https://wa.me/+237YOUR_PHONE_NUMBER', '_blank')}
+                asChild
                 className="text-green-500 hover:text-green-600 hover:bg-green-100"
               >
-                <BsWhatsapp className="h-5 w-5" />
+                <a 
+                  href="https://wa.me/+237698805890"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <BsWhatsapp className="h-5 w-5" />
+                </a>
               </Button>
+
+              {/* Phone */}
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="text-primary hover:text-primary/80"
+              >
+                <a href="tel:+237698805890">
+                  <PhoneCall className="h-5 w-5" />
+                </a>
+              </Button>
+
+              {/* Email */}
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="text-primary hover:text-primary/80"
+              >
+                <a href="mailto:support@pikdrive.com">
+                  <Mail className="h-5 w-5" />
+                </a>
+              </Button>
+
+              {/* Theme Toggle */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                className="hover:bg-muted"
               >
                 {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
               </Button>

@@ -1,0 +1,19 @@
+name: Check Pending Payments
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Run every 5 minutes
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  check-payments:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check pending payments
+        run: |
+          curl -X GET ${{ secrets.APP_URL }}/api/cron/check-pending-payments \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
