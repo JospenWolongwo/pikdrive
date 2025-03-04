@@ -109,7 +109,26 @@ export default function AdminDriversPage() {
 
       if (profilesError) throw profilesError
 
-      setApplications(profiles.map(profile => ({
+      setApplications(profiles.map((profile: {
+        id: string;
+        full_name: string;
+        email: string;
+        phone: string;
+        city: string;
+        avatar_url?: string;
+        driver_status: string;
+        created_at: string;
+        driver_documents?: Array<{
+          national_id_number: string;
+          license_number: string;
+          registration_number: string;
+          insurance_number: string;
+          road_tax_number: string;
+          technical_inspection_number: string;
+          vehicle_images: string[];
+          status: string;
+        }>;
+      }) => ({
         ...profile,
         documents: profile.driver_documents?.[0] || null
       })))
