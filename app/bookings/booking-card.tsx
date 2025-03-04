@@ -107,14 +107,14 @@ export function BookingCard({ booking }: BookingCardProps) {
                  'Payment Pending'}
               </span>
             </div>
-            {booking.payments?.status === 'completed' && booking.receipt && (
+            {booking.payments?.status === 'completed' && (
               <Button 
                 variant="outline" 
                 size="sm"
                 className="gap-2"
                 asChild
               >
-                <Link href={`/receipts/${booking.receipt.id}`}>
+                <Link href={`/receipts/${booking.receipt?.id}`}>
                   <Receipt className="h-4 w-4" />
                   View Receipt
                 </Link>

@@ -33,7 +33,7 @@ interface Payment {
   transaction_id: string;
   payment_time: string | null;
   metadata: PaymentMetadata;
-  status: string;
+  status?: string;
 }
 
 interface Booking {
@@ -43,7 +43,25 @@ interface Booking {
   payment_status: string;
   created_at: string;
   ride?: Ride;
+  payments?: {
+    id: string;
+    amount: number;
+    currency: string;
+    phone_number: string;
+    transaction_id: string;
+    payment_time: string | null;
+    metadata: PaymentMetadata;
+    status: string;
+  } | null;
+  receipt?: BookingReceipt | null;
+}
+
+interface DatabaseBooking extends Omit<Booking, 'payments'> {
   payments?: Payment[];
+}
+
+interface BookingWithRequiredRide extends Omit<Booking, 'ride'> {
+  ride: Ride;
 }
 
 interface BookingReceipt {
@@ -97,7 +115,7 @@ async function getBookingsWithReceipts(userId: string, page: number = 1, itemsPe
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-    .range((page - 1) * itemsPerPage, page * itemsPerPage - 1) as { data: Booking[] | null; error: any };
+    .range((page - 1) * itemsPerPage, page * itemsPerPage - 1) as { data: DatabaseBooking[] | null; error: any };
 
   if (bookingsError) {
     throw bookingsError;
@@ -106,7 +124,8 @@ async function getBookingsWithReceipts(userId: string, page: number = 1, itemsPe
   // First get all receipts
   const receipts = await Promise.all(
     (bookings || []).map(async (booking) => {
-      const payment = booking.payments?.[0];
+      const payments = booking.payments || [];
+      const payment = payments.length > 0 ? payments[0] : null;
       const isCompleted = payment?.payment_time && payment?.metadata?.financialTransactionId;
       
       if (isCompleted && payment) {
@@ -164,9 +183,10 @@ async function getBookingsWithReceipts(userId: string, page: number = 1, itemsPe
   // Then map bookings with their receipts
   return { 
     bookings: bookings?.map(booking => {
-      const payment = booking.payments?.[0];
+      const payments = booking.payments || [];
+      const payment = payments.length > 0 ? payments[0] : null;
       const isCompleted = payment?.payment_time && payment?.metadata?.financialTransactionId;
-      const receipt = payment ? validReceipts.find(r => r.payment_id === payment.id) : null;
+      const receipt = payment ? validReceipts.find(r => r?.payment_id === payment.id) : null;
       
       console.log('🎟️ Mapping booking:', {
         bookingId: booking.id,
@@ -185,7 +205,6 @@ async function getBookingsWithReceipts(userId: string, page: number = 1, itemsPe
         receipt
       };
     }), 
-    receipts: validReceipts,
     totalPages
   };
 }
@@ -196,7 +215,7 @@ interface BookingsListProps {
 }
 
 export async function BookingsList({ userId, page = 1 }: BookingsListProps) {
-  const { bookings, receipts, totalPages } = await getBookingsWithReceipts(userId, page);
+  const { bookings, totalPages } = await getBookingsWithReceipts(userId, page);
 
   if (!bookings?.length) {
     return (
@@ -210,12 +229,15 @@ export async function BookingsList({ userId, page = 1 }: BookingsListProps) {
     <div className="space-y-6">
       <div className="grid gap-4">
         {bookings.filter(booking => booking.ride).map(booking => {
-          const receipt = receipts.find(r => r?.payment_id === booking.payments?.[0].id);
+          // Only include bookings that have a ride
+          const bookingWithRequiredRide = {
+            ...booking,
+            ride: booking.ride!, // We know ride exists because of the filter
+          };
           return (
             <BookingCard 
               key={booking.id} 
-              booking={booking as Required<typeof booking>}
-              receipt={receipt}
+              booking={bookingWithRequiredRide}
             />
           );
         })}
