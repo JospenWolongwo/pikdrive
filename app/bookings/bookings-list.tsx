@@ -200,25 +200,21 @@ export async function BookingsList({ userId, page = 1 }: BookingsListProps) {
 
   if (!bookings?.length) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-semibold mb-2">No Bookings Yet</h2>
-        <p className="text-muted-foreground">
-          You haven't made any bookings yet.
-        </p>
+      <div className="text-center py-8">
+        <p className="text-gray-500">No bookings found</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Bookings List */}
-      <div className="space-y-4">
-        {bookings.map((booking) => {
-          const receipt = booking.receipt;
+      <div className="grid gap-4">
+        {bookings.filter(booking => booking.ride).map(booking => {
+          const receipt = receipts.find(r => r?.payment_id === booking.payments?.[0].id);
           return (
             <BookingCard 
               key={booking.id} 
-              booking={booking}
+              booking={booking as Required<typeof booking>}
               receipt={receipt}
             />
           );
