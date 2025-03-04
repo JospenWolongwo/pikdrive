@@ -4,6 +4,8 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useRouter } from "next/navigation"
+import { useSupabase } from "@/providers/SupabaseProvider"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -16,586 +18,391 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { Car, CheckCircle2, DollarSign, ShieldCheck, Upload } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 
 const requirements = [
   {
     icon: <Car className="w-6 h-6 text-primary" />,
-    title: "Vehicle Requirements",
+    title: "Required Vehicle Documents",
     items: [
-      "Vehicle less than 10 years old",
-      "4-door sedan or SUV",
-      "Valid technical inspection",
-      "Comprehensive insurance",
-      "Air conditioning"
+      "Vehicle Registration Card",
+      "Insurance Certificate",
+      "Road Tax Certificate",
+      "Technical Inspection Certificate"
     ]
   },
   {
     icon: <ShieldCheck className="w-6 h-6 text-primary" />,
-    title: "Driver Requirements",
+    title: "Required Driver Documents",
     items: [
-      "Valid Cameroonian driver's license",
-      "Minimum 3 years driving experience",
-      "Clean driving record",
-      "Professional appearance",
-      "Smartphone with data plan"
+      "National ID Card (CNI)",
+      "Driver's License"
     ]
   },
   {
     icon: <DollarSign className="w-6 h-6 text-primary" />,
-    title: "Earnings",
+    title: "Benefits",
     items: [
-      "Keep 80% of the fare",
+      "Earn more with long-distance rides",
       "Weekly payments",
-      "Bonus opportunities",
       "Flexible schedule",
-      "Peak hour incentives"
+      "24/7 Support"
     ]
   }
 ]
 
-const faqs = [
-  {
-    question: "How long does the application process take?",
-    answer: "The application process typically takes 3-5 business days. This includes document verification, background check, and vehicle inspection if applicable."
-  },
-  {
-    question: "What documents do I need to apply?",
-    answer: "You'll need your valid driver's license, national ID card, vehicle registration (if using your own vehicle), proof of insurance, and proof of residence."
-  },
-  {
-    question: "Can I use a rented vehicle?",
-    answer: "Yes, you can use a rented vehicle as long as it meets our vehicle requirements and you have proper documentation showing your right to use the vehicle."
-  },
-  {
-    question: "How do I get paid?",
-    answer: "Payments are made weekly via mobile money (Orange Money or MTN Mobile Money). You can track your earnings in real-time through the driver app."
-  },
-  {
-    question: "What support do drivers receive?",
-    answer: "Drivers receive 24/7 support, access to our driver community, regular training sessions, and assistance with vehicle maintenance partnerships."
-  }
-]
-
 const formSchema = z.object({
-  // Personal Information
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().regex(/^(?:\+237|237)?[6-9][0-9]{8}$/, "Invalid Cameroonian phone number"),
-  dateOfBirth: z.string(),
-  address: z.string().min(10, "Please provide your full address"),
-  city: z.string().min(2, "Please select your city"),
-  
-  // Driver Information
-  licenseNumber: z.string().min(5, "Invalid license number"),
-  licenseExpiry: z.string(),
-  yearsOfExperience: z.string(),
-  languages: z.string().array().min(1, "Select at least one language"),
-  
-  // Vehicle Information
-  hasVehicle: z.string(),
-  vehicleMake: z.string().optional(),
-  vehicleModel: z.string().optional(),
-  vehicleYear: z.string().optional(),
-  vehiclePlate: z.string().optional(),
-  
-  // Additional Information
-  preferredAreas: z.string(),
-  availability: z.string(),
-  backgroundInfo: z.string(),
+  nationalIdNumber: z.string().min(1, "National ID number is required"),
+  licenseNumber: z.string().min(1, "License number is required"),
+  registrationNumber: z.string().min(1, "Registration number is required"),
+  insuranceNumber: z.string().min(1, "Insurance number is required"),
+  roadTaxNumber: z.string().min(1, "Road tax number is required"),
+  technicalInspectionNumber: z.string().min(1, "Technical inspection number is required"),
+  vehicleImages: z.array(z.string()).optional(),
 })
 
 export default function BecomeDriverPage() {
-  const [step, setStep] = useState(1)
-  
+  const router = useRouter()
+  const { supabase, user } = useSupabase()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [vehicleImages, setVehicleImages] = useState<string[]>([])
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      address: "",
-      city: "",
+      nationalIdNumber: "",
       licenseNumber: "",
-      licenseExpiry: "",
-      yearsOfExperience: "",
-      languages: [],
-      hasVehicle: "",
-      vehicleMake: "",
-      vehicleModel: "",
-      vehicleYear: "",
-      vehiclePlate: "",
-      preferredAreas: "",
-      availability: "",
-      backgroundInfo: "",
+      registrationNumber: "",
+      insuranceNumber: "",
+      roadTaxNumber: "",
+      technicalInspectionNumber: "",
+      vehicleImages: [],
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
-    // Handle form submission
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upload images.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!e.target.files || e.target.files.length === 0) return
+
+    try {
+      setUploadingImages(true)
+      const newImages: string[] = []
+
+      // Convert FileList to array for iteration
+      const files = Array.from(e.target.files)
+      
+      for (const file of files) {
+        const fileExt = file.name.split(".").pop()
+        // Generate a random string for the filename
+        const randomString = Math.random().toString(36).substring(2)
+        const filePath = `${user.id}/${randomString}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from("vehicles")
+          .upload(filePath, file)
+
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("vehicles")
+          .getPublicUrl(filePath)
+
+        newImages.push(publicUrl)
+      }
+
+      setVehicleImages(prev => [...prev, ...newImages])
+      form.setValue("vehicleImages", [...vehicleImages, ...newImages])
+      toast({
+        title: "Images uploaded",
+        description: "Vehicle images have been uploaded successfully.",
+      })
+    } catch (error) {
+      console.error("Error uploading images:", error)
+      toast({
+        title: "Error",
+        description: "There was an error uploading your images. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setUploadingImages(false)
+    }
   }
 
-  const renderFormStep = () => {
-    switch (step) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Personal Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+237 6XX XXX XXX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="dateOfBirth"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date of Birth</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Enter your full address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your city" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="douala">Douala</SelectItem>
-                      <SelectItem value="yaounde">Yaoundé</SelectItem>
-                      <SelectItem value="bafoussam">Bafoussam</SelectItem>
-                      <SelectItem value="bamenda">Bamenda</SelectItem>
-                      <SelectItem value="kribi">Kribi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )
-      case 2:
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Driver Information</h3>
-            <FormField
-              control={form.control}
-              name="licenseNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Driver's License Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="licenseExpiry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>License Expiry Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="yearsOfExperience"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Years of Driving Experience</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select years of experience" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="3-5">3-5 years</SelectItem>
-                      <SelectItem value="5-10">5-10 years</SelectItem>
-                      <SelectItem value="10+">10+ years</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="space-y-2">
-              <FormLabel>Upload Documents</FormLabel>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Driver's License (Front)</p>
-                </div>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Driver's License (Back)</p>
-                </div>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">National ID</p>
-                </div>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Profile Photo</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      case 3:
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Vehicle Information</h3>
-            <FormField
-              control={form.control}
-              name="hasVehicle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Do you have a vehicle?</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an option" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="yes">Yes, I have my own vehicle</SelectItem>
-                      <SelectItem value="no">No, I need a vehicle</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {form.watch("hasVehicle") === "yes" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="vehicleMake"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vehicle Make</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Toyota" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="vehicleModel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vehicle Model</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Corolla" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="vehicleYear"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year</FormLabel>
-                        <FormControl>
-                          <Input placeholder="2020" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="vehiclePlate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>License Plate</FormLabel>
-                        <FormControl>
-                          <Input placeholder="CE 123 AB" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <FormLabel>Upload Vehicle Documents</FormLabel>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Vehicle Registration</p>
-                    </div>
-                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Insurance Certificate</p>
-                    </div>
-                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Technical Inspection</p>
-                    </div>
-                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Vehicle Photos</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )
-      case 4:
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Additional Information</h3>
-            <FormField
-              control={form.control}
-              name="preferredAreas"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Operating Areas</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="List the areas/cities where you prefer to operate"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="availability"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Availability</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your availability" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="full-time">Full Time</SelectItem>
-                      <SelectItem value="part-time">Part Time</SelectItem>
-                      <SelectItem value="weekends">Weekends Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="backgroundInfo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Background Information</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Tell us about your driving experience and why you want to join PikDrive"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )
-      default:
-        return null
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log("Form submitted with values:", values)
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to submit your application.",
+        variant: "destructive",
+      })
+      router.push("/auth")
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      // First, check if user is already a driver
+      const { data: profile, error: profileCheckError } = await supabase
+        .from("profiles")
+        .select("is_driver")
+        .eq("id", user.id)
+        .single()
+
+      if (profileCheckError) {
+        console.error("Error checking profile:", profileCheckError)
+        throw profileCheckError
+      }
+
+      if (profile?.is_driver) {
+        toast({
+          title: "Already a Driver",
+          description: "You are already registered as a driver.",
+          variant: "destructive",
+        })
+        router.push("/driver/dashboard")
+        return
+      }
+
+      // Update profile to mark as driver
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          is_driver: true,
+          driver_status: "pending",
+        })
+        .eq("id", user.id)
+
+      if (profileError) {
+        console.error("Error updating profile:", profileError)
+        throw profileError
+      }
+
+      // Insert driver documents
+      const { error: documentError } = await supabase
+        .from("driver_documents")
+        .insert({
+          driver_id: user.id,
+          national_id_number: values.nationalIdNumber,
+          license_number: values.licenseNumber,
+          registration_number: values.registrationNumber,
+          insurance_number: values.insuranceNumber,
+          road_tax_number: values.roadTaxNumber,
+          technical_inspection_number: values.technicalInspectionNumber,
+          vehicle_images: vehicleImages,
+        })
+
+      if (documentError) {
+        console.error("Error inserting documents:", documentError)
+        // If document insertion fails, revert the profile update
+        await supabase
+          .from("profiles")
+          .update({
+            is_driver: false,
+            driver_status: null,
+          })
+          .eq("id", user.id)
+        throw documentError
+      }
+
+      toast({
+        title: "Application Submitted",
+        description: "Your driver application has been submitted for review.",
+      })
+
+      // Redirect to driver dashboard
+      router.push("/driver/dashboard")
+    } catch (error) {
+      console.error("Error submitting driver application:", error)
+      toast({
+        title: "Error",
+        description: "There was an error submitting your application. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="container py-16 space-y-16">
-      <div className="text-center space-y-6">
-        <h1 className="text-4xl font-bold">Become a PikDrive Driver</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Join our growing community of professional drivers and earn money on your own schedule.
-        </p>
-      </div>
+    <div className="container py-10">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Become a Driver</h1>
+          <p className="text-muted-foreground">
+            Join our community of drivers and start earning more with PikDrive.
+          </p>
+        </div>
 
-      {/* Requirements */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {requirements.map((req, index) => (
-          <Card key={index} className="p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              {req.icon}
-              <h3 className="text-xl font-semibold">{req.title}</h3>
-            </div>
-            <ul className="space-y-3">
-              {req.items.map((item, i) => (
-                <li key={i} className="flex items-center space-x-2">
-                  <CheckCircle2 className="w-5 h-5 text-primary" />
-                  <span className="text-muted-foreground">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ))}
-      </div>
+        <div className="grid gap-8 md:grid-cols-3">
+          {requirements.map((section, index) => (
+            <Card key={index} className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  {section.icon}
+                  <h3 className="font-semibold">{section.title}</h3>
+                </div>
+                <ul className="space-y-2">
+                  {section.items.map((item, itemIndex) => (
+                    <li key={itemIndex} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 mt-1 text-primary" />
+                      <span className="text-sm">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+          ))}
+        </div>
 
-      {/* Application Form */}
-      <div className="max-w-3xl mx-auto">
         <Card className="p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Progress Indicator */}
-              <div className="flex justify-between mb-8">
-                {[1, 2, 3, 4].map((s) => (
-                  <div
-                    key={s}
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 
-                      ${step === s ? 'border-primary bg-primary text-primary-foreground' : 'border-muted text-muted-foreground'}`}
-                  >
-                    {s}
-                  </div>
-                ))}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">Driver Documents</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="nationalIdNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>National ID Number (CNI)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your CNI number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="licenseNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Driver's License Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your license number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
-              {renderFormStep()}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">Vehicle Documents</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="registrationNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vehicle Registration Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter registration number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div className="flex justify-between pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep(step - 1)}
-                  disabled={step === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  type={step === 4 ? "submit" : "button"}
-                  onClick={() => step < 4 && setStep(step + 1)}
-                >
-                  {step === 4 ? "Submit Application" : "Next"}
-                </Button>
+                  <FormField
+                    control={form.control}
+                    name="insuranceNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Insurance Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter insurance number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="roadTaxNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Road Tax Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter road tax number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="technicalInspectionNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Technical Inspection Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter technical inspection number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
+
+              {/* Vehicle Images Upload */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Vehicle Images</h3>
+                <p className="text-sm text-muted-foreground">
+                  Please upload clear images of your vehicle (exterior and interior)
+                </p>
+                <div className="grid gap-4">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={uploadingImages}
+                  />
+                  {vehicleImages.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {vehicleImages.map((url, index) => (
+                        <img
+                          key={index}
+                          src={url}
+                          alt={`Vehicle image ${index + 1}`}
+                          className="rounded-lg object-cover w-full aspect-video"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting || uploadingImages}
+              >
+                {isSubmitting ? "Submitting..." : "Submit Application"}
+              </Button>
             </form>
           </Form>
         </Card>
-      </div>
-
-      {/* FAQs */}
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
-        <Accordion type="single" collapsible className="w-full">
-          {faqs.map((faq, index) => (
-            <AccordionItem key={index} value={`item-${index}`}>
-              <AccordionTrigger>{faq.question}</AccordionTrigger>
-              <AccordionContent>{faq.answer}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
       </div>
     </div>
   )
