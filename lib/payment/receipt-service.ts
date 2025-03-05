@@ -75,11 +75,24 @@ export class ReceiptService {
       return null;
     }
 
+    // Transform the data to match the Receipt interface
+    const transformedPayment = {
+      amount: payment.amount,
+      currency: payment.currency,
+      phone_number: payment.phone_number,
+      transaction_id: payment.transaction_id,
+      status: payment.status,
+      booking: {
+        seats: payment.booking[0].seats,
+        ride: payment.booking[0].ride[0]
+      }
+    };
+
     console.log('✅ Receipt found:', receipt.receipt_number);
     
     return {
       ...receipt,
-      payment
+      payment: transformedPayment
     } as Receipt;
   }
 

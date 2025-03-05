@@ -21,6 +21,13 @@ interface Message {
   }
 }
 
+interface RealtimePayload {
+  new: Message
+  old: Message | null
+  errors: any[] | null
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE'
+}
+
 interface ChatModalProps {
   isOpen: boolean
   onClose: () => void
@@ -48,8 +55,8 @@ export function ChatModal({ isOpen, onClose, rideId, driverId }: ChatModalProps)
             table: 'messages',
             filter: `ride_id=eq.${rideId}`
           },
-          (payload) => {
-            const newMessage = payload.new as Message
+          (payload: RealtimePayload) => {
+            const newMessage = payload.new
             setMessages(prev => [...prev, newMessage])
           }
         )
@@ -136,7 +143,7 @@ export function ChatModal({ isOpen, onClose, rideId, driverId }: ChatModalProps)
             ) : messages.length === 0 ? (
               <div className="text-center text-muted-foreground">No messages yet</div>
             ) : (
-              messages.map((message) => (
+              messages.map((message: Message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}

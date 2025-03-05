@@ -142,7 +142,7 @@ export class PaymentService {
         .from('payments')
         .update({
           transaction_id: momoResponse.transactionId,
-          status: momoResponse.status
+          status: 'processing'
         })
         .eq('id', payment.id);
 
@@ -151,7 +151,12 @@ export class PaymentService {
       }
     }
 
-    return momoResponse;
+    return {
+      success: true,
+      transactionId: momoResponse.transactionId,
+      status: 'processing',
+      message: 'Payment request initiated successfully'
+    };
   }
 
   private async handleOrangePayment(

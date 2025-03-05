@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { PaymentService } from '@/lib/payment/payment-service';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 // This endpoint should be called by a cron job every 5 minutes
 export async function GET(request: Request) {
   try {

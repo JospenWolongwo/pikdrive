@@ -1,11 +1,11 @@
-export type PaymentProvider = 'mtn' | 'orange';
+export type PaymentProviderType = 'mtn' | 'orange';
 
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
 
 export interface PaymentRequest {
   bookingId: string;
   amount: number;
-  provider: PaymentProvider;
+  provider: PaymentProviderType;
   phoneNumber: string;
   metadata?: Record<string, any>;
 }
@@ -24,7 +24,7 @@ export interface Payment {
   amount: number;
   currency: string;
   status: PaymentStatus;
-  provider: PaymentProvider;
+  provider: PaymentProviderType;
   transactionId?: string;
   phoneNumber: string;
   paymentTime?: Date;

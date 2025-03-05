@@ -4,12 +4,12 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { type PaymentProvider } from '@/lib/payment/types';
+import { type PaymentProviderType } from '@/lib/payment/types';
 import { Card } from '@/components/ui/card';
 
 interface PaymentMethodSelectorProps {
   providers: Array<{
-    name: PaymentProvider
+    name: PaymentProviderType
     logo: string
     displayName: string
     description: string
@@ -18,12 +18,12 @@ interface PaymentMethodSelectorProps {
     maximumAmount: number
     processingFee: number
   }>
-  selectedProvider?: PaymentProvider
-  onSelect: (provider: PaymentProvider) => void
+  selectedProvider?: PaymentProviderType
+  onSelect: (provider: PaymentProviderType) => void
   disabled?: boolean
 }
 
-const providerImages: Record<PaymentProvider, string> = {
+const providerImages: Record<PaymentProviderType, string> = {
   mtn: '/images/payment-providers/mtn.png',
   orange: '/images/payment-providers/orange.png'
 }

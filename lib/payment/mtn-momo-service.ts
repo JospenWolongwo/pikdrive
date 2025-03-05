@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { TextEncoder } from 'util';
 
 interface MomoConfig {
   subscriptionKey: string;
@@ -209,9 +209,24 @@ export class MTNMomoService {
   }
 
   // Validate webhook signature
-  validateWebhookSignature(signature: string, body: string): boolean {
-    const hmac = createHmac('sha256', this.config.collectionPrimaryKey);
-    const calculatedSignature = hmac.update(body).digest('base64');
+  async validateWebhookSignature(signature: string, body: string): Promise<boolean> {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(this.config.collectionPrimaryKey);
+    const messageData = encoder.encode(body);
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const calculatedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
     return signature === calculatedSignature;
   }
 }

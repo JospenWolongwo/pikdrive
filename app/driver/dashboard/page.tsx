@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense } from "react"
+import { useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useSupabase } from "@/providers/SupabaseProvider"
 import { useChat } from "@/providers/ChatProvider"
 import { Button } from "@/components/ui/button"
@@ -30,6 +32,7 @@ interface Ride {
   created_at: string
   bookings: Array<{
     id: string
+    ride_id: string
     seats: number
     status: string
     user: {
@@ -40,6 +43,7 @@ interface Ride {
   }>
   messages: Array<{
     id: string
+    ride_id: string
     content: string
     created_at: string
     sender: {
@@ -49,7 +53,188 @@ interface Ride {
   }>
 }
 
+interface Booking {
+  id: string
+  ride_id: string
+  seats: number
+  status: string
+  user: {
+    id: string
+    full_name: string
+    avatar_url?: string
+  }
+}
+
+interface Message {
+  id: string
+  ride_id: string
+  content: string
+  created_at: string
+  sender: {
+    id: string
+    full_name: string
+  }
+}
+
+interface UnreadCount {
+  rideId: string
+  count: number
+}
+
 export default function DriverDashboard() {
+  const router = useRouter()
+  const { supabase, user } = useSupabase()
+  const { unreadCounts, subscribeToRide } = useChat()
+  const { toast } = useToast()
+  const [ridesData, setRidesData] = useState<{
+    rides: Ride[],
+    lastUpdated: number
+  }>({ rides: [], lastUpdated: 0 })
+  const [loading, setLoading] = useState(true)
+  const [selectedChat, setSelectedChat] = useState<{
+    ride: Ride,
+    user: { id: string; full_name: string; avatar_url?: string }
+  } | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const itemsPerPage = 10
+
+  const loadRides = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      console.log("🚀 Starting fresh data load");
+
+      // Get all rides without pagination to properly filter upcoming/past
+      const { data: simpleRides, error: simpleError } = await supabase
+        .from("rides")
+        .select("*")
+        .eq("driver_id", user.id)
+        .order("departure_time", { ascending: true });
+
+      if (simpleError) throw simpleError;
+      if (!simpleRides?.length) {
+        console.log("💡 No rides found, resetting state");
+        setRidesData({ rides: [], lastUpdated: Date.now() });
+        return;
+      }
+
+      // 2. Fetch related data in parallel for all rides
+      const rideIds = simpleRides.map((r: Ride) => r.id);
+      
+      const [
+        { data: bookings },
+        { data: messages }
+      ] = await Promise.all([
+        supabase.from("bookings").select("*, user:profiles(id, full_name, avatar_url)").in("ride_id", rideIds),
+        supabase.from("messages").select("*, sender:profiles(id, full_name)").in("ride_id", rideIds)
+      ]);
+
+      // 3. Combine data with error handling
+      const enrichedRides = simpleRides.map((ride: Ride) => ({
+        ...ride,
+        bookings: ride.bookings || [],
+        messages: ride.messages || [],
+        unreadCount: unreadCounts.find(u => u.rideId === ride.id)?.count || 0
+      }));
+
+      console.log("✅ Data load complete");
+      setRidesData({
+        rides: enrichedRides,
+        lastUpdated: Date.now()
+      });
+    } catch (error) {
+      console.error("❌ Error loading rides:", error);
+      toast({
+        variant: "destructive",
+        title: "Error loading rides",
+        description: "Please try again later."
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, supabase, toast]);
+
+  // Load rides on mount and when user changes
+  useEffect(() => {
+    const initialLoad = async () => {
+      await loadRides();
+      router.replace("/driver/dashboard"); // Clear any refresh params
+    };
+    
+    if (user) initialLoad();
+  }, [user, loadRides, router]);
+
+  // Subscribe to messages for each ride
+  useEffect(() => {
+    ridesData.rides.forEach(ride => {
+      subscribeToRide(ride.id)
+    })
+  }, [ridesData.rides, subscribeToRide])
+
+  // Get current time in UTC
+  const now = new Date()
+  const nowUTC = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+    now.getUTCMinutes(),
+    now.getUTCSeconds()
+  ))
+
+  // Calculate upcoming and past rides
+  const upcomingRides = useMemo(() => {
+    console.log("Calculating upcoming rides from", ridesData.rides.length, "total rides")
+    return ridesData.rides
+      .filter(ride => new Date(ride.departure_time).getTime() > nowUTC.getTime())
+      .sort((a, b) => new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime())
+  }, [ridesData.rides, nowUTC])
+
+  const pastRides = useMemo(() => {
+    return ridesData.rides
+      .filter(ride => new Date(ride.departure_time).getTime() <= nowUTC.getTime())
+      .sort((a, b) => new Date(b.departure_time).getTime() - new Date(a.departure_time).getTime())
+  }, [ridesData.rides, nowUTC])
+
+  // Debug log for overall ride counts
+  console.log("Ride counts:", {
+    total: ridesData.rides.length,
+    upcoming: upcomingRides.length,
+    past: pastRides.length,
+    current_time: nowUTC.toISOString()
+  })
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        return 'bg-green-500'
+      case 'pending':
+        return 'bg-yellow-500'
+      case 'cancelled':
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-500'
+    }
+  }
+
+  const handleOpenChat = (ride: Ride, user: { id: string; full_name: string; avatar_url?: string }) => {
+    setSelectedChat({ ride, user })
+  }
+
+  if (loading) {
+    return <div className="container py-10">Loading...</div>
+  }
+
+  return (
+    <Suspense fallback={<div>Loading dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
+  )
+}
+
+function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { supabase, user } = useSupabase()
@@ -90,7 +275,7 @@ export default function DriverDashboard() {
       }
 
       // 2. Fetch related data in parallel for all rides
-      const rideIds = simpleRides.map(r => r.id);
+      const rideIds = simpleRides.map((r: Ride) => r.id);
       
       const [
         { data: bookings },
@@ -101,10 +286,11 @@ export default function DriverDashboard() {
       ]);
 
       // 3. Combine data with error handling
-      const enrichedRides = simpleRides.map(ride => ({
+      const enrichedRides = simpleRides.map((ride: Ride) => ({
         ...ride,
-        bookings: bookings?.filter(b => b.ride_id === ride.id) || [],
-        messages: messages?.filter(m => m.ride_id === ride.id) || []
+        bookings: ride.bookings || [],
+        messages: ride.messages || [],
+        unreadCount: unreadCounts.find(u => u.rideId === ride.id)?.count || 0
       }));
 
       console.log("✅ Data load complete");
@@ -240,7 +426,7 @@ export default function DriverDashboard() {
             <div className="space-y-6">
               {upcomingRides
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                .map(ride => (
+                .map((ride: Ride) => (
                   <Card key={ride.id} className="group hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -268,7 +454,7 @@ export default function DriverDashboard() {
                           <div>
                             <h4 className="font-semibold mb-2">Bookings</h4>
                             <div className="space-y-2">
-                              {ride.bookings.map(booking => (
+                              {ride.bookings.map((booking: Booking) => (
                                 <div
                                   key={booking.id}
                                   className="flex items-center justify-between p-4 bg-muted rounded-lg"
@@ -297,20 +483,19 @@ export default function DriverDashboard() {
                                     >
                                       <MessageCircle className="h-4 w-4 mr-2" />
                                       Message
-                                      {unreadCounts.find(c => 
-                                        c.rideId === ride.id && 
-                                        booking.user?.id
-                                      )?.count > 0 && (
-                                        <Badge 
-                                          variant="destructive" 
-                                          className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center rounded-full"
-                                        >
-                                          {unreadCounts.find(c => 
-                                            c.rideId === ride.id && 
-                                            booking.user?.id
-                                          )?.count}
-                                        </Badge>
-                                      )}
+                                      {(() => {
+                                        const count = unreadCounts?.find(c =>
+                                          c.rideId === ride.id
+                                        )?.count;
+                                        return count && count > 0 ? (
+                                          <Badge 
+                                            variant="destructive" 
+                                            className="ml-2"
+                                          >
+                                            {count}
+                                          </Badge>
+                                        ) : null;
+                                      })()}
                                     </Button>
                                     <Button variant="default" size="sm">
                                       <Phone className="h-4 w-4 mr-2" />
@@ -327,7 +512,7 @@ export default function DriverDashboard() {
                           <div>
                             <h4 className="font-semibold mb-2">Recent Messages</h4>
                             <div className="space-y-2">
-                              {ride.messages.slice(0, 3).map(message => (
+                              {ride.messages.slice(0, 3).map((message: Message) => (
                                 <div
                                   key={message.id}
                                   className="flex items-start gap-2 p-2 rounded-lg bg-muted"
@@ -439,7 +624,7 @@ export default function DriverDashboard() {
             <div className="space-y-6">
               {pastRides
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                .map(ride => (
+                .map((ride: Ride) => (
                   <Card key={ride.id} className="opacity-75">
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -469,7 +654,7 @@ export default function DriverDashboard() {
                             <div className="space-y-2">
                               {ride.bookings
                                 .filter(booking => booking.status === 'confirmed')
-                                .map(booking => (
+                                .map((booking: Booking) => (
                                   <div
                                     key={booking.id}
                                     className="flex items-center gap-2 p-2 rounded-lg bg-muted"

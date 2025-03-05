@@ -12,6 +12,7 @@ import { format } from "date-fns"
 import { formatCurrency } from "@/lib/utils"
 import { ChatDialog } from "@/components/chat/chat-dialog"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 interface Booking {
   id: string
@@ -26,6 +27,7 @@ interface Booking {
     full_name: string
     avatar_url?: string
     phone_number?: string
+    email: string
   }
   ride: {
     id: string
@@ -34,20 +36,68 @@ interface Booking {
     departure_time: string
     price: number
     driver_id: string
+    total_seats: number
+  }
+}
+
+interface Ride {
+  id: string
+  from_city: string
+  to_city: string
+  departure_time: string
+  price: number
+  driver_id: string
+  total_seats: number
+}
+
+interface Profile {
+  id: string
+  full_name: string
+  avatar_url?: string
+  phone_number?: string
+  email: string
+}
+
+interface RawBooking {
+  id: string
+  ride_id: string
+  user_id: string
+  seats: number
+  status: string
+  created_at: string
+  payment_status: string | null
+}
+
+interface EnrichedBooking extends RawBooking {
+  user: {
+    id: string
+    full_name: string
+    avatar_url?: string
+    phone_number?: string
+    email: string | null
+  }
+  ride: {
+    id: string
+    from_city: string
+    to_city: string
+    departure_time: string
+    price: number
+    driver_id: string | null
+    total_seats: number
   }
 }
 
 export default function DriverBookings() {
   const { supabase, user } = useSupabase()
   const { unreadCounts, subscribeToRide } = useChat()
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookings, setBookings] = useState<EnrichedBooking[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const itemsPerPage = 10
   const [selectedChat, setSelectedChat] = useState<{
     ride_id: string
-    user: { id: string; full_name: string; avatar_url?: string }
+    user: { id: string; full_name: string; avatar_url?: string; phone_number?: string }
   } | null>(null)
 
   const loadBookings = useCallback(async () => {
@@ -84,7 +134,7 @@ export default function DriverBookings() {
         return
       }
 
-      const rideIds = rides.map(r => r.id)
+      const rideIds = rides.map((r: { id: string }) => r.id)
 
       // 3. Get all data in parallel
       const [
@@ -94,14 +144,14 @@ export default function DriverBookings() {
       ] = await Promise.all([
         supabase
           .from('bookings')
-          .select('*')
+          .select('id, ride_id, user_id, seats, status, created_at, payment_status')
           .in('ride_id', rideIds),
         supabase
           .from('profiles')
-          .select('id, full_name, avatar_url'),
+          .select('id, full_name, avatar_url, phone_number, email'),
         supabase
           .from('rides')
-          .select('id, from_city, to_city, departure_time, price, driver_id')
+          .select('id, from_city, to_city, departure_time, price, driver_id, total_seats')
           .in('id', rideIds)
       ])
 
@@ -111,24 +161,31 @@ export default function DriverBookings() {
       }
 
       // 4. Create lookup maps and combine data
-      const userMap = new Map(users?.map(u => [u.id, u]) || [])
-      const rideMap = new Map(bookingRides?.map(r => [r.id, r]) || [])
+      const userMap = new Map<string, Profile>(users?.map((u: Profile) => [u.id, u]) || [])
+      const rideMap = new Map<string, Ride>(bookingRides?.map((r: Ride) => [r.id, r]) || [])
 
-      const enrichedBookings = (rawBookings || []).map(booking => ({
-        ...booking,
-        user: userMap.get(booking.user_id) || {
-          id: booking.user_id,
-          full_name: 'Unknown User',
-          avatar_url: null
-        },
-        ride: rideMap.get(booking.ride_id) || {
-          id: booking.ride_id,
-          from_city: 'Unknown',
-          to_city: 'Unknown',
-          departure_time: new Date().toISOString(),
-          price: 0
+      const enrichedBookings = (rawBookings || []).map((booking: RawBooking): EnrichedBooking => {
+        const userProfile = userMap.get(booking.user_id)
+        return {
+          ...booking,
+          user: userProfile || {
+            id: booking.user_id,
+            full_name: 'Unknown User',
+            avatar_url: undefined,
+            phone_number: undefined,
+            email: null
+          },
+          ride: rideMap.get(booking.ride_id) || {
+            id: booking.ride_id,
+            from_city: 'Unknown',
+            to_city: 'Unknown',
+            departure_time: new Date().toISOString(),
+            price: 0,
+            driver_id: null,
+            total_seats: 0
+          }
         }
-      }))
+      })
 
       setBookings(enrichedBookings)
     } catch (error) {
@@ -161,12 +218,12 @@ export default function DriverBookings() {
           schema: 'public',
           table: 'bookings'
         },
-        async (payload) => {
+        async (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
           console.log("📬 Received booking update:", payload)
           await loadBookings()
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR') => {
         console.log("📡 Bookings subscription status:", status)
       })
 
@@ -180,12 +237,12 @@ export default function DriverBookings() {
           schema: 'public',
           table: 'payments'
         },
-        async (payload) => {
+        async (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
           console.log("💰 Payment update received:", payload)
           await loadBookings()
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR') => {
         console.log("📡 Payments subscription status:", status)
       })
 
@@ -243,7 +300,7 @@ export default function DriverBookings() {
           </Card>
         ) : (
           <>
-            {bookings.map((booking) => (
+            {bookings.map((booking: EnrichedBooking) => (
               <Card key={booking.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -283,7 +340,7 @@ export default function DriverBookings() {
                       <div className="flex items-center gap-3 mb-4">
                         <Avatar>
                           <AvatarImage
-                            src={booking.user.avatar_url || '/placeholder-avatar.png'}
+                            src={booking.user.avatar_url || '/defaults/avatar.svg'}
                             alt={booking.user.full_name}
                           />
                           <AvatarFallback>{booking.user.full_name[0]}</AvatarFallback>
@@ -320,18 +377,18 @@ export default function DriverBookings() {
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Message
-                        {unreadCounts.find(c => 
+                        {(unreadCounts.find(c => 
                           c.rideId === booking.ride_id && 
                           booking.user_id
-                        )?.count > 0 && (
+                        )?.count || 0) > 0 && (
                           <Badge 
                             variant="destructive" 
                             className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center rounded-full"
                           >
-                            {unreadCounts.find(c => 
+                            {(unreadCounts.find(c => 
                               c.rideId === booking.ride_id && 
                               booking.user_id
-                            )?.count}
+                            )?.count || 0)}
                           </Badge>
                         )}
                       </Button>

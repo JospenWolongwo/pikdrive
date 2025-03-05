@@ -1,4 +1,3 @@
-import { createHmac } from 'crypto';
 import { PaymentResponse, PaymentStatus } from './types';
 
 interface OrangeMoneyConfig {
@@ -39,10 +38,8 @@ export class OrangeMoneyService {
   /**
    * Calculate signature for request authentication
    */
-  private calculateSignature(data: string): string {
-    return createHmac('sha256', this.config.merchantKey)
-      .update(data)
-      .digest('hex');
+  private async calculateSignature(data: string): Promise<string> {
+    return await generateHmac(this.config.merchantKey, data);
   }
 
   /**
@@ -95,7 +92,7 @@ export class OrangeMoneyService {
         description: `PikDrive Ride Payment - ${reference}`,
       };
 
-      const signature = this.calculateSignature(JSON.stringify(paymentData));
+      const signature = await this.calculateSignature(JSON.stringify(paymentData));
       
       const response = await fetch(`${this.baseUrl}/v1/payments`, {
         method: 'POST',
@@ -202,8 +199,27 @@ export class OrangeMoneyService {
   /**
    * Verify webhook signature from Orange Money
    */
-  verifyWebhookSignature(payload: string, signature: string): boolean {
-    const calculatedSignature = this.calculateSignature(payload);
+  async verifyWebhookSignature(payload: string, signature: string): Promise<boolean> {
+    const calculatedSignature = await generateHmac(this.config.merchantKey, payload);
     return calculatedSignature === signature;
   }
+}
+
+async function generateHmac(key: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(key);
+  const messageData = encoder.encode(message);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }

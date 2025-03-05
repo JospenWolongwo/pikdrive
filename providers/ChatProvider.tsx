@@ -38,16 +38,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error
 
         // Then count them by ride_id
-        const counts = messages?.reduce<Record<string, number>>((acc, msg) => {
+        const counts = messages ? messages.reduce((acc: Record<string, number>, msg: { ride_id: string }) => {
           acc[msg.ride_id] = (acc[msg.ride_id] || 0) + 1
           return acc
-        }, {})
+        }, {} as Record<string, number>) : {}
 
         // Convert to our UnreadCount format
         setUnreadCounts(
-          Object.entries(counts || {}).map(([ride_id, count]) => ({
+          Object.entries(counts).map(([ride_id, count]): UnreadCount => ({
             rideId: ride_id,
-            count
+            count: count as number
           }))
         )
       } catch (error) {
@@ -92,8 +92,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           table: 'messages',
           filter: `ride_id=eq.${rideId}`
         },
-        (payload) => {
-          const message = payload.new as any
+        (payload: { new: { ride_id: string; receiver_id: string; read: boolean } }) => {
+          const message = payload.new
           if (message.receiver_id === user?.id && !message.read) {
             setUnreadCounts(prev => {
               const existing = prev.find(c => c.rideId === rideId)
@@ -117,8 +117,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           table: 'messages',
           filter: `ride_id=eq.${rideId}`
         },
-        (payload) => {
-          const message = payload.new as any
+        (payload: { new: { ride_id: string; receiver_id: string; read: boolean } }) => {
+          const message = payload.new
           if (message.receiver_id === user?.id && message.read) {
             setUnreadCounts(prev => 
               prev.filter(c => c.rideId !== rideId)
@@ -128,7 +128,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       )
       .subscribe()
 
-    setSubscribedRides(prev => new Set([...prev, rideId]))
+    setSubscribedRides(prev => new Set([...Array.from(prev), rideId]))
 
     return () => {
       channel.unsubscribe()

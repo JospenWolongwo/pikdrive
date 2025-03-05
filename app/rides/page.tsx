@@ -25,33 +25,47 @@ import { BookingModal } from './booking-modal'
 import { motion } from 'framer-motion'
 import { Clock } from 'lucide-react'
 
+interface Booking {
+  seats: number
+}
+
 interface Ride {
-  id: string;
-  driver_id: string;
-  from_city: string;
-  to_city: string;
-  price: number;
-  departure_time: string;
-  estimated_duration: string;
-  seats_available: number;
-  car_model?: string;
-  car_color?: string;
-  bookings?: Array<{ seats?: number }>;
+  id: string
+  driver_id: string
+  from_city: string
+  to_city: string
+  price: number
+  departure_time: string
+  estimated_duration: string
+  seats_available: number
+  total_seats: number
+  car_model?: string
+  car_color?: string
+  bookings?: Booking[]
   driver?: {
-    id: string;
-    full_name: string;
-    avatar_url?: string;
-    image?: string;
-    rating?: number;
+    id: string
+    full_name: string
+    avatar_url?: string
+    image?: string
+    rating?: number
     trips?: number;
   };
+}
+
+interface UnreadCount {
+  rideId: string
+  count: number
+}
+
+interface UnreadCounts {
+  [key: string]: number
 }
 
 const sortedCameroonCities = [...Array.from(urbanCommunes), ...Array.from(cameroonCities)].sort((a, b) => a.localeCompare(b))
 
 export default function RidesPage() {
   const { supabase, user } = useSupabase()
-  const { unreadCounts, subscribeToRide } = useChat()
+  const { unreadCounts: unreadCountsArray, subscribeToRide } = useChat()
   const router = useRouter()
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,6 +85,12 @@ export default function RidesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const itemsPerPage = 10
+
+  // Convert unreadCounts array to dictionary
+  const unreadCounts: UnreadCounts = (unreadCountsArray || []).reduce((acc, curr) => ({
+    ...acc,
+    [curr.rideId]: curr.count
+  }), {})
 
   const loadRides = async () => {
     try {
@@ -140,7 +160,7 @@ export default function RidesPage() {
         return
       }
 
-      const processedRides = data.map(ride => ({
+      const processedRides = data.map((ride: Ride) => ({
         ...ride,
         seats_available: ride.total_seats - (ride.bookings?.reduce((sum, b) => sum + (b.seats || 0), 0) || 0)
       }))

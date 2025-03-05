@@ -65,7 +65,7 @@ export function ChatDialog({
             table: 'messages',
             filter: `ride_id=eq.${rideId}`
           },
-          (payload) => {
+          (payload: { new: Record<string, any> }) => {
             const newMessage = payload.new as Message
             setMessages(prev => [...prev, newMessage])
             scrollToBottom()

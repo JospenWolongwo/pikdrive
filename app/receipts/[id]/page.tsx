@@ -12,6 +12,28 @@ interface ReceiptPageProps {
   };
 }
 
+interface Receipt {
+  id: string;
+  receipt_number: string;
+  issued_at: string;
+  pdf_url: string | null;
+  payment: {
+    amount: number;
+    currency: string;
+    phone_number: string;
+    transaction_id: string;
+    status: string;
+    booking: {
+      seats: number;
+      ride: {
+        from_city: string;
+        to_city: string;
+        departure_time: string;
+      };
+    };
+  };
+}
+
 export default async function ReceiptPage({ params }: ReceiptPageProps) {
   const supabase = createServerComponentClient({ cookies });
   
@@ -40,7 +62,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
       )
     `)
     .eq('id', params.id)
-    .single();
+    .single() as { data: Receipt | null };
 
   if (!receipt) {
     console.error('❌ Receipt not found:', params.id);

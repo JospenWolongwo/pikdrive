@@ -14,7 +14,7 @@ import { MapPin, Users, Clock, Car, ArrowRight, Loader2, Check } from "lucide-re
 import { PaymentMethodSelector } from "@/components/payment/payment-method-selector"
 import { PhoneNumberInput } from "@/components/payment/phone-number-input"
 import { PaymentService } from "@/lib/payment/payment-service"
-import { PaymentStatus, PaymentProvider } from "@/lib/payment/types"
+import { PaymentStatus, PaymentProviderType } from "@/lib/payment/types"
 import { useSupabase } from "@/providers/SupabaseProvider"
 import { toast } from "sonner"
 import { format } from "date-fns"
@@ -51,7 +51,7 @@ export function BookingModal({ isOpen, onClose, ride, onBookingComplete }: Booki
   const [step, setStep] = useState(1)
   const [seats, setSeats] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>()
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProviderType>()
   const [phoneNumber, setPhoneNumber] = useState("")
   const [isPhoneValid, setIsPhoneValid] = useState(false)
   const [paymentService] = useState(() => new PaymentService(supabase))
