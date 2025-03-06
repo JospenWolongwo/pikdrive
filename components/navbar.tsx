@@ -98,7 +98,7 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm font-medium"
+                  className="text-sm font-medium transition-colors hover:text-primary hover:bg-muted px-2 py-1.5 rounded-md"
                   onClick={() => setIsOpen(false)}
                 >
                   {item.label}
@@ -115,13 +115,13 @@ export function Navbar() {
           </Link>
           <NavItems className="hidden md:flex" />
         </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+        <div className="flex flex-1 items-center justify-between space-x-1 sm:space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* WhatsApp */}
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 asChild
                 className="text-green-500 hover:text-green-600 hover:bg-green-100"
               >
@@ -129,43 +129,32 @@ export function Navbar() {
                   href="https://wa.me/+237698805890"
                   target="_blank" 
                   rel="noopener noreferrer"
+                  className="flex items-center"
                 >
-                  <BsWhatsapp className="h-5 w-5" />
+                  <BsWhatsapp className="h-4 w-4 sm:h-5 sm:w-5" />
                 </a>
               </Button>
 
               {/* Phone */}
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 asChild
                 className="text-primary hover:text-primary/80"
               >
-                <a href="tel:+237698805890">
-                  <PhoneCall className="h-5 w-5" />
-                </a>
-              </Button>
-
-              {/* Email */}
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-                className="text-primary hover:text-primary/80"
-              >
-                <a href="mailto:support@pikdrive.com">
-                  <Mail className="h-5 w-5" />
+                <a href="tel:+237698805890" className="flex items-center">
+                  <PhoneCall className="h-4 w-4 sm:h-5 sm:w-5" />
                 </a>
               </Button>
 
               {/* Theme Toggle */}
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                 className="hover:bg-muted"
               >
-                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                {theme === 'light' ? <Moon className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sun className="h-4 w-4 sm:h-5 sm:w-5" />}
               </Button>
             </div>
           </div>
