@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer'
 import { SupabaseProvider } from '@/providers/SupabaseProvider'
 import { ChatProvider } from '@/providers/ChatProvider'
 import { PWAPrompts } from '@/components/pwa/PWAPrompts'
+import { Analytics } from '@vercel/analytics/react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -74,6 +75,7 @@ export default function RootLayout({
                 <main className="flex-1">{children}</main>
                 <Footer />
                 <PWAPrompts />
+                <Analytics />
               </div>
             </Providers>
           </ChatProvider>
