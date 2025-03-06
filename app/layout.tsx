@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'PikDrive - Intercity Ride-Sharing Platform',
+  title: 'PikDrive - Your Trusted Intercity Ride-Sharing Platform',
   description: 'Connect with trusted drivers for safe and affordable intercity travel in Cameroon.',
   applicationName: 'PikDrive',
   appleWebApp: {
