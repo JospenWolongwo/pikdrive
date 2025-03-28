@@ -1,97 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Image from 'next/image';
 
-// Add type definitions for Safari-specific properties
-interface SafariNavigator extends Navigator {
-  standalone?: boolean;
-}
-
-// Helper function to detect iOS
-const isIOS = () => {
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod/.test(userAgent) && 
-         !userAgent.includes('windows phone') && // Exclude Windows Phone
-         !userAgent.includes('android'); // Exclude Android tablets
-};
-
-interface IOSInstallPromptProps {
+export interface IOSInstallPromptProps {
   show: boolean;
-  onDismiss: () => void;
+  onClose: () => void;
 }
 
-export function IOSInstallPrompt({ show, onDismiss }: IOSInstallPromptProps) {
-  useEffect(() => {
-    // Check if it's iOS
-    const isiOSDevice = isIOS();
-    // Check if it's in standalone mode (already installed)
-    const isStandalone = (window.navigator as SafariNavigator).standalone === true;
-
-    console.log('🍎 iOS Install Status:', {
-      isiOSDevice,
-      isStandalone,
-      show
-    });
-  }, [show]);
-
-  if (!show) return null;
-
+export function IOSInstallPrompt({ show, onClose }: IOSInstallPromptProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6 relative">
-        <button
-          onClick={onDismiss}
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        <div className="space-y-4">
-          <h3 className="font-semibold text-xl">Install PikDrive App</h3>
+    <Dialog open={show} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Install PikDrive App</DialogTitle>
+          <DialogDescription>
+            Follow these steps to add PikDrive to your Home Screen
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="bg-gray-100 rounded-full p-2 flex-shrink-0">
+              <span className="text-xl">1</span>
+            </div>
+            <p>Tap the share button <Image src="/images/share-ios.png" alt="iOS Share button" width={20} height={20} className="inline-block" /></p>
+          </div>
           
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Install PikDrive on your iOS device for the best experience:
-            </p>
-            
-            <ol className="list-decimal list-inside space-y-3 text-sm text-gray-600 dark:text-gray-300">
-              <li className="flex items-start">
-                <span className="mr-2">1.</span>
-                <span>Tap the Share button in Safari</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">2.</span>
-                <span>Scroll down and tap "Add to Home Screen"</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">3.</span>
-                <span>Tap "Add" to install PikDrive</span>
-              </li>
-            </ol>
+          <div className="flex items-center gap-2">
+            <div className="bg-gray-100 rounded-full p-2 flex-shrink-0">
+              <span className="text-xl">2</span>
+            </div>
+            <p>Scroll and select &quot;Add to Home Screen&quot;</p>
           </div>
-
-          <div className="mt-6 flex justify-end space-x-3">
-            <Button
-              variant="outline"
-              onClick={onDismiss}
-            >
-              Maybe Later
-            </Button>
-            <Button
-              variant="default"
-              onClick={() => {
-                console.log('🎯 User acknowledged iOS install instructions');
-                onDismiss();
-              }}
-            >
-              Got It
-            </Button>
+          
+          <div className="flex items-center gap-2">
+            <div className="bg-gray-100 rounded-full p-2 flex-shrink-0">
+              <span className="text-xl">3</span>
+            </div>
+            <p>Tap &quot;Add&quot; in the top right corner</p>
           </div>
+          
+          <Button onClick={onClose} className="w-full mt-4">
+            Got it
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

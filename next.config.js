@@ -4,28 +4,17 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
-  buildExcludes: [/middleware-manifest\.json$/],
-  publicExcludes: ['!robots.txt'],
+  buildExcludes: [/app-build-manifest\.json$/],
+  publicExcludes: ['!sw.js', '!workbox-*.js', '!worker-*.js'],
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,
+      urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
       handler: 'CacheFirst',
       options: {
-        cacheName: 'google-fonts-webfonts',
+        cacheName: 'google-fonts',
         expiration: {
           maxEntries: 4,
           maxAgeSeconds: 365 * 24 * 60 * 60 // 365 days
-        }
-      }
-    },
-    {
-      urlPattern: /^https:\/\/fonts\.(?:googleapis)\.com\/.*/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'google-fonts-stylesheets',
-        expiration: {
-          maxEntries: 4,
-          maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
         }
       }
     },
@@ -47,7 +36,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'static-image-assets',
         expiration: {
           maxEntries: 64,
-          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
         }
       }
     },
@@ -67,7 +56,7 @@ const withPWA = require('next-pwa')({
       handler: 'CacheFirst',
       options: {
         rangeRequests: true,
-        cacheName: 'static-audio',
+        cacheName: 'static-audio-assets',
         expiration: {
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60 // 24 hours
@@ -97,19 +86,8 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'next-data',
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60 // 24 hours
-        }
-      }
-    },
-    {
       urlPattern: /\.(?:json|xml|csv)$/i,
-      handler: 'StaleWhileRevalidate',
+      handler: 'NetworkFirst',
       options: {
         cacheName: 'static-data-assets',
         expiration: {
@@ -119,50 +97,45 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      urlPattern: ({url}) => {
-        const isSameOrigin = self.origin === url.origin;
-        if (!isSameOrigin) return false;
-        const pathname = url.pathname;
-        // Exclude /api/auth, /api/webhook, etc.
-        return !pathname.startsWith('/api/');
-      },
-      handler: 'StaleWhileRevalidate',
+      urlPattern: /\/api\/.*$/i,
+      handler: 'NetworkFirst',
+      method: 'GET',
+      options: {
+        cacheName: 'apis',
+        expiration: {
+          maxEntries: 16,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        },
+        networkTimeoutSeconds: 10
+      }
+    },
+    {
+      urlPattern: /.*/i,
+      handler: 'NetworkFirst',
       options: {
         cacheName: 'others',
         expiration: {
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60 // 24 hours
-        }
-      }
-    },
-    {
-      urlPattern: ({url}) => {
-        const isSameOrigin = self.origin === url.origin;
-        return !isSameOrigin;
-      },
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'cross-origin',
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 3600 // 1 hour
         },
         networkTimeoutSeconds: 10
       }
     }
-  ]
+  ],
 });
 
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  reactStrictMode: true,
+  swcMinify: true,
   images: {
-    domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com'],
+    domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
   },
   experimental: {
     serverActions: true,
-  }
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = withPWA(nextConfig);

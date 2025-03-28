@@ -6,13 +6,13 @@ import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { SupabaseProvider } from '@/providers/SupabaseProvider'
 import { ChatProvider } from '@/providers/ChatProvider'
-import { PWAPrompts } from '@/components/pwa/PWAPrompts'
+import PWAPrompts from '@/components/pwa/PWAPrompts'
 import { Analytics } from '@vercel/analytics/react'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const viewport: Viewport = {
-  themeColor: '#000000',
+  themeColor: '#28C496',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -61,20 +61,26 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="PikDrive" />
+        <meta name="theme-color" content="#28C496" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
-      <body className={inter.className}>
+      <body className={`h-full ${inter.className}`}>
         <SupabaseProvider>
           <ChatProvider>
             <Providers>
               <div className="relative flex min-h-screen flex-col">
+                <PWAPrompts />
                 <Navbar />
                 <main className="flex-1">{children}</main>
                 <Footer />
-                <PWAPrompts />
                 <Analytics />
               </div>
             </Providers>
