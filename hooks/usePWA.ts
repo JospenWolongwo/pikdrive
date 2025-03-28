@@ -21,10 +21,14 @@ export function usePWA() {
 
   useEffect(() => {
     // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
-    }
+    const checkInstalled = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                          (window.navigator as any).standalone === true;
+      setIsInstalled(isStandalone);
+      console.log('📱 PWA Install Check:', { isStandalone });
+    };
+
+    checkInstalled();
 
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
@@ -32,18 +36,28 @@ export function usePWA() {
       // Stash the event so it can be triggered later
       setDeferredPrompt(e);
       setIsInstallable(true);
+      console.log('🎯 Install Prompt Ready');
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
+      console.log('✅ PWA Installed Successfully');
     };
 
+    const handleDisplayModeChange = (e: MediaQueryListEvent) => {
+      setIsInstalled(e.matches);
+      console.log('🔄 Display Mode Changed:', { isStandalone: e.matches });
+    };
+
+    const displayModeMediaQuery = window.matchMedia('(display-mode: standalone)');
+    displayModeMediaQuery.addEventListener('change', handleDisplayModeChange);
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
+      displayModeMediaQuery.removeEventListener('change', handleDisplayModeChange);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
@@ -51,27 +65,28 @@ export function usePWA() {
 
   const install = async () => {
     if (!deferredPrompt) {
-      console.log('No installation prompt available');
+      console.log('❌ No installation prompt available');
       return;
     }
 
     try {
+      console.log('🚀 Triggering install prompt...');
       // Show the prompt
       await deferredPrompt.prompt();
       // Wait for the user to respond to the prompt
       const choiceResult = await deferredPrompt.userChoice;
       
       if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the PWA installation');
+        console.log('✅ User accepted the PWA installation');
         setIsInstalled(true);
       } else {
-        console.log('User dismissed the PWA installation');
+        console.log('❌ User dismissed the PWA installation');
       }
       // Clear the prompt
       setDeferredPrompt(null);
       setIsInstallable(false);
     } catch (err) {
-      console.error('Error installing PWA:', err);
+      console.error('❌ Error installing PWA:', err);
     }
   };
 

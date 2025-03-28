@@ -50,6 +50,105 @@ const withPWA = require('next-pwa')({
           maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
         }
       }
+    },
+    {
+      urlPattern: /\/_next\/image\?url=.+$/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'next-image',
+        expiration: {
+          maxEntries: 64,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: /\.(?:mp3|wav|ogg)$/i,
+      handler: 'CacheFirst',
+      options: {
+        rangeRequests: true,
+        cacheName: 'static-audio',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: /\.(?:js)$/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'static-js-assets',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: /\.(?:css|less)$/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'static-style-assets',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'next-data',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: /\.(?:json|xml|csv)$/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'static-data-assets',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: ({url}) => {
+        const isSameOrigin = self.origin === url.origin;
+        if (!isSameOrigin) return false;
+        const pathname = url.pathname;
+        // Exclude /api/auth, /api/webhook, etc.
+        return !pathname.startsWith('/api/');
+      },
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'others',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: ({url}) => {
+        const isSameOrigin = self.origin === url.origin;
+        return !isSameOrigin;
+      },
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'cross-origin',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 3600 // 1 hour
+        },
+        networkTimeoutSeconds: 10
+      }
     }
   ]
 });
@@ -57,6 +156,12 @@ const withPWA = require('next-pwa')({
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  images: {
+    domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com'],
+  },
+  experimental: {
+    serverActions: true,
   }
 };
 
