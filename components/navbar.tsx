@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { usePWA } from '@/hooks/usePWA'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen } from 'lucide-react'
+import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen, Download } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
 import { PhoneCall, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -75,6 +76,23 @@ export function Navbar() {
     </div>
   )
 
+  function PWAInstallButton() {
+    const { isInstallable, install } = usePWA();
+
+    if (!isInstallable) return null;
+
+    return (
+      <Button
+        variant="outline"
+        className="w-full flex items-center space-x-2 text-sm font-medium"
+        onClick={install}
+      >
+        <Download className="h-4 w-4" />
+        <span>Install App</span>
+      </Button>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -93,18 +111,19 @@ export function Navbar() {
               <Car className="h-6 w-6" />
               <span className="font-bold">PikDrive</span>
             </Link>
-            <div className="my-4 flex flex-col space-y-3">
+            <nav className="my-6 flex flex-col space-y-4">
               {menuItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm font-medium transition-colors hover:text-primary hover:bg-muted px-2 py-1.5 rounded-md"
+                  className="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                   onClick={() => setIsOpen(false)}
                 >
                   {item.label}
                 </Link>
               ))}
-            </div>
+              <PWAInstallButton />
+            </nav>
           </SheetContent>
         </Sheet>
         
