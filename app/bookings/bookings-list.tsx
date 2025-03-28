@@ -13,6 +13,11 @@ interface Driver {
   avatar_url: string;
 }
 
+interface DatabaseDriver {
+  full_name: string;
+  avatar_url?: string;
+}
+
 interface Ride {
   id: string;
   from_city: string;
@@ -49,10 +54,7 @@ interface DatabaseRide {
   car_model: string;
   car_color: string;
   price: number;
-  driver: {
-    full_name: string;
-    avatar_url?: string;
-  }[];
+  driver: DatabaseDriver[];
 }
 
 interface DatabaseBooking {
@@ -65,17 +67,15 @@ interface DatabaseBooking {
   payments?: Payment[];
 }
 
-interface SupabaseBooking {
-  id: string;
-  seats: number;
-  status: string;
-  payment_status: string;
-  created_at: string;
-  ride: DatabaseRide;
-  payments?: Payment[];
+interface BookingCardRide extends Omit<DatabaseRide, 'driver'> {
+  driver: Driver;
 }
 
-interface BookingWithReceipt extends DatabaseBooking {
+interface BookingCardBooking extends Omit<DatabaseBooking, 'ride'> {
+  ride: BookingCardRide;
+}
+
+interface BookingWithReceipt extends BookingCardBooking {
   receipt?: {
     id: string;
     payment_id: string;
@@ -146,92 +146,56 @@ export function BookingsList({ page }: { page: number }) {
         if (bookingsError) throw bookingsError
 
         const bookingsWithReceipts = await Promise.all(
-          (bookingsData || []).map(async (booking: SupabaseBooking) => {
+          (bookingsData || []).map(async (bookingData) => {
+            const ride = Array.isArray(bookingData.ride) ? bookingData.ride[0] : bookingData.ride;
+            const driver = Array.isArray(ride.driver) ? ride.driver[0] : ride.driver;
+
+            // First create the DatabaseBooking
             const transformedBooking: DatabaseBooking = {
-              ...booking,
+              id: bookingData.id,
+              seats: bookingData.seats,
+              status: bookingData.status,
+              payment_status: bookingData.payment_status,
+              created_at: bookingData.created_at,
               ride: {
-                ...booking.ride,
-                driver: booking.ride.driver
-              }
+                ...ride,
+                driver: [driver]
+              },
+              payments: bookingData.payments
             };
 
             const payments = transformedBooking.payments || [];
             const payment = payments.length > 0 ? payments[0] : undefined;
             const isCompleted = payment?.payment_time && payment?.metadata?.financialTransactionId;
-            
-            if (isCompleted && payment) {
-              try {
-                const { data: existingReceipt, error: receiptError } = await supabase
-                  .from('payment_receipts')
-                  .select('id, payment_id, created_at')
-                  .eq('payment_id', payment.id)
-                  .single();
 
-                if (existingReceipt) {
-                  return {
-                    ...transformedBooking,
-                    payments: payment ? [{
-                      ...payment,
-                      amount: transformedBooking.ride.price * transformedBooking.seats,
-                      status: 'completed'
-                    }] : [],
-                    receipt: {
-                      id: existingReceipt.id,
-                      payment_id: existingReceipt.payment_id,
-                      created_at: existingReceipt.created_at
-                    }
-                  } as BookingWithReceipt;
+            // Then transform it to match the BookingCard's expected type
+            const bookingForCard: BookingCardBooking = {
+              ...transformedBooking,
+              ride: {
+                ...transformedBooking.ride,
+                driver: {
+                  full_name: transformedBooking.ride.driver[0].full_name,
+                  avatar_url: transformedBooking.ride.driver[0].avatar_url || ''  // Provide empty string as fallback
                 }
+              }
+            };
 
-                console.log('📝 Creating new receipt for payment:', payment.id);
-                const { data: newReceipt, error: createError } = await supabase
-                  .rpc('create_receipt', { payment_id_param: payment.id })
-                  .select('id, payment_id, created_at')
-                  .single();
+            if (isCompleted) {
+              const { data: receipt } = await supabase
+                .from('receipts')
+                .select('*')
+                .eq('payment_id', payment.id)
+                .single();
 
-                console.log('✨ Receipt creation result:', {
-                  paymentId: payment.id,
-                  success: !!newReceipt,
-                  error: createError?.message
-                });
-
-                if (newReceipt) {
-                  return {
-                    ...transformedBooking,
-                    payments: payment ? [{
-                      ...payment,
-                      amount: transformedBooking.ride.price * transformedBooking.seats,
-                      status: 'completed'
-                    }] : [],
-                    receipt: {
-                      id: newReceipt.id,
-                      payment_id: newReceipt.payment_id,
-                      created_at: newReceipt.created_at
-                    }
-                  } as BookingWithReceipt;
-                }
-              } catch (error) {
-                console.error('❌ Error handling receipt:', error);
+              if (receipt) {
                 return {
-                  ...transformedBooking,
-                  payments: payment ? [{
-                    ...payment,
-                    amount: transformedBooking.ride.price * transformedBooking.seats,
-                    status: isCompleted ? 'completed' : 'pending'
-                  }] : [],
-                  receipt: undefined
-                } as BookingWithReceipt;
+                  ...bookingForCard,
+                  receipt
+                };
               }
             }
-            return {
-              ...transformedBooking,
-              payments: payment ? [{
-                ...payment,
-                amount: transformedBooking.ride.price * transformedBooking.seats,
-                status: isCompleted ? 'completed' : 'pending'
-              }] : [],
-              receipt: undefined
-            } as BookingWithReceipt;
+
+            return bookingForCard;
           })
         );
 

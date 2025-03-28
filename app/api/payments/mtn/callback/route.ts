@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const payload = await request.json();
 
     // Validate and process the callback
-    await paymentService.handlePaymentCallback('mtn', payload, signature || undefined);
+    await paymentService.handlePaymentCallback('mtn', payload);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,6 +1,8 @@
 import { PaymentResponse, PaymentStatus } from './types';
 
 interface MockOrangeMoneyConfig {
+  merchantId: string;
+  merchantKey: string;
   environment: 'sandbox' | 'production';
   notificationUrl: string;
   returnUrl: string;
@@ -76,12 +78,12 @@ export class MockOrangeMoneyService {
         }, 30000);
     }
 
-    // Return success response with redirect URL
+    // Return success response
     return {
-      status: 'success',
+      success: true,
+      status: 'completed' as PaymentStatus,
       transactionId,
-      message: 'Payment successful',
-      redirectUrl: `${this.config.notificationUrl?.replace('/callback', '/status')}?txid=${transactionId}`
+      message: 'Payment successful'
     };
   }
 
@@ -138,23 +140,26 @@ export class MockOrangeMoneyService {
   /**
    * Mock payment status check
    */
-  async checkPaymentStatus(transactionId: string): Promise<PaymentStatus> {
+  async checkPaymentStatus(transactionId: string): Promise<PaymentResponse> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Extract scenario from transaction ID if it's a test one
     if (transactionId.startsWith('MOCK-')) {
       return {
-        status: 'completed',
+        success: true,
+        status: 'completed' as PaymentStatus,
         transactionId,
         message: 'Payment completed successfully',
       };
     }
 
     return {
-      status: 'pending',
+      success: false,
+      status: 'failed' as PaymentStatus,
       transactionId,
-      message: 'Payment is being processed',
+      message: 'Payment failed: Invalid phone number',
+      error: 'Invalid phone number format'
     };
   }
 }

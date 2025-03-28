@@ -12,8 +12,21 @@ jobs:
     steps:
       - name: Check pending payments
         run: |
-          curl -X GET ${{ secrets.APP_URL }}/api/cron/check-pending-payments \
-          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          if [ -z "$APP_URL" ]; then
+            echo " Error: APP_URL is not set"
+            exit 1
+          fi
+          
+          if [ -z "$CRON_SECRET" ]; then
+            echo " Error: CRON_SECRET is not set"
+            exit 1
+          fi
+          
+          echo " Checking pending payments at $APP_URL"
+          curl -X GET "${APP_URL}/api/cron/check-pending-payments" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -f -s -S
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}

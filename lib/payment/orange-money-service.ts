@@ -94,64 +94,70 @@ export class OrangeMoneyService {
   /**
    * Initiate a payment request
    */
-  async initiatePayment(
-    amount: number,
-    phoneNumber: string,
-    reference: string
-  ): Promise<PaymentResponse> {
+  async initiatePayment(request: {
+    amount: number;
+    phoneNumber: string;
+    description: string;
+    externalId?: string;
+  }): Promise<PaymentResponse> {
     try {
       const token = await this.getAuthToken();
-      const paymentData: PaymentRequest = {
-        amount: amount.toString(),
+      const reference = request.externalId || this.generateReference();
+
+      const paymentData = {
+        amount: request.amount.toString(),
         currency: 'XAF',
         externalId: reference,
-        customerPhoneNumber: phoneNumber,
-        description: `PikDrive Ride Payment - ${reference}`,
+        customerPhoneNumber: request.phoneNumber,
+        description: request.description,
+        notificationUrl: this.config.notificationUrl,
+        returnUrl: this.config.returnUrl,
+        metadata: {
+          reference,
+          phoneNumber: request.phoneNumber
+        }
       };
 
       const signature = await this.calculateSignature(JSON.stringify(paymentData));
-      
+
       const response = await fetch(`${this.baseUrl}/payments`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'X-Merchant-Id': this.config.merchantId,
-          'X-Signature': signature,
+          'Authorization': `Bearer ${token}`,
+          'X-Signature': signature
         },
-        body: JSON.stringify({
-          ...paymentData,
-          notificationUrl: this.config.notificationUrl,
-          returnUrl: this.config.returnUrl,
-        }),
+        body: JSON.stringify(paymentData)
       });
 
-      const responseData = await response.json();
-
       if (!response.ok) {
-        console.error('🔴 Orange Money payment initiation failed:', responseData);
+        const errorText = await response.text();
+        console.error('🔴 Payment initiation failed:', {
+          status: response.status,
+          error: errorText
+        });
         return {
           success: false,
           status: 'failed' as PaymentStatus,
           message: 'Payment initiation failed',
-          error: responseData.message || 'Unknown error occurred',
+          error: errorText
         };
       }
 
-      console.log('🟢 Orange Money payment initiated:', responseData);
+      const data = await response.json();
       return {
         success: true,
-        transactionId: responseData.paymentId,
         status: 'processing' as PaymentStatus,
-        message: 'Payment initiated successfully',
+        transactionId: data.paymentId,
+        message: 'Payment initiated successfully'
       };
     } catch (error) {
-      console.error('🔴 Orange Money service error:', error);
+      console.error('🔴 Payment error:', error);
       return {
         success: false,
         status: 'failed' as PaymentStatus,
-        message: 'Payment service error',
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        message: 'Payment processing error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }

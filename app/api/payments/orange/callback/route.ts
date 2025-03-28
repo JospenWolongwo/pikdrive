@@ -2,10 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { PaymentService } from '@/lib/payment/payment-service';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 // Create a direct Supabase client for better reliability
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function POST(request: Request) {

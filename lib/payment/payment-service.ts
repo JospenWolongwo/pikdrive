@@ -26,8 +26,8 @@ export class PaymentService {
       merchantId: process.env.ORANGE_MONEY_MERCHANT_ID || '',
       merchantKey: process.env.ORANGE_MONEY_MERCHANT_KEY || '',
       environment: (process.env.ORANGE_MONEY_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production',
-      notificationUrl: process.env.ORANGE_MONEY_NOTIFICATION_URL,
-      returnUrl: process.env.ORANGE_MONEY_RETURN_URL
+      notificationUrl: process.env.ORANGE_MONEY_NOTIFICATION_URL || 'http://localhost:3000/api/payments/orange/callback',
+      returnUrl: process.env.ORANGE_MONEY_RETURN_URL || 'http://localhost:3000/payments/status'
     };
 
     // Use mock service if merchant credentials are not set
@@ -194,7 +194,7 @@ export class PaymentService {
           .from('payments')
           .update({
             transaction_id: response.transactionId,
-            status: response.status === 'success' ? 'completed' : 'pending',
+            status: response.status === 'completed' ? 'completed' : 'pending',
           })
           .eq('id', payment.id);
 

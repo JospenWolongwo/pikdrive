@@ -104,4 +104,22 @@ export class SMSService {
     const { driverName, pickupTime, bookingId } = data;
     return `PikDrive: Your ride is confirmed! Driver: ${driverName}. Pickup: ${pickupTime}. Booking: ${bookingId}. Have a great ride! 🚗`;
   }
+
+  /**
+   * Send a payment notification SMS
+   */
+  async sendPaymentNotification(
+    phoneNumber: string,
+    amount: number,
+    success: boolean
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const message = success
+      ? `✅ Your payment of ${amount} XAF has been successfully processed. Thank you for using PikDrive!`
+      : `❌ Your payment of ${amount} XAF was not successful. Please try again or contact support if the issue persists.`;
+
+    return this.sendMessage({
+      to: phoneNumber,
+      message
+    });
+  }
 }
