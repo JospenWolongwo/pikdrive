@@ -1,42 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import Image from 'next/image';
 
-// Add type definitions for Safari-specific properties
-interface SafariNavigator extends Navigator {
-  standalone?: boolean;
-}
-
-// Helper function to detect iOS
-const isIOS = () => {
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod/.test(userAgent) && 
-         !userAgent.includes('windows phone') && // Exclude Windows Phone
-         !userAgent.includes('android'); // Exclude Android tablets
-};
-
-interface IOSInstallPromptProps {
+interface AndroidInstallPromptProps {
   show: boolean;
   onDismiss: () => void;
+  onInstall: () => void;
 }
 
-export function IOSInstallPrompt({ show, onDismiss }: IOSInstallPromptProps) {
-  useEffect(() => {
-    // Check if it's iOS
-    const isiOSDevice = isIOS();
-    // Check if it's in standalone mode (already installed)
-    const isStandalone = (window.navigator as SafariNavigator).standalone === true;
-
-    console.log('🍎 iOS Install Status:', {
-      isiOSDevice,
-      isStandalone,
-      show
-    });
-  }, [show]);
-
+export function AndroidInstallPrompt({ show, onDismiss, onInstall }: AndroidInstallPromptProps) {
   if (!show) return null;
 
   return (
@@ -54,21 +27,21 @@ export function IOSInstallPrompt({ show, onDismiss }: IOSInstallPromptProps) {
           
           <div className="space-y-2">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Install PikDrive on your iOS device for the best experience:
+              Install PikDrive on your Android device for the best experience:
             </p>
             
             <ol className="list-decimal list-inside space-y-3 text-sm text-gray-600 dark:text-gray-300">
               <li className="flex items-start">
                 <span className="mr-2">1.</span>
-                <span>Tap the Share button in Safari</span>
+                <span>Click "Install App" below</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">2.</span>
-                <span>Scroll down and tap "Add to Home Screen"</span>
+                <span>When prompted, tap "Install"</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">3.</span>
-                <span>Tap "Add" to install PikDrive</span>
+                <span>Open PikDrive from your home screen</span>
               </li>
             </ol>
           </div>
@@ -83,11 +56,11 @@ export function IOSInstallPrompt({ show, onDismiss }: IOSInstallPromptProps) {
             <Button
               variant="default"
               onClick={() => {
-                console.log('🎯 User acknowledged iOS install instructions');
-                onDismiss();
+                console.log('🤖 User clicked Android install button');
+                onInstall();
               }}
             >
-              Got It
+              Install App
             </Button>
           </div>
         </div>

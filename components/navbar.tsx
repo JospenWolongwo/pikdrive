@@ -19,6 +19,8 @@ import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen
 import { BsWhatsapp } from 'react-icons/bs'
 import { PhoneCall, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { IOSInstallPrompt } from '@/components/pwa/IOSInstallPrompt'
+import { AndroidInstallPrompt } from '@/components/pwa/AndroidInstallPrompt'
 
 export function Navbar() {
   const { supabase, user } = useSupabase()
@@ -28,6 +30,8 @@ export function Navbar() {
   const [isDriver, setIsDriver] = useState(false)
   const [driverStatus, setDriverStatus] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  const [showAndroidPrompt, setShowAndroidPrompt] = useState(false);
 
   useEffect(() => {
     setMounted(true)
@@ -82,23 +86,113 @@ export function Navbar() {
   )
 
   function PWAInstallButton() {
-    const { isInstallable, isInstalled, install } = usePWA();
+    const { isInstallable, isInstalled, install, hasPrompt } = usePWA();
     const [mounted, setMounted] = useState(false);
+    const [isIOS, setIsIOS] = useState(false);
+    const [isAndroid, setIsAndroid] = useState(false);
 
     useEffect(() => {
       setMounted(true);
+      // Check device type
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent) && !userAgent.includes('windows phone');
+      const isAndroidDevice = /android/.test(userAgent) && !userAgent.includes('windows phone');
+      
+      setIsIOS(isIOSDevice);
+      setIsAndroid(isAndroidDevice);
+
+      console.log('📱 Device Detection:', {
+        userAgent,
+        isIOSDevice,
+        isAndroidDevice
+      });
     }, []);
 
+    // For debugging
+    useEffect(() => {
+      if (mounted) {
+        console.log('📱 PWA Status:', {
+          isInstallable,
+          isInstalled,
+          hasPrompt,
+          isIOS,
+          isAndroid,
+          mounted
+        });
+      }
+    }, [isInstallable, isInstalled, hasPrompt, isIOS, isAndroid, mounted]);
+
+    // Don't show if not mounted or already installed
     if (!mounted || isInstalled) return null;
+
+    // For iOS devices, show iOS install instructions
+    if (isIOS) {
+      return (
+        <>
+          <Button
+            variant="default"
+            className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={(e) => {
+              e.preventDefault();
+              setShowIOSPrompt(true);
+              console.log('🍎 Show iOS install instructions');
+            }}
+          >
+            <Download className="h-4 w-4" />
+            <span>Install on iOS</span>
+          </Button>
+          <IOSInstallPrompt 
+            show={showIOSPrompt} 
+            onDismiss={() => setShowIOSPrompt(false)} 
+          />
+        </>
+      );
+    }
+
+    // For Android devices, show Android install dialog
+    if (isAndroid) {
+      return (
+        <>
+          <Button
+            variant="default"
+            className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={(e) => {
+              e.preventDefault();
+              setShowAndroidPrompt(true);
+              console.log('🤖 Show Android install instructions');
+            }}
+          >
+            <Download className="h-4 w-4" />
+            <span>Install on Android</span>
+          </Button>
+          <AndroidInstallPrompt 
+            show={showAndroidPrompt} 
+            onDismiss={() => setShowAndroidPrompt(false)}
+            onInstall={() => {
+              console.log('🤖 Triggering Android install prompt');
+              install();
+              setShowAndroidPrompt(false);
+            }}
+          />
+        </>
+      );
+    }
+
+    // For other devices that support PWA installation
+    if (!isInstallable || !hasPrompt) return null;
 
     return (
       <Button
         variant="default"
         className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-        onClick={install}
+        onClick={(e) => {
+          e.preventDefault();
+          console.log('🔄 Install button clicked');
+          install();
+        }}
       >
         <Download className="h-4 w-4" />
-        <span>Install PikDrive App</span>
+        <span>Install App</span>
       </Button>
     );
   }

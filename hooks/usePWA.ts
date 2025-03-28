@@ -75,5 +75,10 @@ export function usePWA() {
     }
   };
 
-  return { isInstallable, isInstalled, install };
+  return { 
+    isInstallable, 
+    isInstalled, 
+    install,
+    hasPrompt: !!deferredPrompt 
+  };
 }
