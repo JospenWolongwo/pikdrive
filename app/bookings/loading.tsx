@@ -10,3 +10,5 @@ export function LoadingBookings() {
     </div>
   );
 }
+
+export default LoadingBookings;

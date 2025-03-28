@@ -2,12 +2,13 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { PaymentRequest, PaymentResponse, PaymentStatus, Payment } from './types';
 import { MTNMomoService } from './mtn-momo-service';
 import { OrangeMoneyService } from './orange-money-service';
+import { MockOrangeMoneyService } from './mock-orange-money-service';
 import { SMSService } from '@/lib/notifications/sms-service';
 
 export class PaymentService {
   private supabase: SupabaseClient;
   private mtnMomoService: MTNMomoService;
-  private orangeMoneyService: OrangeMoneyService;
+  private orangeMoneyService: OrangeMoneyService | MockOrangeMoneyService;
   private smsService: SMSService;
 
   constructor(supabase: SupabaseClient) {
@@ -20,14 +21,22 @@ export class PaymentService {
       collectionPrimaryKey: process.env.MOMO_COLLECTION_PRIMARY_KEY!,
       collectionUserId: process.env.MOMO_COLLECTION_USER_ID!
     });
-    
-    this.orangeMoneyService = new OrangeMoneyService({
-      merchantId: process.env.ORANGE_MONEY_MERCHANT_ID!,
-      merchantKey: process.env.ORANGE_MONEY_MERCHANT_KEY!,
+
+    const orangeConfig = {
+      merchantId: process.env.ORANGE_MONEY_MERCHANT_ID || '',
+      merchantKey: process.env.ORANGE_MONEY_MERCHANT_KEY || '',
       environment: (process.env.ORANGE_MONEY_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production',
-      notificationUrl: `${process.env.MOMO_CALLBACK_HOST}/api/payments/orange/callback`,
-      returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payments/status`
-    });
+      notificationUrl: process.env.ORANGE_MONEY_NOTIFICATION_URL,
+      returnUrl: process.env.ORANGE_MONEY_RETURN_URL
+    };
+
+    // Use mock service if merchant credentials are not set
+    if (!orangeConfig.merchantId || !orangeConfig.merchantKey || process.env.USE_MOCK_ORANGE_MONEY === 'true') {
+      console.log('🟡 Using Mock Orange Money Service');
+      this.orangeMoneyService = new MockOrangeMoneyService(orangeConfig);
+    } else {
+      this.orangeMoneyService = new OrangeMoneyService(orangeConfig);
+    }
 
     this.smsService = new SMSService({
       accountSid: process.env.TWILIO_ACCOUNT_SID!,
@@ -58,18 +67,18 @@ export class PaymentService {
           status: 'pending',
           currency: 'XAF'
         })
-        .select()
+        .select('*')
         .single();
 
       if (error) {
-        console.error('Supabase error creating payment:', error);
+        console.error('❌ Supabase error creating payment:', error);
         throw error;
       }
       
-      console.log('Successfully created payment record:', payment);
+      console.log('✅ Successfully created payment record:', payment);
       return payment;
     } catch (error) {
-      console.error('Error in createPaymentRecord:', error);
+      console.error('❌ Error in createPaymentRecord:', error);
       throw error;
     }
   }
@@ -78,7 +87,7 @@ export class PaymentService {
     try {
       // Format phone number
       const formattedPhone = this.formatPhoneNumber(request.phoneNumber);
-      console.log(' Formatted phone number:', formattedPhone);
+      console.log('📱 Formatted phone number:', formattedPhone);
 
       // Validate phone number
       if (!await this.validatePhoneNumber(formattedPhone)) {
@@ -93,6 +102,8 @@ export class PaymentService {
         phoneNumber: formattedPhone
       });
 
+      console.log('💳 Created payment record:', payment);
+
       // Handle payment based on provider
       if (request.provider === 'mtn') {
         return this.handleMTNPayment(payment, formattedPhone, request);
@@ -102,7 +113,7 @@ export class PaymentService {
         throw new Error(`Unsupported payment provider: ${request.provider}`);
       }
     } catch (error) {
-      console.error('Error in createPayment:', error);
+      console.error('❌ Error in createPayment:', error);
       return {
         success: false,
         status: 'failed',
@@ -164,38 +175,39 @@ export class PaymentService {
     formattedPhone: string,
     request: PaymentRequest
   ): Promise<PaymentResponse> {
-    // In sandbox, use test flow for non-test numbers
-    if (process.env.ORANGE_MONEY_ENVIRONMENT === 'sandbox') {
-      console.log(' Using Orange Money sandbox environment with test number:', formattedPhone);
-      if (formattedPhone !== '237690000000') {
-        console.warn(' Not a sandbox test number, defaulting to successful flow');
-        return this.mockPaymentProcess(request);
+    try {
+      console.log('🟠 Initiating Orange Money payment:', { payment, formattedPhone });
+
+      // Initiate payment
+      const response = await this.orangeMoneyService.initiatePayment({
+        amount: request.amount,
+        phoneNumber: formattedPhone,
+        description: `PikDrive Ride Payment - ${request.bookingId}`,
+        externalId: payment.id,
+      });
+
+      console.log('🟠 Orange Money response:', response);
+
+      // Update payment record with transaction ID
+      if (response.transactionId) {
+        const { error: updateError } = await this.supabase
+          .from('payments')
+          .update({
+            transaction_id: response.transactionId,
+            status: response.status === 'success' ? 'completed' : 'pending',
+          })
+          .eq('id', payment.id);
+
+        if (updateError) {
+          console.error('❌ Error updating payment record:', updateError);
+        }
       }
+
+      return response;
+    } catch (error) {
+      console.error('❌ Error in handleOrangePayment:', error);
+      throw error;
     }
-
-    // Request payment from Orange Money
-    const orangeResponse = await this.orangeMoneyService.initiatePayment(
-      request.amount,
-      formattedPhone,
-      payment.id
-    );
-
-    // Update payment record with transaction ID
-    if (orangeResponse.transactionId) {
-      const { error: updateError } = await this.supabase
-        .from('payments')
-        .update({
-          transaction_id: orangeResponse.transactionId,
-          status: orangeResponse.status
-        })
-        .eq('id', payment.id);
-
-      if (updateError) {
-        console.error('Error updating payment record:', updateError);
-      }
-    }
-
-    return orangeResponse;
   }
 
   async checkPaymentStatus(transactionId: string, provider: string): Promise<{
@@ -332,21 +344,133 @@ export class PaymentService {
     }
   }
 
-  async handlePaymentCallback(provider: string, payload: any, signature?: string): Promise<void> {
+  async getPaymentByTransactionId(transactionId: string): Promise<Payment | null> {
     try {
-      if (provider === 'mtn') {
-        // Validate webhook signature
-        if (!signature || !this.mtnMomoService.validateWebhookSignature(signature, JSON.stringify(payload))) {
-          throw new Error('Invalid webhook signature');
-        }
+      // First try to find by transaction_id
+      const { data: paymentByTxId, error: txError } = await this.supabase
+        .from('payments')
+        .select('*')
+        .eq('transaction_id', transactionId)
+        .single();
 
-        const { referenceId, status } = payload;
-        await this.checkPaymentStatus(referenceId, 'mtn');
+      if (paymentByTxId) {
+        return paymentByTxId;
       }
+
+      // If not found, try to find by id (for mock payments where externalId is the payment id)
+      const { data: paymentById, error: idError } = await this.supabase
+        .from('payments')
+        .select('*')
+        .eq('id', transactionId)
+        .single();
+
+      if (idError) {
+        console.error('Error fetching payment:', idError);
+        return null;
+      }
+
+      return paymentById;
     } catch (error) {
-      console.error('Payment callback handling failed:', error);
-      throw error;
+      console.error('Error fetching payment:', error);
+      return null;
     }
+  }
+
+  async handlePaymentCallback(
+    provider: 'mtn' | 'orange',
+    data: {
+      status: string;
+      reason?: string;
+      transactionId: string;
+      financialTransactionId?: string;
+      externalId?: string;
+    }
+  ) {
+    console.log(`📝 Processing ${provider.toUpperCase()} payment callback:`, data);
+
+    // For mock payments, use externalId to find the payment
+    const paymentId = provider === 'orange' ? (data.externalId || data.transactionId) : data.transactionId;
+    console.log('🔍 Looking up payment with ID:', paymentId);
+
+    // Debug: List recent payments
+    const { data: recentPayments, error: listError } = await this.supabase
+      .from('payments')
+      .select('id, status, transaction_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (listError) {
+      console.error('❌ Error listing payments:', listError);
+    } else {
+      console.log('📊 Recent payments:', recentPayments);
+    }
+
+    // Try to find the payment by ID first
+    const { data: paymentById, error: idError } = await this.supabase
+      .from('payments')
+      .select('*')
+      .eq('id', paymentId)
+      .single();
+
+    if (idError) {
+      console.error('❌ Error fetching payment by ID:', idError);
+    }
+
+    // If not found by ID, try transaction_id
+    const { data: paymentByTxId, error: txError } = await this.supabase
+      .from('payments')
+      .select('*')
+      .eq('transaction_id', data.transactionId)
+      .single();
+
+    if (txError && txError.code !== 'PGRST116') { // Ignore "no rows" error
+      console.error('❌ Error fetching payment by transaction_id:', txError);
+    }
+
+    const payment = paymentById || paymentByTxId;
+    if (!payment) {
+      console.error('❌ Payment not found:', { paymentId, transactionId: data.transactionId });
+      throw new Error('Payment not found');
+    }
+
+    console.log('✅ Found payment:', payment);
+
+    // Update payment status
+    const { error: updateError } = await this.supabase
+      .from('payments')
+      .update({
+        status: data.status === 'SUCCESSFUL' ? 'completed' : 'failed',
+        transaction_id: data.financialTransactionId || data.transactionId,
+        payment_time: new Date().toISOString(),
+        metadata: {
+          provider,
+          reason: data.reason,
+          originalTransactionId: data.transactionId
+        }
+      })
+      .eq('id', payment.id);
+
+    if (updateError) {
+      console.error('❌ Error updating payment:', updateError);
+      throw updateError;
+    }
+
+    console.log('✅ Updated payment status');
+
+    // Send SMS notification
+    try {
+      await this.smsService.sendPaymentNotification(
+        payment.phone_number,
+        payment.amount,
+        data.status === 'SUCCESSFUL'
+      );
+      console.log('✅ SMS notification sent');
+    } catch (error) {
+      console.error('❌ Error sending payment notification:', error);
+      // Don't throw here - we don't want to fail the callback just because SMS failed
+    }
+
+    console.log('✅ Payment callback processed successfully');
   }
 
   async getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
@@ -371,36 +495,24 @@ export class PaymentService {
     return payment;
   }
 
-  async getPaymentByTransactionId(transactionId: string): Promise<Payment | null> {
-    const { data: payment, error } = await this.supabase
-      .from('payments')
-      .select(`
-        *,
-        booking:bookings!payments_booking_id_fkey (
-          id,
-          seats,
-          ride:rides (
-            from_city,
-            to_city,
-            departure_time
-          )
-        )
-      `)
-      .eq('transaction_id', transactionId)
-      .single();
-
-    if (error) {
-      console.error(' Error fetching payment:', error);
-      return null;
+  async validatePhoneNumber(phoneNumber: string): Promise<boolean> {
+    // Validation for Cameroon MTN (67) and Orange (69) numbers
+    const cleanedNumber = phoneNumber.replace(/[^\d]/g, '');
+    
+    // Check if it's a valid length and starts with country code
+    if (cleanedNumber.length !== 12 && cleanedNumber.length !== 9) {
+      return false;
     }
 
-    return payment;
-  }
-
-  async validatePhoneNumber(phoneNumber: string): Promise<boolean> {
-    // Basic validation for Cameroon phone numbers
-    const phoneRegex = /^(?:\+237|237)?[6-9][0-9]{8}$/;
-    return phoneRegex.test(phoneNumber);
+    // Extract the actual number without country code
+    const actualNumber = cleanedNumber.slice(-9);
+    
+    // MTN numbers start with 67
+    // Orange numbers start with 69
+    const validPrefixes = ['67', '69'];
+    const prefix = actualNumber.slice(0, 2);
+    
+    return validPrefixes.includes(prefix);
   }
 
   getAvailableProviders() {
@@ -409,6 +521,8 @@ export class PaymentService {
         name: 'mtn' as const,
         displayName: 'MTN Mobile Money',
         logo: '/images/payment-providers/mtn.png',
+        testNumbers: ['237670000000'],
+        prefixes: ['67'],
         description: 'Fast and secure payments with MTN Mobile Money',
         minimumAmount: 100,
         maximumAmount: 500000,
@@ -419,6 +533,8 @@ export class PaymentService {
         name: 'orange' as const,
         displayName: 'Orange Money',
         logo: '/images/payment-providers/orange.png',
+        testNumbers: ['237699000001', '237699000002'],
+        prefixes: ['69'],
         description: 'Quick and reliable payments with Orange Money',
         minimumAmount: 100,
         maximumAmount: 500000,
@@ -459,7 +575,7 @@ export class PaymentService {
 
   private formatPhoneNumber(phoneNumber: string): string {
     // Format phone number to remove any '+' symbol and ensure it starts with 237
-    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    const formattedPhone = phoneNumber.replace(/[^\d]/g, '');
     return formattedPhone.startsWith('237') ? formattedPhone : `237${formattedPhone}`;
   }
 

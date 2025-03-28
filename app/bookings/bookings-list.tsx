@@ -24,7 +24,7 @@ interface Ride {
   driver: {
     full_name: string;
     avatar_url?: string;
-  };
+  }[];
 }
 
 interface Payment {
@@ -52,7 +52,7 @@ interface DatabaseRide {
   driver: {
     full_name: string;
     avatar_url?: string;
-  };
+  }[];
 }
 
 interface DatabaseBooking {
@@ -71,19 +71,7 @@ interface SupabaseBooking {
   status: string;
   payment_status: string;
   created_at: string;
-  ride: {
-    id: string;
-    from_city: string;
-    to_city: string;
-    departure_time: string;
-    car_model: string;
-    car_color: string;
-    price: number;
-    driver: {
-      full_name: string;
-      avatar_url?: string;
-    }[];
-  }[];
+  ride: DatabaseRide;
   payments?: Payment[];
 }
 
@@ -147,7 +135,8 @@ export function BookingsList({ page }: { page: number }) {
               phone_number,
               transaction_id,
               payment_time,
-              metadata
+              metadata,
+              status
             )
           `)
           .eq('user_id', user.id)
@@ -161,8 +150,8 @@ export function BookingsList({ page }: { page: number }) {
             const transformedBooking: DatabaseBooking = {
               ...booking,
               ride: {
-                ...booking.ride[0],
-                driver: booking.ride[0].driver[0]
+                ...booking.ride,
+                driver: booking.ride.driver
               }
             };
 

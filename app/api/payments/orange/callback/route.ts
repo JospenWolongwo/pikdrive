@@ -1,32 +1,84 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { PaymentService } from '@/lib/payment/payment-service';
 
+// Create a direct Supabase client for better reliability
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    // Get callback data first
+    const callbackData = await request.json();
+    console.log('🟡 Orange Money callback received:', callbackData);
+
+    // Extract key information
+    const {
+      status,
+      transactionId,
+      externalId,
+      message,
+      failureReason
+    } = callbackData;
+
+    if (!externalId && !transactionId) {
+      console.error('❌ No payment reference in callback');
+      return NextResponse.json(
+        { error: 'Missing payment reference' },
+        { status: 400 }
+      );
+    }
+
+    // Debug: Try to find payment directly
+    const { data: payment, error: fetchError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('id', externalId)
+      .single();
+
+    console.log('🔍 Direct payment lookup result:', { payment, error: fetchError });
+
+    if (fetchError) {
+      console.error('❌ Database error:', fetchError);
+      return NextResponse.json(
+        { error: 'Database error' },
+        { status: 500 }
+      );
+    }
+
+    if (!payment) {
+      console.error('❌ Payment not found:', { externalId, transactionId });
+      return NextResponse.json(
+        { error: 'Payment not found' },
+        { status: 404 }
+      );
+    }
+
+    // Use PaymentService with direct client
     const paymentService = new PaymentService(supabase);
 
-    // Get the signature from headers
-    const signature = request.headers.get('x-orange-signature');
-    
-    // Get the callback payload
-    const payload = await request.json();
-    console.log('🟡 Orange Money callback received:', payload);
+    // Handle callback
+    await paymentService.handlePaymentCallback(
+      'orange',
+      {
+        status,
+        reason: failureReason || message,
+        transactionId,
+        externalId
+      }
+    );
 
-    // Validate and process the callback
-    await paymentService.handlePaymentCallback('orange', payload, signature || undefined);
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      status: 'success',
+      message: 'Payment callback processed successfully'
+    });
   } catch (error) {
-    console.error('🔴 Orange Money callback error:', error);
+    console.error('❌ Error processing Orange Money callback:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Callback processing failed' 
-      },
-      { status: 400 }
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }

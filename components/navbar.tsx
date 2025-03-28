@@ -23,10 +23,15 @@ import { cn } from '@/lib/utils'
 export function Navbar() {
   const { supabase, user } = useSupabase()
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isDriver, setIsDriver] = useState(false)
   const [driverStatus, setDriverStatus] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -77,18 +82,23 @@ export function Navbar() {
   )
 
   function PWAInstallButton() {
-    const { isInstallable, install } = usePWA();
+    const { isInstallable, isInstalled, install } = usePWA();
+    const [mounted, setMounted] = useState(false);
 
-    if (!isInstallable) return null;
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+
+    if (!mounted || isInstalled) return null;
 
     return (
       <Button
-        variant="outline"
-        className="w-full flex items-center space-x-2 text-sm font-medium"
+        variant="default"
+        className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
         onClick={install}
       >
         <Download className="h-4 w-4" />
-        <span>Install App</span>
+        <span>Install PikDrive App</span>
       </Button>
     );
   }
@@ -112,6 +122,7 @@ export function Navbar() {
               <span className="font-bold">PikDrive</span>
             </Link>
             <nav className="my-6 flex flex-col space-y-4">
+              <PWAInstallButton />
               {menuItems.map((item) => (
                 <Link
                   key={item.href}
@@ -122,7 +133,6 @@ export function Navbar() {
                   {item.label}
                 </Link>
               ))}
-              <PWAInstallButton />
             </nav>
           </SheetContent>
         </Sheet>
@@ -173,7 +183,7 @@ export function Navbar() {
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                 className="hover:bg-muted"
               >
-                {theme === 'light' ? <Moon className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sun className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {mounted && (theme === 'light' ? <Moon className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sun className="h-4 w-4 sm:h-5 sm:w-5" />)}
               </Button>
             </div>
           </div>

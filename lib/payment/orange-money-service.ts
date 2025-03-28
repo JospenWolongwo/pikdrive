@@ -23,9 +23,10 @@ export class OrangeMoneyService {
 
   constructor(config: OrangeMoneyConfig) {
     this.config = config;
+    // Orange Money API base URLs
     this.baseUrl = config.environment === 'production'
-      ? 'https://api.orange.com/orange-money-webpay'
-      : 'https://api.sandbox.orange.com/orange-money-webpay';
+      ? 'https://api.orange.com/orange-money-webpay/cm/v1'
+      : 'https://api.orange-sonatel.com/orange-money-webpay/cm/v1';
   }
 
   /**
@@ -50,28 +51,44 @@ export class OrangeMoneyService {
       return this.tokenCache.token;
     }
 
-    const response = await fetch(`${this.baseUrl}/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        merchant_id: this.config.merchantId,
-      }),
-    });
+    const authUrl = `${this.baseUrl}/token`;
 
-    if (!response.ok) {
-      throw new Error('Failed to get auth token');
+    try {
+      const response = await fetch(authUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          merchant_id: this.config.merchantId,
+          merchant_key: this.config.merchantKey,
+        }).toString(),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔴 Auth response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        throw new Error(`Failed to get auth token: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const expiresIn = data.expires_in || 3600; // Default to 1 hour if not specified
+      
+      this.tokenCache = {
+        token: data.access_token,
+        expires: new Date(Date.now() + (expiresIn * 1000)),
+      };
+
+      return this.tokenCache.token;
+    } catch (error) {
+      console.error('🔴 Failed to get auth token:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    this.tokenCache = {
-      token: data.access_token,
-      expires: new Date(Date.now() + (data.expires_in * 1000)),
-    };
-
-    return this.tokenCache.token;
   }
 
   /**
@@ -94,7 +111,7 @@ export class OrangeMoneyService {
 
       const signature = await this.calculateSignature(JSON.stringify(paymentData));
       
-      const response = await fetch(`${this.baseUrl}/v1/payments`, {
+      const response = await fetch(`${this.baseUrl}/payments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -146,7 +163,7 @@ export class OrangeMoneyService {
     try {
       const token = await this.getAuthToken();
       
-      const response = await fetch(`${this.baseUrl}/v1/payments/${transactionId}`, {
+      const response = await fetch(`${this.baseUrl}/payments/${transactionId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Merchant-Id': this.config.merchantId,

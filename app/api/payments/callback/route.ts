@@ -10,15 +10,28 @@ export async function POST(request: Request) {
 
     // Get callback data
     const callbackData = await request.json();
-    console.log('📥 Received MTN MOMO callback:', callbackData);
+    
+    // Determine provider from request URL
+    const url = new URL(request.url);
+    const provider = url.pathname.includes('orange') ? 'orange' : 'mtn';
+    
+    console.log(`📥 Received ${provider.toUpperCase()} callback:`, callbackData);
 
-    // Extract key information
-    const {
-      referenceId,  // Our transactionId
-      status,       // SUCCESSFUL, FAILED, PENDING, etc.
-      reason,       // Error reason if failed
-      financialTransactionId, // MTN's transaction ID for successful payments
-    } = callbackData;
+    let referenceId, status, reason, financialTransactionId;
+
+    if (provider === 'orange') {
+      // Extract Orange Money callback data
+      referenceId = callbackData.externalId || callbackData.transactionId;
+      status = callbackData.status === 'SUCCESSFUL' ? 'SUCCESSFUL' : 'FAILED';
+      reason = callbackData.message || callbackData.failureReason;
+      financialTransactionId = callbackData.transactionId;
+    } else {
+      // Extract MTN MOMO callback data
+      referenceId = callbackData.referenceId;
+      status = callbackData.status;
+      reason = callbackData.reason;
+      financialTransactionId = callbackData.financialTransactionId;
+    }
 
     if (!referenceId) {
       console.error('❌ No reference ID in callback');
@@ -40,7 +53,7 @@ export async function POST(request: Request) {
 
     // Handle callback
     await paymentService.handlePaymentCallback(
-      'mtn',
+      provider,
       {
         status,
         reason,
@@ -49,11 +62,11 @@ export async function POST(request: Request) {
       }
     );
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ status: 'success' });
   } catch (error) {
-    console.error('❌ Callback error:', error);
+    console.error('❌ Error processing payment callback:', error);
     return NextResponse.json(
-      { error: 'Callback processing failed' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

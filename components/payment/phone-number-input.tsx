@@ -31,15 +31,18 @@ export function PhoneNumberInput({
     const phoneRegex = /^(?:\+237|237)?[6-9][0-9]{8}$/;
     const isValidFormat = phoneRegex.test(cleaned);
 
+    // Extract the actual number without country code
+    const actualNumber = cleaned.replace(/^(?:\+237|237)?/, '');
+
     // Provider-specific validation
     let isValidProvider = true;
     if (provider) {
-      const firstDigit = cleaned.replace(/^(?:\+237|237)?/, '')[0];
-      if (provider === 'mtn' && !['6', '7'].includes(firstDigit)) {
-        setError('Please enter a valid MTN number (starting with 6 or 7)');
+      const prefix = actualNumber.slice(0, 2);
+      if (provider === 'mtn' && prefix !== '67') {
+        setError('Please enter a valid MTN number (starting with 67)');
         isValidProvider = false;
-      } else if (provider === 'orange' && !['9'].includes(firstDigit)) {
-        setError('Please enter a valid Orange number (starting with 9)');
+      } else if (provider === 'orange' && prefix !== '69') {
+        setError('Please enter a valid Orange number (starting with 69)');
         isValidProvider = false;
       }
     }
@@ -53,6 +56,8 @@ export function PhoneNumberInput({
     } else if (isValidNumber) {
       setError(null);
     }
+
+    return isValidNumber;
   };
 
   useEffect(() => {
