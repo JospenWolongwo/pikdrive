@@ -49,12 +49,15 @@ export function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-    if (isIOSDevice) {
-      setShowIOSPrompt(true);
-    } else {
-      setShowAndroid(true);
+    // Only show install prompts if the app is not already installed
+    if (!isInstalled) {
+      if (isIOSDevice) {
+        setShowIOSPrompt(true);
+      } else if (isAndroidDevice) {
+        setShowAndroid(true);
+      }
     }
-  }, [setShowAndroid, isIOSDevice]);
+  }, [setShowAndroid, isIOSDevice, isAndroidDevice, isInstalled]);
 
   useEffect(() => {
     if (user) {
@@ -170,7 +173,7 @@ export function Navbar() {
               <span className="font-bold">PikDrive</span>
             </Link>
             <nav className="my-6 flex flex-col space-y-4">
-              {showInstallButton && (
+              {showInstallButton && mounted && (
                 <Button
                   variant="default"
                   className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
@@ -190,6 +193,15 @@ export function Navbar() {
                   {item.label}
                 </Link>
               ))}
+              {!user && (
+                <Link
+                  href="/auth"
+                  className="flex items-center rounded-lg px-3 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              )}
             </nav>
           </SheetContent>
         </Sheet>
