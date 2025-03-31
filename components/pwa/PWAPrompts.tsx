@@ -28,12 +28,11 @@ export function useShowAndroidPrompt() {
 }
 
 export default function PWAPrompts() {
-  const { isInstallable, hasPrompt, install, isInstalled } = usePWA();
+  const { isInstallable, hasPrompt, install } = usePWA();
   const [showAndroid, setShowAndroid] = useState(false);
   const [showIOS, setShowIOS] = useState(false);
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
 
-  // Debug log for PWA state
   useEffect(() => {
     console.log('🔍 PWAPrompts Debug:', { 
       showAndroid, 
@@ -41,20 +40,12 @@ export default function PWAPrompts() {
       hasPrompt,
       isIOSDevice,
       isAndroidDevice,
-      isInstalled,
       env: process.env.NODE_ENV 
     });
-  }, [showAndroid, isInstallable, hasPrompt, isIOSDevice, isAndroidDevice, isInstalled]);
+  }, [showAndroid, isInstallable, hasPrompt, isIOSDevice, isAndroidDevice]);
 
   // Show appropriate prompt on initial load
   useEffect(() => {
-    // Don't show any prompts if the app is already installed
-    if (isInstalled) {
-      setShowAndroid(false);
-      setShowIOS(false);
-      return;
-    }
-
     if (isInstallable && isAndroidDevice && !hasPrompt) {
       // Only show our custom dialog if there's no native prompt
       console.log('ℹ️ No native prompt available on load, showing custom dialog');
@@ -62,7 +53,7 @@ export default function PWAPrompts() {
     } else if (isInstallable && isIOSDevice) {
       setShowIOS(true);
     }
-  }, [isInstallable, isAndroidDevice, hasPrompt, isIOSDevice, isInstalled]);
+  }, [isInstallable, isAndroidDevice, hasPrompt, isIOSDevice]);
 
   const handleInstall = useCallback(async () => {
     if (!install) {
@@ -77,7 +68,6 @@ export default function PWAPrompts() {
       if (success) {
         console.log('✅ Installation successful');
         setShowAndroid(false);
-        setShowIOS(false);
       } else {
         console.log('ℹ️ Installation not completed');
         // Keep dialog open if installation wasn't successful
@@ -87,11 +77,6 @@ export default function PWAPrompts() {
       // Keep dialog open if there was an error
     }
   }, [install]);
-
-  // Don't render anything if the app is already installed
-  if (isInstalled) {
-    return null;
-  }
 
   return (
     <ShowAndroidPromptContext.Provider value={{ showAndroid, setShowAndroid }}>
@@ -123,7 +108,7 @@ export default function PWAPrompts() {
           </DialogContent>
         </Dialog>
       )}
-      <IOSInstallPrompt show={showIOS && isIOSDevice && !isInstalled} onClose={() => setShowIOS(false)} />
+      <IOSInstallPrompt show={showIOS && isIOSDevice} onClose={() => setShowIOS(false)} />
     </ShowAndroidPromptContext.Provider>
   );
 }
