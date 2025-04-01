@@ -16,8 +16,16 @@ export interface IOSInstallPromptProps {
 }
 
 export function IOSInstallPrompt({ show, onClose }: IOSInstallPromptProps) {
+  const handleDismiss = () => {
+    // Store the dismissal in localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pwa-dismissed', 'true');
+    }
+    onClose();
+  };
+  
   return (
-    <Dialog open={show} onOpenChange={onClose}>
+    <Dialog open={show} onOpenChange={handleDismiss}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Install PikDrive App</DialogTitle>
@@ -47,7 +55,7 @@ export function IOSInstallPrompt({ show, onClose }: IOSInstallPromptProps) {
             <p>Tap &quot;Add&quot; in the top right corner</p>
           </div>
           
-          <Button onClick={onClose} className="w-full mt-4">
+          <Button onClick={handleDismiss} className="w-full mt-4">
             Got it
           </Button>
         </div>

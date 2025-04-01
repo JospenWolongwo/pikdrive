@@ -28,7 +28,7 @@ export function useShowAndroidPrompt() {
 }
 
 export default function PWAPrompts() {
-  const { isInstallable, hasPrompt, install } = usePWA();
+  const { isInstallable, hasPrompt, install, isInstalled, dismissPrompt } = usePWA();
   const [showAndroid, setShowAndroid] = useState(false);
   const [showIOS, setShowIOS] = useState(false);
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
@@ -38,14 +38,22 @@ export default function PWAPrompts() {
       showAndroid, 
       isInstallable, 
       hasPrompt,
+      isInstalled,
       isIOSDevice,
       isAndroidDevice,
       env: process.env.NODE_ENV 
     });
-  }, [showAndroid, isInstallable, hasPrompt, isIOSDevice, isAndroidDevice]);
+  }, [showAndroid, isInstallable, hasPrompt, isIOSDevice, isAndroidDevice, isInstalled]);
 
   // Show appropriate prompt on initial load
   useEffect(() => {
+    if (isInstalled) {
+      // If already installed, don't show any prompts
+      setShowAndroid(false);
+      setShowIOS(false);
+      return;
+    }
+    
     if (isInstallable && isAndroidDevice && !hasPrompt) {
       // Only show our custom dialog if there's no native prompt
       console.log('ℹ️ No native prompt available on load, showing custom dialog');
@@ -53,7 +61,7 @@ export default function PWAPrompts() {
     } else if (isInstallable && isIOSDevice) {
       setShowIOS(true);
     }
-  }, [isInstallable, isAndroidDevice, hasPrompt, isIOSDevice]);
+  }, [isInstallable, isAndroidDevice, hasPrompt, isIOSDevice, isInstalled]);
 
   const handleInstall = useCallback(async () => {
     if (!install) {
@@ -78,10 +86,18 @@ export default function PWAPrompts() {
     }
   }, [install]);
 
+  const handleDismiss = useCallback(() => {
+    dismissPrompt();
+    setShowAndroid(false);
+    setShowIOS(false);
+  }, [dismissPrompt]);
+
   return (
     <ShowAndroidPromptContext.Provider value={{ showAndroid, setShowAndroid }}>
       {showAndroid && isAndroidDevice && (
-        <Dialog open={showAndroid} onOpenChange={setShowAndroid}>
+        <Dialog open={showAndroid} onOpenChange={(open) => {
+          if (!open) handleDismiss();
+        }}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Install PikDrive App</DialogTitle>
@@ -97,7 +113,7 @@ export default function PWAPrompts() {
                 <li>App-like experience</li>
               </ul>
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setShowAndroid(false)}>
+                <Button variant="outline" onClick={handleDismiss}>
                   Later
                 </Button>
                 <Button onClick={handleInstall} variant="default">
@@ -108,7 +124,7 @@ export default function PWAPrompts() {
           </DialogContent>
         </Dialog>
       )}
-      <IOSInstallPrompt show={showIOS && isIOSDevice} onClose={() => setShowIOS(false)} />
+      <IOSInstallPrompt show={showIOS && isIOSDevice} onClose={handleDismiss} />
     </ShowAndroidPromptContext.Provider>
   );
 }

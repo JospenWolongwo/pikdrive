@@ -495,7 +495,7 @@ export default function DriverBookings() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 justify-end">
                       {booking.user.phone_number && (
                         <Button
                           variant="outline"
@@ -546,7 +546,14 @@ export default function DriverBookings() {
                           className="relative"
                         >
                           <QrCode className="h-4 w-4 mr-2" />
-                          {verifyingBooking === booking.id ? 'Cancel' : 'Verify Passenger'}
+                          {verifyingBooking === booking.id ? (
+                            'Cancel'
+                          ) : (
+                            <>
+                              <span className="hidden sm:inline">Verify Passenger</span>
+                              <span className="sm:hidden">Verify</span>
+                            </>
+                          )}
                         </Button>
                       )}
                     </div>

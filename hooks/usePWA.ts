@@ -18,6 +18,11 @@ declare global {
   }
 }
 
+// Time constants in milliseconds
+const ONE_DAY = 24 * 60 * 60 * 1000; 
+const THREE_DAYS = 3 * ONE_DAY;
+const DISMISSAL_EXPIRY = THREE_DAYS; // Prompt reappears after 3 days
+
 export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -32,6 +37,42 @@ export function usePWA() {
       e.preventDefault();
       promptEvent = e;
       
+      // Check if user has already dismissed or installed
+      const hasUserInstalled = localStorage.getItem('pwa-installed') === 'true';
+      
+      // For dismissal, we need to check if it's still within the valid period
+      const dismissedTimeStr = localStorage.getItem('pwa-dismissed-time');
+      let isDismissalValid = false;
+      
+      if (dismissedTimeStr) {
+        const dismissedTime = parseInt(dismissedTimeStr, 10);
+        const currentTime = Date.now();
+        const timeSinceDismissal = currentTime - dismissedTime;
+        
+        // Dismissal is only valid if it happened less than DISMISSAL_EXPIRY ago
+        isDismissalValid = timeSinceDismissal < DISMISSAL_EXPIRY;
+        
+        console.log('🕒 PWA dismissal check:', { 
+          dismissedTime, 
+          currentTime, 
+          timeSinceDismissal, 
+          expiryTime: DISMISSAL_EXPIRY,
+          isDismissalValid,
+          daysUntilExpiry: Math.ceil((DISMISSAL_EXPIRY - timeSinceDismissal) / ONE_DAY)
+        });
+        
+        // If dismissal has expired, clean up localStorage
+        if (!isDismissalValid) {
+          localStorage.removeItem('pwa-dismissed');
+          localStorage.removeItem('pwa-dismissed-time');
+        }
+      }
+      
+      if (hasUserInstalled || isDismissalValid) {
+        console.log('🔍 User previously installed PWA or has a valid dismissal');
+        return;
+      }
+      
       // Store the event for later use
       window.deferredPrompt = e;
       setDeferredPrompt(e);
@@ -43,6 +84,7 @@ export function usePWA() {
 
     const handleAppInstalled = () => {
       console.log('✅ PWA Installed Successfully');
+      localStorage.setItem('pwa-installed', 'true');
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
@@ -51,11 +93,31 @@ export function usePWA() {
     };
 
     const checkInstalled = () => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                          (window.navigator as any).standalone === true;
-      setIsInstalled(isStandalone);
+      // Multiple checks for installed state
+      const isInStandaloneMode = 
+        window.matchMedia('(display-mode: standalone)').matches || 
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://');
+      
+      // Check local storage as well
+      const hasStoredInstallFlag = localStorage.getItem('pwa-installed') === 'true';
+      
+      // Set as installed if either condition is true
+      const isAppInstalled = isInStandaloneMode || hasStoredInstallFlag;
+      
+      setIsInstalled(isAppInstalled);
+      
+      // If detected as installed, set the localStorage flag
+      if (isInStandaloneMode && !hasStoredInstallFlag) {
+        localStorage.setItem('pwa-installed', 'true');
+      }
+      
       setLastUpdated(Date.now());
-      console.log('📱 PWA Install Check:', { isStandalone });
+      console.log('📱 PWA Install Check:', { 
+        isInStandaloneMode, 
+        hasStoredInstallFlag,
+        isAppInstalled 
+      });
     };
 
     // Set up event listeners
@@ -75,7 +137,11 @@ export function usePWA() {
       // Check display mode changes
       const displayModeMediaQuery = window.matchMedia('(display-mode: standalone)');
       const handleDisplayModeChange = (e: MediaQueryListEvent) => {
-        setIsInstalled(e.matches);
+        if (e.matches) {
+          localStorage.setItem('pwa-installed', 'true');
+          setIsInstalled(true);
+          setIsInstallable(false);
+        }
         setLastUpdated(Date.now());
         console.log('🔄 Display Mode Changed:', { isStandalone: e.matches });
       };
@@ -87,8 +153,29 @@ export function usePWA() {
       const checkForInstallability = () => {
         const userAgent = navigator.userAgent.toLowerCase();
         const isAndroid = /android/.test(userAgent);
+        const hasUserInstalled = localStorage.getItem('pwa-installed') === 'true';
         
-        if (isAndroid && !isInstalled && !deferredPrompt) {
+        // For dismissal, we need to check if it's still within the valid period
+        const dismissedTimeStr = localStorage.getItem('pwa-dismissed-time');
+        let isDismissalValid = false;
+        
+        if (dismissedTimeStr) {
+          const dismissedTime = parseInt(dismissedTimeStr, 10);
+          const currentTime = Date.now();
+          const timeSinceDismissal = currentTime - dismissedTime;
+          
+          // Dismissal is only valid if it happened less than DISMISSAL_EXPIRY ago
+          isDismissalValid = timeSinceDismissal < DISMISSAL_EXPIRY;
+          
+          // If dismissal has expired, clean up localStorage
+          if (!isDismissalValid) {
+            localStorage.removeItem('pwa-dismissed');
+            localStorage.removeItem('pwa-dismissed-time');
+          }
+        }
+        
+        // Only set installable if not already installed or within valid dismissal period
+        if (isAndroid && !isInstalled && !deferredPrompt && !isDismissalValid && !hasUserInstalled) {
           setIsInstallable(true);
           console.log('🔍 Android device detected, setting installable');
         }
@@ -130,12 +217,15 @@ export function usePWA() {
       
       if (choiceResult.outcome === 'accepted') {
         console.log('✅ User accepted the PWA installation');
+        localStorage.setItem('pwa-installed', 'true');
         setIsInstalled(true);
         setDeferredPrompt(null);
         window.deferredPrompt = undefined;
         return true;
       } else {
         console.log('❌ User dismissed the PWA installation');
+        localStorage.setItem('pwa-dismissed', 'true');
+        localStorage.setItem('pwa-dismissed-time', Date.now().toString());
         return false;
       }
     } catch (err) {
@@ -144,10 +234,18 @@ export function usePWA() {
     }
   }, [deferredPrompt]);
 
+  const dismissPrompt = useCallback(() => {
+    // Store current timestamp with dismissal
+    localStorage.setItem('pwa-dismissed', 'true');
+    localStorage.setItem('pwa-dismissed-time', Date.now().toString());
+    setIsInstallable(false);
+  }, []);
+
   return { 
     isInstallable, 
     isInstalled, 
     install,
+    dismissPrompt,
     hasPrompt: !!deferredPrompt,
     lastUpdated
   };
