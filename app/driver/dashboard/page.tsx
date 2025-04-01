@@ -88,6 +88,7 @@ interface Ride {
     sender: {
       id: string;
       full_name: string;
+      avatar_url?: string;
     };
   }>;
 }
@@ -116,6 +117,7 @@ interface Message {
   sender: {
     id: string;
     full_name: string;
+    avatar_url?: string;
   };
 }
 
@@ -123,6 +125,22 @@ interface UnreadCount {
   rideId: string;
   count: number;
 }
+
+// Utility function for determining status colors
+const getStatusColor = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case "confirmed":
+      return "bg-green-500";
+    case "pending":
+      return "bg-yellow-500";
+    case "pending_verification":
+      return "bg-purple-500";
+    case "cancelled":
+      return "bg-red-500";
+    default:
+      return "bg-gray-500";
+  }
+};
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -173,16 +191,16 @@ export default function DriverDashboard() {
           .in("ride_id", rideIds),
         supabase
           .from("messages")
-          .select("*, sender:profiles(id, full_name)")
+          .select("*, sender:profiles(id, full_name, avatar_url)")
           .in("ride_id", rideIds),
       ]);
 
       // 3. Combine data with error handling
       const enrichedRides = simpleRides.map((ride: Ride) => ({
         ...ride,
-        bookings: ride.bookings || [],
-        messages: ride.messages || [],
-        unreadCount: unreadCounts.find((u) => u.rideId === ride.id)?.count || 0,
+        bookings: bookings?.filter((b: Booking) => b.ride_id === ride.id) || [],
+        messages: messages?.filter((m: Message) => m.ride_id === ride.id) || [],
+        unreadCount: unreadCounts.find((u: UnreadCount) => u.rideId === ride.id)?.count || 0,
       }));
 
       console.log("✅ Data load complete");
@@ -200,7 +218,7 @@ export default function DriverDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [user, supabase, toast]);
+  }, [user, supabase, unreadCounts, toast]);
 
   // Load rides on mount and when user changes
   useEffect(() => {
@@ -272,21 +290,6 @@ export default function DriverDashboard() {
     current_time: nowUTC.toISOString(),
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "confirmed":
-        return "bg-green-500";
-      case "pending":
-        return "bg-yellow-500";
-      case "pending_verification":
-        return "bg-purple-500";
-      case "cancelled":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
   const handleOpenChat = (
     ride: Ride,
     user: { id: string; full_name: string; avatar_url?: string }
@@ -309,17 +312,22 @@ function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { supabase, user } = useSupabase();
-  const { unreadCounts, subscribeToRide } = useChat();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [ridesData, setRidesData] = useState<{
     rides: Ride[];
     lastUpdated: number;
-  }>({ rides: [], lastUpdated: 0 });
-  const [loading, setLoading] = useState(true);
+  }>({
+    rides: [],
+    lastUpdated: 0,
+  });
+  // Track unread message counts
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCount[]>([]);
+  // Add selectedChat state for message handling
   const [selectedChat, setSelectedChat] = useState<{
-    ride: Ride;
-    user: { id: string; full_name: string; avatar_url?: string };
-  } | null>(null);
+    ride: Ride | null;
+    user: { id: string; full_name: string; avatar_url?: string } | null;
+  }>({ ride: null, user: null });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 5;
@@ -366,16 +374,16 @@ function DashboardContent() {
           .in("ride_id", rideIds),
         supabase
           .from("messages")
-          .select("*, sender:profiles(id, full_name)")
+          .select("*, sender:profiles(id, full_name, avatar_url)")
           .in("ride_id", rideIds),
       ]);
 
       // 3. Combine data with error handling
       const enrichedRides = simpleRides.map((ride: Ride) => ({
         ...ride,
-        bookings: bookings?.filter((b) => b.ride_id === ride.id) || [],
-        messages: messages?.filter((m) => m.ride_id === ride.id) || [],
-        unreadCount: unreadCounts.find((u) => u.rideId === ride.id)?.count || 0,
+        bookings: bookings?.filter((b: Booking) => b.ride_id === ride.id) || [],
+        messages: messages?.filter((m: Message) => m.ride_id === ride.id) || [],
+        unreadCount: unreadCounts.find((u: UnreadCount) => u.rideId === ride.id)?.count || 0,
       }));
 
       console.log("✅ Data load complete");
@@ -384,16 +392,11 @@ function DashboardContent() {
         lastUpdated: Date.now(),
       });
     } catch (error) {
-      console.error("❌ Error loading rides:", error);
-      toast({
-        variant: "destructive",
-        title: "Error loading rides",
-        description: "Please try again later.",
-      });
+      console.error("❌ Error loading data:", error);
     } finally {
       setLoading(false);
     }
-  }, [user, supabase, toast, unreadCounts]);
+  }, [user, supabase, unreadCounts]);
 
   // Load rides on mount and when user changes
   useEffect(() => {
@@ -404,13 +407,6 @@ function DashboardContent() {
 
     if (user) initialLoad();
   }, [user, loadRides, router]);
-
-  // Subscribe to messages for each ride
-  useEffect(() => {
-    ridesData.rides.forEach((ride) => {
-      subscribeToRide(ride.id);
-    });
-  }, [ridesData.rides, subscribeToRide]);
 
   // Get current time in UTC - wrapped in useMemo to prevent dependency changes on every render
   const nowUTC = useMemo(() => {
@@ -721,9 +717,9 @@ function DashboardContent() {
                                             setCheckingPayment({
                                               bookingId: booking.id,
                                               transactionId:
-                                                booking.transaction_id,
+                                                booking.transaction_id || "",
                                               provider:
-                                                booking.payment_provider,
+                                                booking.payment_provider || "",
                                             })
                                           }
                                         >
@@ -758,7 +754,7 @@ function DashboardContent() {
                                       variant="outline"
                                       size="sm"
                                       onClick={() =>
-                                        handleOpenChat(ride, booking.user)
+                                        setSelectedChat({ ride, user: booking.user })
                                       }
                                       className="relative"
                                     >
@@ -1215,10 +1211,10 @@ function DashboardContent() {
           )}
         </TabsContent>
       </Tabs>
-      {selectedChat && (
+      {selectedChat && selectedChat.ride && selectedChat.user && (
         <ChatDialog
           isOpen={!!selectedChat}
-          onClose={() => setSelectedChat(null)}
+          onClose={() => setSelectedChat({ ride: null, user: null })}
           rideId={selectedChat.ride.id}
           otherUserId={selectedChat.user.id}
           otherUserName={selectedChat.user.full_name}

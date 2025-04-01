@@ -74,6 +74,7 @@ interface RawBooking {
   status: string
   created_at: string
   payment_status: string | null
+  code_verified?: boolean
 }
 
 interface EnrichedBooking extends RawBooking {
@@ -173,7 +174,7 @@ export default function DriverBookings() {
         return;
       }
 
-      const rideIds = rides.map(r => r.id);
+      const rideIds = rides.map((r: {id: string}) => r.id);
       console.log(`🔍 Found ${rideIds.length} rides, fetching bookings`);
 
       // Get all data in parallel
@@ -219,7 +220,7 @@ export default function DriverBookings() {
       console.log("🔎 Raw Bookings Data:", JSON.stringify(rawBookings, null, 2));
 
       // Get all user IDs from bookings
-      const userIds = [...new Set(rawBookings.map(b => b.user_id))];
+      const userIds = [...new Set(rawBookings.map((b: RawBooking) => b.user_id))];
       
       // Fetch user profiles
       const { data: users, error: usersError } = await supabase
@@ -232,11 +233,11 @@ export default function DriverBookings() {
       }
 
       // Create lookup maps for rides and users
-      const rideMap = new Map(bookingRides?.map(r => [r.id, r]) || []);
-      const userMap = new Map(users?.map(u => [u.id, u]) || []);
+      const rideMap = new Map(bookingRides?.map((r: Ride) => [r.id, r]) || []);
+      const userMap = new Map(users?.map((u: Profile) => [u.id, u]) || []);
 
       // Combine data to create enriched bookings
-      const enrichedBookings = rawBookings.map(booking => {
+      const enrichedBookings = rawBookings.map((booking: RawBooking) => {
         const userProfile = userMap.get(booking.user_id);
         const rideDetails = rideMap.get(booking.ride_id);
         
@@ -286,7 +287,7 @@ export default function DriverBookings() {
     } finally {
       setLoading(false);
     }
-  }, [user, supabase]);
+  }, [user, supabase, currentPage]);
 
   // Initial load
   useEffect(() => {

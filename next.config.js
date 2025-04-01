@@ -131,7 +131,7 @@ const nextConfig = {
     domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
   },
   experimental: {
-    serverActions: true,
+    // serverActions are enabled by default in Next.js 14.1.0
   },
   eslint: {
     ignoreDuringBuilds: true,

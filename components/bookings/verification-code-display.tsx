@@ -278,7 +278,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
             <div className="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-4 rounded-md shadow-md">
               <div className="flex justify-center">
                 <span className="font-mono text-2xl font-bold tracking-wider">
-                  {state.code.split('').join(' ')}
+                  {state.code ? state.code.split('').join(' ') : 'Loading...'}
                 </span>
               </div>
               <div className="mt-3 text-xs text-blue-100 text-center">
