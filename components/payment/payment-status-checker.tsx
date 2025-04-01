@@ -24,6 +24,7 @@ export function PaymentStatusChecker({
   const [attempts, setAttempts] = useState(0);
   const [isPolling, setIsPolling] = useState(true);
   const [message, setMessage] = useState('Waiting for payment approval...');
+  const [lastUpdated, setLastUpdated] = useState(Date.now()); // Add timestamp for forcing re-renders
   const supabase = createClientComponentClient();
 
   useEffect(() => {
@@ -33,57 +34,137 @@ export function PaymentStatusChecker({
     const checkStatus = async () => {
       if (!isPolling) return;
 
+      if (!transactionId) {
+        console.error('❌ Missing transaction ID for payment status check');
+        setStatus(prev => 'failed');
+        setMessage(prev => 'Invalid payment reference');
+        setIsPolling(prev => false);
+        setLastUpdated(Date.now());
+        onPaymentComplete?.('failed');
+        return;
+      }
+
+      console.log('🔄 Checking payment status:', { transactionId, provider, attempt: attempts + 1 });
+
       try {
-        const response = await paymentService.checkPaymentStatus(transactionId, provider);
-        console.log(' 🔄 Payment status update:', { 
+        // Use our server API endpoint as a proxy to avoid CORS issues
+        // This follows the best practice of making API calls through our backend
+        const response = await fetch('/api/payments/check-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ transactionId, provider }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || `Server responded with ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        console.log('✅ Payment status update:', { 
+          transactionId,
           currentStatus: status,
-          newStatus: response.status,
-          message: response.message 
+          newStatus: data.status,
+          message: data.message,
+          timestamp: new Date().toISOString()
         });
         
-        // Only update if status has changed
-        if (response.status !== status) {
-          setStatus(response.status);
-          
-          if (response.status === 'completed') {
-            setIsPolling(false);
-            setMessage('Payment completed successfully!');
-            toast.success(response.message);
-            onPaymentComplete?.(response.status);
-            return;
-          }
+        // Use functional updates to ensure state consistency
+        setStatus(prev => data.status !== prev ? data.status : prev);
+        setLastUpdated(Date.now());
+        
+        if (data.status === 'completed') {
+          setIsPolling(prev => false);
+          setMessage(prev => 'Payment completed successfully!');
+          toast.success(data.message || 'Payment completed successfully!');
+          onPaymentComplete?.(data.status);
+          return;
+        }
 
-          if (response.status === 'failed') {
-            setIsPolling(false);
-            setMessage(response.message || 'Payment failed');
-            toast.error(response.message);
-            onPaymentComplete?.(response.status);
-            return;
-          }
+        if (data.status === 'failed') {
+          setIsPolling(prev => false);
+          setMessage(prev => data.message || 'Payment failed');
+          toast.error(data.message || 'Payment failed');
+          onPaymentComplete?.(data.status);
+          return;
+        }
 
-          if (response.status === 'processing') {
-            setMessage('Processing payment...');
-          }
+        if (data.status === 'processing') {
+          setMessage(prev => 'Processing payment...');
         }
 
         // Continue polling if still pending or processing
-        if ((response.status === 'pending' || response.status === 'processing') && isPolling) {
+        if ((data.status === 'pending' || data.status === 'processing') && isPolling) {
           if (attempts < maxAttempts) {
             setAttempts(prev => prev + 1);
             timeoutId = setTimeout(checkStatus, pollingInterval);
           } else {
-            setIsPolling(false);
-            setMessage('Payment verification timed out');
+            setIsPolling(prev => false);
+            setMessage(prev => 'Payment verification timed out');
             toast.error('Payment verification timed out. Please contact support.');
             onPaymentComplete?.('failed');
           }
         }
       } catch (error) {
-        console.error(' ❌ Error checking payment status:', error);
-        setIsPolling(false);
-        setMessage('Failed to verify payment status');
-        toast.error('Failed to verify payment status. Please contact support.');
-        onPaymentComplete?.('failed');
+        console.error('❌ Payment status check error:', error);
+        
+        // Check if this is a CORS error and handle accordingly
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isCorsError = errorMessage.includes('CORS') || errorMessage.includes('NetworkError');
+        
+        if (isCorsError && attempts < 3) {
+          // For CORS errors, try a few more times with longer delays
+          console.log('⚠️ CORS error detected, retrying with exponential backoff...');
+          setAttempts(prev => prev + 1);
+          const backoffTime = pollingInterval * Math.pow(2, attempts); // Exponential backoff
+          timeoutId = setTimeout(checkStatus, backoffTime);
+          return;
+        }
+        
+        // Use direct Supabase call as fallback if API endpoint fails
+        try {
+          console.log('🔄 Trying direct payment status check as fallback...');
+          const fallbackResult = await paymentService.checkPaymentStatus(transactionId, provider);
+          
+          if (fallbackResult.success) {
+            console.log('✅ Fallback payment check succeeded:', fallbackResult);
+            setStatus(prev => fallbackResult.status);
+            setMessage(prev => fallbackResult.message || 'Payment status updated');
+            setLastUpdated(Date.now());
+            
+            if (fallbackResult.status === 'completed' || fallbackResult.status === 'failed') {
+              setIsPolling(prev => false);
+              onPaymentComplete?.(fallbackResult.status);
+            } else {
+              // Continue polling
+              if (attempts < maxAttempts) {
+                setAttempts(prev => prev + 1);
+                timeoutId = setTimeout(checkStatus, pollingInterval);
+              }
+            }
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback payment check also failed:', fallbackError);
+        }
+        
+        // Handle complete failure
+        if (attempts < maxAttempts - 1) {
+          // Keep trying for a while, with increasing delays
+          const backoffTime = pollingInterval * Math.pow(1.5, attempts); // Slower backoff
+          console.log(`⏱️ Retry #${attempts + 1} in ${backoffTime/1000}s`);
+          setAttempts(prev => prev + 1);
+          timeoutId = setTimeout(checkStatus, backoffTime);
+        } else {
+          setIsPolling(prev => false);
+          setMessage(prev => 'Failed to verify payment status');
+          setLastUpdated(Date.now());
+          toast.error('Failed to verify payment status. Please contact support.');
+          onPaymentComplete?.('failed');
+        }
       }
     };
 
@@ -94,7 +175,7 @@ export function PaymentStatusChecker({
       setIsPolling(false);
       clearTimeout(timeoutId);
     };
-  }, [transactionId, provider, attempts, maxAttempts, pollingInterval, onPaymentComplete, supabase, isPolling, status]);
+  }, [transactionId, provider, maxAttempts, pollingInterval, onPaymentComplete, supabase, isPolling, attempts, status]);
 
   return (
     <div className="flex flex-col items-center justify-center p-4 space-y-2">

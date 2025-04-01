@@ -1,18 +1,26 @@
 'use client'
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useSupabase } from "@/providers/SupabaseProvider"
 import { useChat } from "@/providers/ChatProvider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { MessageCircle, Phone, MapPin, Calendar, Clock } from "lucide-react"
+import { MessageCircle, Phone, MapPin, Calendar, Clock, QrCode, Search, X, SlidersHorizontal } from "lucide-react"
 import { format } from "date-fns"
 import { formatCurrency } from "@/lib/utils"
 import { ChatDialog } from "@/components/chat/chat-dialog"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { CodeVerificationForm } from "@/components/driver/code-verification-form"
+import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Booking {
   id: string
@@ -85,6 +93,7 @@ interface EnrichedBooking extends RawBooking {
     driver_id: string | null
     total_seats: number
   }
+  code_verified?: boolean
 }
 
 export default function DriverBookings() {
@@ -93,81 +102,151 @@ export default function DriverBookings() {
   const [bookings, setBookings] = useState<EnrichedBooking[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const itemsPerPage = 10
+  const [totalBookings, setTotalBookings] = useState(0)
+  const itemsPerPage = 5
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortOrder, setSortOrder] = useState<'latest' | 'earliest'>('latest')
   const [selectedChat, setSelectedChat] = useState<{
     ride_id: string
     user: { id: string; full_name: string; avatar_url?: string; phone_number?: string }
   } | null>(null)
+  const [verifyingBooking, setVerifyingBooking] = useState<string | null>(null)
+
+  // Derived state for pagination
+  const totalPages = Math.max(1, Math.ceil(totalBookings / itemsPerPage))
+  
+  // Filter and sort bookings
+  const filteredAndSortedBookings = useMemo(() => {
+    return bookings
+      .filter(booking => {
+        if (!searchQuery) return true;
+        
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          booking.user.full_name.toLowerCase().includes(searchLower) ||
+          booking.ride.from_city.toLowerCase().includes(searchLower) ||
+          booking.ride.to_city.toLowerCase().includes(searchLower) ||
+          booking.status.toLowerCase().includes(searchLower) ||
+          (booking.payment_status && booking.payment_status.toLowerCase().includes(searchLower))
+        );
+      })
+      // Sort by created_at date based on the current sort order
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return sortOrder === 'latest' 
+          ? dateB - dateA  // Latest first
+          : dateA - dateB;  // Earliest first
+      });
+  }, [bookings, searchQuery, sortOrder]);
+  
+  // Get current page of bookings
+  const currentBookings = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedBookings.slice(startIndex, endIndex);
+  }, [filteredAndSortedBookings, currentPage, itemsPerPage]);
 
   const loadBookings = useCallback(async () => {
     if (!user) return
 
     try {
-      // 1. Get total count first
-      const { count, error: countError } = await supabase
-        .from('rides')
-        .select('id', { count: 'exact' })
-        .eq('driver_id', user.id)
+      setLoading(true);
+      console.log("🚗 Loading bookings for driver:", user.id);
 
-      if (countError) {
-        console.error('Error getting count:', countError)
-        return
-      }
-
-      setTotalPages(Math.ceil((count || 0) / itemsPerPage))
-
-      // 2. Get all rides for the driver with pagination
+      // Get all rides for the driver first (no pagination for rides anymore)
       const { data: rides, error: ridesError } = await supabase
         .from('rides')
         .select('id')
-        .eq('driver_id', user.id)
-        .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
+        .eq('driver_id', user.id);
 
       if (ridesError) {
-        console.error('❌ Error checking rides:', ridesError)
-        return
+        console.error('❌ Error fetching driver rides:', ridesError);
+        setLoading(false);
+        return;
       }
 
       if (!rides?.length) {
-        setBookings([])
-        return
+        console.log("ℹ️ No rides found for driver");
+        setBookings([]);
+        setLoading(false);
+        return;
       }
 
-      const rideIds = rides.map((r: { id: string }) => r.id)
+      const rideIds = rides.map(r => r.id);
+      console.log(`🔍 Found ${rideIds.length} rides, fetching bookings`);
 
-      // 3. Get all data in parallel
+      // Get all data in parallel
       const [
         { data: rawBookings, error: bookingsError },
-        { data: users, error: usersError },
         { data: bookingRides, error: ridesDataError }
       ] = await Promise.all([
+        // Get all bookings for the driver's rides
         supabase
           .from('bookings')
-          .select('id, ride_id, user_id, seats, status, created_at, payment_status')
+          .select('id, ride_id, user_id, seats, status, created_at, payment_status, code_verified')
           .in('ride_id', rideIds),
-        supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url, phone_number, email'),
+          
+        // Get full ride details
         supabase
           .from('rides')
-          .select('id, from_city, to_city, departure_time, price, driver_id, total_seats')
+          .select('*')
           .in('id', rideIds)
-      ])
+      ]);
 
-      if (bookingsError || usersError || ridesDataError) {
-        console.error('Error loading data:', { bookingsError, usersError, ridesDataError })
-        return
+      if (bookingsError) {
+        console.error('❌ Error fetching bookings:', bookingsError);
+        setLoading(false);
+        return;
       }
 
-      // 4. Create lookup maps and combine data
-      const userMap = new Map<string, Profile>(users?.map((u: Profile) => [u.id, u]) || [])
-      const rideMap = new Map<string, Ride>(bookingRides?.map((r: Ride) => [r.id, r]) || [])
+      if (ridesDataError) {
+        console.error('❌ Error fetching ride details:', ridesDataError);
+        setLoading(false);
+        return;
+      }
 
-      const enrichedBookings = (rawBookings || []).map((booking: RawBooking): EnrichedBooking => {
-        const userProfile = userMap.get(booking.user_id)
+      if (!rawBookings?.length) {
+        console.log("ℹ️ No bookings found for driver's rides");
+        setBookings([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log(`✅ Found ${rawBookings.length} bookings`);
+      
+      // Debug raw booking data in detail
+      console.log("🔎 Raw Bookings Data:", JSON.stringify(rawBookings, null, 2));
+
+      // Get all user IDs from bookings
+      const userIds = [...new Set(rawBookings.map(b => b.user_id))];
+      
+      // Fetch user profiles
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, phone_number, email')
+        .in('id', userIds);
+
+      if (usersError) {
+        console.error('❌ Error fetching user profiles:', usersError);
+      }
+
+      // Create lookup maps for rides and users
+      const rideMap = new Map(bookingRides?.map(r => [r.id, r]) || []);
+      const userMap = new Map(users?.map(u => [u.id, u]) || []);
+
+      // Combine data to create enriched bookings
+      const enrichedBookings = rawBookings.map(booking => {
+        const userProfile = userMap.get(booking.user_id);
+        const rideDetails = rideMap.get(booking.ride_id);
+        
+        // Ensure code_verified is properly handled as boolean 
+        // (it might be coming as null from database)
+        const code_verified = booking.code_verified === true;
+        
         return {
           ...booking,
+          code_verified,
           user: userProfile || {
             id: booking.user_id,
             full_name: 'Unknown User',
@@ -175,32 +254,46 @@ export default function DriverBookings() {
             phone_number: undefined,
             email: null
           },
-          ride: rideMap.get(booking.ride_id) || {
+          ride: rideDetails || {
             id: booking.ride_id,
             from_city: 'Unknown',
             to_city: 'Unknown',
             departure_time: new Date().toISOString(),
             price: 0,
-            driver_id: null,
+            driver_id: user.id,
             total_seats: 0
           }
-        }
-      })
+        };
+      });
 
-      setBookings(enrichedBookings)
+      console.log(`🔄 Setting ${enrichedBookings.length} enriched bookings`);
+      
+      // Set total bookings for pagination and reset to page 1 if needed
+      setTotalBookings(enrichedBookings.length);
+      if (currentPage > Math.ceil(enrichedBookings.length / itemsPerPage)) {
+        setCurrentPage(1);
+      }
+      
+      // Use functional update to ensure atomic state update
+      setBookings(prev => {
+        // Only update if there are actual changes
+        const hasChanges = JSON.stringify(prev) !== JSON.stringify(enrichedBookings);
+        return hasChanges ? enrichedBookings : prev;
+      });
+      
     } catch (error) {
-      console.error('❌ Error in loadBookings:', error)
+      console.error('❌ Error in loadBookings:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [user, supabase, currentPage])
+  }, [user, supabase]);
 
   // Initial load
   useEffect(() => {
     if (user) {
-      loadBookings()
+      loadBookings();
     }
-  }, [loadBookings, user, currentPage])
+  }, [loadBookings, user]);
 
   // Subscribe to bookings changes
   useEffect(() => {
@@ -278,29 +371,77 @@ export default function DriverBookings() {
   }
 
   if (loading) {
-    return <div className="container py-10">Loading...</div>
+    return <div className="container mx-auto py-10">Loading...</div>
   }
 
   return (
-    <div className="container py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Your Bookings</h1>
-        <p className="text-muted-foreground mt-2">Manage your ride bookings and communicate with passengers</p>
+    <div className="container mx-auto py-10 space-y-8">
+      <h1 className="text-2xl font-bold">Your Bookings</h1>
+      
+      {/* Search and filter bar */}
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search by passenger, city or status..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1); // Reset to first page on search
+            }}
+          />
+        </div>
+        
+        {/* Sort dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <SlidersHorizontal className="h-4 w-4" />
+              Sort: {sortOrder === 'latest' ? 'Latest First' : 'Earliest First'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setSortOrder('latest')}>
+              Latest First
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortOrder('earliest')}>
+              Earliest First
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <div>
+          {searchQuery && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              <span>{filteredAndSortedBookings.length} results</span>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-4 w-4 p-0" 
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
-        {bookings.length === 0 ? (
+        {currentBookings.length === 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>No Bookings Yet</CardTitle>
-              <p className="text-muted-foreground">
-                You don't have any bookings for your rides yet.
-              </p>
+              <CardTitle>No Bookings Found</CardTitle>
             </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{searchQuery ? "No bookings match your search. Try different keywords." : "You don't have any bookings yet."}</p>
+            </CardContent>
           </Card>
         ) : (
           <>
-            {bookings.map((booking: EnrichedBooking) => (
+            {currentBookings.map((booking: EnrichedBooking) => (
               <Card key={booking.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -392,54 +533,111 @@ export default function DriverBookings() {
                           </Badge>
                         )}
                       </Button>
+                      
+                      {/* Show verify button for bookings that require verification */}
+                      {booking.status === 'pending_verification' && 
+                       booking.code_verified !== true && 
+                       String(booking.payment_status).toLowerCase() === 'completed' && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setVerifyingBooking(verifyingBooking === booking.id ? null : booking.id)}
+                          className="relative"
+                        >
+                          <QrCode className="h-4 w-4 mr-2" />
+                          {verifyingBooking === booking.id ? 'Cancel' : 'Verify Passenger'}
+                        </Button>
+                      )}
                     </div>
                   </div>
+                  
+                  {/* Verification form */}
+                  {verifyingBooking === booking.id && (
+                    <div className="mt-4">
+                      <CodeVerificationForm 
+                        bookingId={booking.id}
+                        onSuccess={() => {
+                          setVerifyingBooking(null)
+                          // Update the local state to avoid having to reload all data
+                          setBookings(prev => prev.map(b => 
+                            b.id === booking.id 
+                              ? {...b, code_verified: true, status: 'confirmed'} 
+                              : b
+                          ))
+                        }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination className="mt-8">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        if (currentPage > 1) setCurrentPage(currentPage - 1)
-                      }}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                  
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          setCurrentPage(page)
-                        }}
-                        isActive={currentPage === page}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        if (currentPage < totalPages) setCurrentPage(currentPage + 1)
-                      }}
-                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+            {/* Pagination with results count */}
+            {filteredAndSortedBookings.length > 0 && (
+              <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {Math.min(filteredAndSortedBookings.length, (currentPage - 1) * itemsPerPage + 1)}-
+                  {Math.min(filteredAndSortedBookings.length, currentPage * itemsPerPage)} of {filteredAndSortedBookings.length} bookings
+                </div>
+                
+                {totalPages > 1 && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) {
+                              setCurrentPage(prev => prev - 1);
+                            }
+                          }}
+                          className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        // Show pages around the current page if we have more than 5 pages
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else {
+                          // Calculate start page ensuring we always show 5 pages
+                          let startPage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+                          pageNum = startPage + i;
+                        }
+                        return (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(pageNum);
+                              }}
+                              isActive={currentPage === pageNum}
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) {
+                              setCurrentPage(prev => prev + 1);
+                            }
+                          }}
+                          className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </div>
             )}
           </>
         )}

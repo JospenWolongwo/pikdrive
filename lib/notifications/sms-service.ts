@@ -24,12 +24,28 @@ export class SMSService {
   /**
    * Send an SMS message using Twilio's REST API directly
    */
-  async sendMessage(data: SMSMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendMessage(data: SMSMessage): Promise<{ success: boolean; messageId?: string; error?: string; sandbox?: boolean; message?: string }> {
     try {
       if (this.config.environment === 'sandbox') {
         console.log('🏖️ SMS Service in sandbox mode');
         console.log('📱 Would send SMS:', data);
-        return { success: true, messageId: 'sandbox_' + Date.now() };
+        
+        // In sandbox mode, simulate a success response but add more information
+        // about how to enable real SMS sending
+        console.log('ℹ️ To enable real SMS sending:');
+        console.log('1️⃣ Create a .env.local file in your project root');
+        console.log('2️⃣ Add the following environment variables:');
+        console.log('   TWILIO_ACCOUNT_SID=your_account_sid');
+        console.log('   TWILIO_AUTH_TOKEN=your_auth_token');
+        console.log('   TWILIO_FROM_NUMBER=your_twilio_phone_number');
+        console.log('3️⃣ Set NODE_ENV=production or modify SMSService constructor call');
+        
+        return { 
+          success: true, 
+          messageId: 'sandbox_' + Date.now(),
+          sandbox: true,
+          message: 'SMS not actually sent - running in sandbox mode'
+        };
       }
 
       const credentials = Buffer.from(`${this.config.accountSid}:${this.config.authToken}`).toString('base64');
@@ -112,7 +128,7 @@ export class SMSService {
     phoneNumber: string,
     amount: number,
     success: boolean
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  ): Promise<{ success: boolean; messageId?: string; error?: string; sandbox?: boolean; message?: string }> {
     const message = success
       ? `✅ Your payment of ${amount} XAF has been successfully processed. Thank you for using PikDrive!`
       : `❌ Your payment of ${amount} XAF was not successful. Please try again or contact support if the issue persists.`;

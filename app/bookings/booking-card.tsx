@@ -3,6 +3,9 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDate } from "@/lib/utils"
+import { VerificationCodeDisplay } from "@/components/bookings/verification-code-display"
+import { useState } from "react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 interface Driver {
   full_name: string;
@@ -56,6 +59,13 @@ interface BookingCardProps {
 export function BookingCard({ booking }: BookingCardProps) {
   const payment = booking.payments?.[0]
   const isCompleted = payment?.payment_time && payment?.metadata?.financialTransactionId
+  const [showVerification, setShowVerification] = useState(false)
+  
+  // Determine if we should show verification code
+  // Show for pending_verification status (new) as well as confirmed status bookings
+  const shouldShowVerification = 
+    (booking.status === 'pending_verification' || booking.status === 'confirmed') && 
+    booking.payment_status === 'completed'
 
   return (
     <Card>
@@ -99,6 +109,26 @@ export function BookingCard({ booking }: BookingCardProps) {
               }`}>
                 {isCompleted ? 'Completed' : 'Pending'}
               </span>
+            </div>
+          )}
+          
+          {shouldShowVerification && (
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full flex items-center justify-between"
+                onClick={() => setShowVerification(!showVerification)}
+              >
+                <span>{showVerification ? 'Hide' : 'Show'} Driver Verification Code</span>
+                {showVerification ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              
+              {showVerification && (
+                <div className="mt-4">
+                  <VerificationCodeDisplay bookingId={booking.id} />
+                </div>
+              )}
             </div>
           )}
         </div>

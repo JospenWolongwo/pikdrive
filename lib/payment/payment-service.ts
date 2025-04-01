@@ -42,7 +42,8 @@ export class PaymentService {
       accountSid: process.env.TWILIO_ACCOUNT_SID!,
       authToken: process.env.TWILIO_AUTH_TOKEN!,
       fromNumber: process.env.TWILIO_FROM_NUMBER!,
-      environment: (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')
+      environment: process.env.TWILIO_ENVIRONMENT === 'production' ? 'production' : 
+                  (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')
     });
   }
 
@@ -92,6 +93,24 @@ export class PaymentService {
       // Validate phone number
       if (!await this.validatePhoneNumber(formattedPhone)) {
         throw new Error('Invalid phone number');
+      }
+
+      // Check if the booking exists and is verified
+      const { data: booking, error: bookingError } = await this.supabase
+        .from('bookings')
+        .select('id, code_verified, verification_code')
+        .eq('id', request.bookingId)
+        .single();
+
+      if (bookingError) {
+        console.error('❌ Error fetching booking:', bookingError);
+        throw new Error('Booking not found');
+      }
+
+      // Check if the verification code has been validated
+      if (!booking.code_verified && booking.verification_code) {
+        console.error('❌ Booking verification required:', request.bookingId);
+        throw new Error('Booking verification required before payment can be processed');
       }
 
       // Create payment record first
@@ -289,7 +308,7 @@ export class PaymentService {
             const { error: bookingError } = await this.supabase
               .from('bookings')
               .update({
-                status: 'confirmed',
+                status: 'pending_verification', // Changed from 'confirmed' to 'pending_verification'
                 payment_status: paymentStatus,
                 updated_at: new Date().toISOString()
               })
@@ -579,22 +598,60 @@ export class PaymentService {
     return formattedPhone.startsWith('237') ? formattedPhone : `237${formattedPhone}`;
   }
 
-  private async createReceipt(paymentId: string) {
+  async createReceipt(paymentId: string) {
+    console.log('📝 Creating receipt for payment:', paymentId);
     try {
+      // First check if receipt already exists
+      const { data: existingReceipt, error: checkError } = await this.supabase
+        .from('payment_receipts')
+        .select('id')
+        .eq('payment_id', paymentId)
+        .single();
+
+      if (existingReceipt) {
+        console.log('✅ Receipt already exists for payment:', paymentId, existingReceipt);
+        return existingReceipt;
+      }
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('❌ Error checking existing receipt:', checkError);
+      }
+
+      // Create new receipt
       const { data: receipt, error } = await this.supabase
         .rpc('create_receipt', { payment_id_param: paymentId })
         .select()
         .single();
 
       if (error) {
-        console.error(' Error creating receipt:', error);
-        throw error;
+        console.error('❌ Error creating receipt:', error);
+        
+        // Fallback: try to insert directly if RPC fails
+        const { data: manualReceipt, error: manualError } = await this.supabase
+          .from('payment_receipts')
+          .insert({
+            payment_id: paymentId,
+            receipt_number: `RECEIPT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+            issued_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+          
+        if (manualError) {
+          console.error('❌ Manual receipt creation also failed:', manualError);
+          throw manualError;
+        }
+        
+        console.log('✅ Receipt created manually:', manualReceipt);
+        return manualReceipt;
       }
 
-      console.log(' Receipt created:', receipt);
+      console.log('✅ Receipt created via RPC:', receipt);
       return receipt;
     } catch (error) {
-      console.error(' Error in createReceipt:', error);
+      console.error('❌ Error in createReceipt:', error);
       throw error;
     }
   }
@@ -605,19 +662,32 @@ export class PaymentService {
     message?: string
   ) {
     try {
-      // Update payment record
-      const { error: updateError } = await this.supabase
-        .from('payments')
-        .update({
-          status: newStatus,
-          payment_time: newStatus === 'completed' ? new Date().toISOString() : null,
-          error_message: newStatus === 'failed' ? message : null
-        })
-        .eq('id', payment.id);
+      console.log('🔄 Handling payment status change:', { 
+        payment_id: payment.id, 
+        booking_id: payment.bookingId,
+        old_status: payment.status,
+        new_status: newStatus 
+      });
 
-      if (updateError) {
-        console.error(' Error updating payment:', updateError);
-        throw updateError;
+      // Start multiple operations in parallel
+      const [paymentUpdate, receiptCreation] = await Promise.all([
+        // 1. Update payment record
+        this.supabase
+          .from('payments')
+          .update({
+            status: newStatus,
+            payment_time: newStatus === 'completed' ? new Date().toISOString() : null,
+            error_message: newStatus === 'failed' ? message : null
+          })
+          .eq('id', payment.id),
+          
+        // 2. Create receipt if payment completed
+        newStatus === 'completed' ? this.createReceipt(payment.id) : null
+      ]);
+
+      if (paymentUpdate.error) {
+        console.error('❌ Error updating payment:', paymentUpdate.error);
+        throw paymentUpdate.error;
       }
 
       // Send SMS notification
@@ -635,25 +705,40 @@ export class PaymentService {
               bookingId: payment.bookingId
             });
 
-        await this.smsService.sendMessage({
+        // Don't await SMS sending to avoid delaying the response
+        this.smsService.sendMessage({
           to: payment.phoneNumber,
           message: smsMessage
-        });
+        }).catch(err => console.error('❌ SMS sending error:', err));
       }
 
       // Update booking status if payment is completed
       if (newStatus === 'completed') {
-        const { error: bookingError } = await this.supabase
-          .from('bookings')
-          .update({
-            payment_status: 'completed',
-            status: 'confirmed'
-          })
-          .eq('id', payment.bookingId);
+        // Generate verification code and update booking simultaneously
+        const [bookingUpdate, verificationCode] = await Promise.all([
+          // Update booking status
+          this.supabase
+            .from('bookings')
+            .update({
+              payment_status: 'completed',
+              status: 'pending_verification' // Changed from 'confirmed' to 'pending_verification'
+            })
+            .eq('id', payment.bookingId),
+            
+          // Generate verification code
+          this.generateVerificationCode(payment.bookingId)
+        ]);
 
-        if (bookingError) {
-          console.error(' Error updating booking:', bookingError);
-          throw bookingError;
+        if (bookingUpdate.error) {
+          console.error('❌ Error updating booking:', bookingUpdate.error);
+          throw bookingUpdate.error;
+        }
+        
+        if (verificationCode.error) {
+          console.error('❌ Error generating verification code:', verificationCode.error);
+          // Don't throw - verification code is not critical for booking confirmation
+        } else {
+          console.log('✅ Generated verification code for booking:', payment.bookingId);
         }
       } else if (newStatus === 'failed') {
         const { error: bookingError } = await this.supabase
@@ -665,15 +750,31 @@ export class PaymentService {
           .eq('id', payment.bookingId);
 
         if (bookingError) {
-          console.error(' Error updating booking:', bookingError);
+          console.error('❌ Error updating booking:', bookingError);
           throw bookingError;
         }
       }
 
-      console.log(' Payment and booking updated successfully');
+      console.log('✅ Payment and booking updated successfully');
     } catch (error) {
-      console.error(' Error handling payment status change:', error);
+      console.error('❌ Error handling payment status change:', error);
       throw error;
+    }
+  }
+  
+  // Generate verification code for a booking
+  private async generateVerificationCode(bookingId: string) {
+    console.log('🔐 Generating verification code for booking:', bookingId);
+    
+    try {
+      // Call the database function to generate a verification code
+      return await this.supabase.rpc(
+        'generate_booking_verification_code',
+        { booking_id: bookingId }
+      );
+    } catch (error) {
+      console.error('❌ Error generating verification code:', error);
+      return { error };
     }
   }
 }
