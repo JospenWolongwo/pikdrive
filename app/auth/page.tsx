@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Chargement...</div>}>
       <AuthContent />
     </Suspense>
   );
@@ -51,7 +51,7 @@ function AuthContent() {
     setError("");
 
     if (!phone && !savedPhone) {
-      setError("Please enter your phone number");
+      setError("Veuillez entrer votre numéro de téléphone");
       return;
     }
 
@@ -68,8 +68,8 @@ function AuthContent() {
 
       setShowVerification(true);
       toast({
-        title: "Code sent!",
-        description: "Please check your phone for the verification code",
+        title: "Code envoyé !",
+        description: "Veuillez consulter votre téléphone pour le code de vérification",
       });
     } catch (error: any) {
       setError(error.message);
@@ -82,7 +82,7 @@ function AuthContent() {
     setError("");
 
     if (!code) {
-      setError("Please enter the verification code");
+      setError("Veuillez entrer le code de vérification");
       return;
     }
 
@@ -102,8 +102,8 @@ function AuthContent() {
       }
 
       toast({
-        title: "Welcome back!",
-        description: "You've successfully signed in",
+        title: "Bienvenue !",
+        description: "Vous vous êtes connecté avec succès",
       });
 
       const redirectTo = searchParams.get("redirectTo");
@@ -124,14 +124,14 @@ function AuthContent() {
       >
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold tracking-tight">
-            Welcome to PikDrive
+            Bienvenue sur PikDrive
           </h1>
           <p className="text-muted-foreground">
             {showVerification
-              ? "Enter the verification code sent to your phone"
+              ? "Entrez le code de vérification envoyé à votre téléphone"
               : savedPhone
-              ? "Welcome back! Should we send a code to your phone?"
-              : "Enter your phone number to continue"}
+              ? "Content de vous revoir ! Envoyons-nous un code à votre téléphone ?"
+              : "Entrez votre numéro de téléphone pour continuer"}
           </p>
         </div>
 
@@ -147,7 +147,7 @@ function AuthContent() {
               <div className="relative">
                 <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Enter phone number"
+                  placeholder="Entrez votre numéro de téléphone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="pl-9"
@@ -160,7 +160,7 @@ function AuthContent() {
           {!showVerification && savedPhone && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-center">
-                Send code to {maskPhoneNumber(savedPhone)}
+                Envoyer le code au {maskPhoneNumber(savedPhone)}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -168,7 +168,7 @@ function AuthContent() {
                   className="w-full"
                   onClick={() => setSavedPhone(null)}
                 >
-                  Use different number
+                  Utiliser un autre numéro
                 </Button>
                 <Button
                   className="w-full"
@@ -178,7 +178,7 @@ function AuthContent() {
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    "Send Code"
+                    "Envoyer le code"
                   )}
                 </Button>
               </div>
@@ -190,7 +190,7 @@ function AuthContent() {
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Enter verification code"
+                  placeholder="Entrez le code de vérification"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   className="pl-9"
@@ -211,7 +211,7 @@ function AuthContent() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  Continue
+                  Continuer
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
@@ -227,7 +227,7 @@ function AuthContent() {
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                "Verify"
+                "Vérifier"
               )}
             </Button>
           )}

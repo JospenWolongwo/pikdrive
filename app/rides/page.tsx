@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { useChat } from '@/providers/ChatProvider'
@@ -92,7 +92,7 @@ export default function RidesPage() {
     [curr.rideId]: curr.count
   }), {})
 
-  const loadRides = async () => {
+  const loadRides = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -174,17 +174,13 @@ export default function RidesPage() {
         description: "Please try again later."
       })
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [supabase, fromCity, toCity, minPrice, maxPrice, currentPage, itemsPerPage]);
 
   useEffect(() => {
-    const fetchRides = async () => {
-      await loadRides();
-    };
-
-    fetchRides();
-  }, [fromCity, toCity, minPrice, maxPrice, currentPage]);
+    loadRides();
+  }, [currentPage, fromCity, toCity, minPrice, maxPrice, loadRides])
 
   useEffect(() => {
     rides.forEach(ride => {
@@ -306,8 +302,9 @@ export default function RidesPage() {
   if (loading) {
     return (
       <div className="container py-10">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex flex-col justify-center items-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground">Chargement des trajets...</p>
         </div>
       </div>
     )
@@ -317,8 +314,8 @@ export default function RidesPage() {
     <div className="container py-6 space-y-6">
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Available Rides</h1>
-          <p className="text-muted-foreground">Find and book your next ride</p>
+          <h1 className="text-3xl font-bold tracking-tight">Trajets Disponibles</h1>
+          <p className="text-muted-foreground">Trouvez et réservez votre prochain trajet</p>
         </div>
 
         <div className="space-y-4">
@@ -326,29 +323,29 @@ export default function RidesPage() {
             <div className="flex items-start gap-4 flex-wrap">
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 min-w-[280px]">
                 <Label htmlFor="from-city" className="md:text-right">
-                  From
+                  De
                 </Label>
                 <div className="md:col-span-3 w-full">
                   <SearchableSelect
                     options={sortedCameroonCities}
                     value={fromCity || ''}
                     onValueChange={setFromCity}
-                    placeholder="Select departure city"
-                    searchPlaceholder="Search departure city..."
+                    placeholder="Sélectionnez la ville de départ"
+                    searchPlaceholder="Rechercher une ville de départ..."
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 min-w-[280px]">
                 <Label htmlFor="to-city" className="md:text-right">
-                  To
+                  À
                 </Label>
                 <div className="md:col-span-3 w-full">
                   <SearchableSelect
                     options={sortedCameroonCities}
                     value={toCity || ''}
                     onValueChange={setToCity}
-                    placeholder="Select destination city"
-                    searchPlaceholder="Search destination city..."
+                    placeholder="Sélectionnez la ville de destination"
+                    searchPlaceholder="Rechercher une ville de destination..."
                   />
                 </div>
               </div>
@@ -366,7 +363,7 @@ export default function RidesPage() {
           {showFilters && (
             <div className="grid gap-6 p-6 border rounded-lg">
               <div className="space-y-2">
-                <Label>Price Range (FCFA)</Label>
+                <Label>Fourchette de Prix (FCFA)</Label>
                 <div className="flex items-center gap-4">
                   <Input
                     type="number"
@@ -376,7 +373,7 @@ export default function RidesPage() {
                     min={0}
                     max={maxPrice}
                   />
-                  <span>to</span>
+                  <span>à</span>
                   <Input
                     type="number"
                     value={maxPrice}
@@ -389,7 +386,7 @@ export default function RidesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Minimum Seats</Label>
+                <Label>Places Minimum</Label>
                 <Input
                   type="number"
                   value={minSeats}
@@ -407,8 +404,8 @@ export default function RidesPage() {
           <div className="text-center py-10">
             <p className="text-muted-foreground">
               {(fromCity && fromCity !== 'any') || (toCity && toCity !== 'any') 
-                ? 'No rides found matching your search.' 
-                : 'No rides available at the moment.'}
+                ? 'Aucun trajet ne correspond à votre recherche.' 
+                : 'Aucun trajet disponible pour le moment.'}
             </p>
           </div>
         ) : (
@@ -428,7 +425,7 @@ export default function RidesPage() {
                         <AvatarFallback>{ride.driver?.full_name?.charAt(0) || 'D'}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-lg">{ride.driver?.full_name || 'Driver'}</CardTitle>
+                        <CardTitle className="text-lg">{ride.driver?.full_name || 'Chauffeur'}</CardTitle>
                         <CardDescription>{ride.car_model} • {ride.car_color}</CardDescription>
                       </div>
                     </div>
@@ -451,7 +448,7 @@ export default function RidesPage() {
 
                       <div className="flex items-center gap-3">
                         <Users className="h-5 w-5 text-muted-foreground" />
-                        <div>{ride.seats_available} seats available</div>
+                        <div>{ride.seats_available} places disponibles</div>
                       </div>
                     </div>
                   </CardContent>
@@ -465,7 +462,7 @@ export default function RidesPage() {
                         className="relative"
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
-                        Message {ride.driver?.full_name?.split(' ')[0] || 'Driver'}
+                        Message {ride.driver?.full_name?.split(' ')[0] || 'Chauffeur'}
                         {unreadCounts[ride.id] > 0 && (
                           <Badge 
                             variant="destructive" 
@@ -481,7 +478,7 @@ export default function RidesPage() {
                         disabled={ride.seats_available === 0}
                         onClick={() => handleBooking(ride)}
                       >
-                        {ride.seats_available === 0 ? 'Full' : 'Book Now'}
+                        {ride.seats_available === 0 ? 'Complet' : 'Réserver'}
                       </Button>
                     </div>
                   </CardFooter>

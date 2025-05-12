@@ -21,8 +21,8 @@ export default function ContactPage() {
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     toast({
-      title: "Message Sent!",
-      description: "We'll get back to you as soon as possible.",
+      title: "Message Envoyé !",
+      description: "Nous vous répondrons dès que possible.",
     })
 
     setIsLoading(false)
@@ -32,7 +32,7 @@ export default function ContactPage() {
   const contactInfo = [
     {
       icon: Phone,
-      title: "Phone",
+      title: "Téléphone",
       details: ["+237 698 805 890", "+237 674 123 456"],
     },
     {
@@ -42,8 +42,8 @@ export default function ContactPage() {
     },
     {
       icon: MapPin,
-      title: "Office",
-      details: ["Silicon Mountain", "Buea, Cameroon"],
+      title: "Bureau",
+      details: ["Silicon Mountain", "Buea, Cameroun"],
     },
   ]
 
@@ -56,10 +56,10 @@ export default function ContactPage() {
           className="text-center max-w-3xl mx-auto mb-16"
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Get in Touch
+            Contactez-Nous
           </h1>
           <p className="text-xl text-muted-foreground">
-            Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            Des questions ? Nous aimerions avoir de vos nouvelles. Envoyez-nous un message et nous vous répondrons dès que possible.
           </p>
         </motion.div>
 
@@ -92,11 +92,11 @@ export default function ContactPage() {
             </div>
 
             <Card className="p-6">
-              <h3 className="font-semibold mb-4">Operating Hours</h3>
+              <h3 className="font-semibold mb-4">Heures d&apos;Ouverture</h3>
               <div className="space-y-2 text-muted-foreground">
-                <p>Monday - Friday: 8:00 AM - 6:00 PM</p>
-                <p>Saturday: 9:00 AM - 4:00 PM</p>
-                <p>Sunday: Closed</p>
+                <p>Lundi - Vendredi: 8h00 - 18h00</p>
+                <p>Samedi: 9h00 - 16h00</p>
+                <p>Dimanche: Fermé</p>
               </div>
             </Card>
           </motion.div>
@@ -112,7 +112,7 @@ export default function ContactPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="firstName" className="text-sm font-medium">
-                      First Name
+                      Prénom
                     </label>
                     <Input
                       id="firstName"
@@ -123,7 +123,7 @@ export default function ContactPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="lastName" className="text-sm font-medium">
-                      Last Name
+                      Nom
                     </label>
                     <Input
                       id="lastName"
@@ -149,7 +149,7 @@ export default function ContactPage() {
 
                 <div className="space-y-2">
                   <label htmlFor="phone" className="text-sm font-medium">
-                    Phone Number
+                    Numéro de Téléphone
                   </label>
                   <Input
                     id="phone"
@@ -166,7 +166,7 @@ export default function ContactPage() {
                   </label>
                   <Textarea
                     id="message"
-                    placeholder="How can we help you?"
+                    placeholder="Comment pouvons-nous vous aider ?"
                     required
                     disabled={isLoading}
                     className="min-h-[150px]"
@@ -181,12 +181,12 @@ export default function ContactPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
+                      Envoi en cours...
                     </>
                   ) : (
                     <>
                       <Send className="mr-2 h-4 w-4" />
-                      Send Message
+                      Envoyer le Message
                     </>
                   )}
                 </Button>

@@ -15,9 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen, Download } from 'lucide-react'
-import { BsWhatsapp } from 'react-icons/bs'
-import { PhoneCall, Mail } from 'lucide-react'
+import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen, Download, Search, MessageSquare, PlusCircle, CalendarCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IOSInstallPrompt } from '@/components/pwa/IOSInstallPrompt'
 import { useShowAndroidPrompt } from '@/components/pwa/PWAPrompts'
@@ -71,10 +69,10 @@ export function Navbar() {
   }
 
   const menuItems = [
-    { href: '/', label: 'Home' },
-    { href: '/rides', label: 'Find Rides' },
-    { href: '/about', label: 'About' },
-    { href: '/advice', label: 'Safety & FAQ' },
+    { href: '/', label: 'Accueil' },
+    { href: '/rides', label: 'Trouver un Trajet' },
+    { href: '/about', label: 'À Propos' },
+    { href: '/advice', label: 'Sécurité & FAQ' },
     { href: '/contact', label: 'Contact' },
   ]
 
@@ -140,52 +138,39 @@ export function Navbar() {
     // For iOS devices, show iOS install instructions
     if (isIOSDevice) {
       return (
-        <>
-          <Button
-            variant="default"
-            className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={handleInstallClick}
-          >
-            <Download className="h-4 w-4" />
-            <span>Install on iOS</span>
-          </Button>
-          <IOSInstallPrompt 
-            show={showIOSPrompt}
-            onClose={() => setShowIOSPrompt(false)}
-          />
-        </>
-      );
+        <Button 
+          onClick={() => setShowIOSPrompt(true)}
+          variant="outline"
+          size="sm"
+          className="flex w-full items-center gap-2"
+        >
+          <Download className="h-4 w-4" /> 
+          <span>Installer l&apos;App</span>
+        </Button>
+      )
     }
 
     // For Android devices, show Android install dialog
-    if (isAndroidDevice) {
+    if (isInstallable && mounted) {
       return (
-        <Button
-          variant="default"
-          className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+        <Button 
           onClick={handleInstallClick}
+          variant="outline"
+          size="sm"
+          className="flex w-full items-center gap-2"
         >
-          <Download className="h-4 w-4" />
-          <span>Install on Android</span>
+          <Download className="h-4 w-4" /> 
+          <span>Installer l&apos;App</span>
         </Button>
-      );
+      )
     }
 
-    // Generic install button for other platforms
-    return (
-      <Button
-        variant="default"
-        className="w-full flex items-center justify-center space-x-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-        onClick={handleInstallClick}
-      >
-        <Download className="h-4 w-4" />
-        <span>Install App</span>
-      </Button>
-    );
+    return null;
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {showIOSPrompt && <IOSInstallPrompt show={showIOSPrompt} onClose={() => setShowIOSPrompt(false)} />}
       <div className="container flex h-16 items-center">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
@@ -198,7 +183,7 @@ export function Navbar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="pr-0">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center gap-2">
               <Car className="h-6 w-6" />
               <span className="font-bold">PikDrive</span>
             </Link>
@@ -217,57 +202,99 @@ export function Navbar() {
             </nav>
           </SheetContent>
         </Sheet>
-        
-        <div className="mr-4 md:flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
+
+        <div className="flex items-center gap-2 md:gap-6 flex-1">
+          <Link href="/" className="flex items-center space-x-2">
             <Car className="h-6 w-6" />
             <span className="font-bold">PikDrive</span>
           </Link>
           <NavItems className="hidden md:flex" />
         </div>
-        <div className="flex flex-1 items-center justify-between space-x-1 sm:space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* WhatsApp */}
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="text-green-500 hover:text-green-600 hover:bg-green-100"
-              >
-                <a 
-                  href="https://wa.me/+237698805890"
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center"
+
+        <div className="flex items-center gap-2">
+          {/* Quick Actions Dropdown for all users */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 rounded-full"
                 >
-                  <BsWhatsapp className="h-4 w-4 sm:h-5 sm:w-5" />
-                </a>
-              </Button>
+                  <span className="hidden sm:inline">Options</span>
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuItem asChild>
+                  <Link href="/bookings" className="flex items-center">
+                    <CalendarCheck className="mr-2 h-4 w-4" />
+                    <span>Vos Trajets</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/messages" className="flex items-center">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <span>Messages</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/rides" className="flex items-center">
+                    <Search className="mr-2 h-4 w-4" />
+                    <span>Rechercher</span>
+                  </Link>
+                </DropdownMenuItem>
+                {isDriver && driverStatus === 'approved' && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/add-ride" className="flex items-center">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        <span>Publier Trajet</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/dashboard" className="flex items-center">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>Tableau de Bord</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/bookings" className="flex items-center">
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        <span>Réservations</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {isDriver && driverStatus === 'pending' && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/driver/pending" className="flex items-center">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Statut de Candidature</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-              {/* Phone */}
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="text-primary hover:text-primary/80"
-              >
-                <a href="tel:+237698805890" className="flex items-center">
-                  <PhoneCall className="h-4 w-4 sm:h-5 sm:w-5" />
-                </a>
-              </Button>
-
-              {/* Theme Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                className="hover:bg-muted"
-              >
-                {mounted && (theme === 'light' ? <Moon className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sun className="h-4 w-4 sm:h-5 sm:w-5" />)}
-              </Button>
-            </div>
-          </div>
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            className="rounded-full"
+          >
+            {mounted && (theme === 'light' ? 
+              <Moon className="h-4 w-4" /> : 
+              <Sun className="h-4 w-4" />
+            )}
+            <span className="sr-only">
+              {theme === 'light' ? 'Mode sombre' : 'Mode clair'}
+            </span>
+          </Button>
+          
+          {/* User Menu */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -284,43 +311,13 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href={isDriver ? "/driver/profile" : "/profile"} className="flex items-center">
                     <User className="mr-2 h-4 w-4" />
-                    <span>{isDriver ? "Driver Profile" : "Profile"}</span>
-                  </Link>
-                </DropdownMenuItem>
-                {isDriver && driverStatus === 'approved' && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link href="/driver/dashboard" className="flex items-center">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/driver/bookings" className="flex items-center">
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        Bookings
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-                {isDriver && driverStatus === 'pending' && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/driver/pending" className="flex items-center">
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Application Status</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem asChild>
-                  <Link href="/bookings" className="flex items-center">
-                    <Car className="mr-2 h-4 w-4" />
-                    <span>My Rides</span>
+                    <span>{isDriver ? "Profil de Chauffeur" : "Profil"}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/settings" className="flex items-center">
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                    <span>Paramètres</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -329,13 +326,13 @@ export function Navbar() {
                   onSelect={handleSignOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>Déconnexion</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <Button asChild>
-              <Link href="/auth">Sign in</Link>
+              <Link href="/auth">Connexion</Link>
             </Button>
           )}
         </div>

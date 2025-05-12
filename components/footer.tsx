@@ -16,26 +16,26 @@ export function Footer() {
               <span className="font-bold">PikDrive</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Your trusted ride-sharing platform in Cameroon
+              Votre plateforme de covoiturage de confiance au Cameroun
             </p>
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Quick Links</h3>
+            <h3 className="mb-4 text-sm font-semibold">Liens Rapides</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/rides" className="text-muted-foreground hover:text-primary">
-                  Find Rides
+                  Trouver un Trajet
                 </Link>
               </li>
               <li>
                 <Link href="/become-driver" className="text-muted-foreground hover:text-primary">
-                  Become a Driver
+                  Devenir Chauffeur
                 </Link>
               </li>
               <li>
                 <Link href="/about" className="text-muted-foreground hover:text-primary">
-                  About Us
+                  À Propos de Nous
                 </Link>
               </li>
               <li>
@@ -47,28 +47,28 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Legal</h3>
+            <h3 className="mb-4 text-sm font-semibold">Mentions Légales</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/privacy" className="text-muted-foreground hover:text-primary">
-                  Privacy Policy
+                  Politique de Confidentialité
                 </Link>
               </li>
               <li>
                 <Link href="/terms" className="text-muted-foreground hover:text-primary">
-                  Terms of Service
+                  Conditions d&apos;Utilisation
                 </Link>
               </li>
               <li>
                 <Link href="/cookies" className="text-muted-foreground hover:text-primary">
-                  Cookie Policy
+                  Politique des Cookies
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Connect With Us</h3>
+            <h3 className="mb-4 text-sm font-semibold">Suivez-Nous</h3>
             <div className="flex space-x-4">
               <Link
                 href="https://facebook.com"
@@ -103,7 +103,7 @@ export function Footer() {
 
         <div className="mt-8 border-t pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            {currentYear} PikDrive. All rights reserved.
+            {currentYear} PikDrive. Tous droits réservés.
           </p>
         </div>
       </div>

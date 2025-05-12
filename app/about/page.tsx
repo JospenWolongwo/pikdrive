@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Users, Shield, Clock, Heart } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function AboutPage() {
   const fadeIn = {
@@ -14,10 +13,10 @@ export default function AboutPage() {
   };
 
   const stats = [
-    { number: "50K+", label: "Happy Riders", icon: Users },
-    { number: "1000+", label: "Verified Drivers", icon: Shield },
-    { number: "100+", label: "Cities", icon: MapPin },
-    { number: "24/7", label: "Support", icon: Clock },
+    { number: "50K+", label: "Voyageurs Satisfaits", icon: Users },
+    { number: "1000+", label: "Chauffeurs Vérifiés", icon: Shield },
+    { number: "100+", label: "Villes", icon: MapPin },
+    { number: "24/7", label: "Assistance", icon: Clock },
   ];
 
   return (
@@ -31,17 +30,17 @@ export default function AboutPage() {
             variants={fadeIn}
             className="text-center max-w-3xl mx-auto"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">Our Mission</h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">Notre Mission</h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Making intercity travel in Cameroon safe, reliable, and accessible
-              for everyone.
+              Rendre les voyages intercités au Cameroun sûrs, fiables et accessibles
+              pour tous.
             </p>
             <div className="flex justify-center gap-4">
               <Button size="lg" asChild>
-                <a href="#team">Meet Our Team</a>
+                <a href="#team">Rencontrer Notre Équipe</a>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <a href="/contact">Contact Us</a>
+                <a href="/contact">Nous Contacter</a>
               </Button>
             </div>
           </motion.div>
@@ -79,24 +78,24 @@ export default function AboutPage() {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-3xl md:text-4xl font-bold text-center mb-12"
           >
-            Our Values
+            Nos Valeurs
           </motion.h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                title: "Safety First",
+                title: "La Sécurité Avant Tout",
                 description:
-                  "We prioritize the safety of our riders and drivers above everything else.",
+                  "Nous priorisons la sécurité de nos voyageurs et chauffeurs avant tout.",
               },
               {
-                title: "Community",
+                title: "Communauté",
                 description:
-                  "Building connections and fostering a sense of community in every city we serve.",
+                  "Créer des liens et favoriser un sentiment de communauté dans chaque ville que nous desservons.",
               },
               {
                 title: "Innovation",
                 description:
-                  "Continuously improving our platform to provide the best travel experience.",
+                  "Améliorer continuellement notre plateforme pour offrir la meilleure expérience de voyage.",
               },
             ].map((value, index) => (
               <motion.div
@@ -123,15 +122,15 @@ export default function AboutPage() {
             whileInView={{ opacity: 1, y: 0 }}
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Join Our Journey
+              Rejoignez Notre Aventure
             </h2>
             <p className="text-lg mb-8 max-w-2xl mx-auto">
-              Be part of the transportation revolution in Cameroon
+              Faites partie de la révolution des transports au Cameroun
             </p>
             <Button size="lg" variant="secondary" asChild>
               <a href="/contact">
                 <Heart className="mr-2 h-4 w-4" />
-                Get in Touch
+                Contactez-Nous
               </a>
             </Button>
           </motion.div>
