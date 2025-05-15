@@ -145,7 +145,7 @@ const getStatusColor = (status: string): string => {
 export default function DriverDashboard() {
   const router = useRouter();
   const { supabase, user } = useSupabase();
-  const { unreadCounts, subscribeToRide } = useChat();
+  const { unreadCounts, subscribeToRide, markAsRead } = useChat();
   const { toast } = useToast();
   const [ridesData, setRidesData] = useState<{
     rides: Ride[];
@@ -753,13 +753,29 @@ function DashboardContent() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() =>
-                                        setSelectedChat({ ride, user: booking.user })
-                                      }
-                                      className="relative"
+                                      onClick={() => {
+                                        // Get reference to markAsRead function from the chat context
+                                        const { markAsRead } = useChat();
+                                        
+                                        // Either open chat directly or navigate to the messages page with context
+                                        if (window.innerWidth < 768) {
+                                          // On mobile, redirect to the messages page with ride context
+                                          router.push(`/messages?ride=${ride.id}&user=${booking.user.id}`);
+                                        } else {
+                                          // On desktop, open the chat dialog
+                                          setSelectedChat({ ride, user: booking.user });
+                                          // Also mark messages as read when opening chat
+                                          // Handle case where unreadCounts might be undefined
+                                          const unreadCount = unreadCounts && unreadCounts.find(c => c.rideId === ride.id);
+                                          if (unreadCount && unreadCount.count > 0) {
+                                            markAsRead(ride.id);
+                                          }
+                                        }
+                                      }}
+                                      className="relative group hover:bg-primary hover:text-primary-foreground transition-colors"
                                     >
                                       <MessageCircle className="h-4 w-4 mr-2" />
-                                      Message
+                                      <span className="group-hover:text-primary-foreground">Message</span>
                                       {(() => {
                                         const count = unreadCounts?.find(
                                           (c) => c.rideId === ride.id
@@ -767,7 +783,7 @@ function DashboardContent() {
                                         return count && count > 0 ? (
                                           <Badge
                                             variant="destructive"
-                                            className="ml-2"
+                                            className="ml-2 group-hover:bg-red-400"
                                           >
                                             {count}
                                           </Badge>

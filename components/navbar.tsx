@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
 import { useSupabase } from '@/providers/SupabaseProvider'
+import { useChat } from '@/providers/ChatProvider'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { usePWA } from '@/hooks/usePWA'
@@ -212,6 +213,21 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Messages Button with notification badge */}
+          {user && (
+            <Link href="/messages">
+              <Button variant="ghost" size="icon" className="relative rounded-full">
+                <MessageSquare className="h-5 w-5" />
+                {useChat().unreadCounts.length > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white">
+                    {useChat().unreadCounts.reduce((sum, item) => sum + item.count, 0)}
+                  </span>
+                )}
+                <span className="sr-only">Messages</span>
+              </Button>
+            </Link>
+          )}
+
           {/* Quick Actions Dropdown for all users */}
           {user && (
             <DropdownMenu>
@@ -230,12 +246,6 @@ export function Navbar() {
                   <Link href="/bookings" className="flex items-center">
                     <CalendarCheck className="mr-2 h-4 w-4" />
                     <span>Vos Trajets</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/messages" className="flex items-center">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    <span>Messages</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -290,7 +300,7 @@ export function Navbar() {
               <Sun className="h-4 w-4" />
             )}
             <span className="sr-only">
-              {theme === 'light' ? 'Mode sombre' : 'Mode clair'}
+              {mounted ? (theme === 'light' ? 'Mode sombre' : 'Mode clair') : 'Changer de thème'}
             </span>
           </Button>
           

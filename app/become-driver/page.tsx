@@ -28,49 +28,40 @@ import { uploadVehicleImages } from "./vehicle-image-upload"
 const requirements = [
   {
     icon: <Car className="w-6 h-6 text-primary" />,
-    title: "Required Vehicle Documents",
+    title: "Documents Véhicule Requis",
     items: [
-      "Vehicle Registration Card",
-      "Insurance Certificate",
-      "Road Tax Certificate",
-      "Technical Inspection Certificate"
+      "Carte Grise du Véhicule",
+      "Certificat d'Assurance"
     ]
   },
   {
     icon: <ShieldCheck className="w-6 h-6 text-primary" />,
-    title: "Required Driver Documents",
+    title: "Documents Conducteur Requis",
     items: [
-      "National ID Card (CNI)",
-      "Driver's License"
+      "Carte Nationale d'Identité (CNI)",
+      "Permis de Conduire"
     ]
   },
   {
     icon: <DollarSign className="w-6 h-6 text-primary" />,
-    title: "Benefits",
+    title: "Avantages",
     items: [
-      "Earn more with long-distance rides",
-      "Weekly payments",
-      "Flexible schedule",
-      "24/7 Support"
+      "Gagnez plus avec les trajets longue distance",
+      "Paiements hebdomadaires",
+      "Horaires flexibles",
+      "Assistance 24/7"
     ]
   }
 ]
 
 const formSchema = z.object({
-  // Document numbers
-  nationalIdNumber: z.string().min(1, "National ID number is required"),
-  licenseNumber: z.string().min(1, "License number is required"),
-  registrationNumber: z.string().min(1, "Registration number is required"),
-  insuranceNumber: z.string().min(1, "Insurance number is required"),
-  technicalInspectionNumber: z.string().min(1, "Technical inspection number is required"),
-  
-  // Document files - using optional() to allow empty string during form initialization,
+  // Document files - the focus of our simplified form
+  // using optional() to allow empty string during form initialization,
   // but we'll validate these separately before form submission
   nationalIdFile: z.string().optional(),
   licenseFile: z.string().optional(),
   registrationFile: z.string().optional(),
   insuranceFile: z.string().optional(),
-  technicalInspectionFile: z.string().optional(),
   
   // Vehicle images (optional additional photos)
   vehicleImages: z.array(z.string()).optional(),
@@ -88,35 +79,27 @@ export default function BecomeDriverPage() {
   const [licenseFile, setLicenseFile] = useState<string>("") 
   const [registrationFile, setRegistrationFile] = useState<string>("") 
   const [insuranceFile, setInsuranceFile] = useState<string>("") 
-  const [technicalInspectionFile, setTechnicalInspectionFile] = useState<string>("") 
   
   // Loading states for each document
   const [uploadingNationalId, setUploadingNationalId] = useState(false)
   const [uploadingLicense, setUploadingLicense] = useState(false)
   const [uploadingRegistration, setUploadingRegistration] = useState(false)
   const [uploadingInsurance, setUploadingInsurance] = useState(false)
-  const [uploadingTechnicalInspection, setUploadingTechnicalInspection] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nationalIdNumber: "",
-      licenseNumber: "",
-      registrationNumber: "",
-      insuranceNumber: "",
-      technicalInspectionNumber: "",
       nationalIdFile: "",
       licenseFile: "",
       registrationFile: "",
       insuranceFile: "",
-      technicalInspectionFile: "",
       vehicleImages: [],
     },
   })
 
   // Professional production-ready document upload function using our utility module
   // Define valid form field names for document uploads
-  type DocumentFieldName = "nationalIdFile" | "licenseFile" | "registrationFile" | "insuranceFile" | "technicalInspectionFile";
+  type DocumentFieldName = "nationalIdFile" | "licenseFile" | "registrationFile" | "insuranceFile";
   
   const handleDocumentUpload = async (
     file: File, 
@@ -271,116 +254,129 @@ export default function BecomeDriverPage() {
     )
   }
 
-  const handleTechnicalInspectionUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return
-    await handleDocumentUpload(
-      e.target.files[0],
-      setUploadingTechnicalInspection,
-      setTechnicalInspectionFile,
-      "technicalInspectionFile"
-    )
-  }
+  // Technical inspection handler removed as per simplified requirements
 
-  // Handle vehicle images upload using our specialized utility
+  // Enhanced vehicle images upload handler with optimized state management
   const handleVehicleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
     if (!user) return
 
     setVehicleImagesLoading(true)
+    const startTime = performance.now();
+    console.log(`🚗 Début du téléchargement des photos du véhicule`)
 
     try {
       const filesToUpload: File[] = []
+      const validationResults: { valid: boolean; message?: string }[] = []
       
-      // Filter files based on validation rules
-      for (const file of Array.from(e.target.files)) {
-        // File validations
+      // Validate all files first to give complete feedback
+      Array.from(e.target.files).forEach(file => {
         const fileExt = file.name.split(".").pop()?.toLowerCase()
         const fileSize = file.size / 1024 / 1024 // Size in MB
 
-        // Validate file type and size
         if (!fileExt || !["jpg", "jpeg", "png"].includes(fileExt)) {
+          validationResults.push({ 
+            valid: false, 
+            message: `Le fichier "${file.name}" n'est pas au format JPG ou PNG.`
+          })
+        } else if (fileSize > 5) {
+          validationResults.push({ 
+            valid: false, 
+            message: `Le fichier "${file.name}" dépasse 5Mo.`
+          })
+        } else {
+          validationResults.push({ valid: true })
+          filesToUpload.push(file)
+        }
+      })
+      
+      // Show validation feedback
+      const invalidResults = validationResults.filter(r => !r.valid)
+      if (invalidResults.length > 0) {
+        if (invalidResults.length <= 3) {
+          // Show specific errors if there aren't too many
+          invalidResults.forEach(result => {
+            if (result.message) {
+              toast({
+                description: result.message,
+                variant: "destructive",
+              })
+            }
+          })
+        } else {
+          // Show a summary if there are many errors
           toast({
-            title: "Invalid file type",
-            description: "Please upload JPG or PNG images only.",
+            title: "Erreurs de validation",
+            description: `${invalidResults.length} fichiers ne respectent pas les critères (format JPG/PNG, max 5Mo)`,
             variant: "destructive",
           })
-          continue
         }
-
-        if (fileSize > 5) {
-          toast({
-            title: "File too large",
-            description: "Please upload images smaller than 5MB.",
-            variant: "destructive",
-          })
-          continue
-        }
-        
-        // File passed validation, add to upload list
-        filesToUpload.push(file)
       }
       
       if (filesToUpload.length === 0) {
         toast({
-          title: "No Valid Images",
-          description: "None of the selected files met the upload requirements.",
+          title: "Aucune image valide",
+          description: "Aucun fichier sélectionné ne respecte les critères de téléchargement.",
           variant: "destructive",
         })
+        setVehicleImagesLoading(false)
         return
       }
       
-      // Use our specialized upload utility to handle all uploads in parallel
-      console.log(`💾 Uploading ${filesToUpload.length} vehicle images...`)
+      // Use parallel processing for better performance
+      console.log(`📤 Téléchargement de ${filesToUpload.length} photos...`)
       const uploadResult = await uploadVehicleImages(supabase, filesToUpload, user.id)
       
-      if (uploadResult.success) {
-        const newVehicleImages = [...vehicleImages, ...uploadResult.urls]
-        setVehicleImages(newVehicleImages)
-        
-        // Update form field value for submission
-        form.setValue("vehicleImages", newVehicleImages, {
-          shouldValidate: true,
-          shouldDirty: true,
-          shouldTouch: true
+      // Use functional state updates to ensure atomic operations
+      if (uploadResult.urls.length > 0) {
+        // Update state with new timestamp to force re-render
+        setVehicleImages(prev => {
+          const updatedImages = [...prev, ...uploadResult.urls]
+          
+          // Update form value
+          form.setValue("vehicleImages", updatedImages, {
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true
+          })
+          
+          return updatedImages
         })
         
-        toast({
-          title: "Images Uploaded",
-          description: `${uploadResult.urls.length} image(s) uploaded successfully.`,
-        })
-      } else if (uploadResult.urls.length > 0) {
-        // Partial success
-        const newVehicleImages = [...vehicleImages, ...uploadResult.urls]
-        setVehicleImages(newVehicleImages)
-        
-        // Update form field value with partial success
-        form.setValue("vehicleImages", newVehicleImages, {
-          shouldValidate: true,
-          shouldDirty: true,
-          shouldTouch: true
-        })
-        
-        toast({
-          title: "Partial Upload Success",
-          description: `${uploadResult.urls.length} images uploaded, but ${uploadResult.errors.length} failed.`,
-          variant: "default",
-        })
+        // Success messages
+        if (uploadResult.success) {
+          const uploadTime = ((performance.now() - startTime) / 1000).toFixed(1)
+          toast({
+            title: "Photos ajoutées",
+            description: `${uploadResult.urls.length} photo${uploadResult.urls.length > 1 ? 's' : ''} téléchargée${uploadResult.urls.length > 1 ? 's' : ''} avec succès (${uploadTime}s)`,
+          })
+          console.log(`✅ Téléchargement terminé en ${uploadTime}s`)
+        } else {
+          toast({
+            title: "Téléchargement partiel",
+            description: `${uploadResult.urls.length} image${uploadResult.urls.length > 1 ? 's' : ''} téléchargée${uploadResult.urls.length > 1 ? 's' : ''}, ${uploadResult.errors.length} échec${uploadResult.errors.length > 1 ? 's' : ''}.`,
+            variant: "default",
+          })
+          console.log(`⚠️ Téléchargement partiel: ${uploadResult.urls.length} succès, ${uploadResult.errors.length} échecs`)
+        }
       } else {
         // Complete failure
         toast({
-          title: "Upload Failed",
-          description: "Failed to upload vehicle images. Please try again.",
+          title: "Échec du téléchargement",
+          description: "Impossible de télécharger les photos. Veuillez réessayer.",
           variant: "destructive",
         })
+        console.error(`❌ Échec total du téléchargement des images`)
       }
     } catch (error) {
-      console.error("Error uploading vehicle images:", error)
+      console.error("❌ Erreur lors du téléchargement des photos:", error)
       toast({
-        title: "Upload Error",
-        description: "There was an error uploading your images.",
+        title: "Erreur de téléchargement",
+        description: "Une erreur inattendue s'est produite. Veuillez réessayer.",
         variant: "destructive",
       })
     } finally {
+      // Always make sure to reset the loading state
       setVehicleImagesLoading(false)
     }
   }
@@ -394,25 +390,25 @@ export default function BecomeDriverPage() {
     console.log("🔍 License File:", licenseFile)
     console.log("🔍 Registration File:", registrationFile)
     console.log("🔍 Insurance File:", insuranceFile)
-    console.log("🔍 Technical Inspection File:", technicalInspectionFile)
-    console.log("🔍 Vehicle Images:", vehicleImages)
+    // Technical inspection removed from required docs
+    console.log("🔍 Vehicle Images:", vehicleImages?.length || 0)
     
     // Pre-flight validation to ensure we have all required files
     const missingDocuments = [];
     
     // Comprehensive validation check for document files
     // Checks both existence and non-empty strings
-    if (!nationalIdFile || nationalIdFile.trim() === "") missingDocuments.push("National ID");
-    if (!licenseFile || licenseFile.trim() === "") missingDocuments.push("Driver's License");
-    if (!registrationFile || registrationFile.trim() === "") missingDocuments.push("Vehicle Registration");
-    if (!insuranceFile || insuranceFile.trim() === "") missingDocuments.push("Insurance");
-    if (!technicalInspectionFile || technicalInspectionFile.trim() === "") missingDocuments.push("Technical Inspection");
+    if (!nationalIdFile || nationalIdFile.trim() === "") missingDocuments.push("Carte d'identité");
+    if (!licenseFile || licenseFile.trim() === "") missingDocuments.push("Permis de conduire");
+    if (!registrationFile || registrationFile.trim() === "") missingDocuments.push("Carte grise");
+    if (!insuranceFile || insuranceFile.trim() === "") missingDocuments.push("Assurance");
+    // Technical inspection validation removed as per simplified requirements
     
     if (missingDocuments.length > 0) {
       console.error("❌ Missing required documents:", missingDocuments);
       toast({
-        title: "Missing Documents",
-        description: `Please upload the following required documents: ${missingDocuments.join(", ")}.`,
+        title: "Documents Manquants",
+        description: `Veuillez télécharger les documents requis suivants: ${missingDocuments.join(", ")}.`,
         variant: "destructive",
       });
       return;
@@ -423,8 +419,7 @@ export default function BecomeDriverPage() {
       nationalIdFile,
       licenseFile,
       registrationFile,
-      insuranceFile,
-      technicalInspectionFile
+      insuranceFile
     ];
     
     const invalidFiles = documentFiles.filter(url => !isValidDocumentUrl(url));
@@ -467,7 +462,6 @@ export default function BecomeDriverPage() {
     form.setValue("licenseFile", licenseFile)
     form.setValue("registrationFile", registrationFile)
     form.setValue("insuranceFile", insuranceFile)
-    form.setValue("technicalInspectionFile", technicalInspectionFile)
 
     try {
       setIsSubmitting(true)
@@ -531,17 +525,16 @@ export default function BecomeDriverPage() {
       const documentData = {
         driver_id: user.id,
         // Document numbers with proper validation and sanitization
-        national_id_number: values.nationalIdNumber.trim(),
-        license_number: values.licenseNumber.trim(),
-        registration_number: values.registrationNumber.trim(),
-        insurance_number: values.insuranceNumber.trim(),
-        technical_inspection_number: values.technicalInspectionNumber.trim(),
+        // Document numbers are now optional in our simplified approach
+        national_id_number: "",
+        license_number: "",
+        registration_number: "",
+        insurance_number: "",
         // Document files stored as fully validated URLs
         national_id_file: nationalIdFile,
         license_file: licenseFile,
         registration_file: registrationFile,
         insurance_file: insuranceFile,
-        technical_inspection_file: technicalInspectionFile,
         // Additional vehicle images
         vehicle_images: vehicleImages,
         // Add timestamps for tracking (following company pattern)
@@ -560,16 +553,15 @@ export default function BecomeDriverPage() {
           .insert([
             {
               driver_id: user.id,
-              national_id_number: values.nationalIdNumber,
-              license_number: values.licenseNumber,
-              registration_number: values.registrationNumber,
-              insurance_number: values.insuranceNumber,
-              technical_inspection_number: values.technicalInspectionNumber,
+              // Using empty strings for document numbers in our simplified approach
+              national_id_number: "",
+              license_number: "",
+              registration_number: "",
+              insurance_number: "",
               national_id_file: nationalIdFile,
               license_file: licenseFile,
               registration_file: registrationFile,
               insurance_file: insuranceFile,
-              technical_inspection_file: technicalInspectionFile,
               vehicle_images: vehicleImages,
               status: 'pending',
             }
@@ -688,101 +680,111 @@ export default function BecomeDriverPage() {
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-primary" />
-                  Driver Documents
+                  Documents du Conducteur
                 </h3>
                 
-                {/* National ID */}
-                <div className="border rounded-lg p-4 bg-gray-50/50">
-                  <h4 className="font-medium mb-2">National ID (CNI)</h4>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="nationalIdNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>National ID Number / Numéro de CNI</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter your CNI number / Entrez votre numéro CNI" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* National ID */}
+                  <div className="border rounded-lg p-5 bg-gray-50/50 hover:bg-blue-50/20 transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        Carte Nationale d'Identité (CNI)
+                      </h4>
+                      {nationalIdFile && <Check className="h-5 w-5 text-green-600" />}
+                    </div>
                     
                     <FormField
                       control={form.control}
                       name="nationalIdFile"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Upload ID Document / Télécharger la CNI</FormLabel>
-                            {uploadingNationalId && <Loader2 className="h-4 w-4 animate-spin" />}
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Téléchargez une image claire de votre CNI
                           </div>
-                          <FormControl>
-                            <Input 
-                              type="file" 
-                              accept="image/*,application/pdf"
-                              className="cursor-pointer"
-                              disabled={uploadingNationalId || !!nationalIdFile}
-                              onChange={handleNationalIdUpload}
-                            />
-                          </FormControl>
-                          {nationalIdFile ? (
-                            <div className="text-green-600 text-sm flex items-center gap-1">
-                              <Check className="h-4 w-4" /> Document uploaded successfully
+                          <div className="flex flex-col gap-3">
+                            <div className="relative border-2 border-dashed rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                              <FormControl>
+                                <Input 
+                                  type="file" 
+                                  accept="image/*,application/pdf"
+                                  className="cursor-pointer z-20 relative opacity-0 h-32"
+                                  disabled={uploadingNationalId || !!nationalIdFile}
+                                  onChange={handleNationalIdUpload}
+                                />
+                              </FormControl>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                {uploadingNationalId ? (
+                                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
+                                ) : nationalIdFile ? (
+                                  <div className="flex flex-col items-center justify-center gap-2">
+                                    <Check className="h-8 w-8 text-green-600" />
+                                    <span className="text-green-600 font-medium">Document téléchargé</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <ShieldCheck className="h-10 w-10 text-muted-foreground mb-2" />
+                                    <p className="text-center font-medium">Cliquez ou déposez ici</p>
+                                    <p className="text-xs text-muted-foreground">JPG, PNG ou PDF</p>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          ) : (
-                            <FormMessage className="text-red-500" />
-                          )}
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                
-                {/* Driver License */}
-                <div className="border rounded-lg p-4 bg-gray-50/50">
-                  <h4 className="font-medium mb-2">Driver&apos;s License / Permis de conduire</h4>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="licenseNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>License Number / Numéro de permis</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter your license number" {...field} />
-                          </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                  </div>
+                  
+                  {/* Driver License */}
+                  <div className="border rounded-lg p-5 bg-gray-50/50 hover:bg-blue-50/20 transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        Permis de Conduire
+                      </h4>
+                      {licenseFile && <Check className="h-5 w-5 text-green-600" />}
+                    </div>
                     
                     <FormField
                       control={form.control}
                       name="licenseFile"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Upload License Document / Télécharger le permis</FormLabel>
-                            {uploadingLicense && <Loader2 className="h-4 w-4 animate-spin" />}
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Téléchargez une image claire de votre permis de conduire
                           </div>
-                          <FormControl>
-                            <Input 
-                              type="file" 
-                              accept="image/*,application/pdf"
-                              className="cursor-pointer"
-                              disabled={uploadingLicense || !!licenseFile}
-                              onChange={handleLicenseUpload}
-                            />
-                          </FormControl>
-                          {licenseFile ? (
-                            <div className="text-green-600 text-sm flex items-center gap-1">
-                              <Check className="h-4 w-4" /> Document uploaded successfully
+                          <div className="flex flex-col gap-3">
+                            <div className="relative border-2 border-dashed rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                              <FormControl>
+                                <Input 
+                                  type="file" 
+                                  accept="image/*,application/pdf"
+                                  className="cursor-pointer z-20 relative opacity-0 h-32"
+                                  disabled={uploadingLicense || !!licenseFile}
+                                  onChange={handleLicenseUpload}
+                                />
+                              </FormControl>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                {uploadingLicense ? (
+                                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
+                                ) : licenseFile ? (
+                                  <div className="flex flex-col items-center justify-center gap-2">
+                                    <Check className="h-8 w-8 text-green-600" />
+                                    <span className="text-green-600 font-medium">Document téléchargé</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <ShieldCheck className="h-10 w-10 text-muted-foreground mb-2" />
+                                    <p className="text-center font-medium">Cliquez ou déposez ici</p>
+                                    <p className="text-xs text-muted-foreground">JPG, PNG ou PDF</p>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          ) : (
-                            <FormMessage className="text-red-500" />
-                          )}
+                          </div>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -793,150 +795,111 @@ export default function BecomeDriverPage() {
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold flex items-center gap-2">
                   <Car className="h-5 w-5 text-primary" />
-                  Vehicle Documents
+                  Documents du Véhicule
                 </h3>
                 
-                {/* Vehicle Registration */}
-                <div className="border rounded-lg p-4 bg-gray-50/50">
-                  <h4 className="font-medium mb-2">Vehicle Registration / Immatriculation</h4>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="registrationNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Registration Number / Numéro d&apos;immatriculation</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter registration number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Vehicle Registration */}
+                  <div className="border rounded-lg p-5 bg-gray-50/50 hover:bg-blue-50/20 transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Car className="h-4 w-4 text-primary" />
+                        Carte Grise du Véhicule
+                      </h4>
+                      {registrationFile && <Check className="h-5 w-5 text-green-600" />}
+                    </div>
                     
                     <FormField
                       control={form.control}
                       name="registrationFile"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Upload Registration Document / Télécharger l&apos;immatriculation</FormLabel>
-                            {uploadingRegistration && <Loader2 className="h-4 w-4 animate-spin" />}
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Téléchargez une image claire de la carte grise du véhicule
                           </div>
-                          <FormControl>
-                            <Input 
-                              type="file" 
-                              accept="image/*,application/pdf"
-                              className="cursor-pointer"
-                              disabled={uploadingRegistration || !!registrationFile}
-                              onChange={handleRegistrationUpload}
-                            />
-                          </FormControl>
-                          {registrationFile ? (
-                            <div className="text-green-600 text-sm flex items-center gap-1">
-                              <Check className="h-4 w-4" /> Document uploaded successfully
+                          <div className="flex flex-col gap-3">
+                            <div className="relative border-2 border-dashed rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                              <FormControl>
+                                <Input 
+                                  type="file" 
+                                  accept="image/*,application/pdf"
+                                  className="cursor-pointer z-20 relative opacity-0 h-32"
+                                  disabled={uploadingRegistration || !!registrationFile}
+                                  onChange={handleRegistrationUpload}
+                                />
+                              </FormControl>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                {uploadingRegistration ? (
+                                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
+                                ) : registrationFile ? (
+                                  <div className="flex flex-col items-center justify-center gap-2">
+                                    <Check className="h-8 w-8 text-green-600" />
+                                    <span className="text-green-600 font-medium">Document téléchargé</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Car className="h-10 w-10 text-muted-foreground mb-2" />
+                                    <p className="text-center font-medium">Cliquez ou déposez ici</p>
+                                    <p className="text-xs text-muted-foreground">JPG, PNG ou PDF</p>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          ) : (
-                            <FormMessage className="text-red-500" />
-                          )}
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                
-                {/* Insurance */}
-                <div className="border rounded-lg p-4 bg-gray-50/50">
-                  <h4 className="font-medium mb-2">Insurance / Assurance</h4>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="insuranceNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Insurance Number / Numéro d&apos;assurance</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter insurance number" {...field} />
-                          </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                  </div>
+                  
+                  {/* Insurance */}
+                  <div className="border rounded-lg p-5 bg-gray-50/50 hover:bg-blue-50/20 transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Car className="h-4 w-4 text-primary" />
+                        Certificat d'Assurance
+                      </h4>
+                      {insuranceFile && <Check className="h-5 w-5 text-green-600" />}
+                    </div>
                     
                     <FormField
                       control={form.control}
                       name="insuranceFile"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Upload Insurance Document / Télécharger l&apos;assurance</FormLabel>
-                            {uploadingInsurance && <Loader2 className="h-4 w-4 animate-spin" />}
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Téléchargez une image claire de votre certificat d'assurance
                           </div>
-                          <FormControl>
-                            <Input 
-                              type="file" 
-                              accept="image/*,application/pdf"
-                              className="cursor-pointer"
-                              disabled={uploadingInsurance || !!insuranceFile}
-                              onChange={handleInsuranceUpload}
-                            />
-                          </FormControl>
-                          {insuranceFile ? (
-                            <div className="text-green-600 text-sm flex items-center gap-1">
-                              <Check className="h-4 w-4" /> Document uploaded successfully
+                          <div className="flex flex-col gap-3">
+                            <div className="relative border-2 border-dashed rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                              <FormControl>
+                                <Input 
+                                  type="file" 
+                                  accept="image/*,application/pdf"
+                                  className="cursor-pointer z-20 relative opacity-0 h-32"
+                                  disabled={uploadingInsurance || !!insuranceFile}
+                                  onChange={handleInsuranceUpload}
+                                />
+                              </FormControl>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                {uploadingInsurance ? (
+                                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
+                                ) : insuranceFile ? (
+                                  <div className="flex flex-col items-center justify-center gap-2">
+                                    <Check className="h-8 w-8 text-green-600" />
+                                    <span className="text-green-600 font-medium">Document téléchargé</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Car className="h-10 w-10 text-muted-foreground mb-2" />
+                                    <p className="text-center font-medium">Cliquez ou déposez ici</p>
+                                    <p className="text-xs text-muted-foreground">JPG, PNG ou PDF</p>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          ) : (
-                            <FormMessage className="text-red-500" />
-                          )}
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                
-                {/* Technical Inspection */}
-                <div className="border rounded-lg p-4 bg-gray-50/50">
-                  <h4 className="font-medium mb-2">Technical Inspection / Contrôle technique</h4>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="technicalInspectionNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Technical Inspection Number / Numéro de contrôle technique</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter technical inspection number" {...field} />
-                          </FormControl>
+                          </div>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="technicalInspectionFile"
-                      render={({ field }) => (
-                        <FormItem className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Upload Technical Inspection Document / Télécharger le contrôle technique</FormLabel>
-                            {uploadingTechnicalInspection && <Loader2 className="h-4 w-4 animate-spin" />}
-                          </div>
-                          <FormControl>
-                            <Input 
-                              type="file" 
-                              accept="image/*,application/pdf"
-                              className="cursor-pointer"
-                              disabled={uploadingTechnicalInspection || !!technicalInspectionFile}
-                              onChange={handleTechnicalInspectionUpload}
-                            />
-                          </FormControl>
-                          {technicalInspectionFile ? (
-                            <div className="text-green-600 text-sm flex items-center gap-1">
-                              <Check className="h-4 w-4" /> Document uploaded successfully
-                            </div>
-                          ) : (
-                            <FormMessage className="text-red-500" />
-                          )}
                         </FormItem>
                       )}
                     />
@@ -944,50 +907,84 @@ export default function BecomeDriverPage() {
                 </div>
               </div>
 
-              {/* Additional Vehicle Images */}
-              <div className="space-y-4 border rounded-lg p-5 bg-blue-50/30">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Upload className="h-5 w-5 text-primary" />
-                  Additional Vehicle Images / Photos supplémentaires du véhicule
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Please upload clear images of your vehicle (exterior and interior views) /<br/>
-                  Veuillez télécharger des images claires de votre véhicule (vues extérieures et intérieures)
-                </p>
-                <div className="grid gap-4">
-                  <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
+              {/* Vehicle Images Section */}
+              <div className="space-y-6 border rounded-lg p-6 bg-gradient-to-b from-blue-50/50 to-slate-50/30">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <Car className="h-5 w-5 text-primary" />
+                    Photos du Véhicule
+                  </h3>
+                  {vehicleImages.length > 0 && (
+                    <span className="text-sm bg-green-100 text-green-800 py-1 px-2 rounded-full flex items-center gap-1">
+                      <Check className="h-3.5 w-3.5" />
+                      {vehicleImages.length} image{vehicleImages.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="bg-white/80 rounded-lg p-4 shadow-sm">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Veuillez télécharger des photos claires de votre véhicule pour compléter votre inscription.
+                    Nous recommandons des photos de l'avant, l'arrière, les côtés et l'intérieur.
+                  </p>
+                  
+                  <div className="relative min-h-[180px] border-2 border-dashed border-primary/20 rounded-lg hover:bg-slate-50/80 transition-all group">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-4">
+                      {vehicleImagesLoading ? (
+                        <div className="flex flex-col items-center">
+                          <Loader2 className="h-10 w-10 text-primary animate-spin mb-2" />
+                          <p className="text-primary font-medium">Téléchargement en cours...</p>
+                          <p className="text-xs text-muted-foreground mt-1">Veuillez patienter pendant le traitement des images</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center text-center">
+                          <Upload className="h-12 w-12 text-primary/70 mb-2 group-hover:text-primary transition-colors" />
+                          <p className="font-medium text-gray-700 group-hover:text-gray-900">
+                            Cliquez ou déposez vos photos ici
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1 max-w-xs">
+                            Vous pouvez sélectionner plusieurs images à la fois. Format accepté: JPG, PNG
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
                     <Input
                       type="file"
                       accept="image/*"
                       multiple
                       onChange={handleVehicleImagesUpload}
                       disabled={vehicleImagesLoading}
-                      className="cursor-pointer"
+                      className="cursor-pointer opacity-0 absolute inset-0 h-full z-10"
                     />
-                    <p className="text-xs text-center mt-2 text-muted-foreground">
-                      {vehicleImagesLoading ? "Uploading... / Téléchargement..." : "Drag and drop or click to select files / Glisser-déposer ou cliquer pour sélectionner des fichiers"}
-                    </p>
                   </div>
-                  
-                  {vehicleImages.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium mb-2">Uploaded Images / Images téléchargées ({vehicleImages.length})</p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {vehicleImages.map((url, index) => (
-                          <div key={index} className="relative group rounded-lg overflow-hidden aspect-video shadow-sm">
-                            <Image
-                              src={url}
-                              alt={`Vehicle image ${index + 1}`}
-                              className="object-cover transition-transform group-hover:scale-105"
-                              fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
+                
+                {vehicleImages.length > 0 && (
+                  <div className="bg-white/80 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium">Photos téléchargées</h4>
+                      <span className="text-xs text-muted-foreground">{vehicleImages.length} image{vehicleImages.length > 1 ? 's' : ''}</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {vehicleImages.map((url, index) => (
+                        <div key={index} className="relative group rounded-lg overflow-hidden aspect-square shadow-sm border border-gray-100">
+                          <Image
+                            src={url}
+                            alt={`Photo du véhicule ${index + 1}`}
+                            className="object-cover transition-all group-hover:scale-105 group-hover:brightness-90"
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                            <span className="text-white text-xs font-medium">Photo {index + 1}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Button 
@@ -995,16 +992,15 @@ export default function BecomeDriverPage() {
                 className="w-full"
                 disabled={isSubmitting || vehicleImagesLoading || 
                   uploadingNationalId || uploadingLicense || 
-                  uploadingRegistration || uploadingInsurance || 
-                  uploadingTechnicalInspection}
+                  uploadingRegistration || uploadingInsurance}
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Submitting... / Soumission...
+                    Soumission en cours...
                   </span>
                 ) : (
-                  "Submit Application / Soumettre la demande"
+                  "Soumettre la demande"
                 )}
               </Button>
             </form>

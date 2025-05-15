@@ -406,7 +406,7 @@ export default function Home() {
                 <Button 
                   size="lg" 
                   variant="outline"
-                  className="text-white border-white hover:bg-white hover:text-primary"
+                  className="text-primary border-primary dark:text-white dark:border-white hover:bg-primary hover:text-white dark:hover:bg-white dark:hover:text-primary"
                   onClick={() => router.push('/rides')}
                 >
                   Trouver un Trajet
@@ -452,7 +452,7 @@ export default function Home() {
                 <div className="mt-6 pt-4 border-t border-white/20">
                   <div className="text-sm mb-1">Bientôt disponible sur mobile</div>
                   <div className="flex gap-3">
-                    <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 hover:text-white">
+                    <Button variant="outline" size="sm" className="border-primary/50 text-primary dark:border-white/30 dark:text-white hover:bg-primary/10 hover:text-primary dark:hover:bg-white/10 dark:hover:text-white">
                       Application en développement
                     </Button>
                   </div>
