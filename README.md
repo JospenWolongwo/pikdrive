@@ -31,7 +31,7 @@ Pikdrive is a comprehensive ride-sharing application built with Next.js, offerin
 - **Authentication:** Supabase Auth
 - **Database:** Supabase PostgreSQL
 - **State Management:** React Context API
-- **Payments:** MTN MoMo integration
+- **Payments:** MTN MoMo integration, Orange Money
 - **Styling:** Tailwind CSS with shadcn/ui
 - **Analytics:** Vercel Analytics
 - **Deployment:** Vercel
@@ -39,14 +39,17 @@ Pikdrive is a comprehensive ride-sharing application built with Next.js, offerin
 ## Screenshots
 
 ### Desktop View
+
 ![Desktop Interface](public/images/screenshots/desktop-view.png)
 
 ### Mobile View
+
 ![Mobile Interface](public/images/screenshots/mobile-view.png)
 
 ## Installation and Setup
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or yarn
 - Supabase account
@@ -54,18 +57,21 @@ Pikdrive is a comprehensive ride-sharing application built with Next.js, offerin
 ### Local Development
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/JospenWolongwo/pickdrive.git
 cd pickdrive
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 ```
 
 3. Set up environment variables
-Create a `.env.local` file with the following variables:
+   Create a `.env.local` file with the following variables:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -73,6 +79,7 @@ NEXT_PUBLIC_MTN_MOMO_API_KEY=your_mtn_momo_api_key
 ```
 
 4. Run the development server
+
 ```bash
 npm run dev
 ```
@@ -86,6 +93,7 @@ The application is deployed on Vercel and can be accessed at [https://pikdrive.c
 ## Progressive Web App
 
 Pikdrive is a Progressive Web App that can be installed on mobile devices:
+
 - On iOS, use the "Add to Home Screen" option in Safari
 - On Android, tap "Install App" when prompted or use the browser menu
 

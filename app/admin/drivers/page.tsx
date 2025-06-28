@@ -100,42 +100,35 @@ export default function AdminDriversPage() {
     }
   }, [supabase, router]);
 
+  // Create an admin client that bypasses RLS for admin operations
+  const createAdminClient = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+    
+    // If we have a service role key, create an admin client
+    if (supabaseServiceKey) {
+      console.log("🔑 Creating admin client with service role...");
+      const { createClient } = require('@supabase/supabase-js');
+      return createClient(supabaseUrl, supabaseServiceKey);
+    }
+    
+    // Fallback to regular client
+    console.log("⚠️ No service role key available, using regular client...");
+    return supabase;
+  };
+  
   const loadApplications = useCallback(async () => {
     try {
       console.log("🔄 Loading driver applications from database...");
       setLoading(true);
       
-      // COMPREHENSIVE APPROACH: Fetch both profile-based drivers AND document-based drivers
-      // Step 1: Get all drivers from profiles table (has is_driver = true)
-      const { data: allDriverProfiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          full_name,
-          email,
-          phone,
-          city,
-          avatar_url,
-          driver_status,
-          is_driver,
-          role,
-          created_at
-        `)
-        .eq("is_driver", true)
-        .order("created_at", { ascending: false });
+      // Try to use admin client to bypass RLS restrictions
+      const adminClient = createAdminClient();
       
-      if (profilesError) {
-        console.error("❌ Error fetching driver profiles:", profilesError);
-        throw profilesError;
-      }
-      
-      console.log("📊 Found", allDriverProfiles?.length || 0, "drivers in profiles table");
-      
-      // Step 2: Get ALL driver documents (even those without complete profiles)
-      // NOTE: We need to query explicitly without any filters to find ALL documents
-      console.log("🔍 Searching for ALL driver documents in the database...");
-      
-      const { data: allDriverDocs, error: allDocsError } = await supabase
+      // ADMIN-ONLY APPROACH: Directly query the driver_documents table using admin client
+      // This bypasses RLS completely for admin users
+      console.log("🔍 Querying driver_documents table using admin client...");
+      const { data: allDriverDocs, error: allDocsError } = await adminClient
         .from("driver_documents")
         .select(`
           id,
@@ -152,153 +145,104 @@ export default function AdminDriversPage() {
           technical_inspection_file,
           vehicle_images,
           status,
-          created_at
+          created_at,
+          updated_at
         `);
-      // We removed the order clause to get ALL documents
       
-      if (allDocsError) {
-        console.error("❌ Error fetching all driver documents:", allDocsError);
-        // Continue with just profile data if we can't get docs
-      } else {
-        console.log("📝 Found", allDriverDocs?.length || 0, "driver document records");
+      // Log complete data from the admin client query
+      console.log("📊 Admin client query for driver_documents:", {
+        success: !allDocsError,
+        count: allDriverDocs?.length || 0,
+        error: allDocsError ? String(allDocsError) : null
+      });
         
-        if (allDriverDocs && allDriverDocs.length > 0) {
-          // Detailed logging of the first few records to debug
-          console.log("📄 Sample document records:", allDriverDocs.slice(0, 2).map((doc: any) => ({
-            id: doc.id,
-            driver_id: doc.driver_id,
-            has_license: Boolean(doc.license_file),
-            has_national_id: Boolean(doc.national_id_file),
-            status: doc.status || 'unknown'
-          })));
-        }
-      }
-      
-      // Step 3: Collect ALL unique driver IDs from both sources
-      const profileDriverIds = allDriverProfiles?.map((p: any) => p.id) || [];
-      const docDriverIds = allDriverDocs?.map((d: any) => d.driver_id).filter(Boolean) || [];
-      const allDriverIds = [...new Set([...profileDriverIds, ...docDriverIds])];
-      
-      console.log("📃 Total unique drivers from all sources:", allDriverIds.length);
-      
-      // Step A: If no drivers at all, return empty state
-      if (allDriverIds.length === 0) {
-        console.log("No drivers found from any source, displaying empty state");
+      // Check auth context to debug potential role issues
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log("🔐 Current auth context:", {
+        userId: currentUser?.id,
+        email: currentUser?.email,
+        role: currentUser?.app_metadata?.role || 'none set'
+      });
+        
+      // Use the admin client results directly
+      if (allDocsError) {
+        console.error("❌ Error fetching driver documents:", allDocsError);
         setApplications([]);
         setLoading(false);
         return;
       }
       
-      // Step 4: Fetch any profiles we don't have yet (drivers who submitted docs but haven't completed profile)
-      const missingProfileIds = docDriverIds.filter((id: string) => !profileDriverIds.includes(id));
-      let additionalProfiles: any[] = [];
+      console.log("📝 Found", allDriverDocs?.length || 0, "driver document records");
       
-      if (missingProfileIds.length > 0) {
-        console.log("🔎 Found", missingProfileIds.length, "drivers with documents but incomplete profiles");
+      // Detailed logging of documents
+      if (allDriverDocs && allDriverDocs.length > 0) {
+        console.log("📄 Sample document records:", allDriverDocs.slice(0, 3).map((doc: any) => ({
+          id: doc.id,
+          driver_id: doc.driver_id,
+          status: doc.status,
+          has_license: Boolean(doc.license_file),
+          has_national_id: Boolean(doc.national_id_file),
+          has_vehicle_images: Array.isArray(doc.vehicle_images) && doc.vehicle_images.length > 0,
+        })));
         
-        const { data: moreProfiles, error: moreProfilesError } = await supabase
-          .from("profiles")
-          .select(`
-            id,
-            full_name,
-            email,
-            phone,
-            city,
-            avatar_url,
-            driver_status,
-            is_driver,
-            role,
-            created_at
-          `)
-          .in("id", missingProfileIds);
-          
-        if (!moreProfilesError && moreProfiles) {
-          additionalProfiles = moreProfiles;
-          console.log("👥 Retrieved", additionalProfiles.length, "additional driver profiles");
+        // Specifically check and log the status of each driver document
+        console.log("📊 Driver document statuses:");
+        allDriverDocs.forEach((doc: any, index: number) => {
+          console.log(`Driver #${index + 1}: ID=${doc.driver_id}, Status=${doc.status || 'unknown'}, Document ID=${doc.id}`);
+        });
+        
+        // Count pending drivers explicitly
+        const pendingDrivers = allDriverDocs.filter((doc: any) => doc.status === 'pending');
+        console.log(`📊 Found ${pendingDrivers.length} drivers with 'pending' status`);
+        if (pendingDrivers.length > 0) {
+          console.log("Pending drivers:", pendingDrivers.map((doc: any) => doc.driver_id));
         }
       }
       
-      // Step 5: Combine all profiles we found
-      const allProfiles = [...(allDriverProfiles || []), ...additionalProfiles];
+      // Directly transform driver documents into applications list
+      let driverApplications: DriverApplication[] = [];
       
-      // Step 6: Create maps for easy lookup
-      const profileMap: Record<string, any> = {};
-      allProfiles.forEach(profile => {
-        profileMap[profile.id] = profile;
-      });
-      
-      const docMap: Record<string, any> = {};
       if (allDriverDocs) {
-        allDriverDocs.forEach((doc: any) => {
-          if (doc.driver_id) {
-            docMap[doc.driver_id] = doc;
-          }
-        });
-      }
-      
-      // ADDITIONAL STEP: Also directly query driver documents to get ALL potential drivers
-      console.log("🔎 Getting a complete list of driver applications from both profiles and documents...");
-      
-      // Step 7: Build the final combined applications list
-      let combinedApplications: DriverApplication[] = [];
-      
-      // First, add all drivers from profiles
-      allProfiles.forEach(profile => {
-        const documents = docMap[profile.id] || null;
-        combinedApplications.push({
-          ...profile,
-          documents,
-          // Use document status as fallback if profile status is missing
-          driver_status: profile.driver_status || (documents?.status || 'pending'),
-          source: 'profile'
-        });
-      });
-      
-      // Then, add any drivers from documents who don't have profiles yet
-      if (allDriverDocs) {
-        allDriverDocs.forEach((doc: any) => {
-          // Skip if we already added this driver from profiles
-          if (doc.driver_id && !profileMap[doc.driver_id]) {
-            console.log("💡 Found document-only driver:", doc.driver_id);
+        // Map each document to an application entry
+        driverApplications = allDriverDocs.map((doc: any) => {
+          // Create a driver profile entry from document data
+          // Extract information from the document ID and use it for display
+          // Format: Using a combination of the document number and driver ID
+          const driverName = doc.national_id_number || doc.license_number || 
+            `Driver ${doc.driver_id.substring(0, 6)}`;
             
-            // Create a synthetic profile for this document-only driver
-            combinedApplications.push({
-              id: doc.driver_id,
-              full_name: "Driver " + doc.driver_id.substring(0, 8),
-              email: "Unknown",
-              phone: "",
-              city: "",
-              avatar_url: "",
-              driver_status: doc.status || "pending",
-              is_driver: true,
-              role: "user",
-              created_at: doc.created_at,
-              documents: doc,
-              source: 'document'
-            });
-          }
+          return {
+            id: doc.driver_id,
+            full_name: driverName,
+            email: "From Document",
+            phone: doc.license_number || "",
+            city: "",
+            avatar_url: "",
+            driver_status: doc.status || "pending",
+            is_driver: true,
+            role: "user",
+            created_at: doc.created_at,
+            documents: doc,
+            source: 'document'
+          };
         });
       }
       
-      // Final safety check to ensure we only show drivers
-      combinedApplications = combinedApplications.filter(app => app.is_driver);
+      console.log("📝 Final driver applications from documents:", driverApplications.length);
       
-      // Debug output the combined data
-      console.log("📝 Final combined applications:", combinedApplications.length);
-      
-      if (combinedApplications.length > 0) {
-        console.log("Sample applications:", combinedApplications.slice(0, 3).map(app => ({
+      if (driverApplications.length > 0) {
+        console.log("Sample applications:", driverApplications.slice(0, 3).map(app => ({
           id: app.id,
-          name: app.full_name,
-          profileStatus: app.driver_status,
-          hasDocuments: Boolean(app.documents),
+          driver_id: app.documents?.driver_id,
           docId: app.documents?.id || 'no documents',
-          docStatus: app.documents?.status || 'N/A'
+          docStatus: app.documents?.status || 'N/A',
+          has_national_id: Boolean(app.documents?.national_id_file),
+          has_license: Boolean(app.documents?.license_file)
         })));
       }
       
-      setApplications(combinedApplications);
-      console.log("✅ Successfully loaded", combinedApplications.length, "driver applications");
+      setApplications(driverApplications);
+      console.log("✅ Successfully loaded", driverApplications.length, "driver applications");
     } catch (error) {
       console.error("❌ Error loading applications:", error);
       toast({
@@ -468,15 +412,17 @@ export default function AdminDriversPage() {
                             <Avatar>
                               <AvatarImage src={application.avatar_url || ""} />
                               <AvatarFallback>
-                                {application.full_name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
+                                {application.full_name 
+                                  ? application.full_name
+                                    .split(" ")
+                                    .map((n) => n?.[0] || "")
+                                    .join("")
+                                  : "?"}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-medium">
-                                {application.full_name}
+                                {application.full_name ? application.full_name : "Unknown Driver"}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {application.city}
