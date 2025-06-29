@@ -89,8 +89,8 @@ export default function AdminDriversPage() {
       if (profile?.role !== "admin") {
         router.push("/")
         toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page.",
+          title: "Accès Refusé",
+          description: "Vous n'avez pas la permission d'accéder à cette page.",
           variant: "destructive",
         })
       }
@@ -101,7 +101,7 @@ export default function AdminDriversPage() {
   }, [supabase, router]);
 
   // Create an admin client that bypasses RLS for admin operations
-  const createAdminClient = () => {
+  const createAdminClient = useCallback(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
     
@@ -115,7 +115,7 @@ export default function AdminDriversPage() {
     // Fallback to regular client
     console.log("⚠️ No service role key available, using regular client...");
     return supabase;
-  };
+  }, [supabase]);
   
   const loadApplications = useCallback(async () => {
     try {
@@ -246,14 +246,14 @@ export default function AdminDriversPage() {
     } catch (error) {
       console.error("❌ Error loading applications:", error);
       toast({
-        title: "Error",
-        description: "Failed to load driver applications.",
+        title: "Erreur",
+        description: "Impossible de charger les candidatures de conducteurs.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, createAdminClient]);
 
   useEffect(() => {
     checkAdminAccess()
@@ -264,24 +264,36 @@ export default function AdminDriversPage() {
     try {
       console.log(`Updating driver ${driverId} status to ${status}`);
       
+      // Create admin client to bypass RLS
+      const adminClient = createAdminClient();
+      
       // Update profile status which is our source of truth
-      const { error } = await supabase
+      console.log("Using admin client to update profile status...");
+      const { error } = await adminClient
         .from("profiles")
         .update({ driver_status: status })
         .eq("id", driverId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating profile status:", error);
+        throw error;
+      }
 
       // Also update document status if it exists (for consistency)
-      const { data: docData } = await supabase
+      console.log("Checking for driver documents to update...");
+      const { data: docData, error: docFetchError } = await adminClient
         .from("driver_documents")
         .select('id')
         .eq("driver_id", driverId)
         .maybeSingle();
       
+      if (docFetchError) {
+        console.error("Error fetching document record:", docFetchError);
+      }
+      
       if (docData?.id) {
         console.log(`Also updating document record ${docData.id} for consistency`);
-        const { error: docError } = await supabase
+        const { error: docError } = await adminClient
           .from("driver_documents")
           .update({ status: status })
           .eq("id", docData.id);
@@ -306,14 +318,14 @@ export default function AdminDriversPage() {
       }
 
       toast({
-        title: "Success",
-        description: `Driver status updated to ${status}.`,
+        title: "Succès",
+        description: `Statut du conducteur mis à jour en ${status === 'approved' ? 'approuvé' : status === 'rejected' ? 'refusé' : status}.`,
       });
     } catch (error) {
       console.error("Error updating driver status:", error)
       toast({
-        title: "Error",
-        description: "Failed to update driver status.",
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut du conducteur.",
         variant: "destructive",
       })
     }
@@ -344,9 +356,9 @@ export default function AdminDriversPage() {
     <div className="container py-10">
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold">Driver Applications</h1>
+          <h1 className="text-3xl font-bold">Candidatures de Conducteurs</h1>
           <p className="text-muted-foreground mt-2">
-            Manage driver applications and their verification status.
+            Gérer les candidatures de conducteurs et leur statut de vérification.
           </p>
         </div>
         <Button 
@@ -356,15 +368,15 @@ export default function AdminDriversPage() {
           disabled={loading}
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
+          Actualiser
         </Button>
       </div>
 
       <Tabs defaultValue="pending">
         <TabsList>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="pending">En attente</TabsTrigger>
+          <TabsTrigger value="approved">Approuvés</TabsTrigger>
+          <TabsTrigger value="rejected">Refusés</TabsTrigger>
         </TabsList>
 
         {["pending", "approved", "rejected"].map((status) => (
@@ -373,10 +385,10 @@ export default function AdminDriversPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Driver</TableHead>
+                    <TableHead>Conducteur</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Documents</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Statut</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -385,7 +397,7 @@ export default function AdminDriversPage() {
                   {applications.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                        No driver applications found. Check the console for debugging information.
+                        Aucune candidature de conducteur trouvée. Vérifiez la console pour les informations de débogage.
                       </TableCell>
                     </TableRow>
                   )}
@@ -394,7 +406,7 @@ export default function AdminDriversPage() {
                   {applications.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                        No driver applications found.
+                        Aucune candidature de conducteur trouvée.
                       </TableCell>
                     </TableRow>
                   )}
@@ -441,17 +453,17 @@ export default function AdminDriversPage() {
                         <TableCell>
                           {application.documents ? (
                             <div className="space-y-1">
-                              <div>License: {application.documents.license_number || 'Submitted'}</div>
-                              <div>Registration: {application.documents.registration_number || 'Submitted'}</div>
-                              <div>Insurance: {application.documents.insurance_number || 'Submitted'}</div>
+                              <div>Permis: {application.documents.license_number || 'Soumis'}</div>
+                              <div>Carte grise: {application.documents.registration_number || 'Soumis'}</div>
+                              <div>Assurance: {application.documents.insurance_number || 'Soumis'}</div>
                               {/* Add debug info to see what documents we have */}
                               <div className="text-xs text-muted-foreground">
-                                {application.documents.license_file ? '✓' : '✗'} License File
-                                {application.documents.national_id_file ? '✓' : '✗'} ID File
+                                {application.documents.license_file ? '✓' : '✗'} Fichier permis
+                                {application.documents.national_id_file ? '✓' : '✗'} Fichier d&apos;identité
                               </div>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">No documents submitted</span>
+                            <span className="text-muted-foreground">Aucun document soumis</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -469,7 +481,7 @@ export default function AdminDriversPage() {
                               className="flex items-center gap-1"
                               onClick={() => handleViewApplication(application)}
                             >
-                              <Eye className="h-4 w-4" /> View
+                              <Eye className="h-4 w-4" /> Voir
                             </Button>
                             
                             {/* Show approval buttons only for pending applications */}
@@ -482,22 +494,22 @@ export default function AdminDriversPage() {
                                       size="sm"
                                       className="flex items-center gap-1"
                                     >
-                                      <CheckCircle className="h-4 w-4" /> Approve
+                                      <CheckCircle className="h-4 w-4" /> Approuver
                                     </Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Approve Driver Application</AlertDialogTitle>
+                                      <AlertDialogTitle>Approuver la candidature du conducteur</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Are you sure you want to approve this driver? They will be able to create rides and receive bookings.
+                                        Êtes-vous sûr de vouloir approuver ce conducteur ? Il pourra créer des trajets et recevoir des réservations.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => updateDriverStatus(application.id, "approved")}
                                       >
-                                        Approve
+                                        Approuver
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -510,22 +522,22 @@ export default function AdminDriversPage() {
                                       size="sm"
                                       className="flex items-center gap-1"
                                     >
-                                      <XCircle className="h-4 w-4" /> Reject
+                                      <XCircle className="h-4 w-4" /> Rejeter
                                     </Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Reject Driver Application</AlertDialogTitle>
+                                      <AlertDialogTitle>Rejeter la candidature du conducteur</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Are you sure you want to reject this driver? They will not be able to create rides.
+                                        Êtes-vous sûr de vouloir rejeter ce conducteur ? Il ne pourra pas créer de trajets.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => updateDriverStatus(application.id, "rejected")}
                                       >
-                                        Reject
+                                        Rejeter
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -547,7 +559,7 @@ export default function AdminDriversPage() {
       <div className="mt-6 flex items-center gap-2">
         <div className="flex-1">
           <Input 
-            placeholder="Search drivers..." 
+            placeholder="Rechercher des conducteurs..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm" 
