@@ -245,7 +245,7 @@ export default function AdminDriversPage() {
           docId: app.documents?.id || 'no documents',
           docStatus: app.documents?.status || 'N/A',
           has_national_id: Boolean(app.documents?.national_id_file_recto),
-          has_license: Boolean(app.documents?.license_file)
+          has_license: Boolean(app.documents?.license_file_recto)
         })));
       }
       
@@ -466,8 +466,8 @@ export default function AdminDriversPage() {
                               <div>Assurance: {application.documents.insurance_number || 'Soumis'}</div>
                               {/* Add debug info to see what documents we have */}
                               <div className="text-xs text-muted-foreground">
-                                {application.documents.license_file ? '✓' : '✗'} Fichier permis
-                                {application.documents.national_id_file_recto ? '✓' : '✗'} Fichier d'identité (Recto)
+                                {application.documents.license_file_recto ? '✓' : '✗'} Fichier permis
+                                {application.documents.national_id_file_recto ? '✓' : '✗'} Fichier d&apos;identité (Recto)
                               </div>
                             </div>
                           ) : (
