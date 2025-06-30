@@ -294,7 +294,8 @@ export function useDocumentUploadHandlers(
           description: `Successfully uploaded ${uploadResult.urls.length} images.`,
         });
       } else {
-        throw new Error(uploadResult.error || 'Unknown upload error');
+        // Use the first error message from the errors array, or a default message
+        throw new Error(uploadResult.errors[0] || 'Unknown upload error');
       }
     } catch (error) {
       console.error("❌ Vehicle image upload failed:", error);
