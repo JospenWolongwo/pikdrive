@@ -133,10 +133,11 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
       console.log(`✅ Driver application successful in ${submissionDuration}ms`);
       
       // Track event for analytics
-      trackSubmissionEvent('driver_application_complete', user.id, {
-        document_count: requiredDocs.length,
-        has_vehicle_images: vehicleImages.length > 0,
-        submission_duration_ms: submissionDuration,
+      trackSubmissionEvent({
+        userId: user.id,
+        documentCount: requiredDocs.length,
+        processingTime: submissionDuration
+        // Additional properties as needed
       });
 
       // Show success toast 
