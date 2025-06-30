@@ -264,11 +264,11 @@ export function useDocumentUploadHandlers(
       setVehicleImagesLoading(true);
       
       // For vehicle images, we use the specialized multi-image upload function
-      const uploadResult = await uploadVehicleImages(supabase, {
-        files: Array.from(files),
-        userId,
-        bucketName: 'driver_documents',
-      });
+      const uploadResult = await uploadVehicleImages(
+        supabase, 
+        Array.from(files),
+        userId
+      );
       
       if (uploadResult.success) {
         // Use functional state update pattern to ensure we're always appending to the current state
