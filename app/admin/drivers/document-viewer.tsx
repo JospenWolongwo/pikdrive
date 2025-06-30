@@ -18,10 +18,14 @@ interface DocumentViewerProps {
     registration_number: string
     insurance_number: string
     technical_inspection_number: string
-    national_id_file: string
-    license_file: string
-    registration_file: string
-    insurance_file: string
+    national_id_file_recto: string
+    national_id_file_verso: string
+    license_file_recto: string
+    license_file_verso: string
+    registration_file_recto: string
+    registration_file_verso: string
+    insurance_file_recto: string
+    insurance_file_verso: string
     technical_inspection_file: string
     vehicle_images: string[]
   }
@@ -58,26 +62,30 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
   const documentTypes = [
     {
       id: "national_id",
-      label: "National ID",
-      file: documents?.national_id_file || null,
+      label: "National ID (Recto/Verso)",
+      recto: documents?.national_id_file_recto || null,
+      verso: documents?.national_id_file_verso || null,
       number: documents?.national_id_number || "",
     },
     {
-      id: "license", // Changed from driver_license to match DB field
-      label: "Driver's License",
-      file: documents?.license_file || null,
+      id: "license",
+      label: "Driver's License (Recto/Verso)",
+      recto: documents?.license_file_recto || null,
+      verso: documents?.license_file_verso || null,
       number: documents?.license_number || "",
     },
     {
-      id: "registration", // Changed from vehicle_registration to match DB field
-      label: "Vehicle Registration",
-      file: documents?.registration_file || null,
+      id: "registration",
+      label: "Vehicle Registration (Recto/Verso)",
+      recto: documents?.registration_file_recto || null,
+      verso: documents?.registration_file_verso || null,
       number: documents?.registration_number || "",
     },
     {
-      id: "insurance", // Changed from vehicle_insurance to match DB field
-      label: "Vehicle Insurance",
-      file: documents?.insurance_file || null,
+      id: "insurance",
+      label: "Vehicle Insurance (Recto/Verso)",
+      recto: documents?.insurance_file_recto || null,
+      verso: documents?.insurance_file_verso || null,
       number: documents?.insurance_number || "",
     },
     {
@@ -90,14 +98,31 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
   
   // Log what document files we found
   documentTypes.forEach(doc => {
-    console.log(`Document "${doc.id}" (${doc.label}):`, doc.file ? 'Found file ✅' : 'Missing file ❌');
+    if (doc.id === 'technical_inspection') {
+      console.log(`Document "${doc.id}" (${doc.label}):`, doc.file ? 'Found file ✅' : 'Missing file ❌');
+    } else {
+      console.log(`Document "${doc.id}" (${doc.label}):`, 
+        `Recto: ${doc.recto ? '✅' : '❌'}, Verso: ${doc.verso ? '✅' : '❌'}`);
+    }
   });
 
-  console.log('Available document files:', documentTypes.map(doc => ({ 
-    type: doc.id, 
-    hasFile: Boolean(doc.file), 
-    file: doc.file 
-  })));
+  console.log('Available document files:', documentTypes.map(doc => {
+    if (doc.id === 'technical_inspection') {
+      return {
+        type: doc.id,
+        hasFile: Boolean(doc.file),
+        file: doc.file
+      };
+    } else {
+      return {
+        type: doc.id,
+        hasRectoFile: Boolean(doc.recto),
+        hasVersoFile: Boolean(doc.verso),
+        rectoFile: doc.recto,
+        versoFile: doc.verso
+      };
+    }
+  }));
   console.log('Vehicle images:', documents?.vehicle_images);
 
   const getFileExtension = (url: string) => {
@@ -287,25 +312,78 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
                         </span>
                       </CardDescription>
                     </div>
-                    <Badge 
-                      variant={doc.file ? "default" : "destructive"}
-                      className={`text-xs px-2 py-0.5 ${doc.file ? "bg-green-100 text-green-700 hover:bg-green-200" : ""}`}
-                    >
-                      {doc.file ? "Provided" : "Missing"}
-                    </Badge>
+                    {doc.id === 'technical_inspection' ? (
+                      <Badge 
+                        variant={doc.file ? "default" : "destructive"}
+                        className={`text-xs px-2 py-0.5 ${doc.file ? "bg-green-100 text-green-700 hover:bg-green-200" : ""}`}
+                      >
+                        {doc.file ? "Provided" : "Missing"}
+                      </Badge>
+                    ) : (
+                      <div className="flex gap-1">
+                        <Badge
+                          variant={doc.recto ? "default" : "destructive"}
+                          className={`text-xs px-2 py-0.5 ${doc.recto ? "bg-green-100 text-green-700 hover:bg-green-200" : ""}`}
+                        >
+                          Recto: {doc.recto ? "✓" : "✗"}
+                        </Badge>
+                        <Badge
+                          variant={doc.verso ? "default" : "destructive"}
+                          className={`text-xs px-2 py-0.5 ${doc.verso ? "bg-green-100 text-green-700 hover:bg-green-200" : ""}`}
+                        >
+                          Verso: {doc.verso ? "✓" : "✗"}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 bg-white">
-                  {doc.file ? (
-                    renderFilePreview(doc.file)
-                  ) : (
-                    <div className="flex items-center justify-center h-64 bg-slate-50 border border-dashed border-slate-200 rounded-md">
-                      <div className="text-center text-slate-500">
-                        <div className="bg-slate-100 rounded-full p-3 mx-auto w-fit mb-2">
-                          <FileIcon className="w-10 h-10 text-slate-400" />
+                  {doc.id === 'technical_inspection' ? (
+                    // Technical inspection (single document)
+                    doc.file ? (
+                      renderFilePreview(getCompleteFileUrl(doc.file))
+                    ) : (
+                      <div className="flex items-center justify-center h-64 bg-slate-50 border border-dashed border-slate-200 rounded-md">
+                        <div className="text-center text-slate-500">
+                          <div className="bg-slate-100 rounded-full p-3 mx-auto w-fit mb-2">
+                            <FileIcon className="w-10 h-10 text-slate-400" />
+                          </div>
+                          <p className="mt-2 text-sm">Document not provided</p>
+                          <p className="text-xs text-slate-400 mt-1">Driver needs to upload this document</p>
                         </div>
-                        <p className="mt-2 text-sm">Document not provided</p>
-                        <p className="text-xs text-slate-400 mt-1">Driver needs to upload this document</p>
+                      </div>
+                    )
+                  ) : (
+                    // Recto/Verso documents
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* Recto (Front) */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-2 text-gray-700">Recto (Front)</h4>
+                        {doc.recto ? (
+                          renderFilePreview(getCompleteFileUrl(doc.recto))
+                        ) : (
+                          <div className="flex items-center justify-center h-32 bg-slate-50 border border-dashed border-slate-200 rounded-md">
+                            <div className="text-center text-slate-500">
+                              <FileIcon className="w-6 h-6 mx-auto text-slate-400" />
+                              <p className="text-xs mt-1">Front side not provided</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Verso (Back) */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-2 text-gray-700">Verso (Back)</h4>
+                        {doc.verso ? (
+                          renderFilePreview(getCompleteFileUrl(doc.verso))
+                        ) : (
+                          <div className="flex items-center justify-center h-32 bg-slate-50 border border-dashed border-slate-200 rounded-md">
+                            <div className="text-center text-slate-500">
+                              <FileIcon className="w-6 h-6 mx-auto text-slate-400" />
+                              <p className="text-xs mt-1">Back side not provided</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

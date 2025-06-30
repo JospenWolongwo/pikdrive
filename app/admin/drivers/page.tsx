@@ -52,10 +52,14 @@ interface DriverApplication {
     registration_number: string
     insurance_number: string
     technical_inspection_number: string
-    national_id_file: string
-    license_file: string
-    registration_file: string
-    insurance_file: string
+    national_id_file_recto: string
+    national_id_file_verso: string
+    license_file_recto: string
+    license_file_verso: string
+    registration_file_recto: string
+    registration_file_verso: string
+    insurance_file_recto: string
+    insurance_file_verso: string
     technical_inspection_file: string
     vehicle_images: string[]
     status: string
@@ -138,10 +142,14 @@ export default function AdminDriversPage() {
           registration_number,
           insurance_number,
           technical_inspection_number,
-          national_id_file,
-          license_file,
-          registration_file,
-          insurance_file,
+          national_id_file_recto,
+          national_id_file_verso,
+          license_file_recto,
+          license_file_verso,
+          registration_file_recto,
+          registration_file_verso,
+          insurance_file_recto,
+          insurance_file_verso,
           technical_inspection_file,
           vehicle_images,
           status,
@@ -180,8 +188,8 @@ export default function AdminDriversPage() {
           id: doc.id,
           driver_id: doc.driver_id,
           status: doc.status,
-          has_license: Boolean(doc.license_file),
-          has_national_id: Boolean(doc.national_id_file),
+          has_license: Boolean(doc.license_file_recto),
+          has_national_id: Boolean(doc.national_id_file_recto),
           has_vehicle_images: Array.isArray(doc.vehicle_images) && doc.vehicle_images.length > 0,
         })));
         
@@ -236,7 +244,7 @@ export default function AdminDriversPage() {
           driver_id: app.documents?.driver_id,
           docId: app.documents?.id || 'no documents',
           docStatus: app.documents?.status || 'N/A',
-          has_national_id: Boolean(app.documents?.national_id_file),
+          has_national_id: Boolean(app.documents?.national_id_file_recto),
           has_license: Boolean(app.documents?.license_file)
         })));
       }
@@ -459,7 +467,7 @@ export default function AdminDriversPage() {
                               {/* Add debug info to see what documents we have */}
                               <div className="text-xs text-muted-foreground">
                                 {application.documents.license_file ? '✓' : '✗'} Fichier permis
-                                {application.documents.national_id_file ? '✓' : '✗'} Fichier d&apos;identité
+                                {application.documents.national_id_file_recto ? '✓' : '✗'} Fichier d'identité (Recto)
                               </div>
                             </div>
                           ) : (
