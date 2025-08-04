@@ -106,11 +106,9 @@ interface Ride {
   departure_time: string;
   price: number;
   seats_available: number;
-  total_seats: number;
   description?: string;
   car_model?: string;
   car_color?: string;
-  car_year?: number;
   driver_id: string;
   bookings?: {
     id: string;
@@ -206,7 +204,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           departure_date: format(departureDate, "yyyy-MM-dd"),
           departure_time: format(departureDate, "HH:mm"),
           price: rideData.price.toString(),
-          seats: rideData.total_seats.toString(),
+          seats: rideData.seats_available.toString(),
           description: rideData.description || "",
         });
       } catch (error) {
@@ -242,7 +240,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         to_city: string;
         departure_time: string;
         price: number;
-        total_seats: number;
         description?: string;
         seats_available: number;
       } = {
@@ -250,30 +247,22 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         to_city: values.to_city,
         departure_time: departureTime,
         price: parseFloat(values.price),
-        total_seats: parseInt(values.seats),
         description: values.description,
-        seats_available: 0, // Default value, will be updated below
+        seats_available: parseInt(values.seats),
       };
 
       // If there are existing bookings, we shouldn't reduce seats below that number
       if (hasBookings) {
-        const bookedSeats = ride.total_seats - ride.seats_available;
+        const bookedSeats = ride.bookings?.filter(b => b.status === "confirmed" || b.status === "pending" || b.status === "pending_verification").reduce((sum, b) => sum + 1, 0) || 0;
         if (parseInt(values.seats) < bookedSeats) {
           toast({
             title: "Impossible de réduire les places",
-            description: `Vous avez déjà ${bookedSeats} réservation(s). Vous ne pouvez pas réduire le nombre total de places en dessous de ce nombre.`,
+            description: `Vous avez déjà ${bookedSeats} réservation(s). Vous ne pouvez pas réduire le nombre de places disponibles en dessous de ce nombre.`,
             variant: "destructive",
           });
           setUpdating(false);
           return;
         }
-
-        // Calculate new seats_available based on the difference in total seats
-        const seatsDifference = parseInt(values.seats) - ride.total_seats;
-        updateData.seats_available = ride.seats_available + seatsDifference;
-      } else {
-        // If no bookings, seats_available = total_seats
-        updateData.seats_available = parseInt(values.seats);
       }
 
       // Update the ride in the database
@@ -507,7 +496,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                               <Input 
                                 className="pl-10" 
                                 type="number" 
-                                min={hasBookings ? (ride.total_seats - ride.seats_available) : "1"} 
+                                min="1" 
                                 max="8" 
                                 {...field} 
                               />
@@ -515,7 +504,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                           </FormControl>
                           {hasBookings && (
                             <FormDescription>
-                              Minimum requis: {ride.total_seats - ride.seats_available} (places déjà réservées)
+                              Places disponibles pour ce trajet
                             </FormDescription>
                           )}
                           <FormMessage />

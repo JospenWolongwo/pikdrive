@@ -44,7 +44,6 @@ interface Booking {
     departure_time: string
     price: number
     driver_id: string
-    total_seats: number
   }
 }
 
@@ -55,7 +54,6 @@ interface Ride {
   departure_time: string
   price: number
   driver_id: string
-  total_seats: number
 }
 
 interface Profile {
@@ -92,7 +90,6 @@ interface EnrichedBooking extends RawBooking {
     departure_time: string
     price: number
     driver_id: string | null
-    total_seats: number
   }
   code_verified?: boolean
 }
@@ -262,7 +259,6 @@ export default function DriverBookings() {
             departure_time: new Date().toISOString(),
             price: 0,
             driver_id: user.id,
-            total_seats: 0
           }
         };
       });

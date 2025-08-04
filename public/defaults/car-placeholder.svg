@@ -1,0 +1,49 @@
+<svg width="400" height="200" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="carGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="shadowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="200" fill="url(#carGradient)" rx="12"/>
+  
+  <!-- Car Body -->
+  <g transform="translate(50, 80)">
+    <!-- Main body -->
+    <rect x="20" y="40" width="280" height="60" rx="30" fill="#FFFFFF" opacity="0.9"/>
+    
+    <!-- Roof -->
+    <rect x="80" y="20" width="160" height="40" rx="20" fill="#FFFFFF" opacity="0.9"/>
+    
+    <!-- Windows -->
+    <rect x="90" y="25" width="140" height="30" rx="15" fill="#E5E7EB" opacity="0.8"/>
+    
+    <!-- Headlights -->
+    <circle cx="40" cy="70" r="8" fill="#FCD34D"/>
+    <circle cx="280" cy="70" r="8" fill="#FCD34D"/>
+    
+    <!-- Wheels -->
+    <circle cx="80" cy="100" r="15" fill="#374151"/>
+    <circle cx="240" cy="100" r="15" fill="#374151"/>
+    <circle cx="80" cy="100" r="8" fill="#6B7280"/>
+    <circle cx="240" cy="100" r="8" fill="#6B7280"/>
+    
+    <!-- Door lines -->
+    <line x1="140" y1="40" x2="140" y2="100" stroke="#D1D5DB" stroke-width="2"/>
+    <line x1="200" y1="40" x2="200" y2="100" stroke="#D1D5DB" stroke-width="2"/>
+    
+    <!-- Shadow -->
+    <ellipse cx="160" cy="120" rx="120" ry="15" fill="url(#shadowGradient)"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="200" y="170" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="14" font-weight="600">
+    Véhicule PikDrive
+  </text>
+</svg> 

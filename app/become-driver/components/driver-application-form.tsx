@@ -18,6 +18,7 @@ import { VehicleImagesUpload } from "./vehicle-images-upload"
 import { DocumentFieldName } from "./document-types"
 import { uploadDocument } from "../upload-utils"
 import { isValidDocumentUrl } from "../upload-utils"
+import { submitDriverApplication, DriverApplicationData } from "@/lib/driver-application-utils"
 
 export default function DriverApplicationForm() {
   const { supabase, user } = useSupabase()
@@ -317,23 +318,9 @@ export default function DriverApplicationForm() {
     try {
       setIsSubmitting(true)
 
-      // Get the user profile to update it
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-        
-      if (profileError) throw profileError
-
-      // Construct driver document object
-      const driverDocument = {
+      // Prepare driver application data
+      const driverData: DriverApplicationData = {
         driver_id: user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        status: 'pending',
-        
-        // Document files - recto/verso (front/back)
         national_id_file_recto: nationalIdFileRecto,
         national_id_file_verso: nationalIdFileVerso,
         license_file_recto: licenseFileRecto,
@@ -342,30 +329,15 @@ export default function DriverApplicationForm() {
         registration_file_verso: registrationFileVerso,
         insurance_file_recto: insuranceFileRecto,
         insurance_file_verso: insuranceFileVerso,
-        vehicle_images: vehicleImages.length > 0 ? vehicleImages : null,
+        vehicle_images: vehicleImages.length > 0 ? vehicleImages : undefined,
       }
-      
-      // Write to database
-      console.log("📝 Submitting driver application...", driverDocument)
-      
-      // First, update profile with driver application status
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          driver_application_status: 'pending',
-          driver_application_date: new Date().toISOString(),
-          is_driver_applicant: true,
-        })
-        .eq('id', user.id)
-        
-      if (updateError) throw updateError
-      
-      // Then, insert document record
-      const { error: docError } = await supabase
-        .from('driver_documents')
-        .insert(driverDocument)
-        
-      if (docError) throw docError
+
+      // Submit application using the utility function
+      const result = await submitDriverApplication(supabase, user.id, driverData)
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit application')
+      }
 
       // Show success toast 
       toast({
@@ -374,12 +346,12 @@ export default function DriverApplicationForm() {
       })
       
       // Navigate to success page
-      router.push("/become-driver/success")
+      router.push("/become-driver/confirmation")
     } catch (error) {
       console.error("Error submitting driver application:", error)
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la soumission de votre candidature. Veuillez réessayer.",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de la soumission de votre candidature. Veuillez réessayer.",
         variant: "destructive",
       })
     } finally {

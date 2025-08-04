@@ -34,18 +34,11 @@ const formSchema = z.object({
     required_error: "Departure time is required",
   }),
   price: z.number().min(1, "Price is required"),
-  totalSeats: z.number().min(1, "Total seats is required"),
   seatsAvailable: z.number()
     .min(1, "Available seats is required")
     .max(100, "Cannot exceed 100 seats"),
   carModel: z.string().min(1, "Car model is required"),
   carColor: z.string().min(1, "Car color is required"),
-  carYear: z.string().min(1, "Car year is required"),
-}).refine((data) => {
-  return data.seatsAvailable <= data.totalSeats;
-}, {
-  message: "Available seats cannot exceed total seats",
-  path: ["seatsAvailable"], // This tells Zod to show error on seatsAvailable field
 });
 
 export default function NewRidePage() {
@@ -63,11 +56,9 @@ export default function NewRidePage() {
       fromCity: "",
       toCity: "",
       price: 0,
-      totalSeats: 0,
-      seatsAvailable: 0,
+      seatsAvailable: 4,
       carModel: "",
       carColor: "",
-      carYear: "",
     },
   })
 
@@ -116,10 +107,8 @@ export default function NewRidePage() {
         difference_hours: (departureUTC.getTime() - nowUTC.getTime()) / (1000 * 60 * 60),
         price: values.price,
         seats_available: values.seatsAvailable,
-        total_seats: values.totalSeats,
         car_model: values.carModel,
         car_color: values.carColor,
-        car_year: values.carYear,
       })
 
       // Ensure the departure time is in the future
@@ -142,10 +131,8 @@ export default function NewRidePage() {
           departure_time: departureUTC.toISOString(), // Store as UTC ISO string
           price: values.price,
           seats_available: values.seatsAvailable,
-          total_seats: values.totalSeats,
           car_model: values.carModel,
           car_color: values.carColor,
-          car_year: values.carYear,
         })
         .select()
         .single()
@@ -308,35 +295,7 @@ export default function NewRidePage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="totalSeats"
-                  render={({ field: { onChange, ...field } }) => (
-                    <FormItem>
-                      <FormLabel>Total Seats</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="e.g. 4" 
-                          onChange={(e) => {
-                            const value = Number(e.target.value);
-                            onChange(value);
-                            // Reset available seats if it exceeds total seats
-                            const availableSeats = form.getValues("seatsAvailable");
-                            if (availableSeats > value) {
-                              form.setValue("seatsAvailable", value);
-                            }
-                          }}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Maximum number of seats in your vehicle
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
               </div>
 
               <FormField
@@ -351,9 +310,8 @@ export default function NewRidePage() {
                         placeholder="e.g. 4" 
                         onChange={(e) => {
                           const value = Number(e.target.value);
-                          const totalSeats = form.getValues("totalSeats");
-                          // Don't allow available seats to exceed total seats
-                          onChange(Math.min(value, totalSeats));
+                          // Allow up to 10 seats maximum
+                          onChange(Math.min(value, 10));
                         }}
                         {...field}
                       />
@@ -395,19 +353,7 @@ export default function NewRidePage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="carYear"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Car Year</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 2020" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
               </div>
 
               <div className="flex justify-end space-x-4">

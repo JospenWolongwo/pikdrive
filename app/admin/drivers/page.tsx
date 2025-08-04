@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { format, formatDistanceToNow } from "date-fns"
 import DriverDetail from "./driver-detail"
+import { updateDriverStatus as updateDriverStatusUtil } from "@/lib/driver-application-utils"
 
 interface DriverApplication {
   id: string
@@ -268,48 +269,15 @@ export default function AdminDriversPage() {
     loadApplications()
   }, [checkAdminAccess, loadApplications]);
 
-  const updateDriverStatus = async (driverId: string, status: string) => {
+  const handleUpdateDriverStatus = async (driverId: string, status: string) => {
     try {
       console.log(`Updating driver ${driverId} status to ${status}`);
       
-      // Create admin client to bypass RLS
-      const adminClient = createAdminClient();
-      
-      // Update profile status which is our source of truth
-      console.log("Using admin client to update profile status...");
-      const { error } = await adminClient
-        .from("profiles")
-        .update({ driver_status: status })
-        .eq("id", driverId);
+      // Use the utility function for consistent status updates
+      const result = await updateDriverStatusUtil(supabase, driverId, status as 'approved' | 'rejected' | 'inactive');
 
-      if (error) {
-        console.error("Error updating profile status:", error);
-        throw error;
-      }
-
-      // Also update document status if it exists (for consistency)
-      console.log("Checking for driver documents to update...");
-      const { data: docData, error: docFetchError } = await adminClient
-        .from("driver_documents")
-        .select('id')
-        .eq("driver_id", driverId)
-        .maybeSingle();
-      
-      if (docFetchError) {
-        console.error("Error fetching document record:", docFetchError);
-      }
-      
-      if (docData?.id) {
-        console.log(`Also updating document record ${docData.id} for consistency`);
-        const { error: docError } = await adminClient
-          .from("driver_documents")
-          .update({ status: status })
-          .eq("id", docData.id);
-          
-        if (docError) {
-          console.error("Error updating document status:", docError);
-          // Continue anyway since profile is updated
-        }
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update driver status');
       }
       
       // Update local state
@@ -329,11 +297,16 @@ export default function AdminDriversPage() {
         title: "Succès",
         description: `Statut du conducteur mis à jour en ${status === 'approved' ? 'approuvé' : status === 'rejected' ? 'refusé' : status}.`,
       });
+      
+      // Reload applications to get fresh data
+      setTimeout(() => {
+        loadApplications();
+      }, 1000);
     } catch (error) {
       console.error("Error updating driver status:", error)
       toast({
         title: "Erreur",
-        description: "Impossible de mettre à jour le statut du conducteur.",
+        description: error instanceof Error ? error.message : "Impossible de mettre à jour le statut du conducteur.",
         variant: "destructive",
       })
     }
@@ -515,7 +488,7 @@ export default function AdminDriversPage() {
                                     <AlertDialogFooter>
                                       <AlertDialogCancel>Annuler</AlertDialogCancel>
                                       <AlertDialogAction
-                                        onClick={() => updateDriverStatus(application.id, "approved")}
+                                        onClick={() => handleUpdateDriverStatus(application.id, "approved")}
                                       >
                                         Approuver
                                       </AlertDialogAction>
@@ -543,7 +516,7 @@ export default function AdminDriversPage() {
                                     <AlertDialogFooter>
                                       <AlertDialogCancel>Annuler</AlertDialogCancel>
                                       <AlertDialogAction
-                                        onClick={() => updateDriverStatus(application.id, "rejected")}
+                                        onClick={() => handleUpdateDriverStatus(application.id, "rejected")}
                                       >
                                         Rejeter
                                       </AlertDialogAction>
@@ -591,8 +564,8 @@ export default function AdminDriversPage() {
           open={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
           driver={selectedApplication}
-          onApprove={(id) => updateDriverStatus(id, "approved")}
-          onReject={(id) => updateDriverStatus(id, "rejected")}
+          onApprove={(id) => handleUpdateDriverStatus(id, "approved")}
+          onReject={(id) => handleUpdateDriverStatus(id, "rejected")}
         />
       )}
     </div>

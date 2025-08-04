@@ -8,6 +8,9 @@ import { BsWhatsapp } from 'react-icons/bs'
 import { Card } from '@/components/ui/card'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { useSupabase } from '@/providers/SupabaseProvider'
+import { handleDriverAction } from '@/lib/driver-routing-utils'
+import { toast } from '@/components/ui/use-toast'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -25,6 +28,7 @@ const staggerContainer = {
 
 export default function Home() {
   const { user } = useAuth()
+  const { supabase } = useSupabase()
   const router = useRouter()
 
   return (
@@ -67,7 +71,25 @@ export default function Home() {
               size="lg" 
               variant="outline"
               className="bg-white/10 hover:bg-white/20 border-white"
-              onClick={() => router.push('/become-driver')}
+              onClick={async () => {
+                if (!user) {
+                  router.push('/auth?redirect=/')
+                  return
+                }
+                
+                try {
+                  const result = await handleDriverAction(supabase, user.id, router)
+                  if (result.message) {
+                    toast({
+                      title: "Information",
+                      description: result.message,
+                    })
+                  }
+                } catch (error) {
+                  console.error('Error handling driver action:', error)
+                  router.push('/become-driver')
+                }
+              }}
             >
               Publier un trajet
             </Button>
@@ -206,19 +228,25 @@ export default function Home() {
                 from: "Douala",
                 to: "Yaoundé",
                 price: "5000",
-                duration: "4h"
+                duration: "4h",
+                icon: "🏙️",
+                description: "Route économique vers la capitale"
               },
               {
                 from: "Yaoundé",
                 to: "Bafoussam",
                 price: "4000",
-                duration: "3h"
+                duration: "3h",
+                icon: "🌄",
+                description: "Trajet vers l'Ouest du pays"
               },
               {
                 from: "Douala",
                 to: "Kribi",
                 price: "3500",
-                duration: "3h"
+                duration: "3h",
+                icon: "🏖️",
+                description: "Destination balnéaire populaire"
               }
             ].map((route, index) => (
               <motion.div
@@ -226,22 +254,56 @@ export default function Home() {
                 variants={fadeIn}
                 className="group cursor-pointer"
                 onClick={() => router.push('/rides')}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Card className="p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">De</p>
-                      <h3 className="text-lg font-semibold">{route.from}</h3>
+                <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 bg-gradient-to-br from-card to-card/50">
+                  {/* Dynamic Background Pattern */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5"></div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full"></div>
+                  
+                  <div className="relative p-6">
+                    {/* Route Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="text-3xl">{route.icon}</div>
+                        <div>
+                          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Itinéraire Populaire</p>
+                          <h3 className="text-lg font-bold text-foreground">{route.from} → {route.to}</h3>
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center group-hover:animate-pulse">
+                        <ChevronRight className="w-6 h-6 text-primary-foreground" />
+                      </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">À</p>
-                      <h3 className="text-lg font-semibold">{route.to}</h3>
+
+                    {/* Route Details */}
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground leading-relaxed">{route.description}</p>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-muted/50 to-secondary/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center">
+                            <Clock className="w-4 h-4 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium">Durée</p>
+                            <p className="font-bold text-foreground">{route.duration}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground font-medium">Prix moyen</p>
+                          <div className="flex items-baseline gap-1">
+                            <p className="text-xl font-black text-primary">{route.price}</p>
+                            <p className="text-xs font-bold text-muted-foreground">FCFA</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>{route.duration}</span>
-                    <span>{route.price} FCFA</span>
+
+                    {/* Hover Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </div>
                 </Card>
               </motion.div>

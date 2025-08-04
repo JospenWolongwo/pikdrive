@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { useChat } from '@/providers/ChatProvider'
 import { Button } from '@/components/ui/button'
-import { MapPin, Calendar, Users, MessageCircle, Phone, Search, Filter } from 'lucide-react'
+import { MapPin, Calendar, Users, MessageCircle, Phone, Search, Filter, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +38,6 @@ interface Ride {
   departure_time: string
   estimated_duration: string
   seats_available: number
-  total_seats: number
   car_model?: string
   car_color?: string
   bookings?: Booking[]
@@ -49,6 +48,7 @@ interface Ride {
     image?: string
     rating?: number
     trips?: number;
+    vehicle_images?: string[];
   };
 }
 
@@ -69,6 +69,7 @@ export default function RidesPage() {
   const router = useRouter()
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null)
   const [selectedChatRide, setSelectedChatRide] = useState<Ride | null>(null)
   const [message, setMessage] = useState('')
@@ -81,6 +82,13 @@ export default function RidesPage() {
   const [maxPrice, setMaxPrice] = useState(20000)
   const [minSeats, setMinSeats] = useState(1)
   const [showFilters, setShowFilters] = useState(false)
+  
+  // Temporary filter states (don't trigger search)
+  const [tempFromCity, setTempFromCity] = useState<string | null>(fromCity)
+  const [tempToCity, setTempToCity] = useState<string | null>(toCity)
+  const [tempMinPrice, setTempMinPrice] = useState(minPrice)
+  const [tempMaxPrice, setTempMaxPrice] = useState(maxPrice)
+  const [tempMinSeats, setTempMinSeats] = useState(minSeats)
 
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -92,9 +100,25 @@ export default function RidesPage() {
     [curr.rideId]: curr.count
   }), {})
 
-  const loadRides = useCallback(async () => {
+  const loadRides = useCallback(async (filters?: {
+    fromCity?: string | null;
+    toCity?: string | null;
+    minPrice?: number;
+    maxPrice?: number;
+    minSeats?: number;
+  }) => {
     try {
       setLoading(true);
+      
+      console.log('🔍 Loading rides...');
+      console.log('📅 Current time:', new Date().toISOString());
+      
+      // Use provided filters or current state
+      const activeFromCity = filters?.fromCity ?? fromCity;
+      const activeToCity = filters?.toCity ?? toCity;
+      const activeMinPrice = filters?.minPrice ?? minPrice;
+      const activeMaxPrice = filters?.maxPrice ?? maxPrice;
+      const activeMinSeats = filters?.minSeats ?? minSeats;
       
       // First get total count for pagination
       let countQuery = supabase
@@ -103,23 +127,24 @@ export default function RidesPage() {
         .gt('departure_time', new Date().toISOString())
 
       // Apply filters to count query
-      if (fromCity && fromCity !== 'any') {
-        countQuery = countQuery.eq('from_city', fromCity)
+      if (activeFromCity && activeFromCity !== 'any') {
+        countQuery = countQuery.eq('from_city', activeFromCity)
       }
-      if (toCity && toCity !== 'any') {
-        countQuery = countQuery.eq('to_city', toCity)
+      if (activeToCity && activeToCity !== 'any') {
+        countQuery = countQuery.eq('to_city', activeToCity)
       }
-      if (minPrice > 0) {
-        countQuery = countQuery.gte('price', minPrice)
+      if (activeMinPrice > 0) {
+        countQuery = countQuery.gte('price', activeMinPrice)
       }
-      if (maxPrice < 20000) {
-        countQuery = countQuery.lte('price', maxPrice)
+      if (activeMaxPrice < 20000) {
+        countQuery = countQuery.lte('price', activeMaxPrice)
       }
 
       const { count, error: countError } = await countQuery
 
       if (countError) throw countError
       
+      console.log('📊 Total future rides count:', count);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage))
 
       // Then get paginated data
@@ -135,39 +160,85 @@ export default function RidesPage() {
         .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
 
       // Apply filters
-      if (fromCity && fromCity !== 'any') {
-        query = query.eq('from_city', fromCity)
+      if (activeFromCity && activeFromCity !== 'any') {
+        query = query.eq('from_city', activeFromCity)
       }
-      if (toCity && toCity !== 'any') {
-        query = query.eq('to_city', toCity)
+      if (activeToCity && activeToCity !== 'any') {
+        query = query.eq('to_city', activeToCity)
       }
-      if (minPrice > 0) {
-        query = query.gte('price', minPrice)
+      if (activeMinPrice > 0) {
+        query = query.gte('price', activeMinPrice)
       }
-      if (maxPrice < 20000) {
-        query = query.lte('price', maxPrice)
+      if (activeMaxPrice < 20000) {
+        query = query.lte('price', activeMaxPrice)
       }
 
       const { data, error } = await query
 
       if (error) {
+        console.error('❌ Database error:', error);
         throw error
       }
 
+      console.log('📦 Raw data from database:', data);
+
       // Set empty array if no data
       if (!data) {
+        console.log('⚠️ No data returned from database');
         setRides([])
         return
       }
 
-      const processedRides = data.map((ride: Ride) => ({
-        ...ride,
-        seats_available: ride.total_seats - (ride.bookings?.reduce((sum, b) => sum + (b.seats || 0), 0) || 0)
-      }))
+      // Fetch vehicle images for all drivers
+      const driverIds = [...new Set(data.map(ride => ride.driver_id))];
+      const { data: driverDocuments, error: docsError } = await supabase
+        .from('driver_documents')
+        .select('driver_id, vehicle_images')
+        .in('driver_id', driverIds);
 
-      setRides(processedRides)
+      if (docsError) {
+        console.error('❌ Error fetching driver documents:', docsError);
+      }
+
+      // Create a map of driver_id to vehicle_images
+      const vehicleImagesMap = new Map();
+      if (driverDocuments) {
+        driverDocuments.forEach(doc => {
+          if (doc.vehicle_images && doc.vehicle_images.length > 0) {
+            vehicleImagesMap.set(doc.driver_id, doc.vehicle_images);
+          }
+        });
+      }
+
+      console.log('🚗 Vehicle images data:', {
+        driverIds,
+        driverDocuments,
+        vehicleImagesMap: Object.fromEntries(vehicleImagesMap)
+      });
+
+      const processedRides = data.map((ride: any) => {
+        // Get vehicle images for this driver
+        const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
+        
+        return {
+          ...ride,
+          seats_available: ride.seats_available - (ride.bookings?.reduce((sum, b) => sum + (b.seats || 0), 0) || 0),
+          driver: {
+            ...ride.driver,
+            vehicle_images: vehicleImages
+          }
+        };
+      })
+
+      // Apply client-side seat filter
+      const filteredRides = processedRides.filter(ride => 
+        ride.seats_available >= activeMinSeats
+      );
+
+      console.log('✅ Processed rides:', filteredRides);
+      setRides(filteredRides)
     } catch (error) {
-      console.error('Error:', error)
+      console.error('❌ Error loading rides:', error)
       toast({
         variant: "destructive",
         title: "Error loading rides",
@@ -176,11 +247,36 @@ export default function RidesPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, fromCity, toCity, minPrice, maxPrice, currentPage, itemsPerPage]);
+  }, [supabase, fromCity, toCity, minPrice, maxPrice, minSeats, currentPage, itemsPerPage]);
 
   useEffect(() => {
     loadRides();
-  }, [currentPage, fromCity, toCity, minPrice, maxPrice, loadRides])
+  }, [currentPage, loadRides])
+
+  // Reset navigation state when user changes
+  useEffect(() => {
+    setIsNavigating(false)
+  }, [user])
+
+  // Separate function for search/filter
+  const handleSearch = useCallback(() => {
+    // Apply temporary filters to actual filters
+    setFromCity(tempFromCity);
+    setToCity(tempToCity);
+    setMinPrice(tempMinPrice);
+    setMaxPrice(tempMaxPrice);
+    setMinSeats(tempMinSeats);
+    setCurrentPage(1); // Reset to first page when searching
+    
+    // Load rides with the new filters
+    loadRides({
+      fromCity: tempFromCity,
+      toCity: tempToCity,
+      minPrice: tempMinPrice,
+      maxPrice: tempMaxPrice,
+      minSeats: tempMinSeats
+    });
+  }, [tempFromCity, tempToCity, tempMinPrice, tempMaxPrice, tempMinSeats, loadRides]);
 
   useEffect(() => {
     rides.forEach(ride => {
@@ -191,11 +287,13 @@ export default function RidesPage() {
   const handleBooking = (ride: Ride) => {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to book rides.",
+        title: "Connexion requise",
+        description: "Veuillez vous connecter pour réserver un trajet.",
         variant: "destructive"
       })
-      router.push('/auth?redirect=/rides')
+      // Use replace instead of push for faster navigation
+      setIsNavigating(true)
+      router.replace('/auth?redirect=/rides')
       return
     }
     setSelectedRide(ride)
@@ -208,11 +306,13 @@ export default function RidesPage() {
   const handleOpenChat = async (ride: Ride) => {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to message drivers.",
+        title: "Connexion requise",
+        description: "Veuillez vous connecter pour contacter le conducteur.",
         variant: "destructive"
       })
-      router.push('/auth?redirect=/rides')
+      // Use replace instead of push for faster navigation
+      setIsNavigating(true)
+      router.replace('/auth?redirect=/rides')
       return
     }
 
@@ -311,44 +411,66 @@ export default function RidesPage() {
   }
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6 relative">
+      {/* Navigation Loading Overlay */}
+      {isNavigating && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground">Redirection en cours...</p>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col gap-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Trajets Disponibles</h1>
           <p className="text-muted-foreground">Trouvez et réservez votre prochain trajet</p>
         </div>
 
+        {/* Mobile-optimized filter layout */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-start gap-4 flex-wrap">
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 min-w-[280px]">
-                <Label htmlFor="from-city" className="md:text-right">
-                  De
-                </Label>
-                <div className="md:col-span-3 w-full">
-                  <SearchableSelect
-                    options={sortedCameroonCities}
-                    value={fromCity || ''}
-                    onValueChange={setFromCity}
-                    placeholder="Sélectionnez la ville de départ"
-                    searchPlaceholder="Rechercher une ville de départ..."
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 min-w-[280px]">
-                <Label htmlFor="to-city" className="md:text-right">
-                  À
-                </Label>
-                <div className="md:col-span-3 w-full">
-                  <SearchableSelect
-                    options={sortedCameroonCities}
-                    value={toCity || ''}
-                    onValueChange={setToCity}
-                    placeholder="Sélectionnez la ville de destination"
-                    searchPlaceholder="Rechercher une ville de destination..."
-                  />
-                </div>
-              </div>
+          {/* Main search row */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Departure city */}
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="from-city" className="text-sm font-medium">
+                De
+              </Label>
+              <SearchableSelect
+                options={sortedCameroonCities}
+                value={tempFromCity || ''}
+                onValueChange={setTempFromCity}
+                placeholder="Sélectionnez la ville de départ"
+                searchPlaceholder="Rechercher une ville de départ..."
+              />
+            </div>
+            
+            {/* Destination city */}
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="to-city" className="text-sm font-medium">
+                À
+              </Label>
+              <SearchableSelect
+                options={sortedCameroonCities}
+                value={tempToCity || ''}
+                onValueChange={setTempToCity}
+                placeholder="Sélectionnez la ville de destination"
+                searchPlaceholder="Rechercher une ville de destination..."
+              />
+            </div>
+          </div>
+
+          {/* Action buttons row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={handleSearch}
+              className="flex-1 bg-primary hover:bg-primary/90"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Rechercher
+            </Button>
+            
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="icon"
@@ -357,43 +479,67 @@ export default function RidesPage() {
               >
                 <Filter className="h-4 w-4" />
               </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTempFromCity(null);
+                  setTempToCity(null);
+                  setTempMinPrice(0);
+                  setTempMaxPrice(20000);
+                  setTempMinSeats(1);
+                  setFromCity(null);
+                  setToCity(null);
+                  setMinPrice(0);
+                  setMaxPrice(20000);
+                  setMinSeats(1);
+                  setCurrentPage(1);
+                  loadRides();
+                }}
+                className="hover:bg-secondary"
+              >
+                Effacer
+              </Button>
             </div>
           </div>
 
+          {/* Advanced filters */}
           {showFilters && (
-            <div className="grid gap-6 p-6 border rounded-lg">
+            <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
               <div className="space-y-2">
-                <Label>Fourchette de Prix (FCFA)</Label>
-                <div className="flex items-center gap-4">
+                <Label className="text-sm font-medium">Fourchette de Prix (FCFA)</Label>
+                <div className="flex items-center gap-3">
                   <Input
                     type="number"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(Number(e.target.value))}
-                    className="w-24"
+                    value={tempMinPrice}
+                    onChange={(e) => setTempMinPrice(Number(e.target.value))}
+                    className="flex-1"
                     min={0}
-                    max={maxPrice}
+                    max={tempMaxPrice}
+                    placeholder="Min"
                   />
-                  <span>à</span>
+                  <span className="text-muted-foreground">à</span>
                   <Input
                     type="number"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="w-24"
-                    min={minPrice}
+                    value={tempMaxPrice}
+                    onChange={(e) => setTempMaxPrice(Number(e.target.value))}
+                    className="flex-1"
+                    min={tempMinPrice}
                     max={20000}
+                    placeholder="Max"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Places Minimum</Label>
+                <Label className="text-sm font-medium">Places Minimum</Label>
                 <Input
                   type="number"
-                  value={minSeats}
-                  onChange={(e) => setMinSeats(Math.max(1, Math.min(4, Number(e.target.value))))}
+                  value={tempMinSeats}
+                  onChange={(e) => setTempMinSeats(Math.max(1, Math.min(4, Number(e.target.value))))}
                   min={1}
                   max={4}
-                  className="w-24"
+                  className="w-full max-w-[120px]"
                 />
               </div>
             </div>
@@ -401,84 +547,225 @@ export default function RidesPage() {
         </div>
 
         {rides.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-muted-foreground">
-              {(fromCity && fromCity !== 'any') || (toCity && toCity !== 'any') 
-                ? 'Aucun trajet ne correspond à votre recherche.' 
-                : 'Aucun trajet disponible pour le moment.'}
-            </p>
+          <div className="text-center py-20">
+            <div className="max-w-lg mx-auto">
+              <div className="relative mb-8">
+                <div className="w-32 h-32 mx-auto bg-gradient-to-br from-primary/10 to-accent/20 rounded-full flex items-center justify-center animate-float">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center">
+                    <MapPin className="w-10 h-10 text-primary-foreground" />
+                  </div>
+                </div>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary rounded-full animate-ping"></div>
+              </div>
+              <h3 className="text-2xl font-bold mb-3 text-foreground">Aucun voyage trouvé</h3>
+              <p className="text-muted-foreground text-lg">
+                {(fromCity && fromCity !== 'any') || (toCity && toCity !== 'any') 
+                  ? 'Modifiez vos critères pour découvrir plus de trajets.' 
+                  : 'Aucun trajet disponible pour le moment. Revenez bientôt !'}
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {rides.map((ride) => (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {rides.map((ride, index) => (
               <motion.div
                 key={ride.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className="group"
               >
-                <Card className="overflow-hidden">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar>
-                        <AvatarImage src={ride.driver?.avatar_url} />
-                        <AvatarFallback>{ride.driver?.full_name?.charAt(0) || 'D'}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-lg">{ride.driver?.full_name || 'Chauffeur'}</CardTitle>
-                        <CardDescription>{ride.car_model} • {ride.car_color}</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-4">
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                        <div className="space-y-1">
-                          <div className="font-medium">{ride.from_city}</div>
-                          <Separator className="my-2" />
-                          <div className="font-medium">{ride.to_city}</div>
+                <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-card">
+                  {/* Dynamic Background Pattern */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5"></div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full"></div>
+                  
+                  {/* Car Image Section */}
+                  <div className="relative h-56 bg-gradient-to-br from-muted to-secondary/30 overflow-hidden">
+                    {ride.driver?.vehicle_images && ride.driver.vehicle_images.length > 0 ? (
+                      <div className="relative h-full">
+                        <img 
+                          src={ride.driver.vehicle_images[0]} 
+                          alt={`${ride.car_model} ${ride.car_color}`}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <div className="bg-white/95 backdrop-blur-md rounded-xl p-4 border border-white/20">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-bold text-foreground text-lg">{ride.car_model}</p>
+                                <p className="text-muted-foreground capitalize">{ride.car_color}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-primary" />
+                                <Badge className="bg-primary text-primary-foreground font-semibold">
+                                  {ride.seats_available} places
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Speed lines animation */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500">
+                          <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-muted-foreground" />
-                        <div>{format(new Date(ride.departure_time), 'PPP p')}</div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
+                        <div className="text-center p-6">
+                          <div className="relative">
+                            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center group-hover:animate-bounce">
+                              <MapPin className="w-10 h-10 text-primary-foreground" />
+                            </div>
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-accent rounded-full animate-ping"></div>
+                          </div>
+                          <p className="text-lg font-bold text-foreground">{ride.car_model}</p>
+                          <p className="text-muted-foreground capitalize">{ride.car_color}</p>
+                          <Badge className="mt-2 bg-primary text-primary-foreground">
+                            {ride.seats_available} places
+                          </Badge>
+                        </div>
                       </div>
+                    )}
+                  </div>
 
-                      <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                        <div>{ride.seats_available} places disponibles</div>
+                  {/* Content Section */}
+                  <CardContent className="relative p-6 bg-card">
+                                      {/* Driver Info - Only show for authenticated users */}
+                  {user ? (
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="relative">
+                        <Avatar className="h-12 w-12 border-3 border-primary/20 shadow-lg">
+                          <AvatarImage src={ride.driver?.avatar_url} />
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-amber-500 text-primary-foreground font-bold text-lg">
+                            {ride.driver?.full_name?.charAt(0) || 'D'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-foreground text-lg">{ride.driver?.full_name || 'Chauffeur'}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                          <p className="text-muted-foreground text-sm font-medium">Conducteur certifié PikDrive</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="relative">
+                        <Avatar className="h-12 w-12 border-3 border-primary/20 shadow-lg">
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-amber-500 text-primary-foreground font-bold text-lg">
+                            <User className="w-6 h-6" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-foreground text-lg">Conducteur PikDrive</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                          <p className="text-muted-foreground text-sm font-medium">Conducteur certifié</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Connectez-vous pour voir les détails du conducteur
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                    {/* Route Info with Animation */}
+                    <div className="space-y-4 mb-6">
+                      <div className="relative">
+                        <div className="flex items-start gap-4">
+                          <div className="flex flex-col items-center pt-1">
+                            <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full shadow-lg animate-pulse"></div>
+                            <div className="w-1 h-12 bg-gradient-to-b from-green-500 via-primary/50 to-red-500 mt-2 rounded-full"></div>
+                            <div className="w-4 h-4 bg-gradient-to-r from-red-400 to-red-600 rounded-full shadow-lg animate-pulse"></div>
+                          </div>
+                          <div className="flex-1 space-y-4 pt-1">
+                            <div className="group/city">
+                              <p className="font-bold text-foreground text-lg group-hover/city:text-primary transition-colors">{ride.from_city}</p>
+                              <p className="text-muted-foreground text-sm font-medium">Point de départ</p>
+                            </div>
+                            <div className="group/city">
+                              <p className="font-bold text-foreground text-lg group-hover/city:text-primary transition-colors">{ride.to_city}</p>
+                              <p className="text-muted-foreground text-sm font-medium">Destination finale</p>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Animated travel indicator */}
+                        <div className="absolute left-[7px] top-6 w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
+                      </div>
+                    </div>
+
+                    {/* Time and Price with Enhanced Design */}
+                    <div className="bg-gradient-to-r from-muted/50 to-secondary/30 rounded-xl p-4 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground font-medium">Départ prévu</p>
+                            <p className="font-bold text-foreground">
+                              {format(new Date(ride.departure_time), 'dd MMM à HH:mm')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground font-medium">Prix par place</p>
+                          <div className="flex items-baseline gap-1">
+                            <p className="text-3xl font-black text-primary">{ride.price.toLocaleString()}</p>
+                            <p className="text-sm font-bold text-muted-foreground">FCFA</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="flex justify-between items-center pt-4 border-t">
-                    <Badge variant="secondary">{ride.price.toLocaleString()} FCFA</Badge>
-                    <div className="flex items-center gap-2">
+
+                  {/* Enhanced Action Buttons */}
+                  <CardFooter className="p-6 pt-0 bg-gradient-to-t from-muted/20 to-transparent">
+                    <div className="flex gap-3 w-full">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="lg"
                         onClick={() => handleOpenChat(ride)}
-                        className="relative"
+                        className="flex-1 relative group/btn border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-300"
                       >
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Message {ride.driver?.full_name?.split(' ')[0] || 'Chauffeur'}
+                        <MessageCircle className="h-5 w-5 mr-2 group-hover/btn:animate-bounce" />
+                        <span className="font-semibold">Contacter</span>
                         {unreadCounts[ride.id] > 0 && (
                           <Badge 
                             variant="destructive" 
-                            className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center"
+                            className="absolute -top-2 -right-2 h-6 w-6 p-0 flex items-center justify-center text-xs font-bold animate-pulse"
                           >
                             {unreadCounts[ride.id]}
                           </Badge>
                         )}
                       </Button>
                       <Button 
-                        variant="default"
-                        size="sm"
+                        size="lg"
                         disabled={ride.seats_available === 0}
                         onClick={() => handleBooking(ride)}
+                        className="flex-1 bg-gradient-to-r from-primary via-amber-500 to-primary hover:from-primary/90 hover:to-amber-500/90 text-primary-foreground font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                       >
-                        {ride.seats_available === 0 ? 'Complet' : 'Réserver'}
+                        {ride.seats_available === 0 ? (
+                          <>
+                            <Users className="h-5 w-5 mr-2" />
+                            Complet
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="h-5 w-5 mr-2" />
+                            Réserver
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardFooter>

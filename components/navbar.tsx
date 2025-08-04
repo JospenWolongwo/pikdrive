@@ -319,7 +319,7 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuItem asChild>
-                  <Link href={isDriver ? "/driver/profile" : "/profile"} className="flex items-center">
+                  <Link href="/profile" className="flex items-center">
                     <User className="mr-2 h-4 w-4" />
                     <span>{isDriver ? "Profil de Chauffeur" : "Profil"}</span>
                   </Link>

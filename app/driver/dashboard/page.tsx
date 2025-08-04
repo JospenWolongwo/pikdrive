@@ -60,10 +60,8 @@ interface Ride {
   departure_time: string;
   price: number;
   seats_available: number;
-  total_seats: number;
   car_model: string;
   car_color: string;
-  car_year: number;
   created_at: string;
   bookings: Array<{
     id: string;
@@ -630,8 +628,7 @@ function DashboardContent() {
                         <div className="text-right">
                           <div className="font-semibold">${ride.price}</div>
                           <div className="text-sm text-muted-foreground">
-                            {ride.seats_available} of {ride.total_seats} seats
-                            available
+                            {ride.seats_available} seats available
                           </div>
                         </div>
                       </div>
@@ -1095,7 +1092,7 @@ function DashboardContent() {
                         <div className="text-right">
                           <div className="font-semibold">${ride.price}</div>
                           <div className="text-sm text-muted-foreground">
-                            {ride.total_seats - ride.seats_available} passengers
+                            {ride.bookings.filter(b => b.status === "confirmed").reduce((sum, b) => sum + b.seats, 0)} passengers
                           </div>
                         </div>
                       </div>
