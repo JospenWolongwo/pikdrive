@@ -190,7 +190,7 @@ export default function RidesPage() {
       }
 
       // Fetch vehicle images for all drivers
-      const driverIds = [...new Set(data.map(ride => ride.driver_id))];
+      const driverIds = [...new Set(data.map((ride: any) => ride.driver_id))];
       const { data: driverDocuments, error: docsError } = await supabase
         .from('driver_documents')
         .select('driver_id, vehicle_images')
@@ -201,9 +201,9 @@ export default function RidesPage() {
       }
 
       // Create a map of driver_id to vehicle_images
-      const vehicleImagesMap = new Map();
+      const vehicleImagesMap = new Map<string, string[]>();
       if (driverDocuments) {
-        driverDocuments.forEach(doc => {
+        driverDocuments.forEach((doc: any) => {
           if (doc.vehicle_images && doc.vehicle_images.length > 0) {
             vehicleImagesMap.set(doc.driver_id, doc.vehicle_images);
           }
@@ -222,7 +222,7 @@ export default function RidesPage() {
         
         return {
           ...ride,
-          seats_available: ride.seats_available - (ride.bookings?.reduce((sum, b) => sum + (b.seats || 0), 0) || 0),
+          seats_available: ride.seats_available - (ride.bookings?.reduce((sum: number, b: any) => sum + (b.seats || 0), 0) || 0),
           driver: {
             ...ride.driver,
             vehicle_images: vehicleImages
@@ -231,7 +231,7 @@ export default function RidesPage() {
       })
 
       // Apply client-side seat filter
-      const filteredRides = processedRides.filter(ride => 
+      const filteredRides = processedRides.filter((ride: any) => 
         ride.seats_available >= activeMinSeats
       );
 
@@ -590,7 +590,10 @@ export default function RidesPage() {
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (nextElement) {
+                              nextElement.style.display = 'flex';
+                            }
                           }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />

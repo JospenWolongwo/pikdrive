@@ -7,6 +7,7 @@ export interface DriverApplicationData {
   registration_number?: string
   insurance_number?: string
   technical_inspection_number?: string
+  road_tax_number?: string
   national_id_file_recto?: string
   national_id_file_verso?: string
   license_file_recto?: string
@@ -20,7 +21,7 @@ export interface DriverApplicationData {
 }
 
 export interface ProfileUpdateData {
-  driver_application_status: 'pending' | 'approved' | 'rejected' | 'cancelled'
+  driver_application_status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'inactive'
   driver_application_date?: string
   is_driver_applicant: boolean
   is_driver?: boolean
