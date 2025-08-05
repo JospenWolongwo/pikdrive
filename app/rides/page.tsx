@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { useChat } from '@/providers/ChatProvider'
 import { Button } from '@/components/ui/button'
-import { MapPin, Calendar, Users, MessageCircle, Phone, Search, Filter, User } from 'lucide-react'
+import { MapPin, Calendar, Users, MessageCircle, Phone, Search, Filter, User, Car } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -191,6 +191,8 @@ export default function RidesPage() {
 
       // Fetch vehicle images for all drivers
       const driverIds = [...new Set(data.map((ride: any) => ride.driver_id))];
+      console.log('🔍 Driver IDs to fetch vehicle images for:', driverIds);
+      
       const { data: driverDocuments, error: docsError } = await supabase
         .from('driver_documents')
         .select('driver_id, vehicle_images')
@@ -198,6 +200,28 @@ export default function RidesPage() {
 
       if (docsError) {
         console.error('❌ Error fetching driver documents:', docsError);
+        console.error('❌ Error details:', {
+          code: docsError.code,
+          message: docsError.message,
+          details: docsError.details,
+          hint: docsError.hint
+        });
+      }
+
+      console.log('📄 Raw driver documents from database:', driverDocuments);
+      
+      // Debug: Check if the driver IDs in rides match the ones with vehicle images
+      console.log('🔍 Driver IDs in rides:', driverIds);
+      console.log('📸 Driver IDs with vehicle images:', driverDocuments?.map((doc: any) => doc.driver_id) || []);
+      
+      // Check if there are any vehicle images in the database at all
+      const { data: allDriverDocs, error: allDocsError } = await supabase
+        .from('driver_documents')
+        .select('driver_id, vehicle_images')
+        .not('vehicle_images', 'is', null);
+      
+      if (!allDocsError && allDriverDocs) {
+        console.log('🌍 All driver documents with vehicle images:', allDriverDocs);
       }
 
       // Create a map of driver_id to vehicle_images
@@ -221,7 +245,7 @@ export default function RidesPage() {
         const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
         
         return {
-          ...ride,
+        ...ride,
           seats_available: ride.seats_available - (ride.bookings?.reduce((sum: number, b: any) => sum + (b.seats || 0), 0) || 0),
           driver: {
             ...ride.driver,
@@ -234,6 +258,12 @@ export default function RidesPage() {
       const filteredRides = processedRides.filter((ride: any) => 
         ride.seats_available >= activeMinSeats
       );
+
+      // Debug: Check if any rides have vehicle images
+      const ridesWithImages = filteredRides.filter((ride: any) => 
+        ride.driver?.vehicle_images && ride.driver.vehicle_images.length > 0
+      );
+      console.log('📸 Rides with vehicle images:', ridesWithImages.length);
 
       console.log('✅ Processed rides:', filteredRides);
       setRides(filteredRides)
@@ -434,31 +464,31 @@ export default function RidesPage() {
             {/* Departure city */}
             <div className="flex-1 space-y-2">
               <Label htmlFor="from-city" className="text-sm font-medium">
-                De
-              </Label>
-              <SearchableSelect
-                options={sortedCameroonCities}
+                  De
+                </Label>
+                  <SearchableSelect
+                    options={sortedCameroonCities}
                 value={tempFromCity || ''}
                 onValueChange={setTempFromCity}
-                placeholder="Sélectionnez la ville de départ"
-                searchPlaceholder="Rechercher une ville de départ..."
-              />
-            </div>
+                    placeholder="Sélectionnez la ville de départ"
+                    searchPlaceholder="Rechercher une ville de départ..."
+                  />
+                </div>
             
             {/* Destination city */}
             <div className="flex-1 space-y-2">
               <Label htmlFor="to-city" className="text-sm font-medium">
-                À
-              </Label>
-              <SearchableSelect
-                options={sortedCameroonCities}
+                  À
+                </Label>
+                  <SearchableSelect
+                    options={sortedCameroonCities}
                 value={tempToCity || ''}
                 onValueChange={setTempToCity}
-                placeholder="Sélectionnez la ville de destination"
-                searchPlaceholder="Rechercher une ville de destination..."
-              />
-            </div>
-          </div>
+                    placeholder="Sélectionnez la ville de destination"
+                    searchPlaceholder="Rechercher une ville de destination..."
+                  />
+                </div>
+              </div>
 
           {/* Action buttons row */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -559,10 +589,10 @@ export default function RidesPage() {
               </div>
               <h3 className="text-2xl font-bold mb-3 text-foreground">Aucun voyage trouvé</h3>
               <p className="text-muted-foreground text-lg">
-                {(fromCity && fromCity !== 'any') || (toCity && toCity !== 'any') 
+              {(fromCity && fromCity !== 'any') || (toCity && toCity !== 'any') 
                   ? 'Modifiez vos critères pour découvrir plus de trajets.' 
                   : 'Aucun trajet disponible pour le moment. Revenez bientôt !'}
-              </p>
+            </p>
             </div>
           </div>
         ) : (
@@ -598,7 +628,7 @@ export default function RidesPage() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4">
-                          <div className="bg-white/95 backdrop-blur-md rounded-xl p-4 border border-white/20">
+                          <div className="bg-white/95 dark:bg-black/80 backdrop-blur-md rounded-xl p-4 border border-white/20 dark:border-white/10">
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="font-bold text-foreground text-lg">{ride.car_model}</p>
@@ -619,19 +649,22 @@ export default function RidesPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
+                      <div className="h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted dark:from-secondary/80 dark:to-muted/60">
                         <div className="text-center p-6">
                           <div className="relative">
                             <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center group-hover:animate-bounce">
-                              <MapPin className="w-10 h-10 text-primary-foreground" />
+                              <Car className="w-10 h-10 text-primary-foreground" />
                             </div>
                             <div className="absolute -top-2 -right-2 w-6 h-6 bg-accent rounded-full animate-ping"></div>
                           </div>
-                          <p className="text-lg font-bold text-foreground">{ride.car_model}</p>
-                          <p className="text-muted-foreground capitalize">{ride.car_color}</p>
+                          <p className="text-lg font-bold text-foreground">{ride.car_model || 'Véhicule'}</p>
+                          <p className="text-muted-foreground capitalize">{ride.car_color || 'Non spécifié'}</p>
                           <Badge className="mt-2 bg-primary text-primary-foreground">
                             {ride.seats_available} places
                           </Badge>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Photo du véhicule non disponible
+                          </p>
                         </div>
                       </div>
                     )}
@@ -644,11 +677,11 @@ export default function RidesPage() {
                     <div className="flex items-center gap-4 mb-6">
                       <div className="relative">
                         <Avatar className="h-12 w-12 border-3 border-primary/20 shadow-lg">
-                          <AvatarImage src={ride.driver?.avatar_url} />
+                        <AvatarImage src={ride.driver?.avatar_url} />
                           <AvatarFallback className="bg-gradient-to-br from-primary to-amber-500 text-primary-foreground font-bold text-lg">
                             {ride.driver?.full_name?.charAt(0) || 'D'}
                           </AvatarFallback>
-                        </Avatar>
+                      </Avatar>
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
                       </div>
                       <div className="flex-1">
@@ -705,12 +738,12 @@ export default function RidesPage() {
                         {/* Animated travel indicator */}
                         <div className="absolute left-[7px] top-6 w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
                       </div>
-                    </div>
+                      </div>
 
                     {/* Time and Price with Enhanced Design */}
                     <div className="bg-gradient-to-r from-muted/50 to-secondary/30 rounded-xl p-4 mb-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center">
                             <Clock className="w-5 h-5 text-primary-foreground" />
                           </div>

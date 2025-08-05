@@ -123,51 +123,57 @@ export default function ProfilePage() {
     }
   }, [newVehicleImageUrls])
 
-  const loadProfile = async () => {
-    try {
+    const loadProfile = async () => {
+      try {
       setIsLoading(true)
       
       // Load profile data
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
       if (profileError) throw profileError
 
-      if (profile) {
+        if (profile) {
         setProfileData(profile)
         setFormData({
-          fullName: profile.full_name || '',
-          email: profile.email || '',
-          city: profile.city || ''
+            fullName: profile.full_name || '',
+            email: profile.email || '',
+            city: profile.city || ''
         })
 
         // Load driver documents if user is a driver
         if (profile.is_driver_applicant) {
+          console.log('🔍 Loading driver documents for user:', user.id)
           const { data: documents, error: docError } = await supabase
             .from('driver_documents')
             .select('*')
             .eq('driver_id', user.id)
             .single()
 
-          if (!docError && documents) {
+          if (docError) {
+            console.error('❌ Error loading driver documents:', docError)
+          } else if (documents) {
+            console.log('✅ Driver documents loaded:', documents)
             setDriverDocuments(documents)
+          } else {
+            console.log('⚠️ No driver documents found for user')
+          }
           }
         }
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error)
-      toast({
-        variant: "destructive",
+      } catch (error) {
+        console.error('Error loading profile:', error)
+        toast({
+          variant: "destructive",
         title: "Erreur",
         description: "Impossible de charger le profil. Veuillez réessayer.",
-      })
-    } finally {
-      setIsLoading(false)
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return
@@ -185,7 +191,7 @@ export default function ProfilePage() {
 
     try {
       setIsLoading(true)
-      
+
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}-${Date.now()}.${fileExt}`
       
@@ -226,13 +232,13 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       setIsLoading(true)
       
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .update({ 
           full_name: formData.fullName,
           email: formData.email,
           city: formData.city,
@@ -250,7 +256,7 @@ export default function ProfilePage() {
       }))
       
       setIsEditing(false)
-      
+
       toast({
         title: "Succès",
         description: "Profil mis à jour avec succès",
@@ -370,15 +376,60 @@ export default function ProfilePage() {
       const currentImages = driverDocuments?.vehicle_images || []
       const updatedVehicleImages = [...currentImages, ...uploadedUrls]
       
-      const { error: updateError } = await supabase
+      console.log('🔄 Updating vehicle images for driver:', user.id)
+      console.log('📸 Current images:', currentImages)
+      console.log('📸 New images:', uploadedUrls)
+      console.log('📸 Updated images:', updatedVehicleImages)
+      
+      // Check if driver document exists
+      const { data: existingDoc, error: checkError } = await supabase
         .from('driver_documents')
-        .update({ 
-          vehicle_images: updatedVehicleImages,
-          updated_at: new Date().toISOString()
-        })
+        .select('driver_id')
         .eq('driver_id', user.id)
+        .single()
 
-      if (updateError) throw updateError
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('❌ Error checking driver document:', checkError)
+        throw checkError
+      }
+
+      let updateError
+      if (existingDoc) {
+        // Update existing record
+        console.log('✅ Driver document exists, updating...')
+        const { error } = await supabase
+          .from('driver_documents')
+          .update({ 
+            vehicle_images: updatedVehicleImages,
+            updated_at: new Date().toISOString()
+          })
+          .eq('driver_id', user.id)
+        updateError = error
+      } else {
+        // Insert new record
+        console.log('✅ Driver document does not exist, inserting...')
+        const { error } = await supabase
+          .from('driver_documents')
+          .insert({
+            driver_id: user.id,
+            vehicle_images: updatedVehicleImages,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+        updateError = error
+      }
+
+      if (updateError) {
+        console.error('❌ Error updating/inserting driver document:', updateError)
+        console.error('❌ Error details:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint
+        })
+        throw updateError
+      }
 
       setDriverDocuments(prev => prev ? {
         ...prev,
@@ -420,6 +471,9 @@ export default function ProfilePage() {
       const currentImages = driverDocuments?.vehicle_images || []
       const newImages = currentImages.filter(img => img !== imageUrl)
       
+      console.log('🗑️ Removing vehicle image:', imageUrl)
+      console.log('📸 Remaining images:', newImages)
+      
       const { error: updateError } = await supabase
         .from('driver_documents')
         .update({ 
@@ -428,7 +482,10 @@ export default function ProfilePage() {
         })
         .eq('driver_id', user.id)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('❌ Error removing vehicle image:', updateError)
+        throw updateError
+      }
 
       setDriverDocuments(prev => prev ? {
         ...prev,
@@ -483,14 +540,14 @@ export default function ProfilePage() {
               </Button>
             )}
             
-            <Button
-              variant="outline"
+          <Button 
+            variant="outline" 
               onClick={handleSignOut}
               className="flex items-center gap-2"
-            >
+          >
               <LogOut className="w-4 h-4" />
               Déconnexion
-            </Button>
+          </Button>
           </div>
         </div>
 
@@ -499,40 +556,40 @@ export default function ProfilePage() {
           <CardContent className="p-6">
             <div className="flex items-start gap-6">
               {/* Avatar Section */}
-              <div className="relative">
+                  <div className="relative">
                 <Avatar className="w-24 h-24 border-4 border-primary/20 shadow-lg">
                   {getAvatarUrl() ? (
-                    <AvatarImage 
+                        <AvatarImage 
                       src={getAvatarUrl()!} 
                       alt="Photo de profil"
-                      className="object-cover"
-                    />
-                  ) : (
+                          className="object-cover"
+                        />
+                      ) : (
                     <AvatarFallback className="bg-gradient-to-br from-primary to-amber-500 text-primary-foreground text-2xl font-bold">
                       {profileData.full_name ? profileData.full_name[0].toUpperCase() : user?.phone?.slice(-2) || 'U'}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
                 
-                <label
-                  htmlFor="avatar-upload"
+                    <label
+                      htmlFor="avatar-upload"
                   className="absolute -bottom-2 -right-2 p-2 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Camera className="w-4 h-4" />
-                  )}
-                </label>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  onChange={handleFileChange}
-                  disabled={isLoading}
-                  className="hidden"
-                />
-              </div>
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Camera className="w-4 h-4" />
+                      )}
+                    </label>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleFileChange}
+                      disabled={isLoading}
+                      className="hidden"
+                    />
+                  </div>
 
               {/* Profile Info */}
               <div className="flex-1 space-y-4">
@@ -656,10 +713,10 @@ export default function ProfilePage() {
                       <Label htmlFor="city" className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" /> Ville
                       </Label>
-                                              <SearchableSelect
-                          options={[...cameroonCities]}
-                          value={formData.city}
-                          onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
+                      <SearchableSelect
+                        options={[...cameroonCities]}
+                        value={formData.city}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
                           placeholder="Sélectionnez votre ville"
                           searchPlaceholder="Rechercher une ville..."
                           disabled={!isEditing || isLoading}
@@ -1138,8 +1195,8 @@ export default function ProfilePage() {
                   <Calendar className="w-4 h-4 mr-2" />
                   Mes Réservations
                 </Button>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
           </motion.div>
         </div>
       </div>

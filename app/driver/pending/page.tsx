@@ -90,8 +90,8 @@ export default function DriverPendingPage() {
                     <p className="font-medium">Examen des documents</p>
                     <p className="text-sm text-muted-foreground">
                       Vérification de vos pièces d'identité et documents de véhicule
-                    </p>
-                  </div>
+            </p>
+          </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
@@ -103,9 +103,9 @@ export default function DriverPendingPage() {
                     <p className="text-sm text-muted-foreground">
                       Vous recevrez un email avec le résultat de votre candidature
                     </p>
-                  </div>
-                </div>
-                
+              </div>
+            </div>
+
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-bold text-muted-foreground">
                     3
