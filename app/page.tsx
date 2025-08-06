@@ -53,11 +53,11 @@ export default function Home() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="block">Voyagez</span> 
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-yellow-200">Plus Intelligemment, Ensemble</span>
+            <span className="block">Découvrez</span> 
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-yellow-200">le Cameroun, Ensemble</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed">
-            Réservez vos trajets intercités en quelques clics et voyagez en toute sécurité avec notre système de vérification unique
+            Connectez-vous avec des chauffeurs de confiance et explorez les merveilles du Cameroun en toute sécurité
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -267,7 +267,7 @@ export default function Home() {
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
                         <div className="text-3xl">{route.icon}</div>
-                        <div>
+                    <div>
                           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Itinéraire Populaire</p>
                           <h3 className="text-lg font-bold text-foreground">{route.from} → {route.to}</h3>
                         </div>
@@ -286,7 +286,7 @@ export default function Home() {
                           <div className="w-8 h-8 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center">
                             <Clock className="w-4 h-4 text-primary-foreground" />
                           </div>
-                          <div>
+                    <div>
                             <p className="text-xs text-muted-foreground font-medium">Durée</p>
                             <p className="font-bold text-foreground">{route.duration}</p>
                           </div>

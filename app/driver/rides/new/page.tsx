@@ -28,17 +28,17 @@ import { SearchableSelect } from "@/components/ui/searchable-select"
 import { urbanCommunes, cameroonCities } from "@/app/data/cities"
 
 const formSchema = z.object({
-  fromCity: z.string().min(1, "From city is required"),
-  toCity: z.string().min(1, "To city is required"),
+  fromCity: z.string().min(1, "La ville de départ est requise"),
+  toCity: z.string().min(1, "La ville de destination est requise"),
   departureTime: z.date({
-    required_error: "Departure time is required",
+    required_error: "L'heure de départ est requise",
   }),
-  price: z.number().min(1, "Price is required"),
+  price: z.number().min(1, "Le prix est requis"),
   seatsAvailable: z.number()
-    .min(1, "Available seats is required")
-    .max(100, "Cannot exceed 100 seats"),
-  carModel: z.string().min(1, "Car model is required"),
-  carColor: z.string().min(1, "Car color is required"),
+    .min(1, "Le nombre de places disponibles est requis")
+    .max(100, "Ne peut pas dépasser 100 places"),
+  carModel: z.string().min(1, "Le modèle de voiture est requis"),
+  carColor: z.string().min(1, "La couleur de la voiture est requise"),
 });
 
 export default function NewRidePage() {
@@ -65,8 +65,8 @@ export default function NewRidePage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to create a ride.",
+        title: "Authentification Requise",
+        description: "Veuillez vous connecter pour créer un trajet.",
         variant: "destructive",
       })
       router.push("/auth")
@@ -114,8 +114,8 @@ export default function NewRidePage() {
       // Ensure the departure time is in the future
       if (departureUTC.getTime() <= nowUTC.getTime()) {
         toast({
-          title: "Invalid Departure Time",
-          description: "The departure time must be in the future.",
+          title: "Heure de Départ Invalide",
+          description: "L'heure de départ doit être dans le futur.",
           variant: "destructive",
         })
         return
@@ -145,8 +145,8 @@ export default function NewRidePage() {
       console.log("Created ride:", newRide)
 
       toast({
-        title: "Ride Created",
-        description: "Your ride has been created successfully.",
+        title: "Trajet Créé",
+        description: "Votre trajet a été créé avec succès.",
       })
 
       // Wait a moment to ensure the ride is saved
@@ -157,8 +157,8 @@ export default function NewRidePage() {
     } catch (error) {
       console.error("Error creating ride:", error)
       toast({
-        title: "Error",
-        description: "There was an error creating your ride. Please try again.",
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de la création de votre trajet. Veuillez réessayer.",
         variant: "destructive",
       })
     } finally {
@@ -170,9 +170,9 @@ export default function NewRidePage() {
     <div className="container py-10">
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Create New Ride</h1>
+          <h1 className="text-3xl font-bold">Créer un Nouveau Trajet</h1>
           <p className="text-muted-foreground mt-2">
-            Fill in the details below to create a new ride.
+            Remplissez les détails ci-dessous pour créer un nouveau trajet.
           </p>
         </div>
 
@@ -185,14 +185,14 @@ export default function NewRidePage() {
                   name="fromCity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>From City</FormLabel>
+                      <FormLabel>Ville de Départ</FormLabel>
                       <FormControl>
                         <SearchableSelect
                           options={allCities}
                           value={field.value}
                           onValueChange={field.onChange}
-                          placeholder="Select departure city"
-                          searchPlaceholder="Search cities..."
+                          placeholder="Sélectionner la ville de départ"
+                          searchPlaceholder="Rechercher des villes..."
                         />
                       </FormControl>
                       <FormMessage />
@@ -205,14 +205,14 @@ export default function NewRidePage() {
                   name="toCity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>To City</FormLabel>
+                      <FormLabel>Ville de Destination</FormLabel>
                       <FormControl>
                         <SearchableSelect
                           options={allCities}
                           value={field.value}
                           onValueChange={field.onChange}
-                          placeholder="Select destination city"
-                          searchPlaceholder="Search cities..."
+                          placeholder="Sélectionner la ville de destination"
+                          searchPlaceholder="Rechercher des villes..."
                         />
                       </FormControl>
                       <FormMessage />
@@ -226,7 +226,7 @@ export default function NewRidePage() {
                 name="departureTime"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Departure Time</FormLabel>
+                    <FormLabel>Heure de Départ</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -240,7 +240,7 @@ export default function NewRidePage() {
                             {field.value ? (
                               format(field.value, "PPP p")
                             ) : (
-                              <span>Pick a date and time</span>
+                              <span>Choisir une date et heure</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -281,11 +281,11 @@ export default function NewRidePage() {
                   name="price"
                   render={({ field: { onChange, ...field } }) => (
                     <FormItem>
-                      <FormLabel>Price (FCFA)</FormLabel>
+                      <FormLabel>Prix (FCFA)</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
-                          placeholder="e.g. 5000" 
+                          placeholder="ex: 5000" 
                           onChange={(e) => onChange(Number(e.target.value))}
                           {...field}
                         />
@@ -303,11 +303,11 @@ export default function NewRidePage() {
                 name="seatsAvailable"
                 render={({ field: { onChange, ...field } }) => (
                   <FormItem>
-                    <FormLabel>Available Seats</FormLabel>
+                    <FormLabel>Places Disponibles</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
-                        placeholder="e.g. 4" 
+                        placeholder="ex: 4" 
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           // Allow up to 10 seats maximum
@@ -317,7 +317,7 @@ export default function NewRidePage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Number of seats available for this ride
+                      Nombre de places disponibles pour ce trajet
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -330,9 +330,9 @@ export default function NewRidePage() {
                   name="carModel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Car Model</FormLabel>
+                      <FormLabel>Modèle de Voiture</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Toyota Camry" {...field} />
+                        <Input placeholder="ex: Toyota Camry" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -344,9 +344,9 @@ export default function NewRidePage() {
                   name="carColor"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Car Color</FormLabel>
+                      <FormLabel>Couleur de la Voiture</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Black" {...field} />
+                        <Input placeholder="ex: Noir" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -362,10 +362,10 @@ export default function NewRidePage() {
                   variant="outline"
                   onClick={() => router.push("/driver/dashboard")}
                 >
-                  Cancel
+                  Annuler
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Ride"}
+                  {isSubmitting ? "Création..." : "Créer le Trajet"}
                 </Button>
               </div>
             </form>

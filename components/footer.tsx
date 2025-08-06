@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Car, Facebook, Instagram, Twitter } from 'lucide-react'
 
 export function Footer() {
-  const currentYear = new Date().getFullYear()
+  const currentYear = 2023
 
   return (
     <footer className="w-full border-t bg-background">
@@ -16,7 +16,7 @@ export function Footer() {
               <span className="font-bold">PikDrive</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Votre plateforme de covoiturage de confiance au Cameroun
+              Découvrez le Cameroun, Ensemble
             </p>
           </div>
 

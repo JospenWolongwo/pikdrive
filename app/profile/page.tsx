@@ -151,7 +151,7 @@ export default function ProfilePage() {
             .from('driver_documents')
             .select('*')
             .eq('driver_id', user.id)
-            .single()
+            .maybeSingle()
 
           if (docError) {
             console.error('❌ Error loading driver documents:', docError)
@@ -160,6 +160,7 @@ export default function ProfilePage() {
             setDriverDocuments(documents)
           } else {
             console.log('⚠️ No driver documents found for user')
+            setDriverDocuments(null)
           }
           }
         }
@@ -386,9 +387,9 @@ export default function ProfilePage() {
         .from('driver_documents')
         .select('driver_id')
         .eq('driver_id', user.id)
-        .single()
+        .maybeSingle()
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('❌ Error checking driver document:', checkError)
         throw checkError
       }
@@ -414,6 +415,12 @@ export default function ProfilePage() {
             driver_id: user.id,
             vehicle_images: updatedVehicleImages,
             status: 'pending',
+            national_id_number: '',
+            license_number: '',
+            registration_number: '',
+            insurance_number: '',
+            technical_inspection_number: '',
+            road_tax_number: '',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -431,10 +438,42 @@ export default function ProfilePage() {
         throw updateError
       }
 
-      setDriverDocuments(prev => prev ? {
-        ...prev,
-        vehicle_images: updatedVehicleImages
-      } : null)
+      setDriverDocuments(prev => {
+        console.log('🔄 Updating driverDocuments state:', { prev, updatedVehicleImages })
+        if (prev) {
+          const newState = {
+            ...prev,
+            vehicle_images: updatedVehicleImages
+          }
+          console.log('✅ Updated existing driverDocuments:', newState)
+          return newState
+        } else {
+          // If no driver documents existed, create a new one
+          const newState = {
+            driver_id: user.id,
+            vehicle_images: updatedVehicleImages,
+            status: 'pending',
+            national_id_number: '',
+            license_number: '',
+            registration_number: '',
+            insurance_number: '',
+            technical_inspection_number: '',
+            road_tax_number: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            national_id_file_recto: null,
+            national_id_file_verso: null,
+            license_file_recto: null,
+            license_file_verso: null,
+            registration_file_recto: null,
+            registration_file_verso: null,
+            insurance_file_recto: null,
+            insurance_file_verso: null
+          }
+          console.log('✅ Created new driverDocuments:', newState)
+          return newState
+        }
+      })
       
       // Clear temporary data
       setNewVehicleImages([])
@@ -518,9 +557,9 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-2xl sm:text-3xl font-bold">
               {profileData.is_driver_applicant ? 'Profil de Chauffeur' : 'Profil Utilisateur'}
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -528,25 +567,27 @@ export default function ProfilePage() {
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             {profileData.is_driver_applicant && (
               <Button
                 variant="outline"
                 onClick={() => router.push('/driver/dashboard')}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2"
               >
                 <Car className="w-4 h-4" />
-                Tableau de bord
+                <span className="hidden sm:inline">Tableau de bord</span>
+                <span className="sm:hidden">Tableau de bord</span>
               </Button>
             )}
             
           <Button 
             variant="outline" 
               onClick={handleSignOut}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2"
           >
               <LogOut className="w-4 h-4" />
-              Déconnexion
+              <span className="hidden sm:inline">Déconnexion</span>
+              <span className="sm:hidden">Déconnexion</span>
           </Button>
           </div>
         </div>
@@ -759,7 +800,7 @@ export default function ProfilePage() {
           </motion.div>
 
           {/* Driver Documents Section */}
-          {profileData.is_driver_applicant && driverDocuments && (
+          {profileData.is_driver_applicant && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -789,7 +830,7 @@ export default function ProfilePage() {
                          <div className="space-y-2">
                            <h5 className="font-medium text-sm">Carte Nationale d'Identité</h5>
                            <div className="grid grid-cols-2 gap-2">
-                             {driverDocuments.national_id_file_recto && (
+                             {driverDocuments?.national_id_file_recto && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.national_id_file_recto} 
@@ -801,7 +842,7 @@ export default function ProfilePage() {
                                  />
                                </div>
                              )}
-                             {driverDocuments.national_id_file_verso && (
+                             {driverDocuments?.national_id_file_verso && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.national_id_file_verso} 
@@ -820,7 +861,7 @@ export default function ProfilePage() {
                          <div className="space-y-2">
                            <h5 className="font-medium text-sm">Permis de Conduire</h5>
                            <div className="grid grid-cols-2 gap-2">
-                             {driverDocuments.license_file_recto && (
+                             {driverDocuments?.license_file_recto && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.license_file_recto} 
@@ -832,7 +873,7 @@ export default function ProfilePage() {
                                  />
                                </div>
                              )}
-                             {driverDocuments.license_file_verso && (
+                             {driverDocuments?.license_file_verso && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.license_file_verso} 
@@ -851,7 +892,7 @@ export default function ProfilePage() {
                          <div className="space-y-2">
                            <h5 className="font-medium text-sm">Carte Grise</h5>
                            <div className="grid grid-cols-2 gap-2">
-                             {driverDocuments.registration_file_recto && (
+                             {driverDocuments?.registration_file_recto && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.registration_file_recto} 
@@ -863,7 +904,7 @@ export default function ProfilePage() {
                                  />
                                </div>
                              )}
-                             {driverDocuments.registration_file_verso && (
+                             {driverDocuments?.registration_file_verso && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.registration_file_verso} 
@@ -882,7 +923,7 @@ export default function ProfilePage() {
                          <div className="space-y-2">
                            <h5 className="font-medium text-sm">Assurance</h5>
                            <div className="grid grid-cols-2 gap-2">
-                             {driverDocuments.insurance_file_recto && (
+                             {driverDocuments?.insurance_file_recto && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.insurance_file_recto} 
@@ -894,7 +935,7 @@ export default function ProfilePage() {
                                  />
                                </div>
                              )}
-                             {driverDocuments.insurance_file_verso && (
+                             {driverDocuments?.insurance_file_verso && (
                                <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden border">
                                  <img 
                                    src={driverDocuments.insurance_file_verso} 
@@ -910,6 +951,15 @@ export default function ProfilePage() {
                          </div>
                        </div>
                      </div>
+                     
+                     {/* Show message when no driver documents exist yet */}
+                     {!driverDocuments && (
+                       <div className="text-center py-6 text-muted-foreground">
+                         <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                         <p className="text-sm">Aucun document soumis pour le moment</p>
+                         <p className="text-xs mt-1">Vous pouvez commencer par ajouter des photos de votre véhicule ci-dessous</p>
+                       </div>
+                     )}
                      
                      {/* Vehicle Images Section */}
                      <div className="space-y-4">
@@ -930,95 +980,97 @@ export default function ProfilePage() {
                          </Button>
                        </div>
                        
-                                               {isEditingVehicleImages && (
-                          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium">Ajouter des photos</Label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="file"
-                                  multiple
-                                  accept="image/jpeg,image/png,image/gif,image/webp"
-                                  onChange={handleVehicleImagesUpload}
-                                  disabled={vehicleImagesLoading}
-                                  className="hidden"
-                                  id="vehicle-images-upload"
-                                />
-                                <label
-                                  htmlFor="vehicle-images-upload"
-                                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg cursor-pointer hover:bg-primary/90 transition-colors disabled:opacity-50"
-                                >
-                                  <Camera className="w-4 h-4" />
-                                  Ajouter des photos
-                                </label>
-                                <span className="text-xs text-muted-foreground">
-                                  JPG, PNG, GIF, WebP (max 5MB chacun)
-                                </span>
-                              </div>
-                            </div>
-                            
-                            {/* Preview of new images */}
-                            {newVehicleImageUrls.length > 0 && (
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium">Nouvelles photos à ajouter</Label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                  {newVehicleImageUrls.map((url, index) => (
-                                    <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden border">
-                                      <img 
-                                        src={url} 
-                                        alt={`Nouvelle photo ${index + 1}`}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => {
-                                          setNewVehicleImages(prev => prev.filter((_, i) => i !== index))
-                                          setNewVehicleImageUrls(prev => prev.filter((_, i) => i !== index))
-                                        }}
-                                        className="absolute top-1 right-1 w-6 h-6 p-0"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Action buttons */}
-                            <div className="flex items-center gap-2 pt-2">
-                              <Button
-                                onClick={handleSaveVehicleImages}
-                                disabled={vehicleImagesLoading || newVehicleImages.length === 0}
-                                className="flex items-center gap-2"
-                              >
-                                {vehicleImagesLoading ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Save className="w-4 h-4" />
-                                )}
-                                {vehicleImagesLoading ? 'Sauvegarde...' : 'Sauvegarder'}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={handleCancelVehicleImages}
-                                disabled={vehicleImagesLoading}
-                              >
-                                Annuler
-                              </Button>
-                            </div>
-                            
-                            {vehicleImagesLoading && (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Sauvegarde des photos...
-                              </div>
-                            )}
-                          </div>
-                        )}
+                       {/* Always show upload interface for driver applicants */}
+                       {isEditingVehicleImages && (
+                         <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                           <div className="space-y-2">
+                             <Label className="text-sm font-medium">Ajouter des photos</Label>
+                             <div className="flex items-center gap-2">
+                               <input
+                                 type="file"
+                                 multiple
+                                 accept="image/jpeg,image/png,image/gif,image/webp"
+                                 onChange={handleVehicleImagesUpload}
+                                 disabled={vehicleImagesLoading}
+                                 className="hidden"
+                                 id="vehicle-images-upload"
+                               />
+                               <label
+                                 htmlFor="vehicle-images-upload"
+                                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg cursor-pointer hover:bg-primary/90 transition-colors disabled:opacity-50"
+                               >
+                                 <Camera className="w-4 h-4" />
+                                 Ajouter des photos
+                               </label>
+                               <span className="text-xs text-muted-foreground">
+                                 JPG, PNG, GIF, WebP (max 5MB chacun)
+                               </span>
+                             </div>
+                           </div>
+                           
+                           {/* Preview of new images */}
+                           {newVehicleImageUrls.length > 0 && (
+                             <div className="space-y-2">
+                               <Label className="text-sm font-medium">Nouvelles photos à ajouter</Label>
+                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                 {newVehicleImageUrls.map((url, index) => (
+                                   <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden border">
+                                     <img 
+                                       src={url} 
+                                       alt={`Nouvelle photo ${index + 1}`}
+                                       className="w-full h-full object-cover"
+                                     />
+                                     <Button
+                                       variant="destructive"
+                                       size="sm"
+                                       onClick={() => {
+                                         setNewVehicleImages(prev => prev.filter((_, i) => i !== index))
+                                         setNewVehicleImageUrls(prev => prev.filter((_, i) => i !== index))
+                                       }}
+                                       className="absolute top-1 right-1 w-6 h-6 p-0"
+                                     >
+                                       <X className="w-3 h-3" />
+                                     </Button>
+                                   </div>
+                                 ))}
+                               </div>
+                             </div>
+                           )}
+                           
+                           {/* Action buttons */}
+                           <div className="flex items-center gap-2 pt-2">
+                             <Button
+                               onClick={handleSaveVehicleImages}
+                               disabled={vehicleImagesLoading || newVehicleImages.length === 0}
+                               className="flex items-center gap-2"
+                             >
+                               {vehicleImagesLoading ? (
+                                 <Loader2 className="w-4 h-4 animate-spin" />
+                               ) : (
+                                 <Save className="w-4 h-4" />
+                               )}
+                               {vehicleImagesLoading ? 'Sauvegarde...' : 'Sauvegarder'}
+                             </Button>
+                             <Button
+                               variant="outline"
+                               onClick={handleCancelVehicleImages}
+                               disabled={vehicleImagesLoading}
+                             >
+                               Annuler
+                             </Button>
+                           </div>
+                           
+                           {vehicleImagesLoading && (
+                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                               <Loader2 className="w-4 h-4 animate-spin" />
+                               Sauvegarde des photos...
+                             </div>
+                           )}
+                         </div>
+                       )}
                        
-                       {driverDocuments.vehicle_images && driverDocuments.vehicle_images.length > 0 ? (
+                       {/* Show existing images or empty state */}
+                       {driverDocuments?.vehicle_images && driverDocuments.vehicle_images.length > 0 ? (
                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                            {driverDocuments.vehicle_images.map((image, index) => (
                              <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden border">
@@ -1119,12 +1171,12 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Membre depuis:</span>
-                    <span>{format(new Date(profileData.created_at || Date.now()), 'MMM yyyy', { locale: fr })}</span>
+                    <span>{profileData.created_at ? format(new Date(profileData.created_at), 'MMM yyyy', { locale: fr }) : 'Non disponible'}</span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Dernière mise à jour:</span>
-                    <span>{format(new Date(profileData.updated_at || Date.now()), 'dd/MM/yyyy', { locale: fr })}</span>
+                    <span>{profileData.updated_at ? format(new Date(profileData.updated_at), 'dd/MM/yyyy', { locale: fr }) : 'Non disponible'}</span>
                   </div>
                 </div>
               </CardContent>

@@ -28,7 +28,8 @@ export function AvatarWithFallback({
         .storage
         .from('avatars')
         .getPublicUrl(profile.avatar_url)
-      setAvatarUrl(`${publicUrl}?v=${Date.now()}`)
+      // Use a static cache buster to avoid hydration issues
+      setAvatarUrl(`${publicUrl}?v=1`)
     }
   }, [profile?.avatar_url, supabase])
 

@@ -442,7 +442,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                           <FormControl>
                             <div className="relative">
                               <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input className="pl-10" type="date" {...field} min={format(new Date(), "yyyy-MM-dd")} />
+                              <Input className="pl-10" type="date" {...field} min="2024-01-01" />
                             </div>
                           </FormControl>
                           <FormMessage />
