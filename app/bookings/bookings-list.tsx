@@ -195,82 +195,50 @@ export function BookingsList({ page }: { page: number }) {
 
         if (bookingsError) throw bookingsError
 
+        // Process bookings and add receipts
         const bookingsWithReceipts = await Promise.all(
           (bookingsData || []).map(async (bookingData) => {
-            const ride = Array.isArray(bookingData.ride) ? bookingData.ride[0] : bookingData.ride;
-            const driver = Array.isArray(ride.driver) ? ride.driver[0] : ride.driver;
+            // Handle ride data as array (Supabase returns it as array)
+            const rideData = Array.isArray(bookingData.ride) ? bookingData.ride[0] : bookingData.ride;
+            const driverData = Array.isArray(rideData.driver) ? rideData.driver[0] : rideData.driver;
 
-            // First create the DatabaseBooking
-            const transformedBooking: DatabaseBooking = {
+            // Transform the data to match our interface
+            const bookingForCard: BookingWithReceipt = {
               id: bookingData.id,
               seats: bookingData.seats,
               status: bookingData.status,
               payment_status: bookingData.payment_status,
               created_at: bookingData.created_at,
               ride: {
-                ...ride,
-                driver: [driver]
+                id: rideData.id,
+                from_city: rideData.from_city,
+                to_city: rideData.to_city,
+                departure_time: rideData.departure_time,
+                car_model: rideData.car_model,
+                car_color: rideData.car_color,
+                price: rideData.price,
+                driver: driverData
               },
-              payments: bookingData.payments
+              payments: bookingData.payments || []
             };
 
-            const payments = transformedBooking.payments || [];
-            const payment = payments.length > 0 ? payments[0] : undefined;
-            const isCompleted = payment?.payment_time && payment?.metadata?.financialTransactionId;
-
-            // Then transform it to match the BookingCard's expected type
-            const bookingForCard: BookingCardBooking = {
-              ...transformedBooking,
-              ride: {
-                ...transformedBooking.ride,
-                driver: {
-                  full_name: transformedBooking.ride.driver[0].full_name,
-                  avatar_url: transformedBooking.ride.driver[0].avatar_url || ''  // Provide empty string as fallback
-                }
-              }
-            };
-
-            if (isCompleted) {
-              console.log('💵 Processing completed payment with ID:', payment.id);
-              
-              // First try to get receipt using RPC method which matches how they're created
-              const { data: rpcReceipt, error: rpcError } = await supabase
-                .rpc('get_receipt_by_payment_id', { payment_id_param: payment.id });
-              
-              // Log the result for debugging
-              if (rpcError) {
-                console.error('🔴 RPC receipt lookup error:', rpcError);
-              } else {
-                console.log('📝 RPC receipt lookup result:', rpcReceipt);
-              }
-              
-              // If RPC fails or returns no result, fallback to direct table query
-              if (rpcError || !rpcReceipt || (Array.isArray(rpcReceipt) && rpcReceipt.length === 0)) {
-                console.log('🔍 Trying direct payment_receipts lookup for payment:', payment.id);
-                const { data: directReceipt, error: directError } = await supabase
-                  .from('payment_receipts')
-                  .select('*')
-                  .eq('payment_id', payment.id)
-                  .single();
-                
-                if (!directError && directReceipt) {
-                  console.log('✅ Found receipt via direct query:', directReceipt);
-                  return {
-                    ...bookingForCard,
-                    receipt: directReceipt
+            // Add receipt if payment exists
+            if (bookingData.payments && bookingData.payments.length > 0) {
+              try {
+                const receipt = await ReceiptService.getReceipt(bookingData.payments[0].id);
+                if (receipt) {
+                  bookingForCard.receipt = {
+                    id: receipt.id,
+                    payment_id: bookingData.payments[0].id, // Use the payment ID directly
+                    created_at: receipt.created_at,
+                    receipt_number: receipt.receipt_number,
+                    issued_at: receipt.issued_at,
+                    pdf_url: receipt.pdf_url
                   };
-                } else {
-                  console.log('❌ Receipt not found for payment:', payment.id, directError);
                 }
-              } else {
-                // The RPC might return an array, so handle that case
-                const receipt = Array.isArray(rpcReceipt) ? rpcReceipt[0] : rpcReceipt;
-                console.log('✅ Found receipt via RPC:', receipt);
-                
-                return {
-                  ...bookingForCard,
-                  receipt: receipt
-                };
+              } catch (receiptError) {
+                console.warn('Could not fetch receipt for booking:', bookingData.id, receiptError);
+                // Continue without receipt
               }
             }
 
@@ -284,8 +252,8 @@ export function BookingsList({ page }: { page: number }) {
         setError(err as Error)
         toast({
           variant: "destructive",
-          title: "Error loading bookings",
-          description: "Please try again later."
+          title: "Erreur lors du chargement des réservations",
+          description: "Veuillez réessayer plus tard."
         })
       } finally {
         setLoading(false)
@@ -299,7 +267,7 @@ export function BookingsList({ page }: { page: number }) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-4">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-muted-foreground">Loading your bookings...</p>
+        <p className="text-sm text-muted-foreground">Chargement de vos réservations...</p>
       </div>
     )
   }
@@ -307,8 +275,8 @@ export function BookingsList({ page }: { page: number }) {
   if (error) {
     return (
       <div className="text-center py-8 text-red-600">
-        <h3 className="font-semibold mb-2">Error loading bookings</h3>
-        <p className="text-sm text-muted-foreground">Please try again later</p>
+        <h3 className="font-semibold mb-2">Erreur lors du chargement des réservations</h3>
+        <p className="text-sm text-muted-foreground">Veuillez réessayer plus tard</p>
       </div>
     )
   }
@@ -321,7 +289,7 @@ export function BookingsList({ page }: { page: number }) {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by city, driver or status..."
+            placeholder="Rechercher par ville, chauffeur ou statut..."
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -329,7 +297,7 @@ export function BookingsList({ page }: { page: number }) {
         </div>
         {searchQuery && (
           <Badge variant="outline" className="flex items-center gap-1">
-            <span>{filteredBookings.length} results</span>
+            <span>{filteredBookings.length} résultats</span>
             <Button
               variant="ghost"
               size="icon"
@@ -344,11 +312,11 @@ export function BookingsList({ page }: { page: number }) {
 
       {!filteredBookings.length ? (
         <div className="text-center py-8">
-          <h3 className="font-semibold mb-2">No bookings found</h3>
+          <h3 className="font-semibold mb-2">Aucune réservation trouvée</h3>
           <p className="text-sm text-muted-foreground">
             {searchQuery 
-              ? "No bookings match your search. Try different keywords." 
-              : "You haven't made any bookings yet"}
+              ? "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés." 
+              : "Vous n'avez pas encore fait de réservations"}
           </p>
         </div>
       ) : (
@@ -372,8 +340,8 @@ export function BookingsList({ page }: { page: number }) {
           {/* Pagination with results info */}
           <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Showing {Math.min(filteredBookings.length, (page - 1) * itemsPerPage + 1)}-
-              {Math.min(filteredBookings.length, page * itemsPerPage)} of {filteredBookings.length} bookings
+              Affichage de {Math.min(filteredBookings.length, (page - 1) * itemsPerPage + 1)}-
+              {Math.min(filteredBookings.length, page * itemsPerPage)} sur {filteredBookings.length} réservations
             </div>
             
             {totalPages > 1 && (

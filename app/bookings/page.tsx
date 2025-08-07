@@ -14,7 +14,7 @@ interface BookingsPageProps {
 export default function BookingsPage({ searchParams }: BookingsPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Your Bookings</h1>
+      <h1 className="text-3xl font-bold mb-8">Mes Réservations</h1>
       <Suspense fallback={<LoadingBookings />}>
         <BookingsList page={searchParams.page ? parseInt(searchParams.page) : 1} />
       </Suspense>

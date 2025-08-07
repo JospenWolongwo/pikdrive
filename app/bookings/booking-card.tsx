@@ -80,34 +80,38 @@ export function BookingCard({ booking }: BookingCardProps) {
       <CardContent>
         <div className="grid gap-2">
           <div>
-            <strong>Driver:</strong> {booking.ride.driver.full_name}
+            <strong>Chauffeur :</strong> {booking.ride.driver.full_name}
           </div>
           <div>
-            <strong>Car:</strong> {booking.ride.car_model} ({booking.ride.car_color})
+            <strong>Voiture :</strong> {booking.ride.car_model} ({booking.ride.car_color})
           </div>
           <div>
-            <strong>Seats:</strong> {booking.seats}
+            <strong>Places :</strong> {booking.seats}
           </div>
           <div>
-            <strong>Total:</strong> {payment ? `${payment.amount} ${payment.currency}` : 'N/A'}
+            <strong>Total :</strong> {payment ? `${payment.amount} ${payment.currency}` : 'N/A'}
           </div>
           <div>
-            <strong>Status:</strong>{' '}
+            <strong>Statut :</strong>{' '}
             <span className={`inline-block px-2 py-1 text-sm rounded-full ${
               booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
               booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
               'bg-red-100 text-red-800'
             }`}>
-              {booking.status}
+              {booking.status === 'confirmed' ? 'Confirmé' :
+               booking.status === 'pending' ? 'En attente' :
+               booking.status === 'cancelled' ? 'Annulé' :
+               booking.status === 'pending_verification' ? 'En attente de vérification' :
+               booking.status}
             </span>
           </div>
           {payment && (
             <div>
-              <strong>Payment:</strong>{' '}
+              <strong>Paiement :</strong>{' '}
               <span className={`inline-block px-2 py-1 text-sm rounded-full ${
                 isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
               }`}>
-                {isCompleted ? 'Completed' : 'Pending'}
+                {isCompleted ? 'Terminé' : 'En attente'}
               </span>
             </div>
           )}
@@ -120,7 +124,7 @@ export function BookingCard({ booking }: BookingCardProps) {
                 className="w-full flex items-center justify-between"
                 onClick={() => setShowVerification(!showVerification)}
               >
-                <span>{showVerification ? 'Hide' : 'Show'} Driver Verification Code</span>
+                <span>{showVerification ? 'Masquer' : 'Afficher'} le code de vérification du chauffeur</span>
                 {showVerification ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
               
@@ -137,7 +141,7 @@ export function BookingCard({ booking }: BookingCardProps) {
         {booking.receipt && (
           <Button variant="outline" asChild>
             <a href={`/receipts/${booking.receipt.id}`} target="_blank" rel="noopener noreferrer">
-              View Receipt
+              Voir le reçu
             </a>
           </Button>
         )}

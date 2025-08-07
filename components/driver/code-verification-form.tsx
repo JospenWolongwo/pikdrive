@@ -40,7 +40,7 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
   const verifyCode = useCallback(async () => {
     // Validate code length
     if (state.code.length !== 6) {
-      toast.error('Please enter the complete 6-character verification code')
+      toast.error('Veuillez entrer le code de vérification complet à 6 caractères')
       return
     }
 
@@ -65,17 +65,17 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to verify code')
+        throw new Error(data.error || 'Échec de la vérification du code')
       }
 
       if (!data.success) {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: data.message || 'Invalid verification code',
+          error: data.message || 'Code de vérification invalide',
           lastUpdated: Date.now()
         }))
-        toast.error(data.message || 'Invalid verification code')
+        toast.error(data.message || 'Code de vérification invalide')
         return
       }
 
@@ -88,7 +88,7 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       }))
       
       console.log('🟢 Verification successful for booking:', bookingId)
-      toast.success('Passenger verified successfully!')
+      toast.success('Passager vérifié avec succès !')
       
       if (onSuccess) {
         setTimeout(() => onSuccess(), 1500)
@@ -98,10 +98,10 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to verify code',
+        error: error instanceof Error ? error.message : 'Échec de la vérification du code',
         lastUpdated: Date.now()
       }))
-      toast.error('Failed to verify passenger code')
+      toast.error('Échec de la vérification du code du passager')
     }
   }, [bookingId, state.code, onSuccess])
 
@@ -112,12 +112,12 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
         <CardHeader className="pb-2">
           <CardTitle className="text-lg text-green-800 flex items-center">
             <CheckCircle className="mr-2 h-5 w-5" />
-            Passenger Verified
+            Passager Vérifié
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-green-700">
-            The passenger has been successfully verified. You are clear to proceed with the ride.
+            Le passager a été vérifié avec succès. Vous pouvez procéder au trajet.
           </p>
         </CardContent>
       </Card>
@@ -129,17 +129,17 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       <CardHeader>
         <CardTitle className="text-xl flex items-center">
           <KeyRound className="mr-2 h-5 w-5 text-primary" />
-          Verify Passenger
+          Vérifier le Passager
         </CardTitle>
         <CardDescription>
-          Enter the 6-character code provided by your passenger
+          Entrez le code à 6 caractères fourni par votre passager
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <Input
             id="verification-code"
-            placeholder="Enter code (e.g. AB12C3)"
+            placeholder="Entrez le code (ex: AB12C3)"
             value={state.code}
             onChange={handleCodeChange}
             className="text-center tracking-wider font-mono text-lg uppercase"
@@ -162,7 +162,7 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
           className="w-full"
         >
           {state.loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Verify Code
+          Vérifier le Code
         </Button>
       </CardFooter>
     </Card>

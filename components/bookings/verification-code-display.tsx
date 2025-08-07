@@ -129,7 +129,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     if (state.code) {
       navigator.clipboard.writeText(state.code)
       setState(prev => ({ ...prev, copied: true }))
-      toast.success('Verification code copied to clipboard')
+      toast.success('Code de vérification copié dans le presse-papiers')
       
       // Reset copied state after 3 seconds
       setTimeout(() => {
@@ -209,9 +209,9 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
         <CardContent className="p-6">
           <div className="text-center space-y-2">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
-            <h3 className="text-lg font-medium text-green-800">Verification Complete</h3>
+            <h3 className="text-lg font-medium text-green-800">Vérification Terminée</h3>
             <p className="text-sm text-green-600">
-              Your ride has been verified by the driver
+              Votre trajet a été vérifié par le chauffeur
             </p>
           </div>
         </CardContent>
@@ -225,7 +225,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
       <Card className="bg-red-50 border border-red-200 shadow-sm">
         <CardContent className="p-6">
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-medium text-red-800">Error Loading Verification Code</h3>
+            <h3 className="text-lg font-medium text-red-800">Erreur lors du chargement du code de vérification</h3>
             <p className="text-sm text-red-600">{state.error}</p>
             <div className="mt-4 text-center space-y-3">
               <Button 
@@ -236,7 +236,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
                 className="bg-red-50 hover:bg-red-100 text-red-800"
               >
                 {state.regenerating && <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />}
-                Try Again
+                Réessayer
               </Button>
               <Button 
                 variant="outline" 
@@ -254,12 +254,12 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
                     setState(prev => ({ ...prev, code: data, loading: false }));
                   } catch (err) {
                     console.error('Direct RPC fallback failed:', err);
-                    setState(prev => ({ ...prev, error: 'Could not generate code. Please try later.', loading: false }));
+                    setState(prev => ({ ...prev, error: 'Impossible de générer le code. Veuillez réessayer plus tard.', loading: false }));
                   }
                 }}
                 className="ml-2 bg-blue-50 hover:bg-blue-100 text-blue-800"
               >
-                Use Direct Method
+                Utiliser la méthode directe
               </Button>
             </div>
           </div>
@@ -274,19 +274,19 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
       <CardContent className="p-6">
         <div className="text-center space-y-4">
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-800">Verification Code</h3>
+            <h3 className="text-lg font-semibold text-gray-800">Code de Vérification</h3>
             <div className="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-4 rounded-md shadow-md">
               <div className="flex justify-center">
                 <span className="font-mono text-2xl font-bold tracking-wider">
-                  {state.code ? state.code.split('').join(' ') : 'Loading...'}
+                  {state.code ? state.code.split('').join(' ') : 'Chargement...'}
                 </span>
               </div>
               <div className="mt-3 text-xs text-blue-100 text-center">
-                Valid for 24 hours
+                Valide pendant 24 heures
               </div>
             </div>
             <p className="text-sm text-gray-600 mt-2 text-center">
-              Show this code to your driver to verify your booking
+              Montrez ce code à votre chauffeur pour vérifier votre réservation
             </p>
             <Button 
               variant="outline" 
@@ -296,7 +296,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
               className="w-full mt-2"
             >
               {state.regenerating && <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />}
-              Refresh Code
+              Actualiser le code
             </Button>
           </div>
         </div>
