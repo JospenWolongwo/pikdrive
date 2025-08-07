@@ -5,7 +5,6 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import { BookingCard } from "./booking-card"
-import { ReceiptService } from "@/lib/payment/receipt-service"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Input } from "@/components/ui/input"
 import { Search, X } from "lucide-react"
@@ -225,11 +224,17 @@ export function BookingsList({ page }: { page: number }) {
             // Add receipt if payment exists
             if (bookingData.payments && bookingData.payments.length > 0) {
               try {
-                const receipt = await ReceiptService.getReceipt(bookingData.payments[0].id);
-                if (receipt) {
+                // Fetch receipt directly using client-side Supabase
+                const { data: receipt, error: receiptError } = await supabase
+                  .from('payment_receipts')
+                  .select('id, receipt_number, issued_at, created_at, pdf_url')
+                  .eq('payment_id', bookingData.payments[0].id)
+                  .single();
+
+                if (!receiptError && receipt) {
                   bookingForCard.receipt = {
                     id: receipt.id,
-                    payment_id: bookingData.payments[0].id, // Use the payment ID directly
+                    payment_id: bookingData.payments[0].id,
                     created_at: receipt.created_at,
                     receipt_number: receipt.receipt_number,
                     issued_at: receipt.issued_at,
