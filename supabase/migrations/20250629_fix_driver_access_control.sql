@@ -1,6 +1,17 @@
--- Migration to update profile is_driver status when driver documents are added
+-- Migration to fix driver access control issue
+-- This prevents users from automatically getting driver access when submitting applications
 
--- Create function to update profile when driver documents are added/updated
+-- First, fix existing data: set is_driver = false for all pending applications
+UPDATE public.profiles 
+SET 
+  is_driver = FALSE,
+  updated_at = NOW()
+WHERE 
+  driver_application_status = 'pending' 
+  AND driver_status = 'pending'
+  AND is_driver = TRUE;
+
+-- Update the trigger function to not automatically set is_driver = TRUE
 CREATE OR REPLACE FUNCTION public.update_profile_driver_status()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -20,28 +31,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Drop existing trigger if it exists
+-- Drop and recreate the trigger to ensure it uses the updated function
 DROP TRIGGER IF EXISTS on_driver_document_change ON public.driver_documents;
 
--- Create trigger to run after document insert or update
 CREATE TRIGGER on_driver_document_change
   AFTER INSERT OR UPDATE ON public.driver_documents
   FOR EACH ROW EXECUTE FUNCTION public.update_profile_driver_status();
 
--- One-time update to fix existing inconsistencies
--- Update all profiles linked to driver_documents to have proper driver_status
--- but DO NOT automatically set is_driver = TRUE (this should only happen after admin approval)
-UPDATE public.profiles 
-SET 
-  driver_status = CASE 
-    WHEN driver_status IN ('approved', 'rejected') THEN driver_status
-    ELSE 'pending'
-  END,
-  updated_at = NOW()
-WHERE id IN (SELECT DISTINCT driver_id FROM public.driver_documents);
-
 -- Log completion message
 DO $$
 BEGIN
-  RAISE NOTICE 'Migration completed: Driver document trigger and profile update applied';
+  RAISE NOTICE 'Migration completed: Driver access control fixed - users no longer get automatic driver access';
 END $$;
