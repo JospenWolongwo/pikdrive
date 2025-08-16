@@ -32,6 +32,7 @@ export interface ProfileUpdateData {
   is_driver?: boolean;
   driver_status?: "pending" | "approved" | "rejected" | "inactive";
   role?: "user" | "driver" | "admin";
+  updated_at?: string;
 }
 
 /**

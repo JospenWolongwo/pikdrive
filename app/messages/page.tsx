@@ -189,7 +189,7 @@ export default function MessagesPage() {
 
       // Add driver rides
       if (driverRides) {
-        driverRides.forEach((ride) => {
+        driverRides.forEach((ride: any) => {
           if (!allRideIds.has(ride.id)) {
             allRideIds.add(ride.id);
             userRides.push(ride);
@@ -199,7 +199,7 @@ export default function MessagesPage() {
 
       // Add passenger rides
       if (passengerRides) {
-        passengerRides.forEach((ride) => {
+        passengerRides.forEach((ride: any) => {
           if (!allRideIds.has(ride.id)) {
             allRideIds.add(ride.id);
             userRides.push(ride);
@@ -209,7 +209,7 @@ export default function MessagesPage() {
 
       // Add message rides (data structure is different since we queried from messages table)
       if (messageRides) {
-        messageRides.forEach((messageRecord) => {
+        messageRides.forEach((messageRecord: any) => {
           const ride = messageRecord.rides;
           if (ride && !allRideIds.has(ride.id)) {
             allRideIds.add(ride.id);
@@ -429,7 +429,7 @@ export default function MessagesPage() {
           schema: "public",
           table: "messages",
         },
-        async (payload) => {
+        async (payload: any) => {
           console.log("📬 New message received:", payload);
           const newMessage = payload.new as any;
 

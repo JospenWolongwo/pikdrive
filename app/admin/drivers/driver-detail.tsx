@@ -234,10 +234,6 @@ export default function DriverDetail({
               <CardContent className="w-full max-w-none">
                 {driver.documents ? (
                   <div className="w-full">
-                    {console.log(
-                      "Debug - Documents being sent to viewer:",
-                      JSON.stringify(driver.documents, null, 2)
-                    )}
                     <DocumentViewer documents={driver.documents} />
                   </div>
                 ) : (
