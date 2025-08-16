@@ -98,3 +98,4 @@ BEGIN
   RAISE NOTICE '- Total profiles in database: %', profile_count;
   RAISE NOTICE '- All new users will automatically get complete profiles';
 END $$;
+ 
