@@ -70,9 +70,29 @@ export function ChatDialog({
             table: "messages",
             filter: `ride_id=eq.${rideId}`,
           },
-          (payload: { new: Record<string, any> }) => {
-            const newMessage = payload.new as Message;
-            setMessages((prev) => [...prev, newMessage]);
+          async (payload: { new: Record<string, any> }) => {
+            const rawMessage = payload.new;
+
+            // Fetch sender information for the new message
+            const { data: senderData } = await supabase
+              .from("profiles")
+              .select("full_name, avatar_url")
+              .eq("id", rawMessage.sender_id)
+              .single();
+
+            const newMessage = {
+              ...rawMessage,
+              sender: senderData || { full_name: "Unknown", avatar_url: null },
+            } as Message;
+
+            setMessages((prev) => {
+              // Prevent duplicates by checking if message already exists
+              const exists = prev.some((msg) => msg.id === newMessage.id);
+              if (exists) {
+                return prev; // Don't add if already exists
+              }
+              return [...prev, newMessage];
+            });
             scrollToBottom();
           }
         )
@@ -123,7 +143,26 @@ export function ChatDialog({
     if (!newMessage.trim() || !user) return;
 
     const messageContent = newMessage.trim();
+    const tempId = `temp-${Date.now()}`; // Temporary ID for optimistic update
     setNewMessage(""); // Clear input immediately for better UX
+
+    // Create optimistic message
+    const optimisticMessage = {
+      id: tempId,
+      content: messageContent,
+      sender_id: user.id,
+      receiver_id: otherUserId,
+      ride_id: rideId,
+      created_at: new Date().toISOString(),
+      sender: {
+        full_name: user.user_metadata?.full_name || "You",
+        avatar_url: user.user_metadata?.avatar_url || null,
+      },
+    };
+
+    // Add optimistic message immediately
+    setMessages((prev) => [...prev, optimisticMessage]);
+    scrollToBottom();
 
     try {
       const { data, error } = await supabase
@@ -143,13 +182,23 @@ export function ChatDialog({
 
       if (error) throw error;
 
-      // Optimistically add the message
+      // Replace optimistic message with real one
       if (data) {
-        setMessages((prev) => [...prev, data]);
-        scrollToBottom();
+        setMessages((prev) => {
+          // Remove the temporary message and add the real one
+          const withoutTemp = prev.filter((msg) => msg.id !== tempId);
+          // Check if real message already exists (from real-time)
+          const realExists = withoutTemp.some((msg) => msg.id === data.id);
+          if (realExists) {
+            return withoutTemp; // Real message already added by real-time
+          }
+          return [...withoutTemp, data]; // Add the real message
+        });
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
       setNewMessage(messageContent); // Restore message if failed
       toast({
         variant: "destructive",

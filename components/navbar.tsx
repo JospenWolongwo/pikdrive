@@ -49,6 +49,7 @@ export function Navbar() {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
+  const { unreadCounts } = useChat();
 
   useEffect(() => {
     setMounted(true);
@@ -249,12 +250,9 @@ export function Navbar() {
                 className="relative rounded-full"
               >
                 <MessageSquare className="h-5 w-5" />
-                {useChat().unreadCounts.length > 0 && (
+                {unreadCounts.length > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white">
-                    {useChat().unreadCounts.reduce(
-                      (sum, item) => sum + item.count,
-                      0
-                    )}
+                    {unreadCounts.reduce((sum, item) => sum + item.count, 0)}
                   </span>
                 )}
                 <span className="sr-only">Messages</span>

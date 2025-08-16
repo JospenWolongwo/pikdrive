@@ -1,70 +1,85 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useSupabase } from "@/providers/SupabaseProvider"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { toast } from "@/components/ui/use-toast"
-import { MessageCircle, Send } from "lucide-react"
-import { format } from "date-fns"
-import { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
+import { MessageCircle, Send } from "lucide-react";
+import { format } from "date-fns";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface Message {
-  id: string
-  content: string
-  created_at: string
+  id: string;
+  content: string;
+  created_at: string;
   sender: {
-    full_name: string
-  }
+    full_name: string;
+  };
 }
 
 interface DatabaseMessage {
-  id: string
-  content: string
-  created_at: string
-  ride_id: string
-  sender_id: string
+  id: string;
+  content: string;
+  created_at: string;
+  ride_id: string;
+  sender_id: string;
 }
 
 interface Ride {
-  id: string
-  from_city: string
-  to_city: string
-  departure_time: string
-  messages: Message[]
+  id: string;
+  from_city: string;
+  to_city: string;
+  departure_time: string;
+  driver_id: string;
+  messages: Message[];
+  bookings?: {
+    id: string;
+    passenger: {
+      id: string;
+      full_name: string;
+      avatar_url?: string;
+    };
+  }[];
 }
 
 interface RealtimePayload {
-  new: DatabaseMessage
-  old: DatabaseMessage | null
-  eventType: "INSERT" | "UPDATE" | "DELETE"
+  new: DatabaseMessage;
+  old: DatabaseMessage | null;
+  eventType: "INSERT" | "UPDATE" | "DELETE";
 }
 
-export default function RideMessagesPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const { supabase, user } = useSupabase()
-  const [ride, setRide] = useState<Ride | null>(null)
-  const [newMessage, setNewMessage] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
+export default function RideMessagesPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const router = useRouter();
+  const { supabase, user } = useSupabase();
+  const [ride, setRide] = useState<Ride | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth")
-      return
+      router.push("/auth");
+      return;
     }
 
     const loadRide = async () => {
       try {
         const { data, error } = await supabase
           .from("rides")
-          .select(`
+          .select(
+            `
             id,
             from_city,
             to_city,
             departure_time,
+            driver_id,
             messages (
               id,
               content,
@@ -72,37 +87,46 @@ export default function RideMessagesPage({ params }: { params: { id: string } })
               sender:profiles (
                 full_name
               )
+            ),
+            bookings (
+              id,
+              passenger:profiles (
+                id,
+                full_name,
+                avatar_url
+              )
             )
-          `)
+          `
+          )
           .eq("id", params.id)
           .eq("driver_id", user.id)
-          .single()
+          .single();
 
-        if (error) throw error
+        if (error) throw error;
         if (!data) {
           toast({
             title: "Ride not found",
             description: "The requested ride could not be found.",
             variant: "destructive",
-          })
-          router.push("/driver/dashboard")
-          return
+          });
+          router.push("/driver/dashboard");
+          return;
         }
 
-        setRide(data)
+        setRide(data);
       } catch (error) {
-        console.error("Error loading ride:", error)
+        console.error("Error loading ride:", error);
         toast({
           title: "Error",
           description: "There was an error loading the ride messages.",
           variant: "destructive",
-        })
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadRide()
+    loadRide();
 
     // Subscribe to new messages
     const channel = supabase
@@ -121,11 +145,11 @@ export default function RideMessagesPage({ params }: { params: { id: string } })
             .from("profiles")
             .select("full_name")
             .eq("id", payload.new.sender_id)
-            .single()
+            .single();
 
           if (senderError) {
-            console.error("Error fetching sender info:", senderError)
-            return
+            console.error("Error fetching sender info:", senderError);
+            return;
           }
 
           const newMessage: Message = {
@@ -135,51 +159,75 @@ export default function RideMessagesPage({ params }: { params: { id: string } })
             sender: {
               full_name: senderData.full_name,
             },
-          }
+          };
 
           setRide((currentRide) => {
-            if (!currentRide) return null
+            if (!currentRide) return null;
             return {
               ...currentRide,
               messages: [...currentRide.messages, newMessage],
-            }
-          })
+            };
+          });
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user, router, supabase, params.id])
+      supabase.removeChannel(channel);
+    };
+  }, [user, router, supabase, params.id]);
 
   const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user || !ride || !newMessage.trim()) return
+    e.preventDefault();
+    if (!user || !ride || !newMessage.trim()) return;
 
     try {
-      setSending(true)
+      setSending(true);
+
+      // Find the receiver - if driver is sending, receiver is passenger, and vice versa
+      let receiverId: string;
+
+      if (user.id === ride.driver_id) {
+        // Current user is driver, find passenger
+        const passenger = ride.bookings?.[0]?.passenger;
+        if (!passenger?.id) {
+          throw new Error("No passenger found for this ride");
+        }
+        receiverId = passenger.id;
+      } else {
+        // Current user is passenger, receiver is driver
+        receiverId = ride.driver_id;
+      }
+
+      console.log("📨 Sending message:", {
+        senderId: user.id,
+        receiverId,
+        rideId: ride.id,
+        content: newMessage.trim().substring(0, 50) + "...",
+      });
 
       const { error } = await supabase.from("messages").insert({
         ride_id: ride.id,
         sender_id: user.id,
+        receiver_id: receiverId,
         content: newMessage.trim(),
-      })
+      });
 
-      if (error) throw error
+      if (error) throw error;
 
-      setNewMessage("")
+      setNewMessage("");
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("Error sending message:", error);
       toast({
         title: "Error",
-        description: "There was an error sending your message. Please try again.",
+        description:
+          "There was an error sending your message. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -193,10 +241,10 @@ export default function RideMessagesPage({ params }: { params: { id: string } })
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
-  if (!ride) return null
+  if (!ride) return null;
 
   return (
     <div className="container py-10">
@@ -261,5 +309,5 @@ export default function RideMessagesPage({ params }: { params: { id: string } })
         </Card>
       </div>
     </div>
-  )
+  );
 }

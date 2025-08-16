@@ -31,6 +31,11 @@ import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  initializeGlobalMessageNotificationManager,
+  cleanupGlobalMessageNotificationManager,
+} from "@/lib/notifications/message-notification-manager";
+import { notificationService } from "@/lib/notifications/notification-service";
 
 // Types
 interface Conversation {
@@ -64,17 +69,31 @@ export default function MessagesPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsSupported, setNotificationsSupported] = useState(false);
 
-  // Check if notifications are supported
+  // Check if notifications are supported and update permission state
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setNotificationsSupported(true);
-      setNotificationsEnabled(Notification.permission === "granted");
+    if (typeof window !== "undefined") {
+      setNotificationsSupported(notificationService.isSupported());
+      setNotificationsEnabled(notificationService.isEnabled());
+
+      // Check permission state periodically in case user changes it in browser settings
+      const checkPermission = () => {
+        const currentEnabled = notificationService.isEnabled();
+        if (currentEnabled !== notificationsEnabled) {
+          setNotificationsEnabled(currentEnabled);
+        }
+      };
+
+      // Check immediately and then every 2 seconds
+      checkPermission();
+      const interval = setInterval(checkPermission, 2000);
+
+      return () => clearInterval(interval);
     }
-  }, []);
+  }, [notificationsEnabled]);
 
   // Request notifications permission
   const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
+    if (!notificationService.isSupported()) {
       toast({
         title: "Notifications non supportées",
         description: "Votre navigateur ne supporte pas les notifications.",
@@ -83,11 +102,30 @@ export default function MessagesPage() {
       return;
     }
 
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationsEnabled(permission === "granted");
+    // Check current permission state
+    const currentPermission =
+      typeof window !== "undefined" ? Notification.permission : "default";
+    console.log("🔐 Current browser permission:", currentPermission);
 
-      if (permission === "granted") {
+    // If already denied, show instructions
+    if (currentPermission === "denied") {
+      toast({
+        title: "Notifications bloquées",
+        description:
+          "Cliquez sur l'icône 🔒 dans la barre d'adresse pour autoriser les notifications, puis rafraîchissez la page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log(
+        "🔔 Requesting notification permission from messages page..."
+      );
+      const permission = await notificationService.requestPermission();
+      setNotificationsEnabled(permission);
+
+      if (permission) {
         toast({
           title: "Notifications activées",
           description:
@@ -97,7 +135,7 @@ export default function MessagesPage() {
         toast({
           title: "Notifications bloquées",
           description:
-            "Veuillez autoriser les notifications dans les paramètres de votre navigateur.",
+            "Veuillez autoriser les notifications dans les paramètres de votre navigateur. Cliquez sur l'icône 🔒 dans la barre d'adresse.",
           variant: "destructive",
         });
       }
@@ -118,7 +156,6 @@ export default function MessagesPage() {
 
     try {
       setLoading(true);
-      console.log("📥 Loading conversations...");
 
       // First, get all rides where the user is a driver, passenger, or has messages
       // We need multiple queries to handle all relationship types correctly
@@ -238,7 +275,6 @@ export default function MessagesPage() {
       // Then get the most recent message for each ride
       if (userRides && userRides.length > 0) {
         const rideIds = userRides.map((ride: RideInfo) => ride.id);
-        console.log(`🔍 Looking for messages in rides: ${rideIds.join(", ")}`);
 
         // Subscribe to all ride channels for real-time updates
         rideIds.forEach((rideId: string) => {
@@ -273,18 +309,6 @@ export default function MessagesPage() {
 
         if (messagesError) throw messagesError;
 
-        console.log(
-          `📬 Found ${messages?.length || 0} total messages across all rides`
-        );
-        if (messages && messages.length > 0) {
-          console.log("📋 Message details:");
-          messages.forEach((msg: any) => {
-            console.log(
-              `  - Ride ${msg.ride_id}: "${msg.content}" (${msg.created_at})`
-            );
-          });
-        }
-
         // Define message interface to avoid implicit any errors
         interface MessageData {
           id: string;
@@ -316,10 +340,10 @@ export default function MessagesPage() {
             }
           });
 
-          // Build conversations array
-          const conversationsArray: Conversation[] = Object.values(
-            lastMessageByRide
-          ).map((message: MessageData) => {
+          // Build conversations array with proper deduplication
+          const conversationMap = new Map<string, Conversation>();
+
+          Object.values(lastMessageByRide).forEach((message: MessageData) => {
             // Determine which ride this message belongs to
             const ride = userRides.find(
               (r: RideInfo) => r.id === message.ride_id
@@ -336,8 +360,9 @@ export default function MessagesPage() {
               unreadCounts.find((count) => count.rideId === message.ride_id)
                 ?.count || 0;
 
-            return {
-              id: message.id,
+            const conversationId = `${message.ride_id}-${otherUser.id}`;
+            const conversation: Conversation = {
+              id: conversationId,
               rideId: message.ride_id,
               otherUserId: otherUser.id,
               otherUserName: otherUser.full_name,
@@ -351,7 +376,17 @@ export default function MessagesPage() {
                 departure_time: ride?.departure_time || "",
               },
             };
+
+            // Only add if not already in map (deduplication)
+            if (!conversationMap.has(conversationId)) {
+              conversationMap.set(conversationId, conversation);
+            }
           });
+
+          // Convert map to array
+          const conversationsArray: Conversation[] = Array.from(
+            conversationMap.values()
+          );
 
           // Sort by latest message
           conversationsArray.sort(
@@ -418,8 +453,6 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!user || conversations.length === 0) return;
 
-    console.log("📡 Setting up message subscriptions for conversations...");
-
     const subscription = supabase
       .channel("messages-updates")
       .on(
@@ -430,7 +463,6 @@ export default function MessagesPage() {
           table: "messages",
         },
         async (payload: any) => {
-          console.log("📬 New message received:", payload);
           const newMessage = payload.new as any;
 
           // Check if this message belongs to any of our conversations
@@ -524,7 +556,6 @@ export default function MessagesPage() {
       .subscribe();
 
     return () => {
-      console.log("🧹 Cleaning up message subscriptions...");
       subscription.unsubscribe();
     };
   }, [user, supabase, conversations]);
@@ -650,61 +681,30 @@ export default function MessagesPage() {
     setFilteredConversations(filtered);
   }, [searchQuery, conversations]);
 
-  // Set up real-time notification subscription
+  // Set up global message notification manager
   useEffect(() => {
-    if (!user || !notificationsEnabled) return;
+    if (!user || !notificationsEnabled) {
+      cleanupGlobalMessageNotificationManager();
+      return;
+    }
 
-    // Subscribe to new messages sent to this user
-    const channel = supabase
-      .channel("new-messages")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `receiver_id=eq.${user.id}`,
-        },
-        (payload: any) => {
-          const newMessage = payload.new;
+    const manager = initializeGlobalMessageNotificationManager({
+      supabase,
+      userId: user.id,
+      onMessageClick: (rideId: string) => {
+        // Navigate to the specific ride conversation
+        router.push(`/messages?ride=${rideId}`);
+      },
+      onNewMessage: () => {
+        // Refresh conversations when new message is received
+        loadConversations();
+      },
+    });
 
-          // Show notification for new messages
-          if (
-            notificationsEnabled &&
-            document.visibilityState !== "visible" &&
-            newMessage.sender_id !== user.id
-          ) {
-            // Fetch sender info
-            supabase
-              .from("profiles")
-              .select("full_name")
-              .eq("id", newMessage.sender_id)
-              .single()
-              .then(({ data }: { data: { full_name: string } | null }) => {
-                if (data) {
-                  // Create notification
-                  const notification = new Notification("Nouveau message", {
-                    body: `${data.full_name}: ${newMessage.content}`,
-                    icon: "/icon.png", // Make sure this path exists
-                  });
-
-                  // Handle notification click
-                  notification.onclick = () => {
-                    window.focus();
-                    router.push(`/messages?ride=${newMessage.ride_id}`);
-                  };
-                }
-              });
-          }
-
-          // Refresh conversations to include the new message
-          loadConversations();
-        }
-      )
-      .subscribe();
+    manager.start();
 
     return () => {
-      channel.unsubscribe();
+      cleanupGlobalMessageNotificationManager();
     };
   }, [user, notificationsEnabled, supabase, router, loadConversations]);
 
@@ -734,30 +734,32 @@ export default function MessagesPage() {
             </Button>
 
             {notificationsSupported && (
-              <Button
-                variant={notificationsEnabled ? "outline" : "default"}
-                size="sm"
-                onClick={requestNotificationPermission}
-                className="flex items-center gap-1 sm:gap-2"
-              >
-                {notificationsEnabled ? (
-                  <>
-                    <BellOff className="h-4 w-4" />
-                    <span className="hidden sm:inline">
-                      Notifications activées
-                    </span>
-                    <span className="sm:hidden">On</span>
-                  </>
-                ) : (
-                  <>
-                    <Bell className="h-4 w-4" />
-                    <span className="hidden sm:inline">
-                      Activer les notifications
-                    </span>
-                    <span className="sm:hidden">Notifs</span>
-                  </>
-                )}
-              </Button>
+              <>
+                <Button
+                  variant={notificationsEnabled ? "outline" : "default"}
+                  size="sm"
+                  onClick={requestNotificationPermission}
+                  className="flex items-center gap-1 sm:gap-2"
+                >
+                  {notificationsEnabled ? (
+                    <>
+                      <BellOff className="h-4 w-4" />
+                      <span className="hidden sm:inline">
+                        Notifications activées
+                      </span>
+                      <span className="sm:hidden">On</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="h-4 w-4" />
+                      <span className="hidden sm:inline">
+                        Activer les notifications
+                      </span>
+                      <span className="sm:hidden">Notifs</span>
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
         </div>
