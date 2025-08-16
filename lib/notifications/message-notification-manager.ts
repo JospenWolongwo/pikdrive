@@ -33,6 +33,12 @@ export class MessageNotificationManager {
       return;
     }
 
+    // Ensure we're on the client side
+    if (typeof window === "undefined") {
+      console.warn("MessageNotificationManager cannot start on server side");
+      return;
+    }
+
     // Check notification permission status
     const permissionGranted = await notificationService.requestPermission();
 

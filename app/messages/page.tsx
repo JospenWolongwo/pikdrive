@@ -72,6 +72,9 @@ export default function MessagesPage() {
   // Check if notifications are supported and update permission state
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Ensure notification services are initialized on client side
+      notificationService.ensureInitialized();
+
       setNotificationsSupported(notificationService.isSupported());
       setNotificationsEnabled(notificationService.isEnabled());
 
@@ -93,7 +96,7 @@ export default function MessagesPage() {
 
   // Request notifications permission
   const requestNotificationPermission = async () => {
-    if (!notificationService.isSupported()) {
+    if (!notificationService.isSupported() || typeof window === "undefined") {
       toast({
         title: "Notifications non supportées",
         description: "Votre navigateur ne supporte pas les notifications.",
@@ -683,7 +686,7 @@ export default function MessagesPage() {
 
   // Set up global message notification manager
   useEffect(() => {
-    if (!user || !notificationsEnabled) {
+    if (!user || !notificationsEnabled || typeof window === "undefined") {
       cleanupGlobalMessageNotificationManager();
       return;
     }

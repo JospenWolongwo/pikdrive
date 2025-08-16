@@ -35,8 +35,11 @@ export class NotificationService {
       ...config,
     };
 
-    this.initializeAudio();
-    this.checkPermission();
+    // Only initialize on the client side
+    if (typeof window !== "undefined") {
+      this.initializeAudio();
+      this.checkPermission();
+    }
   }
 
   private initializeAudio() {
@@ -58,6 +61,14 @@ export class NotificationService {
         permission: Notification.permission,
         granted: this.permissionGranted,
       });
+    }
+  }
+
+  // Public method to ensure initialization on client side
+  ensureInitialized() {
+    if (typeof window !== "undefined") {
+      this.initializeAudio();
+      this.checkPermission();
     }
   }
 

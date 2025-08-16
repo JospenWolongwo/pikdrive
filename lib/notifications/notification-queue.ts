@@ -17,10 +17,27 @@ const RETRY_DELAY = 5000; // 5 seconds
 export class NotificationQueue {
   private queue: QueuedNotification[] = [];
   private processing = false;
+  private initialized = false;
 
   constructor() {
+    // Only initialize on the client side
+    if (typeof window !== "undefined") {
+      this.init();
+    }
+  }
+
+  private init() {
+    if (this.initialized) return;
+    this.initialized = true;
     this.loadQueue();
     this.startPeriodicProcessing();
+  }
+
+  // Public method to ensure initialization on client side
+  ensureInitialized() {
+    if (typeof window !== "undefined" && !this.initialized) {
+      this.init();
+    }
   }
 
   private loadQueue() {

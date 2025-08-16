@@ -7,7 +7,10 @@ export class AudioManager {
   private userInteracted = false;
 
   constructor() {
-    this.init();
+    // Only initialize on the client side
+    if (typeof window !== "undefined") {
+      this.init();
+    }
   }
 
   private async init() {
@@ -30,6 +33,13 @@ export class AudioManager {
 
     // Also try to initialize immediately (might work in some browsers)
     this.initializeAudioContext();
+  }
+
+  // Public method to ensure initialization on client side
+  ensureInitialized() {
+    if (typeof window !== "undefined" && !this.initialized) {
+      this.init();
+    }
   }
 
   private async initializeAudioContext() {
