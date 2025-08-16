@@ -146,16 +146,16 @@ export default function MessagesPage() {
           .from("rides")
           .select(
             `
+          id,
+          from_city,
+          to_city, 
+          departure_time,
+          driver_id,
+          bookings!inner (
             id,
-            from_city,
-            to_city, 
-            departure_time,
-            driver_id,
-            bookings!inner (
-              id,
-              user_id,
-              ride_id
-            )
+            user_id,
+            ride_id
+          )
           `
           )
           .eq("bookings.user_id", user.id),
@@ -716,10 +716,10 @@ export default function MessagesPage() {
   return (
     <div className="container mx-auto py-6 max-w-5xl">
       <div className="flex flex-col space-y-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Messages</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">Messages</h1>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -727,10 +727,10 @@ export default function MessagesPage() {
                 console.log("🔄 Manual refresh triggered");
                 loadConversations();
               }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 sm:gap-2"
             >
               <RefreshCw className="h-4 w-4" />
-              Actualiser
+              <span className="hidden sm:inline">Actualiser</span>
             </Button>
 
             {notificationsSupported && (
@@ -738,17 +738,23 @@ export default function MessagesPage() {
                 variant={notificationsEnabled ? "outline" : "default"}
                 size="sm"
                 onClick={requestNotificationPermission}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2"
               >
                 {notificationsEnabled ? (
                   <>
                     <BellOff className="h-4 w-4" />
-                    Notifications activées
+                    <span className="hidden sm:inline">
+                      Notifications activées
+                    </span>
+                    <span className="sm:hidden">On</span>
                   </>
                 ) : (
                   <>
                     <Bell className="h-4 w-4" />
-                    Activer les notifications
+                    <span className="hidden sm:inline">
+                      Activer les notifications
+                    </span>
+                    <span className="sm:hidden">Notifs</span>
                   </>
                 )}
               </Button>
