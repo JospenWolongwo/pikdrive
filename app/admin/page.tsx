@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Users, Car } from "lucide-react"
+import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Users, Car } from "lucide-react";
 
 export default function AdminDashboard() {
-  const router = useRouter()
+  const router = useRouter();
 
   const adminModules = [
     {
@@ -16,10 +16,10 @@ export default function AdminDashboard() {
       href: "/admin/drivers",
     },
     // Add more admin modules here as needed
-  ]
+  ];
 
   return (
-    <div className="container py-10">
+    <div className="p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-2">
@@ -49,5 +49,5 @@ export default function AdminDashboard() {
         ))}
       </div>
     </div>
-  )
+  );
 }

@@ -1,35 +1,51 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useTheme } from 'next-themes'
-import { useSupabase } from '@/providers/SupabaseProvider'
-import { useChat } from '@/providers/ChatProvider'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { usePWA } from '@/hooks/usePWA'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useTheme } from "next-themes";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { useChat } from "@/providers/ChatProvider";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { usePWA } from "@/hooks/usePWA";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, Sun, Moon, LogOut, User, Car, Settings, LayoutDashboard, BookOpen, Download, Search, MessageSquare, PlusCircle, CalendarCheck } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { IOSInstallPrompt } from '@/components/pwa/IOSInstallPrompt'
-import { useShowAndroidPrompt } from '@/components/pwa/PWAPrompts'
-import { useDeviceDetect } from '@/hooks/useDeviceDetect';
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Menu,
+  Sun,
+  Moon,
+  LogOut,
+  User,
+  Car,
+  Settings,
+  LayoutDashboard,
+  BookOpen,
+  Download,
+  Search,
+  MessageSquare,
+  PlusCircle,
+  CalendarCheck,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
+import { useShowAndroidPrompt } from "@/components/pwa/PWAPrompts";
+import { useDeviceDetect } from "@/hooks/useDeviceDetect";
 
 export function Navbar() {
-  const { supabase, user } = useSupabase()
-  const { theme, setTheme } = useTheme()
+  const { supabase, user } = useSupabase();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isOpen, setIsOpen] = useState(false)
-  const [isDriver, setIsDriver] = useState(false)
-  const [driverStatus, setDriverStatus] = useState<string | null>(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const [isDriver, setIsDriver] = useState(false);
+  const [driverStatus, setDriverStatus] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [fullName, setFullName] = useState<string | null>(null);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
@@ -47,38 +63,39 @@ export function Navbar() {
     if (user) {
       const getDriverStatus = async () => {
         const { data } = await supabase
-          .from('profiles')
-          .select('is_driver, driver_status, avatar_url')
-          .eq('id', user.id)
-          .single()
-        
-        setIsDriver(data?.is_driver || false)
-        setDriverStatus(data?.driver_status || null)
+          .from("profiles")
+          .select("is_driver, driver_status, avatar_url, full_name")
+          .eq("id", user.id)
+          .single();
+
+        setIsDriver(data?.is_driver || false);
+        setDriverStatus(data?.driver_status || null);
+        setFullName(data?.full_name || null);
         if (data?.avatar_url) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(data.avatar_url)
-          setAvatarUrl(publicUrl)
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("avatars").getPublicUrl(data.avatar_url);
+          setAvatarUrl(publicUrl);
         }
-      }
-      getDriverStatus()
+      };
+      getDriverStatus();
     }
-  }, [user, supabase])
+  }, [user, supabase]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-  }
+    await supabase.auth.signOut();
+  };
 
   const menuItems = [
-    { href: '/', label: 'Accueil' },
-    { href: '/rides', label: 'Trouver un Trajet' },
-    { href: '/about', label: 'À Propos' },
-    { href: '/advice', label: 'Sécurité & FAQ' },
-    { href: '/contact', label: 'Contact' },
-  ]
+    { href: "/", label: "Accueil" },
+    { href: "/rides", label: "Trouver un Trajet" },
+    { href: "/about", label: "À Propos" },
+    { href: "/advice", label: "Sécurité & FAQ" },
+    { href: "/contact", label: "Contact" },
+  ];
 
   const NavItems = ({ className }: { className?: string }) => (
-    <div className={cn('flex gap-6', className)}>
+    <div className={cn("flex gap-6", className)}>
       {menuItems.map((item) => (
         <Link
           key={item.href}
@@ -89,7 +106,7 @@ export function Navbar() {
         </Link>
       ))}
     </div>
-  )
+  );
 
   function PWAInstallButton() {
     const { setShowAndroid } = useShowAndroidPrompt();
@@ -102,21 +119,26 @@ export function Navbar() {
     }, []);
 
     const handleInstallClick = async () => {
-      console.log('🔍 Install button clicked:', { isInstallable, hasPrompt, isIOSDevice, isAndroidDevice });
-      
+      console.log("🔍 Install button clicked:", {
+        isInstallable,
+        hasPrompt,
+        isIOSDevice,
+        isAndroidDevice,
+      });
+
       if (isIOSDevice) {
         setShowIOSPrompt(true);
       } else if (isAndroidDevice) {
         try {
-          console.log('🚀 Attempting installation...');
+          console.log("🚀 Attempting installation...");
           const success = await install();
-          
+
           if (!success) {
-            console.log('ℹ️ Installation not completed, showing custom dialog');
+            console.log("ℹ️ Installation not completed, showing custom dialog");
             setShowAndroid(true);
           }
         } catch (err) {
-          console.error('❌ Installation error:', err);
+          console.error("❌ Installation error:", err);
           setShowAndroid(true);
         }
       }
@@ -124,12 +146,12 @@ export function Navbar() {
 
     // For debugging
     useEffect(() => {
-      console.log('📱 PWA Status:', {
+      console.log("📱 PWA Status:", {
         isInstallable,
         hasPrompt,
         isIOSDevice,
         isAndroidDevice,
-        env: process.env.NODE_ENV
+        env: process.env.NODE_ENV,
       });
     }, [isInstallable, hasPrompt, isIOSDevice, isAndroidDevice]);
 
@@ -139,31 +161,31 @@ export function Navbar() {
     // For iOS devices, show iOS install instructions
     if (isIOSDevice) {
       return (
-        <Button 
+        <Button
           onClick={() => setShowIOSPrompt(true)}
           variant="outline"
           size="sm"
           className="flex w-full items-center gap-2"
         >
-          <Download className="h-4 w-4" /> 
+          <Download className="h-4 w-4" />
           <span>Installer l&apos;App</span>
         </Button>
-      )
+      );
     }
 
     // For Android devices, show Android install dialog
     if (isInstallable && mounted) {
       return (
-        <Button 
+        <Button
           onClick={handleInstallClick}
           variant="outline"
           size="sm"
           className="flex w-full items-center gap-2"
         >
-          <Download className="h-4 w-4" /> 
+          <Download className="h-4 w-4" />
           <span>Installer l&apos;App</span>
         </Button>
-      )
+      );
     }
 
     return null;
@@ -171,7 +193,12 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {showIOSPrompt && <IOSInstallPrompt show={showIOSPrompt} onClose={() => setShowIOSPrompt(false)} />}
+      {showIOSPrompt && (
+        <IOSInstallPrompt
+          show={showIOSPrompt}
+          onClose={() => setShowIOSPrompt(false)}
+        />
+      )}
       <div className="container flex h-16 items-center">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
@@ -216,11 +243,18 @@ export function Navbar() {
           {/* Messages Button with notification badge */}
           {user && (
             <Link href="/messages">
-              <Button variant="ghost" size="icon" className="relative rounded-full">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full"
+              >
                 <MessageSquare className="h-5 w-5" />
                 {useChat().unreadCounts.length > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white">
-                    {useChat().unreadCounts.reduce((sum, item) => sum + item.count, 0)}
+                    {useChat().unreadCounts.reduce(
+                      (sum, item) => sum + item.count,
+                      0
+                    )}
                   </span>
                 )}
                 <span className="sr-only">Messages</span>
@@ -254,29 +288,38 @@ export function Navbar() {
                     <span>Rechercher</span>
                   </Link>
                 </DropdownMenuItem>
-                {isDriver && driverStatus === 'approved' && (
+                {isDriver && driverStatus === "approved" && (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link href="/driver/add-ride" className="flex items-center">
+                      <Link
+                        href="/driver/add-ride"
+                        className="flex items-center"
+                      >
                         <PlusCircle className="mr-2 h-4 w-4" />
                         <span>Publier Trajet</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/driver/dashboard" className="flex items-center">
+                      <Link
+                        href="/driver/dashboard"
+                        className="flex items-center"
+                      >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         <span>Tableau de Bord</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/driver/bookings" className="flex items-center">
+                      <Link
+                        href="/driver/bookings"
+                        className="flex items-center"
+                      >
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>Réservations</span>
                       </Link>
                     </DropdownMenuItem>
                   </>
                 )}
-                {isDriver && driverStatus === 'pending' && (
+                {isDriver && driverStatus === "pending" && (
                   <DropdownMenuItem asChild>
                     <Link href="/driver/pending" className="flex items-center">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -292,27 +335,38 @@ export function Navbar() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             className="rounded-full"
           >
-            {mounted && (theme === 'light' ? 
-              <Moon className="h-4 w-4" /> : 
-              <Sun className="h-4 w-4" />
-            )}
+            {mounted &&
+              (theme === "light" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              ))}
             <span className="sr-only">
-              {mounted ? (theme === 'light' ? 'Mode sombre' : 'Mode clair') : 'Changer de thème'}
+              {mounted
+                ? theme === "light"
+                  ? "Mode sombre"
+                  : "Mode clair"
+                : "Changer de thème"}
             </span>
           </Button>
-          
+
           {/* User Menu */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={avatarUrl || ""} />
-                    <AvatarFallback>
-                      {user.email?.slice(0, 2).toUpperCase()}
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-medium">
+                      {fullName
+                        ? fullName.charAt(0).toUpperCase()
+                        : user.email?.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -348,5 +402,5 @@ export function Navbar() {
         </div>
       </div>
     </header>
-  )
+  );
 }

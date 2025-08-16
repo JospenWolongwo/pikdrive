@@ -1,13 +1,21 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { useSupabase } from "@/providers/SupabaseProvider"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/use-toast"
-import { Loader2, RefreshCw, Eye, CheckCircle, XCircle, Filter, Search } from "lucide-react"
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Loader2,
+  RefreshCw,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Search,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,10 +23,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,231 +45,242 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { format, formatDistanceToNow } from "date-fns"
-import DriverDetail from "./driver-detail"
-import { updateDriverStatus as updateDriverStatusUtil } from "@/lib/driver-application-utils"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { format, formatDistanceToNow } from "date-fns";
+import DriverDetail from "./driver-detail";
+import { updateDriverStatus as updateDriverStatusUtil } from "@/lib/driver-application-utils";
 
 interface DriverApplication {
-  id: string
-  full_name: string
-  email: string
-  phone: string
-  city: string
-  avatar_url?: string
-  driver_status: string
-  created_at: string
-  is_driver?: boolean
-  role?: string
-  source?: string
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  city: string;
+  avatar_url?: string;
+  driver_status: string;
+  created_at: string;
+  is_driver?: boolean;
+  role?: string;
+  source?: string;
   documents: {
-    id?: string
-    driver_id?: string
-    national_id_number: string
-    license_number: string
-    registration_number: string
-    insurance_number: string
-    technical_inspection_number: string
-    national_id_file_recto: string
-    national_id_file_verso: string
-    license_file_recto: string
-    license_file_verso: string
-    registration_file_recto: string
-    registration_file_verso: string
-    insurance_file_recto: string
-    insurance_file_verso: string
-    technical_inspection_file: string
-    vehicle_images: string[]
-    status: string
-  }
+    id?: string;
+    driver_id?: string;
+    national_id_number: string;
+    license_number: string;
+    registration_number: string;
+    insurance_number: string;
+    technical_inspection_number: string;
+    national_id_file_recto: string;
+    national_id_file_verso: string;
+    license_file_recto: string;
+    license_file_verso: string;
+    registration_file_recto: string;
+    registration_file_verso: string;
+    insurance_file_recto: string;
+    insurance_file_verso: string;
+    technical_inspection_file: string;
+    vehicle_images: string[];
+    status: string;
+  };
 }
 
 export default function AdminDriversPage() {
-  const router = useRouter()
-  const { supabase, user } = useSupabase()
-  const [applications, setApplications] = useState<DriverApplication[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [selectedApplication, setSelectedApplication] = useState<DriverApplication | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const router = useRouter();
+  const { supabase, user } = useSupabase();
+  const [applications, setApplications] = useState<DriverApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedApplication, setSelectedApplication] =
+    useState<DriverApplication | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const checkAdminAccess = useCallback(async () => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
       if (!currentUser) {
-        router.push("/auth")
-        return
+        router.push("/auth");
+        return;
       }
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", currentUser.id)
-        .single()
+        .single();
 
       if (profile?.role !== "admin") {
-        router.push("/")
+        router.push("/");
         toast({
           title: "Accès Refusé",
           description: "Vous n'avez pas la permission d'accéder à cette page.",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error checking admin access:", error)
-      router.push("/")
+      console.error("Error checking admin access:", error);
+      router.push("/");
     }
   }, [supabase, router]);
 
   // Create an admin client that bypasses RLS for admin operations
   const createAdminClient = useCallback(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
-    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseServiceKey =
+      process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+
+    console.log("🔍 Admin client setup check:", {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      serviceKeyPreview: supabaseServiceKey
+        ? `${supabaseServiceKey.substring(0, 20)}...`
+        : "undefined",
+    });
+
     // If we have a service role key, create an admin client
     if (supabaseServiceKey) {
       console.log("🔑 Creating admin client with service role...");
-      const { createClient } = require('@supabase/supabase-js');
-      return createClient(supabaseUrl, supabaseServiceKey);
+      const { createClient } = require("@supabase/supabase-js");
+      return createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
     }
-    
+
     // Fallback to regular client
     console.log("⚠️ No service role key available, using regular client...");
     return supabase;
   }, [supabase]);
-  
+
   const loadApplications = useCallback(async () => {
     try {
       console.log("🔄 Loading driver applications from database...");
       setLoading(true);
-      
+
       // Try to use admin client to bypass RLS restrictions
       const adminClient = createAdminClient();
-      
-      // ADMIN-ONLY APPROACH: Directly query the driver_documents table using admin client
-      // This bypasses RLS completely for admin users
-      console.log("🔍 Querying driver_documents table using admin client...");
-      const { data: allDriverDocs, error: allDocsError } = await adminClient
-        .from("driver_documents")
-        .select(`
+
+      // NEW APPROACH: Load profiles with driver applications and their documents
+      console.log("🔍 Querying profiles table for driver applicants...");
+      const { data: driverProfiles, error: profilesError } = await adminClient
+        .from("profiles")
+        .select(
+          `
           id,
-          driver_id,
-          national_id_number,
-          license_number,
-          registration_number,
-          insurance_number,
-          technical_inspection_number,
-          national_id_file_recto,
-          national_id_file_verso,
-          license_file_recto,
-          license_file_verso,
-          registration_file_recto,
-          registration_file_verso,
-          insurance_file_recto,
-          insurance_file_verso,
-          technical_inspection_file,
-          vehicle_images,
-          status,
+          full_name,
+          email,
+          phone,
+          city,
+          avatar_url,
+          is_driver,
+          driver_status,
+          role,
+          driver_application_status,
+          driver_application_date,
+          is_driver_applicant,
           created_at,
           updated_at
-        `);
-      
+        `
+        )
+        .eq("is_driver_applicant", true);
+
       // Log complete data from the admin client query
-      console.log("📊 Admin client query for driver_documents:", {
-        success: !allDocsError,
-        count: allDriverDocs?.length || 0,
-        error: allDocsError ? String(allDocsError) : null
+      console.log("📊 Admin client query for profiles:", {
+        success: !profilesError,
+        count: driverProfiles?.length || 0,
+        error: profilesError ? String(profilesError) : null,
       });
-        
+
       // Check auth context to debug potential role issues
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
       console.log("🔐 Current auth context:", {
         userId: currentUser?.id,
         email: currentUser?.email,
-        role: currentUser?.app_metadata?.role || 'none set'
+        role: currentUser?.app_metadata?.role || "none set",
       });
-        
+
       // Use the admin client results directly
-      if (allDocsError) {
-        console.error("❌ Error fetching driver documents:", allDocsError);
+      if (profilesError) {
+        console.error("❌ Error fetching driver profiles:", profilesError);
         setApplications([]);
         setLoading(false);
         return;
       }
-      
-      console.log("📝 Found", allDriverDocs?.length || 0, "driver document records");
-      
-      // Detailed logging of documents
-      if (allDriverDocs && allDriverDocs.length > 0) {
-        console.log("📄 Sample document records:", allDriverDocs.slice(0, 3).map((doc: any) => ({
-          id: doc.id,
-          driver_id: doc.driver_id,
-          status: doc.status,
-          has_license: Boolean(doc.license_file_recto),
-          has_national_id: Boolean(doc.national_id_file_recto),
-          has_vehicle_images: Array.isArray(doc.vehicle_images) && doc.vehicle_images.length > 0,
-        })));
-        
-        // Specifically check and log the status of each driver document
-        console.log("📊 Driver document statuses:");
-        allDriverDocs.forEach((doc: any, index: number) => {
-          console.log(`Driver #${index + 1}: ID=${doc.driver_id}, Status=${doc.status || 'unknown'}, Document ID=${doc.id}`);
-        });
-        
-        // Count pending drivers explicitly
-        const pendingDrivers = allDriverDocs.filter((doc: any) => doc.status === 'pending');
-        console.log(`📊 Found ${pendingDrivers.length} drivers with 'pending' status`);
-        if (pendingDrivers.length > 0) {
-          console.log("Pending drivers:", pendingDrivers.map((doc: any) => doc.driver_id));
-        }
-      }
-      
-      // Directly transform driver documents into applications list
+
+      console.log(
+        "📝 Found",
+        driverProfiles?.length || 0,
+        "driver applicant profiles"
+      );
+
+      // Now load documents for each driver
       let driverApplications: DriverApplication[] = [];
-      
-      if (allDriverDocs) {
-        // Map each document to an application entry
-        driverApplications = allDriverDocs.map((doc: any) => {
-          // Create a driver profile entry from document data
-          // Extract information from the document ID and use it for display
-          // Format: Using a combination of the document number and driver ID
-          const driverName = doc.national_id_number || doc.license_number || 
-            `Driver ${doc.driver_id.substring(0, 6)}`;
-            
-          return {
-            id: doc.driver_id,
-            full_name: driverName,
-            email: "From Document",
-            phone: doc.license_number || "",
-            city: "",
-            avatar_url: "",
-            driver_status: doc.status || "pending",
-            is_driver: true,
-            role: "user",
-            created_at: doc.created_at,
-            documents: doc,
-            source: 'document'
-          };
-        });
+
+      if (driverProfiles && driverProfiles.length > 0) {
+        console.log("📄 Sample driver profiles:", driverProfiles.slice(0, 3));
+
+        // For each driver profile, try to load their documents
+        driverApplications = await Promise.all(
+          driverProfiles.map(async (profile: any) => {
+            // Try to load documents for this driver
+            const { data: documents } = await adminClient
+              .from("driver_documents")
+              .select("*")
+              .eq("driver_id", profile.id)
+              .maybeSingle();
+
+            return {
+              id: profile.id,
+              full_name: profile.full_name || "Unknown Driver",
+              email: profile.email || "No email provided",
+              phone: profile.phone || "No phone provided",
+              city: profile.city || "No location provided",
+              avatar_url: profile.avatar_url,
+              driver_status: profile.driver_status || "pending",
+              is_driver: profile.is_driver,
+              role: profile.role,
+              created_at: profile.created_at,
+              documents: documents,
+              source: "profile",
+            };
+          })
+        );
       }
-      
-      console.log("📝 Final driver applications from documents:", driverApplications.length);
-      
+
+      console.log(
+        "📝 Final driver applications from profiles:",
+        driverApplications.length
+      );
+
       if (driverApplications.length > 0) {
-        console.log("Sample applications:", driverApplications.slice(0, 3).map(app => ({
-          id: app.id,
-          driver_id: app.documents?.driver_id,
-          docId: app.documents?.id || 'no documents',
-          docStatus: app.documents?.status || 'N/A',
-          has_national_id: Boolean(app.documents?.national_id_file_recto),
-          has_license: Boolean(app.documents?.license_file_recto)
-        })));
+        console.log(
+          "Sample applications:",
+          driverApplications.slice(0, 3).map((app) => ({
+            id: app.id,
+            full_name: app.full_name,
+            email: app.email,
+            phone: app.phone,
+            city: app.city,
+            driver_status: app.driver_status,
+            has_documents: Boolean(app.documents),
+            docId: app.documents?.id || "no documents",
+          }))
+        );
       }
-      
+
       setApplications(driverApplications);
-      console.log("✅ Successfully loaded", driverApplications.length, "driver applications");
+      console.log(
+        "✅ Successfully loaded",
+        driverApplications.length,
+        "driver applications"
+      );
     } catch (error) {
       console.error("❌ Error loading applications:", error);
       toast({
@@ -265,24 +294,31 @@ export default function AdminDriversPage() {
   }, [supabase, createAdminClient]);
 
   useEffect(() => {
-    checkAdminAccess()
-    loadApplications()
+    checkAdminAccess();
+    loadApplications();
   }, [checkAdminAccess, loadApplications]);
 
   const handleUpdateDriverStatus = async (driverId: string, status: string) => {
     try {
-      console.log(`Updating driver ${driverId} status to ${status}`);
-      
+      console.log(`🔄 Updating driver ${driverId} status to ${status}`);
+
+      // Create admin client for elevated permissions
+      const adminClient = createAdminClient();
+
       // Use the utility function for consistent status updates
-      const result = await updateDriverStatusUtil(supabase, driverId, status as 'approved' | 'rejected' | 'inactive');
+      const result = await updateDriverStatusUtil(
+        adminClient,
+        driverId,
+        status as "approved" | "rejected" | "inactive"
+      );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to update driver status');
+        throw new Error(result.error || "Failed to update driver status");
       }
-      
+
       // Update local state
-      setApplications(prevApplications => 
-        prevApplications.map(app => 
+      setApplications((prevApplications) =>
+        prevApplications.map((app) =>
           app.id === driverId ? { ...app, driver_status: status } : app
         )
       );
@@ -295,22 +331,31 @@ export default function AdminDriversPage() {
 
       toast({
         title: "Succès",
-        description: `Statut du conducteur mis à jour en ${status === 'approved' ? 'approuvé' : status === 'rejected' ? 'refusé' : status}.`,
+        description: `Statut du conducteur mis à jour en ${
+          status === "approved"
+            ? "approuvé"
+            : status === "rejected"
+            ? "refusé"
+            : status
+        }.`,
       });
-      
+
       // Reload applications to get fresh data
       setTimeout(() => {
         loadApplications();
       }, 1000);
     } catch (error) {
-      console.error("Error updating driver status:", error)
+      console.error("Error updating driver status:", error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de mettre à jour le statut du conducteur.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Impossible de mettre à jour le statut du conducteur.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleViewApplication = (application: DriverApplication) => {
     setSelectedApplication(application);
@@ -318,12 +363,15 @@ export default function AdminDriversPage() {
   };
 
   const getStatusBadgeColor = (status: string) => {
-    switch(status) {
-      case "approved": return "bg-green-100 text-green-800"
-      case "rejected": return "bg-red-100 text-red-800"
-      default: return "bg-amber-100 text-amber-800"
+    switch (status) {
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-amber-100 text-amber-800";
     }
-  }
+  };
 
   const handleManualRefresh = () => {
     setLoading(true);
@@ -332,23 +380,26 @@ export default function AdminDriversPage() {
       loadApplications();
     }, 300);
   };
-  
+
   return (
-    <div className="container py-10">
+    <div className="p-6">
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold">Candidatures de Conducteurs</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Candidatures de Conducteurs
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Gérer les candidatures de conducteurs et leur statut de vérification.
+            Gérer les candidatures de conducteurs et leur statut de
+            vérification.
           </p>
         </div>
-        <Button 
-          onClick={handleManualRefresh} 
+        <Button
+          onClick={handleManualRefresh}
           variant="outline"
           className="flex items-center gap-2"
           disabled={loading}
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Actualiser
         </Button>
       </div>
@@ -377,21 +428,28 @@ export default function AdminDriversPage() {
                   {/* Debug what we have in the applications state */}
                   {applications.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                        Aucune candidature de conducteur trouvée. Vérifiez la console pour les informations de débogage.
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-10 text-muted-foreground"
+                      >
+                        Aucune candidature de conducteur trouvée. Vérifiez la
+                        console pour les informations de débogage.
                       </TableCell>
                     </TableRow>
                   )}
-                  
+
                   {/* Show a message if no applications are found */}
                   {applications.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-10 text-muted-foreground"
+                      >
                         Aucune candidature de conducteur trouvée.
                       </TableCell>
                     </TableRow>
                   )}
-                  
+
                   {/* Filter applications by status (profile status is the source of truth) */}
                   {applications
                     .filter((app) => {
@@ -404,18 +462,19 @@ export default function AdminDriversPage() {
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarImage src={application.avatar_url || ""} />
-                              <AvatarFallback>
-                                {application.full_name 
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-medium">
+                                {application.full_name
                                   ? application.full_name
-                                    .split(" ")
-                                    .map((n) => n?.[0] || "")
-                                    .join("")
+                                      .charAt(0)
+                                      .toUpperCase()
                                   : "?"}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-medium">
-                                {application.full_name ? application.full_name : "Unknown Driver"}
+                                {application.full_name
+                                  ? application.full_name
+                                  : "Unknown Driver"}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {application.city}
@@ -434,61 +493,97 @@ export default function AdminDriversPage() {
                         <TableCell>
                           {application.documents ? (
                             <div className="space-y-1">
-                              <div>Permis: {application.documents.license_number || 'Soumis'}</div>
-                              <div>Carte grise: {application.documents.registration_number || 'Soumis'}</div>
-                              <div>Assurance: {application.documents.insurance_number || 'Soumis'}</div>
+                              <div>
+                                Permis:{" "}
+                                {application.documents.license_number ||
+                                  "Soumis"}
+                              </div>
+                              <div>
+                                Carte grise:{" "}
+                                {application.documents.registration_number ||
+                                  "Soumis"}
+                              </div>
+                              <div>
+                                Assurance:{" "}
+                                {application.documents.insurance_number ||
+                                  "Soumis"}
+                              </div>
                               {/* Add debug info to see what documents we have */}
                               <div className="text-xs text-muted-foreground">
-                                {application.documents.license_file_recto ? '✓' : '✗'} Fichier permis
-                                {application.documents.national_id_file_recto ? '✓' : '✗'} Fichier d&apos;identité (Recto)
+                                {application.documents.license_file_recto
+                                  ? "✓"
+                                  : "✗"}{" "}
+                                Fichier permis
+                                {application.documents.national_id_file_recto
+                                  ? "✓"
+                                  : "✗"}{" "}
+                                Fichier d&apos;identité (Recto)
                               </div>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">Aucun document soumis</span>
+                            <span className="text-muted-foreground">
+                              Aucun document soumis
+                            </span>
                           )}
                         </TableCell>
                         <TableCell>
                           {/* Use profile's driver_status as the source of truth */}
-                          <Badge className={getStatusBadgeColor(application.driver_status)}>
+                          <Badge
+                            className={getStatusBadgeColor(
+                              application.driver_status
+                            )}
+                          >
                             {application.driver_status.toUpperCase()}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             {/* View Documents Button */}
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               className="flex items-center gap-1"
                               onClick={() => handleViewApplication(application)}
                             >
                               <Eye className="h-4 w-4" /> Voir
                             </Button>
-                            
+
                             {/* Show approval buttons only for pending applications */}
                             {application.driver_status === "pending" && (
                               <>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button 
-                                      variant="default" 
+                                    <Button
+                                      variant="default"
                                       size="sm"
                                       className="flex items-center gap-1"
                                     >
-                                      <CheckCircle className="h-4 w-4" /> Approuver
+                                      <CheckCircle className="h-4 w-4" />{" "}
+                                      Approuver
                                     </Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Approuver la candidature du conducteur</AlertDialogTitle>
+                                      <AlertDialogTitle>
+                                        Approuver la candidature du conducteur
+                                      </AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Êtes-vous sûr de vouloir approuver ce conducteur ? Il pourra créer des trajets et recevoir des réservations.
+                                        Êtes-vous sûr de vouloir approuver ce
+                                        conducteur ? Il pourra créer des trajets
+                                        et recevoir des réservations.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                      <AlertDialogCancel>
+                                        Annuler
+                                      </AlertDialogCancel>
                                       <AlertDialogAction
-                                        onClick={() => handleUpdateDriverStatus(application.id, "approved")}
+                                        onClick={() =>
+                                          handleUpdateDriverStatus(
+                                            application.id,
+                                            "approved"
+                                          )
+                                        }
                                       >
                                         Approuver
                                       </AlertDialogAction>
@@ -498,8 +593,8 @@ export default function AdminDriversPage() {
 
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button 
-                                      variant="destructive" 
+                                    <Button
+                                      variant="destructive"
                                       size="sm"
                                       className="flex items-center gap-1"
                                     >
@@ -508,15 +603,26 @@ export default function AdminDriversPage() {
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Rejeter la candidature du conducteur</AlertDialogTitle>
+                                      <AlertDialogTitle>
+                                        Rejeter la candidature du conducteur
+                                      </AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Êtes-vous sûr de vouloir rejeter ce conducteur ? Il ne pourra pas créer de trajets.
+                                        Êtes-vous sûr de vouloir rejeter ce
+                                        conducteur ? Il ne pourra pas créer de
+                                        trajets.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                      <AlertDialogCancel>
+                                        Annuler
+                                      </AlertDialogCancel>
                                       <AlertDialogAction
-                                        onClick={() => handleUpdateDriverStatus(application.id, "rejected")}
+                                        onClick={() =>
+                                          handleUpdateDriverStatus(
+                                            application.id,
+                                            "rejected"
+                                          )
+                                        }
                                       >
                                         Rejeter
                                       </AlertDialogAction>
@@ -539,11 +645,11 @@ export default function AdminDriversPage() {
       {/* Search and filter section for future enhancement */}
       <div className="mt-6 flex items-center gap-2">
         <div className="flex-1">
-          <Input 
-            placeholder="Rechercher des conducteurs..." 
+          <Input
+            placeholder="Rechercher des conducteurs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-sm" 
+            className="max-w-sm"
             disabled={loading}
             // Removed prefix prop as it's not supported by the Input component
           />
@@ -554,10 +660,10 @@ export default function AdminDriversPage() {
           onClick={() => loadApplications()}
           disabled={loading}
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
-      
+
       {/* Detail view drawer */}
       {selectedApplication && (
         <DriverDetail
@@ -569,7 +675,5 @@ export default function AdminDriversPage() {
         />
       )}
     </div>
-  )
+  );
 }
-
-

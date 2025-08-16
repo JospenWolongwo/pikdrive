@@ -1,93 +1,102 @@
-'use client'
+"use client";
 
-import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { Message, getMessages, sendMessage, subscribeToMessages } from '@/lib/messages'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { formatDistanceToNow } from 'date-fns'
-import { Send } from 'lucide-react'
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Message,
+  getMessages,
+  sendMessage,
+  subscribeToMessages,
+} from "@/lib/messages";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow } from "date-fns";
+import { Send } from "lucide-react";
 
 interface ChatWindowProps {
-  conversationId: string
-  className?: string
+  conversationId: string;
+  className?: string;
 }
 
 export function ChatWindow({ conversationId, className }: ChatWindowProps) {
-  const { user } = useAuth()
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     // Load initial messages
     const loadMessages = async () => {
       try {
-        console.log('Loading messages for conversation:', conversationId)
-        const initialMessages = await getMessages(conversationId)
-        console.log('Loaded initial messages:', initialMessages)
-        setMessages(initialMessages)
-        scrollToBottom()
+        console.log("Loading messages for conversation:", conversationId);
+        const initialMessages = await getMessages(conversationId);
+        console.log("Loaded initial messages:", initialMessages);
+        setMessages(initialMessages);
+        scrollToBottom();
       } catch (error) {
-        console.error('Error loading messages:', error)
-        setError('Failed to load messages')
+        console.error("Error loading messages:", error);
+        setError("Failed to load messages");
       }
-    }
+    };
 
     // Subscribe to new messages
-    console.log('Setting up message subscription for:', conversationId)
+    console.log("Setting up message subscription for:", conversationId);
     const subscription = subscribeToMessages(conversationId, (message) => {
-      console.log('Received new message:', message)
-      setMessages((prev) => [...prev, message])
-      scrollToBottom()
-    })
+      console.log("Received new message:", message);
+      setMessages((prev) => [...prev, message]);
+      scrollToBottom();
+    });
 
-    loadMessages()
+    loadMessages();
 
     return () => {
-      console.log('Cleaning up subscription')
-      subscription.unsubscribe()
-    }
-  }, [conversationId])
+      console.log("Cleaning up subscription");
+      subscription.unsubscribe();
+    };
+  }, [conversationId]);
 
   const handleSendMessage = async () => {
-    if (!user || !newMessage.trim()) return
+    if (!user || !newMessage.trim()) return;
 
     try {
-      setIsLoading(true)
-      setError(null)
-      console.log('Sending message:', newMessage)
-      
-      const message = await sendMessage(conversationId, user.id, newMessage.trim())
-      console.log('Message sent:', message)
-      
+      setIsLoading(true);
+      setError(null);
+      console.log("Sending message:", newMessage);
+
+      const message = await sendMessage(
+        conversationId,
+        user.id,
+        newMessage.trim()
+      );
+      console.log("Message sent:", message);
+
       if (message) {
-        setNewMessage('')
+        setNewMessage("");
       } else {
-        setError('Failed to send message')
+        setError("Failed to send message");
       }
     } catch (error) {
-      console.error('Error sending message:', error)
-      setError('Failed to send message')
+      console.error("Error sending message:", error);
+      setError("Failed to send message");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
-  }
+  };
 
   if (error) {
     return (
@@ -97,7 +106,7 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
           <Button onClick={() => setError(null)}>Try Again</Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -108,29 +117,33 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
             <div
               key={message.id}
               className={`flex items-start gap-3 ${
-                message.sender_id === user?.id ? 'flex-row-reverse' : ''
+                message.sender_id === user?.id ? "flex-row-reverse" : ""
               }`}
             >
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder-avatar.svg" />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-medium">
+                  U
+                </AvatarFallback>
               </Avatar>
               <div
                 className={`group flex flex-col ${
-                  message.sender_id === user?.id ? 'items-end' : ''
+                  message.sender_id === user?.id ? "items-end" : ""
                 }`}
               >
                 <div
                   className={`rounded-lg px-3 py-2 max-w-[80%] ${
                     message.sender_id === user?.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
                   }`}
                 >
                   {message.content}
                 </div>
                 <span className="text-xs text-muted-foreground px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(message.created_at), {
+                    addSuffix: true,
+                  })}
                 </span>
               </div>
             </div>
@@ -158,14 +171,12 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
             <span className="sr-only">Send message</span>
           </Button>
         </div>
-        {error && (
-          <p className="text-xs text-red-500 mt-2">{error}</p>
-        )}
+        {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
         <p className="text-xs text-muted-foreground mt-2">
-          Press Enter to send. Shift + Enter for new line.
-          Contact information will be automatically removed.
+          Press Enter to send. Shift + Enter for new line. Contact information
+          will be automatically removed.
         </p>
       </div>
     </div>
-  )
+  );
 }
