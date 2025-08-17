@@ -1,0 +1,2259 @@
+# PikDrive PWA Cursor Rules - Next.js + Supabase + Mobile Money + Offline-First
+
+## 🚫 **AI BEHAVIOR & DISCIPLINE (CRITICAL)**
+
+### **File Size & Task Discipline:**
+
+- **ENFORCE: Maximum 200 lines per file**
+- **ALWAYS: Check existing components before creating new ones**
+- **RULE: Do ONLY what is requested - nothing more**
+- **MANDATORY: Ask before touching unrelated code**
+
+### **Before Writing Code Checklist:**
+
+```md
+✅ Check: Does this component/service already exist?
+✅ Check: Will this file exceed 200 lines?
+✅ Check: Am I only solving the requested problem?
+✅ Check: Are styles using Tailwind classes properly?
+✅ Check: Am I following existing PikDrive patterns?
+```
+
+---
+
+## 📱 **PWA & MOBILE-FIRST ARCHITECTURE**
+
+### **Service Worker Patterns:**
+
+```tsx
+// MANDATORY: Service worker registration
+// app/register-sw.ts
+"use client";
+
+export function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        console.log("SW registered: ", registration);
+
+        // Handle updates
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          newWorker?.addEventListener("statechange", () => {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
+              // Show update available notification
+              showUpdateNotification();
+            }
+          });
+        });
+      } catch (error) {
+        console.log("SW registration failed: ", error);
+      }
+    });
+  }
+}
+
+function showUpdateNotification() {
+  // Show in-app notification for app update
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("PikDrive Update Available", {
+      body: "A new version is ready. Restart the app to update.",
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/badge-72x72.png",
+    });
+  }
+}
+```
+
+### **PWA Manifest Configuration:**
+
+```json
+// public/manifest.json
+{
+  "name": "PikDrive - Mobile Money Wallet",
+  "short_name": "PikDrive",
+  "description": "Secure mobile money transactions in Cameroon",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "productivity", "utilities"],
+  "lang": "en-CM",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Send Money",
+      "url": "/dashboard/send",
+      "description": "Quick money transfer",
+      "icons": [{ "src": "/icons/send-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Check Balance",
+      "url": "/dashboard/wallet",
+      "description": "View wallet balance",
+      "icons": [{ "src": "/icons/wallet-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}
+```
+
+### **Offline-First State Management:**
+
+```tsx
+// MANDATORY: Offline-aware store with Zustand + persistence
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { subscribeWithSelector } from "zustand/middleware";
+
+interface OfflineTransaction {
+  readonly id: string;
+  readonly type: "send" | "receive";
+  readonly amount: number;
+  readonly recipientPhone: string;
+  readonly provider: "orange_money" | "mobile_money";
+  readonly timestamp: number;
+  readonly status: "pending_sync" | "syncing" | "synced" | "failed";
+}
+
+interface AppStore {
+  // Network state
+  readonly isOnline: boolean;
+  readonly lastSyncTime: number | null;
+
+  // User data (cached)
+  readonly user: User | null;
+  readonly balance: number | null;
+  readonly transactions: Transaction[];
+
+  // Offline queue
+  readonly offlineTransactions: OfflineTransaction[];
+
+  // Actions
+  readonly setOnlineStatus: (isOnline: boolean) => void;
+  readonly addOfflineTransaction: (transaction: OfflineTransaction) => void;
+  readonly syncOfflineTransactions: () => Promise<void>;
+  readonly updateBalance: (balance: number) => void;
+  readonly cacheTransactions: (transactions: Transaction[]) => void;
+}
+
+export const useAppStore = create<AppStore>()(
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
+        isOnline: true,
+        lastSyncTime: null,
+        user: null,
+        balance: null,
+        transactions: [],
+        offlineTransactions: [],
+
+        setOnlineStatus: (isOnline) => {
+          set({ isOnline });
+          if (isOnline) {
+            // Trigger sync when coming back online
+            get().syncOfflineTransactions();
+          }
+        },
+
+        addOfflineTransaction: (transaction) => {
+          set((state) => ({
+            offlineTransactions: [...state.offlineTransactions, transaction],
+          }));
+        },
+
+        syncOfflineTransactions: async () => {
+          const { offlineTransactions } = get();
+          if (offlineTransactions.length === 0) return;
+
+          for (const transaction of offlineTransactions) {
+            try {
+              set((state) => ({
+                offlineTransactions: state.offlineTransactions.map((t) =>
+                  t.id === transaction.id ? { ...t, status: "syncing" } : t
+                ),
+              }));
+
+              // Sync with server
+              await syncTransactionWithServer(transaction);
+
+              // Remove from offline queue
+              set((state) => ({
+                offlineTransactions: state.offlineTransactions.filter(
+                  (t) => t.id !== transaction.id
+                ),
+                lastSyncTime: Date.now(),
+              }));
+            } catch (error) {
+              set((state) => ({
+                offlineTransactions: state.offlineTransactions.map((t) =>
+                  t.id === transaction.id ? { ...t, status: "failed" } : t
+                ),
+              }));
+            }
+          }
+        },
+
+        updateBalance: (balance) => set({ balance }),
+
+        cacheTransactions: (transactions) => set({ transactions }),
+      }),
+      {
+        name: "pikdrive-storage",
+        storage: createJSONStorage(() => localStorage),
+        partialize: (state) => ({
+          user: state.user,
+          balance: state.balance,
+          transactions: state.transactions,
+          offlineTransactions: state.offlineTransactions,
+          lastSyncTime: state.lastSyncTime,
+        }),
+      }
+    )
+  )
+);
+
+// MANDATORY: Network status monitoring
+export function useNetworkStatus() {
+  const setOnlineStatus = useAppStore((state) => state.setOnlineStatus);
+
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      setOnlineStatus(navigator.onLine);
+    };
+
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener("online", updateOnlineStatus);
+      window.removeEventListener("offline", updateOnlineStatus);
+    };
+  }, [setOnlineStatus]);
+
+  return useAppStore((state) => state.isOnline);
+}
+```
+
+---
+
+## 🔔 **PUSH NOTIFICATIONS SYSTEM**
+
+### **Push Notification Setup:**
+
+```tsx
+// MANDATORY: Push notification service
+class PushNotificationService {
+  private static instance: PushNotificationService;
+  private registration: ServiceWorkerRegistration | null = null;
+
+  static getInstance(): PushNotificationService {
+    if (!PushNotificationService.instance) {
+      PushNotificationService.instance = new PushNotificationService();
+    }
+    return PushNotificationService.instance;
+  }
+
+  async requestPermission(): Promise<NotificationPermission> {
+    if (!("Notification" in window)) {
+      throw new Error("This browser does not support notifications");
+    }
+
+    const permission = await Notification.requestPermission();
+    return permission;
+  }
+
+  async subscribeToPush(): Promise<PushSubscription | null> {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      console.warn("Push messaging is not supported");
+      return null;
+    }
+
+    try {
+      this.registration = await navigator.serviceWorker.ready;
+
+      const subscription = await this.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array(
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+        ),
+      });
+
+      // Send subscription to server
+      await this.sendSubscriptionToServer(subscription);
+
+      return subscription;
+    } catch (error) {
+      console.error("Failed to subscribe to push notifications:", error);
+      return null;
+    }
+  }
+
+  async sendSubscriptionToServer(
+    subscription: PushSubscription
+  ): Promise<void> {
+    await fetch("/api/notifications/subscribe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        subscription,
+        userId: useAppStore.getState().user?.id,
+      }),
+    });
+  }
+
+  private urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  // MANDATORY: Show local notifications for transactions
+  showTransactionNotification(transaction: Transaction): void {
+    if (Notification.permission !== "granted") return;
+
+    const options: NotificationOptions = {
+      body: `${
+        transaction.type === "send" ? "Sent" : "Received"
+      } ${transaction.amount.toLocaleString()} FCFA`,
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/badge-72x72.png",
+      tag: `transaction-${transaction.id}`,
+      data: {
+        transactionId: transaction.id,
+        url: `/dashboard/transactions/${transaction.id}`,
+      },
+      actions: [
+        {
+          action: "view",
+          title: "View Details",
+          icon: "/icons/view-24x24.png",
+        },
+        {
+          action: "dismiss",
+          title: "Dismiss",
+          icon: "/icons/close-24x24.png",
+        },
+      ],
+      vibrate: [200, 100, 200], // For mobile devices
+      timestamp: Date.now(),
+    };
+
+    new Notification("PikDrive Transaction", options);
+  }
+}
+
+export const pushNotificationService = PushNotificationService.getInstance();
+```
+
+### **Push Notification API Route:**
+
+```tsx
+// app/api/notifications/subscribe/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import webpush from "web-push";
+
+// Configure web-push
+webpush.setVapidDetails(
+  "mailto:support@pikdrive.cm",
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
+
+export async function POST(request: NextRequest) {
+  try {
+    const { subscription, userId } = await request.json();
+    const supabase = createClient();
+
+    // Verify user session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session || session.user.id !== userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Store subscription in database
+    const { error } = await supabase.from("push_subscriptions").upsert({
+      user_id: userId,
+      subscription: JSON.stringify(subscription),
+      created_at: new Date().toISOString(),
+    });
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Subscription storage error:", error);
+    return NextResponse.json(
+      { error: "Failed to store subscription" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### **Send Push Notification:**
+
+```tsx
+// app/api/notifications/send/route.ts
+export async function POST(request: NextRequest) {
+  try {
+    const { userId, title, body, data } = await request.json();
+    const supabase = createClient();
+
+    // Get user's push subscriptions
+    const { data: subscriptions } = await supabase
+      .from("push_subscriptions")
+      .select("subscription")
+      .eq("user_id", userId);
+
+    if (!subscriptions?.length) {
+      return NextResponse.json(
+        { error: "No subscriptions found" },
+        { status: 404 }
+      );
+    }
+
+    // Send push notification to all user's devices
+    const promises = subscriptions.map(async ({ subscription }) => {
+      try {
+        const subscriptionObj = JSON.parse(subscription);
+
+        await webpush.sendNotification(
+          subscriptionObj,
+          JSON.stringify({
+            title,
+            body,
+            icon: "/icons/icon-192x192.png",
+            badge: "/icons/badge-72x72.png",
+            data,
+            timestamp: Date.now(),
+          })
+        );
+      } catch (error) {
+        console.error("Failed to send push notification:", error);
+        // Remove invalid subscription
+        await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("subscription", subscription);
+      }
+    });
+
+    await Promise.allSettled(promises);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Push notification error:", error);
+    return NextResponse.json(
+      { error: "Failed to send notification" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## 📶 **OFFLINE CAPABILITIES**
+
+### **Offline Transaction Queue:**
+
+```tsx
+// MANDATORY: Offline transaction handling
+export function useOfflineTransactions() {
+  const { isOnline, addOfflineTransaction, syncOfflineTransactions } =
+    useAppStore();
+
+  const sendMoneyOffline = async (
+    recipientPhone: string,
+    amount: number,
+    provider: "orange_money" | "mobile_money"
+  ) => {
+    const offlineTransaction: OfflineTransaction = {
+      id: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: "send",
+      amount,
+      recipientPhone,
+      provider,
+      timestamp: Date.now(),
+      status: "pending_sync",
+    };
+
+    // Add to offline queue
+    addOfflineTransaction(offlineTransaction);
+
+    // Show optimistic UI
+    pushNotificationService.showTransactionNotification({
+      id: offlineTransaction.id,
+      type: "send",
+      amount,
+      status: "pending",
+      created_at: new Date().toISOString(),
+    } as Transaction);
+
+    // Sync when online
+    if (isOnline) {
+      setTimeout(() => syncOfflineTransactions(), 1000);
+    }
+
+    return offlineTransaction;
+  };
+
+  return {
+    sendMoneyOffline,
+    isOnline,
+  };
+}
+```
+
+### **Cache-First Data Loading:**
+
+```tsx
+// MANDATORY: Cache-first data fetching
+export function useTransactionHistory() {
+  const { transactions, cacheTransactions, isOnline } = useAppStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTransactions = useCallback(
+    async (forceRefresh = false) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Return cached data immediately if available and not forcing refresh
+        if (transactions.length > 0 && !forceRefresh && !isOnline) {
+          return transactions;
+        }
+
+        // Try to fetch fresh data if online
+        if (isOnline) {
+          const response = await fetch("/api/transactions");
+          if (response.ok) {
+            const freshData = await response.json();
+            cacheTransactions(freshData);
+            return freshData;
+          }
+        }
+
+        // Fall back to cached data
+        return transactions;
+      } catch (err) {
+        setError("Failed to load transactions");
+        // Return cached data on error
+        return transactions;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [transactions, cacheTransactions, isOnline]
+  );
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
+
+  return {
+    transactions,
+    loading,
+    error,
+    refresh: () => loadTransactions(true),
+  };
+}
+```
+
+---
+
+## ⚡ **PERFORMANCE OPTIMIZATION FOR MOBILE**
+
+### **Optimized Components:**
+
+```tsx
+// MANDATORY: Virtualized transaction list for performance
+import { FixedSizeList as List } from "react-window";
+import { memo, useMemo } from "react";
+
+interface TransactionItemProps {
+  readonly index: number;
+  readonly style: React.CSSProperties;
+  readonly data: {
+    readonly transactions: Transaction[];
+    readonly onTransactionClick: (transaction: Transaction) => void;
+  };
+}
+
+const TransactionItem = memo(({ index, style, data }: TransactionItemProps) => {
+  const transaction = data.transactions[index];
+
+  return (
+    <div style={style} className="px-4">
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700"
+        onClick={() => data.onTransactionClick(transaction)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                transaction.type === "send"
+                  ? "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                  : "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+              }`}
+            >
+              {transaction.type === "send" ? "↗" : "↙"}
+            </div>
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {transaction.type === "send" ? "Sent to" : "Received from"}{" "}
+                {transaction.phone_number}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {new Date(transaction.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p
+              className={`font-semibold ${
+                transaction.type === "send"
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-green-600 dark:text-green-400"
+              }`}
+            >
+              {transaction.type === "send" ? "-" : "+"}
+              {transaction.amount.toLocaleString()} FCFA
+            </p>
+            <StatusBadge status={transaction.status} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const VirtualizedTransactionList = ({
+  transactions,
+  onTransactionClick,
+}: {
+  readonly transactions: Transaction[];
+  readonly onTransactionClick: (transaction: Transaction) => void;
+}) => {
+  const itemData = useMemo(
+    () => ({
+      transactions,
+      onTransactionClick,
+    }),
+    [transactions, onTransactionClick]
+  );
+
+  return (
+    <List
+      height={600}
+      itemCount={transactions.length}
+      itemSize={120}
+      itemData={itemData}
+      className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+    >
+      {TransactionItem}
+    </List>
+  );
+};
+```
+
+### **Image Optimization for Mobile:**
+
+```tsx
+// MANDATORY: Progressive image loading with WebP support
+import Image from "next/image";
+
+const OptimizedProviderLogo = ({
+  provider,
+  size = 40,
+}: {
+  readonly provider: string;
+  readonly size?: number;
+}) => {
+  const [imageError, setImageError] = useState(false);
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-full`}
+      style={{ width: size, height: size }}
+    >
+      {!imageError ? (
+        <Image
+          src={`/logos/${provider}.webp`}
+          alt={`${provider} logo`}
+          width={size}
+          height={size}
+          className="object-cover"
+          priority={false}
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+            {provider.slice(0, 2).toUpperCase()}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+---
+
+## 📱 **MOBILE UI PATTERNS**
+
+### **Touch-Optimized Components:**
+
+```tsx
+// MANDATORY: Mobile-first touch interactions
+const SwipeableTransactionCard = ({
+  transaction,
+}: {
+  transaction: Transaction;
+}) => {
+  const [isSwipedLeft, setIsSwipedLeft] = useState(false);
+
+  return (
+    <div className="relative overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+      <div
+        className={`transform transition-transform duration-200 ${
+          isSwipedLeft ? "-translate-x-20" : "translate-x-0"
+        }`}
+        onTouchStart={(e) => {
+          const startX = e.touches[0].clientX;
+          let currentX = startX;
+
+          const handleTouchMove = (e: TouchEvent) => {
+            currentX = e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            if (deltaX < -50) {
+              setIsSwipedLeft(true);
+            } else if (deltaX > 50) {
+              setIsSwipedLeft(false);
+            }
+          };
+
+          const handleTouchEnd = () => {
+            document.removeEventListener("touchmove", handleTouchMove);
+            document.removeEventListener("touchend", handleTouchEnd);
+          };
+
+          document.addEventListener("touchmove", handleTouchMove);
+          document.addEventListener("touchend", handleTouchEnd);
+        }}
+      >
+        <TransactionContent transaction={transaction} />
+      </div>
+
+      {/* Action buttons revealed on swipe */}
+      <div
+        className={`absolute right-0 top-0 h-full flex items-center transition-opacity duration-200 ${
+          isSwipedLeft ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <button className="h-full px-4 bg-blue-500 text-white font-medium">
+          Details
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// MANDATORY: Haptic feedback for mobile interactions
+export function useHapticFeedback() {
+  const vibrate = useCallback((pattern: number | number[]) => {
+    if ("vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  }, []);
+
+  const lightTap = useCallback(() => vibrate(50), [vibrate]);
+  const mediumTap = useCallback(() => vibrate(100), [vibrate]);
+  const heavyTap = useCallback(() => vibrate([100, 50, 100]), [vibrate]);
+  const success = useCallback(
+    () => vibrate([100, 50, 100, 50, 100]),
+    [vibrate]
+  );
+  const error = useCallback(
+    () => vibrate([200, 100, 200, 100, 200]),
+    [vibrate]
+  );
+
+  return {
+    lightTap,
+    mediumTap,
+    heavyTap,
+    success,
+    error,
+  };
+}
+```
+
+### **PWA Installation Prompt:**
+
+```tsx
+// MANDATORY: PWA installation component
+export function PWAInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === "accepted") {
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+    }
+  };
+
+  const handleDismiss = () => {
+    setShowInstallBanner(false);
+    // Don't show again for 7 days
+    localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+  };
+
+  if (!showInstallBanner) return null;
+
+  return (
+    <div className="fixed bottom-4 left-4 right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-4 shadow-lg z-50">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <h3 className="font-semibold">Install PikDrive</h3>
+          <p className="text-sm opacity-90">
+            Get faster access and offline features
+          </p>
+        </div>
+        <div className="flex space-x-2 ml-4">
+          <button
+            onClick={handleDismiss}
+            className="px-3 py-1 text-sm bg-white/20 rounded-md hover:bg-white/30 transition-colors"
+          >
+            Later
+          </button>
+          <button
+            onClick={handleInstall}
+            className="px-3 py-1 text-sm bg-white text-blue-600 rounded-md font-medium hover:bg-gray-100 transition-colors"
+          >
+            Install
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### **File Structure (PikDrive Standard):**
+
+```
+app/
+├── (auth)/                 # Auth route group
+│   ├── login/
+│   ├── register/
+│   └── verify/
+├── (dashboard)/            # Protected routes
+│   ├── dashboard/
+│   ├── transactions/
+│   ├── wallet/
+│   └── settings/
+├── api/                    # API routes
+│   ├── auth/
+│   ├── payments/
+│   ├── mobile-money/
+│   └── twilio/
+├── globals.css
+└── layout.tsx
+```
+
+### **App Router Component Patterns:**
+
+```tsx
+// MANDATORY: Server Components by default
+const TransactionsPage = async () => {
+  const { data: transactions } = await getTransactions();
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <TransactionsList transactions={transactions} />
+    </div>
+  );
+};
+
+// EXPLICIT: Client Components only when needed
+("use client");
+
+interface TransactionsListProps {
+  readonly transactions: Transaction[];
+}
+
+const TransactionsList = ({ transactions }: TransactionsListProps) => {
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
+
+  return (
+    <div className="space-y-4">
+      {transactions.map((transaction) => (
+        <TransactionCard key={transaction.id} transaction={transaction} />
+      ))}
+    </div>
+  );
+};
+```
+
+### **Loading & Error Boundaries:**
+
+```tsx
+// MANDATORY: loading.tsx for each route
+const Loading = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+);
+
+// MANDATORY: error.tsx for each route
+("use client");
+
+interface ErrorProps {
+  readonly error: Error & { digest?: string };
+  readonly reset: () => void;
+}
+
+const Error = ({ error, reset }: ErrorProps) => (
+  <div className="flex flex-col items-center justify-center min-h-screen">
+    <h2 className="text-xl font-semibold mb-4">Something went wrong!</h2>
+    <button
+      onClick={reset}
+      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    >
+      Try again
+    </button>
+  </div>
+);
+```
+
+---
+
+## 🔐 **SUPABASE INTEGRATION PATTERNS**
+
+### **Client Creation:**
+
+```tsx
+// MANDATORY: Server-side client
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+export const createClient = () => {
+  const cookieStore = cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+};
+
+// MANDATORY: Client-side client
+("use client");
+
+import { createBrowserClient } from "@supabase/ssr";
+
+export const createClient = () =>
+  createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+```
+
+### **Auth Patterns:**
+
+```tsx
+// MANDATORY: Auth middleware
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+        },
+      },
+    }
+  );
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // Protect dashboard routes
+  if (request.nextUrl.pathname.startsWith("/dashboard") && !session) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ["/dashboard/:path*", "/api/protected/:path*"],
+};
+```
+
+### **Database Operations:**
+
+```tsx
+// MANDATORY: Server Actions for mutations
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+
+export async function createTransaction(
+  userId: string,
+  amount: number,
+  type: "deposit" | "withdrawal"
+) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .insert({
+      user_id: userId,
+      amount,
+      type,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard/transactions");
+  return data;
+}
+```
+
+---
+
+## 💰 **MOBILE MONEY INTEGRATION PATTERNS**
+
+### **Payment Service Architecture:**
+
+```tsx
+// MANDATORY: Payment service types
+interface MobileMoneyProvider {
+  readonly name: "orange_money" | "mobile_money";
+  readonly displayName: string;
+  readonly currency: string;
+  readonly minAmount: number;
+  readonly maxAmount: number;
+}
+
+interface PaymentRequest {
+  readonly amount: number;
+  readonly currency: string;
+  readonly phoneNumber: string;
+  readonly provider: MobileMoneyProvider["name"];
+  readonly userId: string;
+}
+
+interface PaymentResponse {
+  readonly transactionId: string;
+  readonly status: "pending" | "success" | "failed";
+  readonly reference?: string;
+  readonly message: string;
+}
+```
+
+### **Mobile Money API Routes:**
+
+```tsx
+// app/api/payments/mobile-money/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: PaymentRequest = await request.json();
+    const supabase = createClient();
+
+    // Validate user session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Process payment based on provider
+    const paymentResult = await processPayment(body);
+
+    // Store transaction in database
+    const { data: transaction } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: session.user.id,
+        amount: body.amount,
+        currency: body.currency,
+        provider: body.provider,
+        phone_number: body.phoneNumber,
+        external_reference: paymentResult.transactionId,
+        status: paymentResult.status,
+      })
+      .select()
+      .single();
+
+    return NextResponse.json({
+      success: true,
+      transaction,
+      paymentResult,
+    });
+  } catch (error) {
+    console.error("Payment processing error:", error);
+    return NextResponse.json(
+      { error: "Payment processing failed" },
+      { status: 500 }
+    );
+  }
+}
+
+// MANDATORY: Payment processing function
+async function processPayment(
+  request: PaymentRequest
+): Promise<PaymentResponse> {
+  switch (request.provider) {
+    case "orange_money":
+      return await processOrangeMoneyPayment(request);
+    case "mobile_money":
+      return await processMobileMoneyPayment(request);
+    default:
+      throw new Error(`Unsupported provider: ${request.provider}`);
+  }
+}
+```
+
+---
+
+## 💰 **MOBILE MONEY INTEGRATION PATTERNS**
+
+### **Phone Auth Patterns:**
+
+```tsx
+// app/api/auth/send-otp/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import twilio from "twilio";
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+export async function POST(request: NextRequest) {
+  try {
+    const { phoneNumber } = await request.json();
+
+    // Validate phone number format
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    if (!isValidPhoneNumber(formattedPhone)) {
+      return NextResponse.json(
+        { error: "Invalid phone number format" },
+        { status: 400 }
+      );
+    }
+
+    // Send OTP via Twilio
+    const verification = await client.verify.v2
+      .services(process.env.TWILIO_VERIFY_SERVICE_SID!)
+      .verifications.create({ to: formattedPhone, channel: "sms" });
+
+    return NextResponse.json({
+      success: true,
+      sid: verification.sid,
+      status: verification.status,
+    });
+  } catch (error) {
+    console.error("OTP sending error:", error);
+    return NextResponse.json({ error: "Failed to send OTP" }, { status: 500 });
+  }
+}
+
+// MANDATORY: Phone number utilities
+function formatPhoneNumber(phone: string): string {
+  // Format for Cameroon numbers: +237XXXXXXXX
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.startsWith("237")) {
+    return `+${cleaned}`;
+  }
+  if (cleaned.length === 9) {
+    return `+237${cleaned}`;
+  }
+  return phone;
+}
+
+function isValidPhoneNumber(phone: string): boolean {
+  const cameroonPhoneRegex = /^\+237[67][0-9]{8}$/;
+  return cameroonPhoneRegex.test(phone);
+}
+```
+
+### **OTP Verification:**
+
+```tsx
+// app/api/auth/verify-otp/route.ts
+export async function POST(request: NextRequest) {
+  try {
+    const { phoneNumber, code } = await request.json();
+
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+
+    // Verify OTP with Twilio
+    const verificationCheck = await client.verify.v2
+      .services(process.env.TWILIO_VERIFY_SERVICE_SID!)
+      .verificationChecks.create({ to: formattedPhone, code });
+
+    if (verificationCheck.status === "approved") {
+      // Create or update user in Supabase
+      const supabase = createClient();
+
+      const { data: user, error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return NextResponse.json({
+        success: true,
+        user,
+      });
+    }
+
+    return NextResponse.json(
+      { error: "Invalid verification code" },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    return NextResponse.json({ error: "Verification failed" }, { status: 500 });
+  }
+}
+```
+
+---
+
+## 📱 **TWILIO PHONE AUTHENTICATION**
+
+### **Mobile-First Design:**
+
+```tsx
+// MANDATORY: Mobile-first responsive components
+const PaymentCard = ({ provider, amount }: PaymentCardProps) => (
+  <div className="w-full max-w-sm mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="px-6 py-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {provider.displayName}
+        </h3>
+        <span className="text-2xl font-bold text-green-600">
+          {amount.toLocaleString()} FCFA
+        </span>
+      </div>
+
+      <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200">
+        Pay Now
+      </button>
+    </div>
+  </div>
+);
+
+// MANDATORY: Form styling patterns
+const PaymentForm = () => (
+  <form className="space-y-6">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Phone Number
+      </label>
+      <input
+        type="tel"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        placeholder="+237 6XX XXX XXX"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Amount (FCFA)
+      </label>
+      <input
+        type="number"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        min="500"
+        max="1000000"
+      />
+    </div>
+  </form>
+);
+```
+
+### **Dark Mode Support:**
+
+```tsx
+// MANDATORY: Dark mode classes
+<div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+    PikDrive Dashboard
+  </h1>
+
+  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+    <p className="text-gray-600 dark:text-gray-300">Your wallet balance</p>
+  </div>
+</div>
+```
+
+---
+
+## 🎨 **TAILWIND CSS PWA PATTERNS**
+
+### **Mobile-First Design System:**
+
+```tsx
+// MANDATORY: PWA-optimized design tokens
+const designTokens = {
+  // Safe area insets for mobile devices
+  safeArea: {
+    top: "env(safe-area-inset-top)",
+    bottom: "env(safe-area-inset-bottom)",
+    left: "env(safe-area-inset-left)",
+    right: "env(safe-area-inset-right)",
+  },
+
+  // Touch-friendly spacing
+  touchTarget: {
+    minimum: "44px", // iOS Human Interface Guidelines
+    comfortable: "48px", // Material Design
+    large: "56px", // For primary actions
+  },
+
+  // Mobile-optimized typography
+  fontSize: {
+    mobile: {
+      xs: "12px",
+      sm: "14px",
+      base: "16px", // Minimum for mobile readability
+      lg: "18px",
+      xl: "20px",
+    },
+  },
+};
+
+// MANDATORY: Safe area aware layout
+const SafeAreaLayout = ({ children }: { children: React.ReactNode }) => (
+  <div
+    className="min-h-screen bg-gray-50 dark:bg-gray-900"
+    style={{
+      paddingTop: designTokens.safeArea.top,
+      paddingBottom: designTokens.safeArea.bottom,
+      paddingLeft: designTokens.safeArea.left,
+      paddingRight: designTokens.safeArea.right,
+    }}
+  >
+    {children}
+  </div>
+);
+
+// MANDATORY: Mobile-optimized form components
+const MobileInput = ({ label, error, ...props }: InputProps) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      {label}
+    </label>
+    <input
+      {...props}
+      className={`
+        w-full px-4 py-3 text-base
+        bg-white dark:bg-gray-800
+        border border-gray-300 dark:border-gray-600
+        rounded-lg
+        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+        transition-colors duration-200
+        ${error ? "border-red-500 ring-2 ring-red-200" : ""}
+      `}
+      style={{ minHeight: designTokens.touchTarget.minimum }}
+    />
+    {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+  </div>
+);
+
+// MANDATORY: PWA action buttons
+const PWAButton = ({
+  variant = "primary",
+  size = "default",
+  loading = false,
+  children,
+  ...props
+}: PWAButtonProps) => {
+  const baseClasses =
+    "font-medium rounded-lg transition-all duration-200 active:scale-98 focus:outline-none focus:ring-2 focus:ring-offset-2";
+
+  const variants = {
+    primary:
+      "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-md hover:shadow-lg",
+    secondary:
+      "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-gray-500",
+    danger:
+      "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 shadow-md hover:shadow-lg",
+    success:
+      "bg-green-600 hover:bg-green-700 text-white focus:ring-green-500 shadow-md hover:shadow-lg",
+  };
+
+  const sizes = {
+    sm: "px-3 py-2 text-sm min-h-[40px]",
+    default: `px-4 py-3 text-base min-h-[${designTokens.touchTarget.minimum}]`,
+    lg: `px-6 py-4 text-lg min-h-[${designTokens.touchTarget.large}]`,
+  };
+
+  return (
+    <button
+      {...props}
+      disabled={loading || props.disabled}
+      className={`
+        ${baseClasses}
+        ${variants[variant]}
+        ${sizes[size]}
+        ${loading || props.disabled ? "opacity-50 cursor-not-allowed" : ""}
+        ${props.className || ""}
+      `}
+    >
+      {loading ? (
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <span>Loading...</span>
+        </div>
+      ) : (
+        children
+      )}
+    </button>
+  );
+};
+```
+
+### **Offline State UI Components:**
+
+```tsx
+// MANDATORY: Offline indicator
+const OfflineIndicator = () => {
+  const isOnline = useNetworkStatus();
+  const offlineTransactions = useAppStore((state) => state.offlineTransactions);
+
+  if (isOnline) return null;
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-center py-2 text-sm font-medium">
+      <div className="flex items-center justify-center space-x-2">
+        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+        <span>Offline Mode</span>
+        {offlineTransactions.length > 0 && (
+          <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+            {offlineTransactions.length} pending
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// MANDATORY: Sync status component
+const SyncStatus = () => {
+  const { isOnline, lastSyncTime, offlineTransactions } = useAppStore();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleManualSync = async () => {
+    if (!isOnline) return;
+    setIsSyncing(true);
+    await useAppStore.getState().syncOfflineTransactions();
+    setIsSyncing(false);
+  };
+
+  return (
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center space-x-3">
+        <div
+          className={`w-3 h-3 rounded-full ${
+            isOnline ? "bg-green-500" : "bg-red-500"
+          }`}
+        />
+        <div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {isOnline ? "Connected" : "Offline"}
+          </p>
+          {lastSyncTime && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Last sync: {new Date(lastSyncTime).toLocaleTimeString()}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {offlineTransactions.length > 0 && (
+        <PWAButton
+          size="sm"
+          variant="secondary"
+          onClick={handleManualSync}
+          disabled={!isOnline || isSyncing}
+          loading={isSyncing}
+        >
+          Sync {offlineTransactions.length}
+        </PWAButton>
+      )}
+    </div>
+  );
+};
+```
+
+---
+
+## 🔄 **BACKGROUND SYNC & DATA MANAGEMENT**
+
+### **Background Sync Service Worker:**
+
+```javascript
+// public/sw.js - MANDATORY: Service worker with background sync
+const CACHE_NAME = "pikdrive-v1";
+const OFFLINE_URL = "/offline";
+
+// Cache static assets
+const STATIC_ASSETS = [
+  "/",
+  "/dashboard",
+  "/offline",
+  "/manifest.json",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+];
+
+// Install event - cache static assets
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    })
+  );
+  self.skipWaiting();
+});
+
+// Activate event - clean up old caches
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch event - network first, then cache
+self.addEventListener("fetch", (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== "GET") return;
+
+  // API requests - network first with timeout
+  if (event.request.url.includes("/api/")) {
+    event.respondWith(
+      Promise.race([
+        fetch(event.request),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 5000)
+        ),
+      ]).catch(() => {
+        // Return offline response for failed API calls
+        return new Response(
+          JSON.stringify({
+            error: "Offline",
+            offline: true,
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 503,
+          }
+        );
+      })
+    );
+    return;
+  }
+
+  // Static assets - cache first
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      if (response) {
+        return response;
+      }
+
+      return fetch(event.request)
+        .then((response) => {
+          // Don't cache opaque responses
+          if (
+            !response ||
+            response.status !== 200 ||
+            response.type !== "basic"
+          ) {
+            return response;
+          }
+
+          // Clone response for caching
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+
+          return response;
+        })
+        .catch(() => {
+          // Return offline page for navigation requests
+          if (event.request.mode === "navigate") {
+            return caches.match(OFFLINE_URL);
+          }
+        });
+    })
+  );
+});
+
+// Background sync for offline transactions
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-transactions") {
+    event.waitUntil(syncOfflineTransactions());
+  }
+});
+
+async function syncOfflineTransactions() {
+  try {
+    // Get offline transactions from IndexedDB or send message to main thread
+    const clients = await self.clients.matchAll();
+    clients.forEach((client) => {
+      client.postMessage({
+        type: "SYNC_OFFLINE_TRANSACTIONS",
+      });
+    });
+  } catch (error) {
+    console.error("Background sync failed:", error);
+  }
+}
+
+// Push notification handling
+self.addEventListener("push", (event) => {
+  const options = {
+    body: "You have a new transaction update",
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/badge-72x72.png",
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: 1,
+    },
+    actions: [
+      {
+        action: "explore",
+        title: "View Details",
+        icon: "/icons/checkmark.png",
+      },
+      {
+        action: "close",
+        title: "Close",
+        icon: "/icons/xmark.png",
+      },
+    ],
+  };
+
+  if (event.data) {
+    const data = event.data.json();
+    options.body = data.body || options.body;
+    options.data = { ...options.data, ...data.data };
+  }
+
+  event.waitUntil(self.registration.showNotification("PikDrive", options));
+});
+
+// Notification click handling
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  if (event.action === "explore") {
+    // Open the app
+    event.waitUntil(clients.openWindow("/dashboard/transactions"));
+  } else if (event.action === "close") {
+    // Just close the notification
+    return;
+  } else {
+    // Default action - open app
+    event.waitUntil(clients.openWindow("/dashboard"));
+  }
+});
+```
+
+### **IndexedDB for Offline Storage:**
+
+```tsx
+// MANDATORY: IndexedDB wrapper for offline data
+class OfflineDB {
+  private dbName = "PikDriveDB";
+  private version = 1;
+  private db: IDBDatabase | null = null;
+
+  async init(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, this.version);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve();
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+
+        // Create transactions store
+        if (!db.objectStoreNames.contains("transactions")) {
+          const transactionStore = db.createObjectStore("transactions", {
+            keyPath: "id",
+          });
+          transactionStore.createIndex("timestamp", "timestamp", {
+            unique: false,
+          });
+          transactionStore.createIndex("status", "status", { unique: false });
+        }
+
+        // Create user data store
+        if (!db.objectStoreNames.contains("userData")) {
+          db.createObjectStore("userData", { keyPath: "key" });
+        }
+      };
+    });
+  }
+
+  async saveTransaction(transaction: OfflineTransaction): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction_db = this.db!.transaction(
+        ["transactions"],
+        "readwrite"
+      );
+      const store = transaction_db.objectStore("transactions");
+      const request = store.put(transaction);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getOfflineTransactions(): Promise<OfflineTransaction[]> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(["transactions"], "readonly");
+      const store = transaction.objectStore("transactions");
+      const index = store.index("status");
+      const request = index.getAll("pending_sync");
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async removeTransaction(id: string): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(["transactions"], "readwrite");
+      const store = transaction.objectStore("transactions");
+      const request = store.delete(id);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async cacheUserData(key: string, data: any): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(["userData"], "readwrite");
+      const store = transaction.objectStore("userData");
+      const request = store.put({ key, data, timestamp: Date.now() });
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getCachedUserData(key: string): Promise<any> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(["userData"], "readonly");
+      const store = transaction.objectStore("userData");
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        resolve(result ? result.data : null);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+}
+
+export const offlineDB = new OfflineDB();
+```
+
+---
+
+## 🚀 **PWA DEPLOYMENT CHECKLIST**
+
+### **Production Optimization:**
+
+```tsx
+// next.config.js - MANDATORY: PWA configuration
+const withPWA = require("next-pwa")({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/api\.pikdrive\.cm\/.*$/,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "api-cache",
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 5 * 60, // 5 minutes
+        },
+        networkTimeoutSeconds: 10,
+      },
+    },
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|webp)$/,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "images",
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        },
+      },
+    },
+  ],
+});
+
+module.exports = withPWA({
+  experimental: {
+    serverComponentsExternalPackages: ["@supabase/supabase-js"],
+  },
+  images: {
+    formats: ["image/webp", "image/avif"],
+    deviceSizes: [320, 420, 768, 1024, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+    ];
+  },
+});
+```
+
+### **Performance Monitoring:**
+
+```tsx
+// MANDATORY: Web vitals tracking
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from "web-vitals";
+
+export function reportWebVitals() {
+  getCLS((metric) => {
+    console.log("CLS:", metric);
+    // Send to analytics
+  });
+
+  getFID((metric) => {
+    console.log("FID:", metric);
+    // Send to analytics
+  });
+
+  getFCP((metric) => {
+    console.log("FCP:", metric);
+    // Send to analytics
+  });
+
+  getLCP((metric) => {
+    console.log("LCP:", metric);
+    // Send to analytics
+  });
+
+  getTTFB((metric) => {
+    console.log("TTFB:", metric);
+    // Send to analytics
+  });
+}
+
+// app/layout.tsx - Add web vitals
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      reportWebVitals();
+    }
+  }, []);
+
+  return (
+    <html lang="en-CM">
+      <head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
+        <meta name="theme-color" content="#3b82f6" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="PikDrive" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
+      <body className={inter.className}>
+        <OfflineIndicator />
+        <PWAInstallPrompt />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+## ✅ **PWA DEPLOYMENT CHECKLIST**
+
+### **Pre-Deployment:**
+
+✅ **Manifest**: Complete PWA manifest with all required fields  
+✅ **Service Worker**: Properly configured with caching strategies  
+✅ **Icons**: All icon sizes generated (72x72 to 512x512)  
+✅ **Splash Screens**: iOS splash screens for all device sizes  
+✅ **Offline Page**: Custom offline page with branding  
+✅ **Push Notifications**: VAPID keys configured  
+✅ **Background Sync**: Offline transaction sync implemented  
+✅ **Touch Targets**: Minimum 44px touch areas  
+✅ **Safe Area**: Support for iPhone notch/Dynamic Island  
+✅ **Performance**: Lighthouse PWA score > 90
+
+### **Post-Deployment:**
+
+✅ **Install Prompt**: Test PWA installation on various devices  
+✅ **Offline Functionality**: Test all offline features  
+✅ **Push Notifications**: Test notification delivery  
+✅ **Background Sync**: Test transaction sync on reconnection  
+✅ **App Store**: Submit to Google Play Store (TWA)  
+✅ **Monitoring**: Set up error tracking and analytics  
+✅ **Performance**: Monitor Core Web Vitals
+
+---
+
+_Remember: PikDrive PWA should work flawlessly offline for mobile money transactions in areas with poor connectivity. Every feature should degrade gracefully and sync seamlessly when connection is restored._
+
+### **Supabase Table Types:**
+
+```tsx
+// MANDATORY: Database types (generate with supabase gen types)
+interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          phone_number: string;
+          full_name: string | null;
+          avatar_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          phone_number: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+        };
+        Update: {
+          phone_number?: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+        };
+      };
+      transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          currency: string;
+          provider: "orange_money" | "mobile_money";
+          phone_number: string;
+          external_reference: string | null;
+          status: "pending" | "success" | "failed";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          amount: number;
+          currency: string;
+          provider: "orange_money" | "mobile_money";
+          phone_number: string;
+          external_reference?: string | null;
+          status?: "pending" | "success" | "failed";
+        };
+        Update: {
+          status?: "pending" | "success" | "failed";
+          external_reference?: string | null;
+        };
+      };
+    };
+  };
+}
+```
+
+---
+
+## ⚡ **PERFORMANCE OPTIMIZATION**
+
+### **Next.js Optimization:**
+
+```tsx
+// MANDATORY: Dynamic imports for heavy components
+import dynamic from "next/dynamic";
+
+const PaymentChart = dynamic(() => import("./PaymentChart"), {
+  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg" />,
+  ssr: false,
+});
+
+// MANDATORY: Image optimization
+import Image from "next/image";
+
+const ProviderLogo = ({ provider }: { provider: string }) => (
+  <Image
+    src={`/logos/${provider}.png`}
+    alt={`${provider} logo`}
+    width={40}
+    height={40}
+    className="rounded-full"
+    priority={false}
+  />
+);
+```
+
+---
+
+## 🔧 **ENVIRONMENT CONFIGURATION**
+
+### **Environment Variables:**
+
+```ts
+// MANDATORY: Type-safe environment config
+interface PikDriveConfig {
+  readonly supabase: {
+    readonly url: string;
+    readonly anonKey: string;
+  };
+  readonly twilio: {
+    readonly accountSid: string;
+    readonly authToken: string;
+    readonly verifyServiceSid: string;
+  };
+  readonly payments: {
+    readonly orangeMoneyApiUrl: string;
+    readonly mobileMoneyApiUrl: string;
+  };
+}
+
+export const config: PikDriveConfig = {
+  supabase: {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  },
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID!,
+    authToken: process.env.TWILIO_AUTH_TOKEN!,
+    verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID!,
+  },
+  payments: {
+    orangeMoneyApiUrl: process.env.ORANGE_MONEY_API_URL!,
+    mobileMoneyApiUrl: process.env.MOBILE_MONEY_API_URL!,
+  },
+};
+```
+
+---
+
+## 🧪 **TESTING PATTERNS**
+
+### **Component Testing:**
+
+```tsx
+import { render, screen, waitFor } from "@testing-library/react";
+import { PaymentForm } from "./PaymentForm";
+
+describe("PaymentForm", () => {
+  it("should validate phone number format", async () => {
+    render(<PaymentForm />);
+
+    const phoneInput = screen.getByPlaceholderText("+237 6XX XXX XXX");
+    fireEvent.change(phoneInput, { target: { value: "123456789" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Invalid phone number")).toBeInTheDocument();
+    });
+  });
+
+  it("should submit payment request", async () => {
+    const mockSubmit = jest.fn();
+    render(<PaymentForm onSubmit={mockSubmit} />);
+
+    // Fill form and submit
+    fireEvent.click(screen.getByText("Pay Now"));
+
+    await waitFor(() => {
+      expect(mockSubmit).toHaveBeenCalledWith({
+        phoneNumber: "+237677123456",
+        amount: 5000,
+        provider: "orange_money",
+      });
+    });
+  });
+});
+```
+
+---
+
+## 🚀 **DEPLOYMENT CHECKLIST**
+
+✅ **Environment Variables**: All secrets configured in Vercel/deployment platform  
+✅ **Database Migrations**: Supabase migrations applied  
+✅ **Edge Functions**: Deployed and tested  
+✅ **Webhook Endpoints**: Payment provider webhooks configured  
+✅ **Phone Number Validation**: Twilio service configured  
+✅ **Error Monitoring**: Sentry or similar configured  
+✅ **Performance**: Lighthouse score > 90  
+✅ **Security**: API routes protected with proper auth  
+✅ **Mobile Testing**: Responsive design tested on mobile devices  
+✅ **Payment Testing**: All payment flows tested in sandbox
+
+---
+
+_Remember: PikDrive handles money transactions - security, reliability, and user experience are paramount. Every feature should be tested thoroughly before deployment._

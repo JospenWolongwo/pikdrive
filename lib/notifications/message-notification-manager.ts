@@ -140,7 +140,15 @@ export class MessageNotificationManager {
           }
         );
 
-      // Notification shown silently
+      // Send push notification if available
+      console.log("🚀 Triggering push notification for message:", {
+        messageId: message.id,
+        senderName,
+        receiverId: this.userId,
+        content: message.content.substring(0, 50) + "...",
+      });
+
+      await this.sendPushNotification(senderName, message);
 
       // Call the new message callback to refresh conversations
       if (this.onNewMessage) {
@@ -148,6 +156,54 @@ export class MessageNotificationManager {
       }
     } catch (error) {
       console.error("❌ Error handling new message notification:", error);
+    }
+  }
+
+  private async sendPushNotification(senderName: string, message: any) {
+    try {
+      console.log("📤 Sending push notification via API...");
+
+      // Send push notification to the message receiver
+      const response = await fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: this.userId,
+          title: "Nouveau message",
+          body: `${senderName}: ${message.content}`,
+          data: {
+            messageId: message.id,
+            rideId: message.ride_id,
+            senderId: message.sender_id,
+            type: "message",
+          },
+          icon: "/icons/icon-192x192.png",
+          badge: "/icons/badge-72x72.png",
+          tag: `message-${message.id}`,
+          actions: [
+            {
+              action: "open",
+              title: "Ouvrir",
+              icon: "/icons/icon-72x72.png",
+            },
+            {
+              action: "close",
+              title: "Fermer",
+              icon: "/icons/icon-72x72.png",
+            },
+          ],
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Push notification sent successfully:", result.message);
+      } else {
+        console.warn("⚠️ Failed to send push notification:", response.status);
+      }
+    } catch (error) {
+      console.error("❌ Error sending push notification:", error);
+      // Don't fail the main notification flow if push fails
     }
   }
 
