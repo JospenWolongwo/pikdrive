@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-import { Phone, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AuthPage() {
@@ -22,9 +22,11 @@ function AuthContent() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [error, setError] = useState("");
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { signIn, verifyOTP } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -69,7 +71,8 @@ function AuthContent() {
       setShowVerification(true);
       toast({
         title: "Code envoyé !",
-        description: "Veuillez consulter votre téléphone pour le code de vérification",
+        description:
+          "Veuillez consulter votre téléphone pour le code de vérification",
       });
     } catch (error: any) {
       setError(error.message);
@@ -101,6 +104,9 @@ function AuthContent() {
         throw new Error("Verification successful but no user returned");
       }
 
+      // Reset resend cooldown on successful verification
+      setResendCooldown(0);
+
       toast({
         title: "Bienvenue !",
         description: "Vous vous êtes connecté avec succès",
@@ -114,6 +120,49 @@ function AuthContent() {
       setIsLoading(false);
     }
   };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+
+    setIsResending(true);
+    setError("");
+
+    try {
+      const phoneToUse = phone || savedPhone || "";
+      if (!phoneToUse) {
+        setError("Numéro de téléphone non trouvé");
+        return;
+      }
+
+      const formattedPhone = formatPhoneNumber(phoneToUse);
+      const { error: signInError } = await signIn(formattedPhone);
+
+      if (signInError) throw new Error(signInError);
+
+      // Set cooldown for 60 seconds
+      setResendCooldown(60);
+
+      toast({
+        title: "Code renvoyé !",
+        description:
+          "Un nouveau code de vérification a été envoyé à votre téléphone",
+      });
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  // Handle cooldown countdown
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   return (
     <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -186,17 +235,63 @@ function AuthContent() {
           )}
 
           {showVerification && (
-            <div className="space-y-2">
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Entrez le code de vérification"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="pl-9"
-                  type="number"
-                  maxLength={6}
-                />
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Code envoyé au {maskPhoneNumber(phone || savedPhone || "")}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Entrez le code de vérification"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="pl-9"
+                    type="number"
+                    maxLength={6}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  className="w-full"
+                  onClick={handleVerify}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Vérifier"
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleResendCode}
+                  disabled={isResending || resendCooldown > 0}
+                >
+                  {isResending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : resendCooldown > 0 ? (
+                    `Renvoyer dans ${resendCooldown}s`
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Renvoyer le code
+                    </>
+                  )}
+                </Button>
+
+                {resendCooldown > 0 && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Attendez un moment avant de demander un nouveau code
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -214,20 +309,6 @@ function AuthContent() {
                   Continuer
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
-              )}
-            </Button>
-          )}
-
-          {showVerification && (
-            <Button
-              className="w-full"
-              onClick={handleVerify}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Vérifier"
               )}
             </Button>
           )}
