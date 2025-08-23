@@ -477,7 +477,7 @@ export default function DriverBookings() {
         {currentBookings.length === 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>No Bookings Found</CardTitle>
+              <CardTitle>Aucune réservation trouvée</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">

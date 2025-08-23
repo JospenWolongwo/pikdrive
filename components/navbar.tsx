@@ -290,7 +290,7 @@ export function Navbar() {
                   <>
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/driver/add-ride"
+                        href="/driver/rides/new"
                         className="flex items-center"
                       >
                         <PlusCircle className="mr-2 h-4 w-4" />
