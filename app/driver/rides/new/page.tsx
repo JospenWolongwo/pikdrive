@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { useSupabase } from "@/providers/SupabaseProvider"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -16,16 +16,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/components/ui/use-toast"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { SearchableSelect } from "@/components/ui/searchable-select"
-import { urbanCommunes, cameroonCities } from "@/app/data/cities"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { allCameroonCities } from "@/app/data/cities";
 
 const formSchema = z.object({
   fromCity: z.string().min(1, "La ville de départ est requise"),
@@ -33,34 +37,36 @@ const formSchema = z.object({
   departureTime: z.date({
     required_error: "L'heure de départ est requise",
   }),
-  price: z.number().min(1, "Le prix est requis"),
-  seatsAvailable: z.number()
+  price: z.number().min(1, "Le prix est requis").optional(),
+  seatsAvailable: z
+    .number()
     .min(1, "Le nombre de places disponibles est requis")
-    .max(100, "Ne peut pas dépasser 100 places"),
+    .max(100, "Ne peut pas dépasser 100 places")
+    .optional(),
   carModel: z.string().min(1, "Le modèle de voiture est requis"),
   carColor: z.string().min(1, "La couleur de la voiture est requise"),
 });
 
 export default function NewRidePage() {
-  const router = useRouter()
-  const { supabase, user } = useSupabase()
-  const { toast } = useToast()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter();
+  const { supabase, user } = useSupabase();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Create a sorted list of all cities
-  const allCities = [...Array.from(urbanCommunes), ...Array.from(cameroonCities)].sort()
+  const allCities = allCameroonCities.sort();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       fromCity: "",
       toCity: "",
-      price: 0,
-      seatsAvailable: 4,
+      price: undefined,
+      seatsAvailable: undefined,
       carModel: "",
       carColor: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -68,34 +74,48 @@ export default function NewRidePage() {
         title: "Authentification Requise",
         description: "Veuillez vous connecter pour créer un trajet.",
         variant: "destructive",
-      })
-      router.push("/auth")
-      return
+      });
+      router.push("/auth");
+      return;
+    }
+
+    // Validate that required numeric fields are provided
+    if (!values.price || !values.seatsAvailable) {
+      toast({
+        title: "Champs Requis",
+        description: "Le prix et le nombre de places sont requis.",
+        variant: "destructive",
+      });
+      return;
     }
 
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
       // Get current time in UTC
-      const now = new Date()
-      const nowUTC = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        now.getUTCHours(),
-        now.getUTCMinutes(),
-        now.getUTCSeconds()
-      ))
+      const now = new Date();
+      const nowUTC = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          now.getUTCHours(),
+          now.getUTCMinutes(),
+          now.getUTCSeconds()
+        )
+      );
 
       // Convert departure time to UTC
-      const departureUTC = new Date(Date.UTC(
-        values.departureTime.getUTCFullYear(),
-        values.departureTime.getUTCMonth(),
-        values.departureTime.getUTCDate(),
-        values.departureTime.getUTCHours(),
-        values.departureTime.getUTCMinutes(),
-        values.departureTime.getUTCSeconds()
-      ))
+      const departureUTC = new Date(
+        Date.UTC(
+          values.departureTime.getUTCFullYear(),
+          values.departureTime.getUTCMonth(),
+          values.departureTime.getUTCDate(),
+          values.departureTime.getUTCHours(),
+          values.departureTime.getUTCMinutes(),
+          values.departureTime.getUTCSeconds()
+        )
+      );
 
       console.log("Creating ride with data:", {
         driver_id: user.id,
@@ -104,12 +124,13 @@ export default function NewRidePage() {
         departure_time: departureUTC.toISOString(),
         departure_timestamp: departureUTC.getTime(),
         current_timestamp: nowUTC.getTime(),
-        difference_hours: (departureUTC.getTime() - nowUTC.getTime()) / (1000 * 60 * 60),
+        difference_hours:
+          (departureUTC.getTime() - nowUTC.getTime()) / (1000 * 60 * 60),
         price: values.price,
         seats_available: values.seatsAvailable,
         car_model: values.carModel,
         car_color: values.carColor,
-      })
+      });
 
       // Ensure the departure time is in the future
       if (departureUTC.getTime() <= nowUTC.getTime()) {
@@ -117,8 +138,8 @@ export default function NewRidePage() {
           title: "Heure de Départ Invalide",
           description: "L'heure de départ doit être dans le futur.",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       // First create the ride
@@ -135,34 +156,35 @@ export default function NewRidePage() {
           car_color: values.carColor,
         })
         .select()
-        .single()
+        .single();
 
       if (createError) {
-        console.error("Error creating ride:", createError)
-        throw createError
+        console.error("Error creating ride:", createError);
+        throw createError;
       }
 
-      console.log("Created ride:", newRide)
+      console.log("Created ride:", newRide);
 
       toast({
         title: "Trajet Créé",
         description: "Votre trajet a été créé avec succès.",
-      })
+      });
 
       // Wait a moment to ensure the ride is saved
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Use replace instead of push to ensure searchParams change is detected
-      router.replace("/driver/dashboard?refresh=true")
+      router.replace("/driver/dashboard?refresh=true");
     } catch (error) {
-      console.error("Error creating ride:", error)
+      console.error("Error creating ride:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur s'est produite lors de la création de votre trajet. Veuillez réessayer.",
+        description:
+          "Une erreur s'est produite lors de la création de votre trajet. Veuillez réessayer.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
@@ -260,11 +282,14 @@ export default function NewRidePage() {
                           <Input
                             type="time"
                             onChange={(e) => {
-                              const [hours, minutes] = e.target.value.split(":")
-                              const newDate = new Date(field.value || new Date())
-                              newDate.setHours(parseInt(hours))
-                              newDate.setMinutes(parseInt(minutes))
-                              field.onChange(newDate)
+                              const [hours, minutes] =
+                                e.target.value.split(":");
+                              const newDate = new Date(
+                                field.value || new Date()
+                              );
+                              newDate.setHours(parseInt(hours));
+                              newDate.setMinutes(parseInt(minutes));
+                              field.onChange(newDate);
                             }}
                           />
                         </div>
@@ -283,9 +308,9 @@ export default function NewRidePage() {
                     <FormItem>
                       <FormLabel>Prix (FCFA)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="ex: 5000" 
+                        <Input
+                          type="number"
+                          placeholder="ex: 5000"
                           onChange={(e) => onChange(Number(e.target.value))}
                           {...field}
                         />
@@ -294,8 +319,6 @@ export default function NewRidePage() {
                     </FormItem>
                   )}
                 />
-
-
               </div>
 
               <FormField
@@ -305,9 +328,9 @@ export default function NewRidePage() {
                   <FormItem>
                     <FormLabel>Places Disponibles</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="ex: 4" 
+                      <Input
+                        type="number"
+                        placeholder="ex: 4"
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           // Allow up to 10 seats maximum
@@ -352,8 +375,6 @@ export default function NewRidePage() {
                     </FormItem>
                   )}
                 />
-
-
               </div>
 
               <div className="flex justify-end space-x-4">
@@ -373,5 +394,5 @@ export default function NewRidePage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

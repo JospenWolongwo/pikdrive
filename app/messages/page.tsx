@@ -906,10 +906,23 @@ export default function MessagesPage() {
 
   // Set up global message notification manager
   useEffect(() => {
-    if (!user || !notificationsEnabled || typeof window === "undefined") {
+    console.log("🔍 MessageNotificationManager useEffect triggered");
+    console.log("🔍 useEffect debug - user:", user);
+    console.log("🔍 useEffect debug - window:", typeof window !== "undefined");
+
+    if (!user || typeof window === "undefined") {
+      console.log("❌ Early return - conditions not met");
       cleanupGlobalMessageNotificationManager();
       return;
     }
+
+    // Prevent multiple managers from starting
+    if (window.__messageNotificationManager) {
+      console.log("🔒 MessageNotificationManager already exists, skipping...");
+      return;
+    }
+
+    console.log("🔧 Starting MessageNotificationManager");
 
     const manager = initializeGlobalMessageNotificationManager({
       supabase,
@@ -924,12 +937,19 @@ export default function MessagesPage() {
       },
     });
 
-    manager.start();
+    console.log("🔧 Manager initialized:", manager);
+
+    try {
+      manager.start();
+      console.log("✅ MessageNotificationManager started successfully");
+    } catch (error) {
+      console.error("❌ Failed to start MessageNotificationManager:", error);
+    }
 
     return () => {
       cleanupGlobalMessageNotificationManager();
     };
-  }, [user, notificationsEnabled, supabase, router, loadConversations]);
+  }, [user, supabase, router]); // Removed loadConversations from dependencies
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -954,6 +974,34 @@ export default function MessagesPage() {
             >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Actualiser</span>
+            </Button>
+
+            {/* Test Push Notification Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                console.log("🧪 Testing push notification...");
+                try {
+                  const response = await fetch("/api/push/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      userId: user?.id,
+                      title: "Test Notification",
+                      body: "This is a test push notification",
+                      data: { test: true },
+                    }),
+                  });
+                  const result = await response.json();
+                  console.log("🧪 Push test result:", result);
+                } catch (error) {
+                  console.error("🧪 Push test error:", error);
+                }
+              }}
+              className="flex items-center gap-1 sm:gap-2"
+            >
+              🧪 Test Push
             </Button>
 
             {/* Unified Notification Toggle */}

@@ -6,6 +6,10 @@ declare global {
       [key: string]: string | undefined;
     }
   }
+
+  interface Window {
+    __messageNotificationManager?: any;
+  }
 }
 
 export {};

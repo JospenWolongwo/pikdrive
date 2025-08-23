@@ -1,21 +1,37 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useSupabase } from "@/providers/SupabaseProvider"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { toast } from "@/components/ui/use-toast"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AvatarUpload } from "@/components/ui/avatar-upload"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { Car, FileText, Shield, User } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Car, FileText, Shield, User } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { allCameroonCities } from "@/app/data/cities";
 
 const driverProfileSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters"),
@@ -27,21 +43,23 @@ const driverProfileSchema = z.object({
   registration_number: z.string().min(1, "Vehicle registration is required"),
   insurance_number: z.string().min(1, "Insurance number is required"),
   road_tax_number: z.string().min(1, "Road tax number is required"),
-  technical_inspection_number: z.string().min(1, "Technical inspection number is required"),
+  technical_inspection_number: z
+    .string()
+    .min(1, "Technical inspection number is required"),
   vehicle_make: z.string().min(1, "Vehicle make is required"),
   vehicle_model: z.string().min(1, "Vehicle model is required"),
   vehicle_year: z.string().min(4, "Vehicle year is required"),
   vehicle_color: z.string().min(1, "Vehicle color is required"),
-})
+});
 
-type DriverProfileValues = z.infer<typeof driverProfileSchema>
+type DriverProfileValues = z.infer<typeof driverProfileSchema>;
 
 export default function DriverProfilePage() {
-  const router = useRouter()
-  const { supabase, user } = useSupabase()
-  const [loading, setLoading] = useState(true)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [vehicleImages, setVehicleImages] = useState<string[]>([])
+  const router = useRouter();
+  const { supabase, user } = useSupabase();
+  const [loading, setLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [vehicleImages, setVehicleImages] = useState<string[]>([]);
 
   const form = useForm<DriverProfileValues>({
     resolver: zodResolver(driverProfileSchema),
@@ -61,12 +79,12 @@ export default function DriverProfilePage() {
       vehicle_year: "",
       vehicle_color: "",
     },
-  })
+  });
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth")
-      return
+      router.push("/auth");
+      return;
     }
 
     const loadProfile = async () => {
@@ -75,13 +93,13 @@ export default function DriverProfilePage() {
           .from("profiles")
           .select("*, driver_documents (*)")
           .eq("id", user.id)
-          .single()
+          .single();
 
-        if (profileError) throw profileError
+        if (profileError) throw profileError;
 
         if (!profile.is_driver) {
-          router.push("/become-driver")
-          return
+          router.push("/become-driver");
+          return;
         }
 
         // Set form values
@@ -90,38 +108,41 @@ export default function DriverProfilePage() {
           email: profile.email || "",
           phone: profile.phone || "",
           city: profile.city || "",
-          national_id_number: profile.driver_documents?.national_id_number || "",
+          national_id_number:
+            profile.driver_documents?.national_id_number || "",
           license_number: profile.driver_documents?.license_number || "",
-          registration_number: profile.driver_documents?.registration_number || "",
+          registration_number:
+            profile.driver_documents?.registration_number || "",
           insurance_number: profile.driver_documents?.insurance_number || "",
           road_tax_number: profile.driver_documents?.road_tax_number || "",
-          technical_inspection_number: profile.driver_documents?.technical_inspection_number || "",
+          technical_inspection_number:
+            profile.driver_documents?.technical_inspection_number || "",
           vehicle_make: profile.driver_documents?.vehicle_make || "",
           vehicle_model: profile.driver_documents?.vehicle_model || "",
           vehicle_year: profile.driver_documents?.vehicle_year || "",
           vehicle_color: profile.driver_documents?.vehicle_color || "",
-        })
+        });
 
-        setAvatarUrl(profile.avatar_url)
-        setVehicleImages(profile.driver_documents?.vehicle_images || [])
+        setAvatarUrl(profile.avatar_url);
+        setVehicleImages(profile.driver_documents?.vehicle_images || []);
       } catch (error) {
-        console.error("Error loading profile:", error)
+        console.error("Error loading profile:", error);
         toast({
           title: "Error",
           description: "Could not load your profile. Please try again.",
           variant: "destructive",
-        })
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadProfile()
-  }, [user, router, supabase, form])
+    loadProfile();
+  }, [user, router, supabase, form]);
 
   const onSubmit = async (values: DriverProfileValues) => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       // Update profile
       const { error: profileError } = await supabase
@@ -133,9 +154,9 @@ export default function DriverProfilePage() {
           city: values.city,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", user!.id)
+        .eq("id", user!.id);
 
-      if (profileError) throw profileError
+      if (profileError) throw profileError;
 
       // Update driver documents
       const { error: documentsError } = await supabase
@@ -153,28 +174,28 @@ export default function DriverProfilePage() {
           vehicle_color: values.vehicle_color,
           updated_at: new Date().toISOString(),
         })
-        .eq("driver_id", user!.id)
+        .eq("driver_id", user!.id);
 
-      if (documentsError) throw documentsError
+      if (documentsError) throw documentsError;
 
       toast({
         title: "Profile Updated",
         description: "Your driver profile has been updated successfully.",
-      })
+      });
     } catch (error) {
-      console.error("Error updating profile:", error)
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
         description: "Could not update your profile. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading) {
-    return <div className="container py-10">Loading...</div>
+    return <div className="container py-10">Loading...</div>;
   }
 
   return (
@@ -262,7 +283,13 @@ export default function DriverProfilePage() {
                         <FormItem>
                           <FormLabel>City</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <SearchableSelect
+                              options={allCameroonCities}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Select a city"
+                              searchPlaceholder="Search cities..."
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -363,9 +390,7 @@ export default function DriverProfilePage() {
                     <Car className="w-5 h-5" />
                     Vehicle Information
                   </CardTitle>
-                  <CardDescription>
-                    Details about your vehicle.
-                  </CardDescription>
+                  <CardDescription>Details about your vehicle.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid gap-6 md:grid-cols-2">
@@ -448,5 +473,5 @@ export default function DriverProfilePage() {
         </Form>
       </Tabs>
     </div>
-  )
+  );
 }

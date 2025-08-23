@@ -133,3 +133,8 @@ fetch("/api/push/send", {
 - Firefox: Full support
 - Safari: Limited support (iOS 16.4+)
 - Mobile browsers: Varies by platform
+
+
+
+
+

@@ -35,3 +35,4 @@ CREATE TRIGGER update_push_subscription_updated_at
   BEFORE UPDATE ON push_subscriptions
   FOR EACH ROW
   EXECUTE FUNCTION update_push_subscription_updated_at();
+

@@ -28,21 +28,43 @@ export class MessageNotificationManager {
   }
 
   async start() {
-    if (this.isActive) {
-      console.warn("MessageNotificationManager is already active");
-      return;
-    }
+    if (this.isActive) return;
 
-    // Ensure we're on the client side
-    if (typeof window === "undefined") {
-      console.warn("MessageNotificationManager cannot start on server side");
-      return;
-    }
+    console.log(
+      "🚀 MessageNotificationManager starting for user:",
+      this.userId
+    );
 
-    // Check notification permission status
-    const permissionGranted = await notificationService.requestPermission();
+    // Debug: Check messages table structure and user's messages
+    try {
+      const { data: messages, error } = await this.supabase
+        .from("messages")
+        .select("id, sender_id, receiver_id, content, created_at")
+        .eq("receiver_id", this.userId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error("❌ Error checking messages:", error);
+      } else {
+        console.log(
+          "🔍 Found",
+          messages?.length || 0,
+          "messages for user",
+          this.userId
+        );
+        if (messages && messages.length > 0) {
+          console.log("🔍 Sample message:", messages[0]);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error in debug query:", error);
+    }
 
     // Set up global message subscription
+    console.log("🔧 Setting up Supabase channel for real-time messages...");
+    console.log("🔧 Channel filter: receiver_id=eq." + this.userId);
+
     this.globalChannel = this.supabase
       .channel("global-message-notifications")
       .on(
@@ -54,14 +76,35 @@ export class MessageNotificationManager {
           filter: `receiver_id=eq.${this.userId}`,
         },
         async (payload: any) => {
+          console.log(
+            "📨 Message notification manager received new message:",
+            payload
+          );
           await this.handleNewMessage(payload.new);
         }
       )
       .subscribe((status: string) => {
+        console.log("📡 Channel subscription status:", status);
         if (status === "SUBSCRIBED") {
-          this.isActive = true;
+          console.log("✅ Channel successfully subscribed to real-time events");
+          console.log(
+            "🔍 Listening for messages where receiver_id =",
+            this.userId
+          );
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("❌ Channel subscription error");
+        } else if (status === "TIMED_OUT") {
+          console.error("❌ Channel subscription timed out");
         }
       });
+
+    console.log("🔧 Supabase channel subscribed, setting active status...");
+
+    // Set active status after subscription
+    this.isActive = true;
+    console.log(
+      "✅ Message notification manager is now active and listening for messages"
+    );
   }
 
   stop() {

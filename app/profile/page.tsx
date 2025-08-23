@@ -37,9 +37,10 @@ import {
   Settings,
   LogOut,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { cameroonCities } from "@/app/data/cities";
+import { allCameroonCities } from "@/app/data/cities";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge as BadgeComponent } from "@/components/ui/badge";
@@ -121,6 +122,55 @@ export default function ProfilePage() {
     loadProfile();
   }, [user, router]);
 
+  // Add a manual refresh function
+  const refreshProfile = async () => {
+    if (user) {
+      await loadProfile();
+    }
+  };
+
+  // Add real-time subscription to profile changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          console.log("🔄 Profile updated in real-time:", payload);
+          // Update local state with new data
+          if (payload.new) {
+            setProfileData((prev) => ({ ...prev, ...payload.new }));
+            // Also update form data if relevant fields changed
+            if (
+              payload.new.full_name ||
+              payload.new.email ||
+              payload.new.city
+            ) {
+              setFormData((prev) => ({
+                ...prev,
+                fullName: payload.new.full_name || prev.fullName,
+                email: payload.new.email || prev.email,
+                city: payload.new.city || prev.city,
+              }));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, supabase]);
+
   // Cleanup object URLs when component unmounts
   useEffect(() => {
     return () => {
@@ -141,9 +191,19 @@ export default function ProfilePage() {
         .eq("id", user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("❌ Error loading profile:", profileError);
+        // Don't clear existing data on error, just show error toast
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger le profil. Veuillez réessayer.",
+        });
+        return;
+      }
 
       if (profile) {
+        console.log("✅ Profile loaded successfully:", profile);
         setProfileData(profile);
         setFormData({
           fullName: profile.full_name || "",
@@ -170,13 +230,16 @@ export default function ProfilePage() {
             setDriverDocuments(null);
           }
         }
+      } else {
+        console.warn("⚠️ No profile data returned");
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error("❌ Unexpected error loading profile:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger le profil. Veuillez réessayer.",
+        description:
+          "Une erreur inattendue s'est produite. Veuillez réessayer.",
       });
     } finally {
       setIsLoading(false);
@@ -581,6 +644,43 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
+  if (isLoading) {
+    return (
+      <div className="container max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Chargement du profil...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if no profile data and not loading
+  if (!profileData || !profileData.full_name) {
+    return (
+      <div className="container max-w-6xl mx-auto px-4 py-8">
+        <div className="text-center space-y-6">
+          <div className="w-24 h-24 mx-auto bg-muted rounded-full flex items-center justify-center">
+            <User className="w-12 h-12 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold">Profil non trouvé</h1>
+          <p className="text-muted-foreground">
+            Impossible de charger les informations de votre profil.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={refreshProfile} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Réessayer
+            </Button>
+            <Button onClick={() => router.push("/")}>Retour à l'accueil</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
       {/* Header Section */}
@@ -622,13 +722,41 @@ export default function ProfilePage() {
                   onClick={() => router.push("/driver/pending")}
                   className="flex items-center justify-center gap-2"
                 >
-                  <Clock className="w-4 h-4" />
+                  <Clock className="h-4 w-4" />
                   <span className="hidden sm:inline">
                     Statut de Candidature
                   </span>
                   <span className="sm:hidden">Statut</span>
                 </Button>
               )}
+
+            {profileData.is_driver_applicant &&
+              profileData.driver_status === "rejected" && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/driver/pending")}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    Voir le Statut Refusé
+                  </span>
+                  <span className="sm:hidden">Statut</span>
+                </Button>
+              )}
+
+            <Button
+              variant="outline"
+              onClick={refreshProfile}
+              disabled={isLoading}
+              className="flex items-center justify-center gap-2"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
+              <span className="hidden sm:inline">Actualiser</span>
+              <span className="sm:hidden">Actualiser</span>
+            </Button>
 
             <Button
               variant="outline"
@@ -837,7 +965,7 @@ export default function ProfilePage() {
                         <MapPin className="h-4 w-4" /> Ville
                       </Label>
                       <SearchableSelect
-                        options={[...cameroonCities]}
+                        options={[...allCameroonCities]}
                         value={formData.city}
                         onValueChange={(value) =>
                           setFormData((prev) => ({ ...prev, city: value }))

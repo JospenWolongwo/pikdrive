@@ -85,3 +85,4 @@ The current setup includes:
 - Console logging for debugging
 - Error handling and fallbacks
 - Service worker debugging
+

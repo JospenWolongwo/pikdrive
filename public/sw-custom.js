@@ -203,3 +203,4 @@ self.addEventListener("fetch", (event) => {
 });
 
 console.log("🔧 PikDrive Custom Service Worker loaded successfully");
+

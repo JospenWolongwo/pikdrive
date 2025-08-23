@@ -66,7 +66,24 @@ export async function POST(request: NextRequest) {
     // Send to each subscription using web-push
     for (const { subscription } of subscriptions) {
       try {
-        const subscriptionObj = JSON.parse(subscription);
+        // Handle subscription data - it might be a string or already an object
+        let subscriptionObj;
+        if (typeof subscription === "string") {
+          try {
+            subscriptionObj = JSON.parse(subscription);
+          } catch (parseError) {
+            console.error("Failed to parse subscription JSON:", parseError);
+            continue; // Skip this subscription
+          }
+        } else {
+          subscriptionObj = subscription;
+        }
+
+        // Validate subscription object
+        if (!subscriptionObj || !subscriptionObj.endpoint) {
+          console.error("Invalid subscription object:", subscriptionObj);
+          continue; // Skip this subscription
+        }
 
         await webpush.sendNotification(
           subscriptionObj,

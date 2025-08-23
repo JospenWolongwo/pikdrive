@@ -1,89 +1,102 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Star, MapPin, Car, Shield } from "lucide-react"
+} from "@/components/ui/select";
+import { Star, MapPin, Car, Shield } from "lucide-react";
+import { allCameroonCities } from "@/app/data/cities";
 
 const drivers = [
   {
     id: 1,
     name: "Jean Paul",
-    image: "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?auto=format&fit=crop&q=80&w=150&h=150",
+    image:
+      "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?auto=format&fit=crop&q=80&w=150&h=150",
     rating: 4.8,
     trips: 156,
     location: "Douala",
     vehicle: "Toyota Corolla",
     languages: ["English", "French"],
-    verified: true
+    verified: true,
   },
   {
     id: 2,
     name: "Marie Claire",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
+    image:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
     rating: 4.9,
     trips: 203,
     location: "Yaoundé",
     vehicle: "Honda Civic",
     languages: ["French", "English"],
-    verified: true
+    verified: true,
   },
   {
     id: 3,
     name: "Emmanuel",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
+    image:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
     rating: 4.7,
     trips: 128,
     location: "Douala",
     vehicle: "Hyundai Elantra",
     languages: ["French", "English"],
-    verified: true
+    verified: true,
   },
   {
     id: 4,
     name: "Sophie",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
+    image:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
     rating: 4.9,
     trips: 175,
     location: "Yaoundé",
     vehicle: "Toyota Camry",
     languages: ["French", "English"],
-    verified: true
-  }
-]
+    verified: true,
+  },
+];
 
-const cities = ["All Cities", "Douala", "Yaoundé", "Bafoussam", "Bamenda", "Kribi"]
-const languages = ["All Languages", "English", "French"]
-const ratings = ["All Ratings", "4.5+", "4.0+", "3.5+"]
+const cities = ["All Cities", ...allCameroonCities];
+const languages = ["All Languages", "English", "French"];
+const ratings = ["All Ratings", "4.5+", "4.0+", "3.5+"];
 
 export default function DriversPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCity, setSelectedCity] = useState("All Cities")
-  const [selectedLanguage, setSelectedLanguage] = useState("All Languages")
-  const [selectedRating, setSelectedRating] = useState("All Ratings")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCity, setSelectedCity] = useState("All Cities");
+  const [selectedLanguage, setSelectedLanguage] = useState("All Languages");
+  const [selectedRating, setSelectedRating] = useState("All Ratings");
 
-  const filteredDrivers = drivers.filter(driver => {
-    const matchesSearch = driver.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCity = selectedCity === "All Cities" || driver.location === selectedCity
-    const matchesLanguage = selectedLanguage === "All Languages" || driver.languages.includes(selectedLanguage)
-    const matchesRating = selectedRating === "All Ratings" || driver.rating >= parseFloat(selectedRating)
-    return matchesSearch && matchesCity && matchesLanguage && matchesRating
-  })
+  const filteredDrivers = drivers.filter((driver) => {
+    const matchesSearch = driver.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCity =
+      selectedCity === "All Cities" || driver.location === selectedCity;
+    const matchesLanguage =
+      selectedLanguage === "All Languages" ||
+      driver.languages.includes(selectedLanguage);
+    const matchesRating =
+      selectedRating === "All Ratings" ||
+      driver.rating >= parseFloat(selectedRating);
+    return matchesSearch && matchesCity && matchesLanguage && matchesRating;
+  });
 
   return (
     <div className="container py-16 space-y-8">
       <div className="text-center space-y-6">
         <h1 className="text-4xl font-bold">Our Professional Drivers</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Meet our verified and experienced drivers who ensure safe and comfortable journeys.
+          Meet our verified and experienced drivers who ensure safe and
+          comfortable journeys.
         </p>
       </div>
 
@@ -98,7 +111,7 @@ export default function DriversPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-sm font-medium">City</label>
             <Select value={selectedCity} onValueChange={setSelectedCity}>
@@ -117,7 +130,10 @@ export default function DriversPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Language</label>
-            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+            <Select
+              value={selectedLanguage}
+              onValueChange={setSelectedLanguage}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select language" />
               </SelectTrigger>
@@ -169,7 +185,9 @@ export default function DriversPage() {
                 <div className="flex items-center space-x-1 text-sm">
                   <Star className="w-4 h-4 fill-primary text-primary" />
                   <span>{driver.rating}</span>
-                  <span className="text-muted-foreground">({driver.trips} trips)</span>
+                  <span className="text-muted-foreground">
+                    ({driver.trips} trips)
+                  </span>
                 </div>
               </div>
             </div>
@@ -185,7 +203,9 @@ export default function DriversPage() {
               </div>
               <div className="flex items-center space-x-2">
                 <span className="font-medium">Languages:</span>
-                <span className="text-muted-foreground">{driver.languages.join(", ")}</span>
+                <span className="text-muted-foreground">
+                  {driver.languages.join(", ")}
+                </span>
               </div>
             </div>
 
@@ -194,5 +214,5 @@ export default function DriversPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

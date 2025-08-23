@@ -233,6 +233,9 @@ export const cameroonCities = [
 // Create a sorted version of the cities array for dropdown navigation
 export const sortedCameroonCities = [...cameroonCities].sort();
 
+// Create a comprehensive list of all cities including urban communes
+export const allCameroonCities = [...urbanCommunes, ...cameroonCities].sort();
+
 type Region =
   | "Adamawa"
   | "Centre"
@@ -256,6 +259,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Mayo-Baléo",
     "Meiganga",
     "Ngaoundal",
+    "Ngaoundéré", // Added regional capital
     "Tibati",
     "Tignère",
   ],
@@ -297,6 +301,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Sa'a",
     "Soa",
     "Yoko",
+    "Yaoundé", // Added regional capital
   ],
   East: [
     "Abong-Mbang",
@@ -304,6 +309,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Atok",
     "Batouri",
     "Bélabo",
+    "Bertoua", // Added regional capital
     "Betaré-Oya",
     "Dimako",
     "Doumaintang",
@@ -334,6 +340,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Logone-Birni",
     "Makary",
     "Maga",
+    "Maroua", // Added regional capital
     "Mindif",
     "Mokolo",
     "Mora",
@@ -349,12 +356,15 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
   Littoral: [
     "Dibombari",
     "Dizangué",
+    "Douala", // Added regional capital
     "Edéa",
+    "Loum", // Added major city
     "Manjo",
     "Mbanga",
     "Melong",
     "Ndom",
     "Ngambe",
+    "Nkongsamba", // Added major city
     "Nyanon",
     "Pouma",
     "Yabassi",
@@ -367,6 +377,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Dembo",
     "Figuil",
     "Gaschiga",
+    "Garoua", // Added regional capital
     "Golombé",
     "Guider",
     "Lagdo",
@@ -382,6 +393,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
   Northwest: [
     "Ako",
     "Bali",
+    "Bamenda", // Added regional capital
     "Batibo",
     "Belo",
     "Benakuma",
@@ -399,7 +411,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Wum",
   ],
   South: [
-    "Ebolowa",
+    "Ebolowa", // Regional capital already present
     "Akom II",
     "Ambam",
     "Bengbis",
@@ -419,7 +431,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Zoétélé",
   ],
   Southwest: [
-    "Buea",
+    "Buea", // Regional capital already present
     "Akwaya",
     "Alou",
     "Bangem",
@@ -429,6 +441,7 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Kombo-Abedimo",
     "Kombo-Itindi",
     "Konye",
+    "Kumba", // Added major city
     "Limbe",
     "Mbonge",
     "Mundemba",
@@ -440,6 +453,236 @@ export const citiesByRegion: Record<Region, readonly string[]> = {
     "Wabane",
   ],
   West: [
+    "Bafang",
+    "Bafoussam", // Added regional capital
+    "Bana",
+    "Bandja",
+    "Bandjoun",
+    "Bangangté",
+    "Bangou",
+    "Batcham",
+    "Dschang",
+    "Foumban",
+    "Foumbot",
+    "Galim",
+    "Kouoptamo",
+    "Koutaba",
+    "Magba",
+    "Malantouen",
+    "Massangam",
+    "Mbouda",
+    "Penka-Michel",
+    "Santchou",
+  ],
+} as const;
+
+// Create a comprehensive list organized by region for better user experience
+export const comprehensiveCitiesByRegion: Record<Region, readonly string[]> = {
+  Adamawa: [
+    "Ngaoundéré", // Regional capital first
+    "Bankim",
+    "Banyo",
+    "Belel",
+    "Dir",
+    "Djohong",
+    "Kontcha",
+    "Mayo-Baléo",
+    "Meiganga",
+    "Ngaoundal",
+    "Tibati",
+    "Tignère",
+  ],
+  Centre: [
+    "Yaoundé", // Regional capital first
+    "Akonolinga",
+    "Awae",
+    "Ayos",
+    "Bafia",
+    "Bibey",
+    "Biyouha",
+    "Bokito",
+    "Botmakak",
+    "Dibang",
+    "Deuk",
+    "Dzeng",
+    "Ebebda",
+    "Ekali",
+    "Eseka",
+    "Evodoula",
+    "Kobdombo",
+    "Lolodorf",
+    "Makak",
+    "Matomb",
+    "Mbalmayo",
+    "Mbandjock",
+    "Mbangassina",
+    "Mfou",
+    "Monatélé",
+    "Nanga-Eboko",
+    "Ndikinimeki",
+    "Ngambè-Tikar",
+    "Ngomedzap",
+    "Ngoro",
+    "Nkoteng",
+    "Ntui",
+    "Obala",
+    "Okola",
+    "Ombessa",
+    "Sa'a",
+    "Soa",
+    "Yoko",
+  ],
+  East: [
+    "Bertoua", // Regional capital first
+    "Abong-Mbang",
+    "Angossas",
+    "Atok",
+    "Batouri",
+    "Bélabo",
+    "Betaré-Oya",
+    "Dimako",
+    "Doumaintang",
+    "Doumé",
+    "Garoua-Boulaï",
+    "Kentzou",
+    "Kette",
+    "Lomié",
+    "Mbang",
+    "Messamena",
+    "Mindourou",
+    "Moloundou",
+    "Ndelele",
+    "Nguelebok",
+    "Ngoura",
+    "Yokadouma",
+  ],
+  "Far North": [
+    "Maroua", // Regional capital first
+    "Bogo",
+    "Darak",
+    "Goulfey",
+    "Hile-Alifa",
+    "Kaélé",
+    "Kar-Hay",
+    "Kolofata",
+    "Kousseri",
+    "Lagdo",
+    "Logone-Birni",
+    "Makary",
+    "Maga",
+    "Mindif",
+    "Mokolo",
+    "Mora",
+    "Moulvoudaye",
+    "Mayo-Danay",
+    "Mayo-Kani",
+    "Mayo-Sava",
+    "Mayo-Tsanaga",
+    "Tokombéré",
+    "Waza",
+    "Yagoua",
+  ],
+  Littoral: [
+    "Douala", // Regional capital first
+    "Dibombari",
+    "Dizangué",
+    "Edéa",
+    "Loum", // Major city
+    "Manjo",
+    "Mbanga",
+    "Melong",
+    "Ndom",
+    "Ngambe",
+    "Nkongsamba", // Major city
+    "Nyanon",
+    "Pouma",
+    "Yabassi",
+    "Yingui",
+  ],
+  North: [
+    "Garoua", // Regional capital first
+    "Baschéo",
+    "Beka",
+    "Bibemi",
+    "Dembo",
+    "Figuil",
+    "Gaschiga",
+    "Golombé",
+    "Guider",
+    "Lagdo",
+    "Madingring",
+    "Mayo-Oulo",
+    "Ngong",
+    "Pitoa",
+    "Poli",
+    "Rey-Bouba",
+    "Tchollire",
+    "Touboro",
+  ],
+  Northwest: [
+    "Bamenda", // Regional capital first
+    "Ako",
+    "Bali",
+    "Batibo",
+    "Belo",
+    "Benakuma",
+    "Fonfuka",
+    "Fundong",
+    "Jakiri",
+    "Kumbo",
+    "Mbengwi",
+    "Ndop",
+    "Ndu",
+    "Nkambe",
+    "Nwa",
+    "Santa",
+    "Tubah",
+    "Wum",
+  ],
+  South: [
+    "Ebolowa", // Regional capital first
+    "Akom II",
+    "Ambam",
+    "Bengbis",
+    "Biwong-Bane",
+    "Campo",
+    "Djoum",
+    "Kribi",
+    "Lolodorf",
+    "Mengong",
+    "Meyomessala",
+    "Mintom",
+    "Mvangan",
+    "Niete",
+    "Olamze",
+    "Oveng",
+    "Sangmélima",
+    "Zoétélé",
+  ],
+  Southwest: [
+    "Buea", // Regional capital first
+    "Akwaya",
+    "Alou",
+    "Bangem",
+    "Eyumodjock",
+    "Fontem",
+    "Idenau",
+    "Kombo-Abedimo",
+    "Kombo-Itindi",
+    "Konye",
+    "Kumba", // Major city
+    "Limbe",
+    "Mbonge",
+    "Mundemba",
+    "Muyuka",
+    "Nguti",
+    "Tiko",
+    "Tombel",
+    "Upper Bayang",
+    "Wabane",
+  ],
+  West: [
+    "Bafoussam", // Regional capital first
     "Bafang",
     "Bana",
     "Bandja",

@@ -413,7 +413,7 @@ export default function DriverBookings() {
 
   return (
     <div className="container mx-auto py-10 space-y-8">
-      <h1 className="text-2xl font-bold">Your Bookings</h1>
+      <h1 className="text-2xl font-bold">Mes Trajets</h1>
 
       {/* Search and filter bar */}
       <div className="flex items-center space-x-4">
@@ -421,7 +421,7 @@ export default function DriverBookings() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by passenger, city or status..."
+            placeholder="Rechercher par passager, ville ou statut..."
             className="pl-8"
             value={searchQuery}
             onChange={(e) => {
@@ -440,15 +440,18 @@ export default function DriverBookings() {
               className="flex items-center gap-1"
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Sort: {sortOrder === "latest" ? "Latest First" : "Earliest First"}
+              Trier:{" "}
+              {sortOrder === "latest"
+                ? "Plus récent d'abord"
+                : "Plus ancien d'abord"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setSortOrder("latest")}>
-              Latest First
+              Plus récent d'abord
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortOrder("earliest")}>
-              Earliest First
+              Plus ancien d'abord
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -456,7 +459,7 @@ export default function DriverBookings() {
         <div>
           {searchQuery && (
             <Badge variant="outline" className="flex items-center gap-1">
-              <span>{filteredAndSortedBookings.length} results</span>
+              <span>{filteredAndSortedBookings.length} résultats</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -479,8 +482,8 @@ export default function DriverBookings() {
             <CardContent>
               <p className="text-muted-foreground">
                 {searchQuery
-                  ? "No bookings match your search. Try different keywords."
-                  : "You don't have any bookings yet."}
+                  ? "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés."
+                  : "Vous n'avez pas encore de réservations."}
               </p>
             </CardContent>
           </Card>
@@ -662,19 +665,14 @@ export default function DriverBookings() {
             {/* Pagination with results count */}
             {filteredAndSortedBookings.length > 0 && (
               <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing{" "}
+                <span className="text-sm text-muted-foreground">
+                  Affichage de {currentPage * itemsPerPage - itemsPerPage + 1} à{" "}
                   {Math.min(
-                    filteredAndSortedBookings.length,
-                    (currentPage - 1) * itemsPerPage + 1
-                  )}
-                  -
-                  {Math.min(
-                    filteredAndSortedBookings.length,
-                    currentPage * itemsPerPage
+                    currentPage * itemsPerPage,
+                    filteredAndSortedBookings.length
                   )}{" "}
-                  of {filteredAndSortedBookings.length} bookings
-                </div>
+                  sur {filteredAndSortedBookings.length} réservations
+                </span>
 
                 {totalPages > 1 && (
                   <Pagination>

@@ -277,7 +277,7 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/bookings" className="flex items-center">
                     <CalendarCheck className="mr-2 h-4 w-4" />
-                    <span>Vos Trajets</span>
+                    <span>Mes Réservations</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -312,7 +312,7 @@ export function Navbar() {
                         className="flex items-center"
                       >
                         <BookOpen className="mr-2 h-4 w-4" />
-                        <span>Réservations</span>
+                        <span>Mes Trajets</span>
                       </Link>
                     </DropdownMenuItem>
                   </>
