@@ -9,6 +9,7 @@ declare global {
 
   interface Window {
     __messageNotificationManager?: any;
+    __bookingNotificationManager?: any;
   }
 }
 

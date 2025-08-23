@@ -60,6 +60,10 @@ import {
 import { BookingModal } from "./booking-modal";
 import { motion } from "framer-motion";
 import { Clock } from "lucide-react";
+import {
+  initializeGlobalBookingNotificationManager,
+  cleanupGlobalBookingNotificationManager,
+} from "@/lib/notifications/booking-notification-manager";
 
 interface Booking {
   seats: number;
@@ -388,6 +392,39 @@ export default function RidesPage() {
       subscribeToRide(ride.id);
     });
   }, [rides, subscribeToRide]);
+
+  // Set up global booking notification manager
+  useEffect(() => {
+    if (!user || typeof window === "undefined") {
+      cleanupGlobalBookingNotificationManager();
+      return;
+    }
+
+    // Prevent multiple managers from starting
+    if (window.__bookingNotificationManager) {
+      return;
+    }
+
+    const manager = initializeGlobalBookingNotificationManager(
+      supabase,
+      user.id,
+      () => {
+        // Navigate to bookings page when notification is clicked
+        router.push("/bookings");
+      }
+    );
+
+    try {
+      manager.start();
+      console.log("🚗 BookingNotificationManager started for rides page");
+    } catch (error) {
+      console.error("❌ Failed to start BookingNotificationManager:", error);
+    }
+
+    return () => {
+      cleanupGlobalBookingNotificationManager();
+    };
+  }, [user, supabase, router]);
 
   const handleBooking = (ride: Ride) => {
     if (!user) {

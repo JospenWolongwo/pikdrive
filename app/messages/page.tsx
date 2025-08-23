@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { debounce } from "lodash";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -56,9 +57,6 @@ export default function MessagesPage() {
   const { unreadCounts, markAsRead, subscribeToRide } = useChat();
   const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [filteredConversations, setFilteredConversations] = useState<
-    Conversation[]
-  >([]);
   const [loading, setLoading] = useState(true);
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,6 +80,15 @@ export default function MessagesPage() {
     subscribeToPushNotifications,
     unsubscribeFromPushNotifications,
   } = useServiceWorker();
+
+  // Debounced version of loadConversations to prevent rapid successive calls
+  const debouncedLoadConversations = useCallback(
+    debounce(async () => {
+      if (!user) return;
+      await loadConversations();
+    }, 1000), // 1 second debounce
+    [user]
+  );
 
   // Check if notifications are supported and update permission state
   useEffect(() => {
@@ -619,16 +626,13 @@ export default function MessagesPage() {
           );
 
           setConversations(conversationsArray);
-          setFilteredConversations(conversationsArray);
         } else {
           console.log("📭 No messages found for any rides");
           setConversations([]);
-          setFilteredConversations([]);
         }
       } else {
         console.log("🚫 No rides found for user");
         setConversations([]);
-        setFilteredConversations([]);
       }
     } catch (error) {
       console.error("Error loading conversations:", error);
@@ -658,23 +662,11 @@ export default function MessagesPage() {
         };
       })
     );
-
-    setFilteredConversations((prevFiltered) =>
-      prevFiltered.map((conversation) => {
-        const unreadCount =
-          unreadCounts.find((count) => count.rideId === conversation.rideId)
-            ?.count || 0;
-        return {
-          ...conversation,
-          unreadCount,
-        };
-      })
-    );
   }, [unreadCounts]);
 
   // Subscribe to new messages to update conversations in real-time
   useEffect(() => {
-    if (!user || conversations.length === 0) return;
+    if (!user) return;
 
     const subscription = supabase
       .channel("messages-updates")
@@ -698,10 +690,8 @@ export default function MessagesPage() {
             console.log(
               "🆕 New conversation detected, reloading conversations..."
             );
-            // Add a small delay to ensure the message is fully committed to the database
-            setTimeout(() => {
-              loadConversations();
-            }, 500);
+            // Use debounced version to prevent rapid successive calls
+            debouncedLoadConversations();
             return;
           }
 
@@ -767,7 +757,6 @@ export default function MessagesPage() {
             };
 
             setConversations(updateConversations);
-            setFilteredConversations((prev) => updateConversations(prev));
           } catch (error) {
             console.error(
               "Error updating conversation with new message:",
@@ -865,7 +854,7 @@ export default function MessagesPage() {
 
   // Reload conversations when unread counts change (indicating new messages)
   useEffect(() => {
-    if (unreadCounts.length > 0) {
+    if (unreadCounts.length > 0 && conversations.length > 0) {
       console.log(
         "🔄 Unread counts changed, checking if we need to reload conversations..."
       );
@@ -880,28 +869,26 @@ export default function MessagesPage() {
         console.log(
           `🆕 Found ${newRideIds.length} new ride(s) with messages, reloading conversations...`
         );
-        loadConversations();
+        // Use debounced version to prevent rapid successive calls
+        debouncedLoadConversations();
       }
     }
-  }, [unreadCounts, conversations, loadConversations]);
+  }, [unreadCounts, conversations, debouncedLoadConversations]);
 
-  // Filter conversations based on search query
-  useEffect(() => {
+  // Memoized conversation filtering to prevent unnecessary re-computations
+  const filteredConversations = useMemo(() => {
     if (!searchQuery.trim()) {
-      setFilteredConversations(conversations);
-      return;
+      return conversations;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = conversations.filter(
+    return conversations.filter(
       (conv) =>
         conv.otherUserName.toLowerCase().includes(query) ||
         conv.ride.from_city.toLowerCase().includes(query) ||
         conv.ride.to_city.toLowerCase().includes(query) ||
         conv.lastMessage.toLowerCase().includes(query)
     );
-
-    setFilteredConversations(filtered);
   }, [searchQuery, conversations]);
 
   // Set up global message notification manager
@@ -933,7 +920,7 @@ export default function MessagesPage() {
       },
       onNewMessage: () => {
         // Refresh conversations when new message is received
-        loadConversations();
+        debouncedLoadConversations();
       },
     });
 

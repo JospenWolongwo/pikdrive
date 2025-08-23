@@ -20,6 +20,10 @@ import { RidesTab } from "@/components/driver/dashboard/rides-tab";
 // Custom hooks
 import { useRidesData } from "@/components/driver/dashboard/use-rides-data";
 import { useRidesFiltering } from "@/components/driver/dashboard/use-rides-filtering";
+import {
+  initializeGlobalBookingNotificationManager,
+  cleanupGlobalBookingNotificationManager,
+} from "@/lib/notifications/booking-notification-manager";
 
 // Types
 import type {
@@ -29,7 +33,7 @@ import type {
 
 export default function DriverDashboard() {
   const router = useRouter();
-  const { user } = useSupabase();
+  const { user, supabase } = useSupabase();
   const { subscribeToRide } = useChat();
   const { toast } = useToast();
 
@@ -74,6 +78,39 @@ export default function DriverDashboard() {
 
     if (user) initialLoad();
   }, [user, loadRides, router]);
+
+  // Set up global booking notification manager for drivers
+  useEffect(() => {
+    if (!user || typeof window === "undefined") {
+      cleanupGlobalBookingNotificationManager();
+      return;
+    }
+
+    // Prevent multiple managers from starting
+    if (window.__bookingNotificationManager) {
+      return;
+    }
+
+    const manager = initializeGlobalBookingNotificationManager(
+      supabase,
+      user.id,
+      () => {
+        // Navigate to driver dashboard when notification is clicked
+        router.push("/driver/dashboard");
+      }
+    );
+
+    try {
+      manager.start();
+      console.log("🚗 BookingNotificationManager started for driver dashboard");
+    } catch (error) {
+      console.error("❌ Failed to start BookingNotificationManager:", error);
+    }
+
+    return () => {
+      cleanupGlobalBookingNotificationManager();
+    };
+  }, [user, supabase, router]);
 
   const handleOpenChat = (
     ride: Ride,
