@@ -66,6 +66,7 @@ export function BookingModal({
   const [step, setStep] = useState(1);
   const [seats, setSeats] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [selectedProvider, setSelectedProvider] =
     useState<PaymentProviderType>();
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -87,9 +88,36 @@ export function BookingModal({
   const providers = paymentService.getAvailableProviders();
 
   const handleCreateBooking = async () => {
-    if (!user) return;
+    if (!user || isCreatingBooking) return;
 
     try {
+      setIsCreatingBooking(true);
+
+      // Check if user already has a pending or confirmed booking for this ride
+      const { data: existingBooking, error: checkError } = await supabase
+        .from("bookings")
+        .select("id, status, payment_status")
+        .eq("ride_id", ride.id)
+        .eq("user_id", user.id)
+        .in("status", ["pending", "confirmed"])
+        .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 = no rows returned
+        console.error("Error checking existing booking:", checkError);
+        toast.error("Error checking existing booking");
+        return;
+      }
+
+      if (existingBooking) {
+        console.warn(
+          "User already has a booking for this ride:",
+          existingBooking.id
+        );
+        toast.error("You already have a booking for this ride");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("bookings")
         .insert([
@@ -134,6 +162,8 @@ export function BookingModal({
       toast.error(
         error instanceof Error ? error.message : "Failed to create booking"
       );
+    } finally {
+      setIsCreatingBooking(false);
     }
   };
 
@@ -290,10 +320,21 @@ export function BookingModal({
               </Button>
               <Button
                 onClick={handleCreateBooking}
-                disabled={seats < 1 || seats > ride.seats_available}
+                disabled={
+                  seats < 1 || seats > ride.seats_available || isCreatingBooking
+                }
               >
-                Continue to Payment
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {isCreatingBooking ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    Continue to Payment
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </>
