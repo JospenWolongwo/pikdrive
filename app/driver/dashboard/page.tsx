@@ -154,6 +154,87 @@ export default function DriverDashboard() {
     setSelectedChat(null);
   };
 
+  const handleDeleteRide = async (rideId: string) => {
+    try {
+      // Check if the ride has active bookings
+      const ride = ridesData.rides.find((r) => r.id === rideId);
+      if (
+        ride &&
+        ride.bookings.some(
+          (b) =>
+            b.status === "confirmed" ||
+            b.status === "pending" ||
+            b.status === "pending_verification" ||
+            b.payment_status === "completed" ||
+            b.payment_status === "paid"
+        )
+      ) {
+        // Check if there are paid bookings
+        const hasPaidBookings = ride.bookings.some(
+          (b) => b.payment_status === "completed" || b.payment_status === "paid"
+        );
+
+        const hasActiveBookings = ride.bookings.some(
+          (b) =>
+            b.status === "confirmed" ||
+            b.status === "pending" ||
+            b.status === "pending_verification"
+        );
+
+        let description = "";
+        if (hasPaidBookings) {
+          description =
+            "Vous ne pouvez pas supprimer un trajet avec des réservations payées.";
+        } else if (hasActiveBookings) {
+          description =
+            "Vous ne pouvez pas supprimer un trajet avec des réservations actives.";
+        }
+
+        toast({
+          title: "Suppression impossible",
+          description,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Confirm deletion
+      if (confirm("Êtes-vous sûr de vouloir supprimer ce trajet ?")) {
+        const { error } = await supabase
+          .from("rides")
+          .delete()
+          .eq("id", rideId)
+          .eq("driver_id", user.id);
+
+        if (error) {
+          console.error("❌ Error deleting ride:", error);
+          toast({
+            title: "Erreur",
+            description:
+              "Impossible de supprimer le trajet. Veuillez réessayer.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Trajet supprimé",
+          description: "Le trajet a été supprimé avec succès",
+        });
+
+        // Reload rides
+        await loadRides();
+      }
+    } catch (error) {
+      console.error("❌ Error in delete process:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la suppression.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div className="container py-10">Chargement...</div>;
   }
@@ -194,6 +275,7 @@ export default function DriverDashboard() {
             onOpenChat={handleOpenChat}
             onVerifyCode={handleVerifyCode}
             onCheckPayment={handleCheckPayment}
+            onDeleteRide={handleDeleteRide}
             isPastRide={false}
             searchQuery={searchQuery}
           />
@@ -208,6 +290,7 @@ export default function DriverDashboard() {
             onOpenChat={handleOpenChat}
             onVerifyCode={handleVerifyCode}
             onCheckPayment={handleCheckPayment}
+            onDeleteRide={handleDeleteRide}
             isPastRide={true}
             searchQuery={searchQuery}
           />

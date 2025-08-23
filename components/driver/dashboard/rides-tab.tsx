@@ -18,6 +18,7 @@ interface RidesTabProps {
     transaction_id?: string;
     payment_provider?: string;
   }) => void;
+  onDeleteRide?: (rideId: string) => void;
   isPastRide?: boolean;
   searchQuery: string;
 }
@@ -30,6 +31,7 @@ export function RidesTab({
   onOpenChat,
   onVerifyCode,
   onCheckPayment,
+  onDeleteRide,
   isPastRide = false,
   searchQuery,
 }: RidesTabProps) {
@@ -65,6 +67,7 @@ export function RidesTab({
           onOpenChat={onOpenChat}
           onVerifyCode={onVerifyCode}
           onCheckPayment={onCheckPayment}
+          onDeleteRide={onDeleteRide}
           isPastRide={isPastRide}
         />
       ))}
