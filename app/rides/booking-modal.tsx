@@ -32,6 +32,7 @@ import { getGlobalBookingNotificationManager } from "@/lib/notifications/booking
 
 interface Ride {
   id: string;
+  driver_id: string; // Added this property for notification manager compatibility
   from_city: string;
   to_city: string;
   price: number;
@@ -336,7 +337,7 @@ export function BookingModal({
                       // Show success notification to driver
                       const bookingManager =
                         getGlobalBookingNotificationManager();
-                      if (bookingManager && ride.driver?.id) {
+                      if (bookingManager && ride.driver_id) {
                         try {
                           // Get the booking data to show driver notification
                           const { data: booking } = await supabase

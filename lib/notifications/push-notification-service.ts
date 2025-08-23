@@ -178,7 +178,7 @@ export class PushNotificationService {
   }
 
   // Helper method to convert VAPID key
-  private urlBase64ToUint8Array(base64String: string): Uint8Array {
+  private urlBase64ToUint8Array(base64String: string): BufferSource {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding)
       .replace(/-/g, "+")
@@ -190,7 +190,7 @@ export class PushNotificationService {
     for (let i = 0; i < rawData.length; ++i) {
       outputArray[i] = rawData.charCodeAt(i);
     }
-    return outputArray;
+    return outputArray as BufferSource;
   }
 
   // Helper method to convert ArrayBuffer to base64
