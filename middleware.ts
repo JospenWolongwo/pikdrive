@@ -4,12 +4,18 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
 
-  // Refresh session if expired
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Skip middleware for static assets and API routes
+  if (
+    req.nextUrl.pathname.startsWith("/_next") ||
+    req.nextUrl.pathname.startsWith("/api") ||
+    req.nextUrl.pathname.startsWith("/static") ||
+    req.nextUrl.pathname.includes(".")
+  ) {
+    return res;
+  }
+
+  const supabase = createMiddlewareClient({ req, res });
 
   // Protected routes that require authentication
   const protectedPaths = [
@@ -25,18 +31,43 @@ export async function middleware(req: NextRequest) {
     req.nextUrl.pathname.startsWith(path)
   );
 
-  // If trying to access protected routes without authentication
-  if (isProtectedPath && !session) {
-    const redirectUrl = new URL("/auth", req.url);
-    redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+  // Only check auth for protected paths to reduce unnecessary processing
+  if (isProtectedPath) {
+    try {
+      // Use cached session when possible to reduce latency
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      // If trying to access protected routes without authentication
+      if (!session) {
+        const redirectUrl = new URL("/auth", req.url);
+        redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
+        return NextResponse.redirect(redirectUrl);
+      }
+    } catch (error) {
+      // Fallback redirect on auth error
+      const redirectUrl = new URL("/auth", req.url);
+      redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   // If the user is signed in and the current path is /auth,
   // redirect the user to the intended destination or home
-  if (session && req.nextUrl.pathname.startsWith("/auth")) {
-    const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
-    return NextResponse.redirect(new URL(redirectTo, req.url));
+  if (req.nextUrl.pathname.startsWith("/auth")) {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
+        return NextResponse.redirect(new URL(redirectTo, req.url));
+      }
+    } catch (error) {
+      // Continue to auth page on error
+    }
   }
 
   return res;

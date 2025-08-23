@@ -55,8 +55,8 @@ const withPWA = require("next-pwa")({
       urlPattern: /\.(?:mp3|wav|ogg)$/i,
       handler: "CacheFirst",
       options: {
-        rangeRequests: true,
         cacheName: "static-audio-assets",
+        rangeRequests: true,
         expiration: {
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
@@ -106,7 +106,7 @@ const withPWA = require("next-pwa")({
           maxEntries: 16,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
         },
-        networkTimeoutSeconds: 10,
+        networkTimeoutSeconds: 5, // Reduced from 10 to 5 seconds
       },
     },
     {
@@ -118,7 +118,7 @@ const withPWA = require("next-pwa")({
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
         },
-        networkTimeoutSeconds: 10,
+        networkTimeoutSeconds: 5, // Reduced from 10 to 5 seconds
       },
     },
   ],
@@ -127,6 +127,20 @@ const withPWA = require("next-pwa")({
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Performance optimizations
+  experimental: {
+    // Enable optimizations for better performance
+    optimizePackageImports: ["@supabase/supabase-js", "lucide-react"],
+    turbo: {
+      rules: {
+        "*.svg": {
+          loaders: ["@svgr/webpack"],
+          as: "*.js",
+        },
+      },
+    },
+  },
+  // Image optimization
   images: {
     remotePatterns: [
       {
@@ -142,9 +156,32 @@ const nextConfig = {
         hostname: "lvtwvyxolrjbupltmqrl.supabase.co",
       },
     ],
+    // Performance optimizations
+    formats: ["image/webp", "image/avif"],
+    minimumCacheTTL: 60,
   },
-  experimental: {
-    // serverActions are enabled by default in Next.js 14.1.0
+  // Bundle optimization
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      // Optimize bundle splitting
+      config.optimization.splitChunks = {
+        chunks: "all",
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: "vendors",
+            chunks: "all",
+          },
+          common: {
+            name: "common",
+            minChunks: 2,
+            chunks: "all",
+            enforce: true,
+          },
+        },
+      };
+    }
+    return config;
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -157,6 +194,24 @@ const nextConfig = {
           {
             key: "Cache-Control",
             value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+      // Performance headers
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
           },
         ],
       },

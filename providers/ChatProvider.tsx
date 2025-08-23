@@ -1,155 +1,182 @@
-'use client'
+"use client";
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { useSupabase } from './SupabaseProvider'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
+import { useSupabase } from "./SupabaseProvider";
 
 interface UnreadCount {
-  rideId: string
-  count: number
+  rideId: string;
+  count: number;
 }
 
 interface ChatContextType {
-  unreadCounts: UnreadCount[]
-  markAsRead: (rideId: string) => Promise<void>
-  subscribeToRide: (rideId: string) => void
-  unsubscribeFromRide: (rideId: string) => void
+  unreadCounts: UnreadCount[];
+  markAsRead: (rideId: string) => Promise<void>;
+  subscribeToRide: (rideId: string) => void;
+  unsubscribeFromRide: (rideId: string) => void;
 }
 
-const ChatContext = createContext<ChatContextType | undefined>(undefined)
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { supabase, user } = useSupabase()
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCount[]>([])
-  const [subscribedRides, setSubscribedRides] = useState<Set<string>>(new Set())
+  const { supabase, user } = useSupabase();
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCount[]>([]);
+  const [subscribedRides, setSubscribedRides] = useState<Set<string>>(
+    new Set()
+  );
+  const channelsRef = useRef<Map<string, any>>(new Map());
+  const initializedRef = useRef(false);
+
+  const loadUnreadCounts = useCallback(async () => {
+    if (!user || initializedRef.current) return;
+
+    try {
+      initializedRef.current = true;
+      // First get all unread messages
+      const { data: messages, error } = await supabase
+        .from("messages")
+        .select("ride_id")
+        .eq("receiver_id", user.id)
+        .eq("read", false);
+
+      if (error) throw error;
+
+      // Then count them by ride_id
+      const counts = messages
+        ? messages.reduce(
+            (acc: Record<string, number>, msg: { ride_id: string }) => {
+              acc[msg.ride_id] = (acc[msg.ride_id] || 0) + 1;
+              return acc;
+            },
+            {} as Record<string, number>
+          )
+        : {};
+
+      // Convert to our UnreadCount format
+      setUnreadCounts(
+        Object.entries(counts).map(
+          ([ride_id, count]): UnreadCount => ({
+            rideId: ride_id,
+            count: count as number,
+          })
+        )
+      );
+    } catch (error) {
+      console.error("Error loading unread counts:", error);
+    }
+  }, [user, supabase]);
 
   useEffect(() => {
-    if (!user) return
-
-    // Load initial unread counts
-    const loadUnreadCounts = async () => {
-      try {
-        // First get all unread messages
-        const { data: messages, error } = await supabase
-          .from('messages')
-          .select('ride_id')
-          .eq('receiver_id', user.id)
-          .eq('read', false)
-
-        if (error) throw error
-
-        // Then count them by ride_id
-        const counts = messages ? messages.reduce((acc: Record<string, number>, msg: { ride_id: string }) => {
-          acc[msg.ride_id] = (acc[msg.ride_id] || 0) + 1
-          return acc
-        }, {} as Record<string, number>) : {}
-
-        // Convert to our UnreadCount format
-        setUnreadCounts(
-          Object.entries(counts).map(([ride_id, count]): UnreadCount => ({
-            rideId: ride_id,
-            count: count as number
-          }))
-        )
-      } catch (error) {
-        console.error('Error loading unread counts:', error)
-      }
-    }
-
-    loadUnreadCounts()
-  }, [user, supabase])
+    loadUnreadCounts();
+  }, [loadUnreadCounts]);
 
   const markAsRead = async (rideId: string) => {
-    if (!user) return
+    if (!user) return;
 
     try {
       const { error } = await supabase
-        .from('messages')
+        .from("messages")
         .update({ read: true })
-        .eq('ride_id', rideId)
-        .eq('receiver_id', user.id)
-        .eq('read', false)
+        .eq("ride_id", rideId)
+        .eq("receiver_id", user.id)
+        .eq("read", false);
 
-      if (error) throw error
+      if (error) throw error;
 
-      setUnreadCounts(prev =>
-        prev.filter(count => count.rideId !== rideId)
-      )
+      setUnreadCounts((prev) =>
+        prev.filter((count) => count.rideId !== rideId)
+      );
     } catch (error) {
-      console.error('Error marking messages as read:', error)
+      console.error("Error marking messages as read:", error);
     }
-  }
+  };
 
-  const subscribeToRide = (rideId: string) => {
-    if (subscribedRides.has(rideId)) return
+  const subscribeToRide = useCallback(
+    (rideId: string) => {
+      if (subscribedRides.has(rideId) || channelsRef.current.has(rideId))
+        return;
 
-    const channel = supabase
-      .channel(`chat:${rideId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `ride_id=eq.${rideId}`
-        },
-        (payload: { new: { ride_id: string; receiver_id: string; read: boolean } }) => {
-          const message = payload.new
-          if (message.receiver_id === user?.id && !message.read) {
-            setUnreadCounts(prev => {
-              const existing = prev.find(c => c.rideId === rideId)
-              if (existing) {
-                return prev.map(c =>
-                  c.rideId === rideId 
-                    ? { ...c, count: c.count + 1 }
-                    : c
-                )
-              }
-              return [...prev, { rideId, count: 1 }]
-            })
+      const channel = supabase
+        .channel(`chat:${rideId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `ride_id=eq.${rideId}`,
+          },
+          (payload: {
+            new: { ride_id: string; receiver_id: string; read: boolean };
+          }) => {
+            const message = payload.new;
+            if (message.receiver_id === user?.id && !message.read) {
+              setUnreadCounts((prev) => {
+                const existing = prev.find((c) => c.rideId === rideId);
+                if (existing) {
+                  return prev.map((c) =>
+                    c.rideId === rideId ? { ...c, count: c.count + 1 } : c
+                  );
+                } else {
+                  return [...prev, { rideId, count: 1 }];
+                }
+              });
+            }
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `ride_id=eq.${rideId}`
-        },
-        (payload: { new: { ride_id: string; receiver_id: string; read: boolean } }) => {
-          const message = payload.new
-          if (message.receiver_id === user?.id && message.read) {
-            setUnreadCounts(prev => 
-              prev.filter(c => c.rideId !== rideId)
-            )
-          }
-        }
-      )
-      .subscribe()
+        )
+        .subscribe();
 
-    setSubscribedRides(prev => new Set([...Array.from(prev), rideId]))
+      channelsRef.current.set(rideId, channel);
+      setSubscribedRides((prev) => new Set(prev).add(rideId));
+    },
+    [supabase, user, subscribedRides]
+  );
 
+  const unsubscribeFromRide = useCallback(
+    (rideId: string) => {
+      const channel = channelsRef.current.get(rideId);
+      if (channel) {
+        supabase.removeChannel(channel);
+        channelsRef.current.delete(rideId);
+        setSubscribedRides((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(rideId);
+          return newSet;
+        });
+      }
+    },
+    [supabase]
+  );
+
+  // Cleanup subscriptions when user changes
+  useEffect(() => {
+    if (!user) {
+      // Clear all subscriptions when user logs out
+      channelsRef.current.forEach((channel) => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current.clear();
+      setSubscribedRides(new Set());
+      setUnreadCounts([]);
+      initializedRef.current = false;
+    }
+  }, [user, supabase]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      channel.unsubscribe()
-      setSubscribedRides(prev => {
-        const next = new Set(prev)
-        next.delete(rideId)
-        return next
-      })
-    }
-  }
-
-  const unsubscribeFromRide = (rideId: string) => {
-    if (!subscribedRides.has(rideId)) return
-
-    supabase.channel(`chat:${rideId}`).unsubscribe()
-    setSubscribedRides(prev => {
-      const next = new Set(prev)
-      next.delete(rideId)
-      return next
-    })
-  }
+      channelsRef.current.forEach((channel) => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current.clear();
+    };
+  }, [supabase]);
 
   return (
     <ChatContext.Provider
@@ -157,18 +184,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         unreadCounts,
         markAsRead,
         subscribeToRide,
-        unsubscribeFromRide
+        unsubscribeFromRide,
       }}
     >
       {children}
     </ChatContext.Provider>
-  )
+  );
 }
 
-export function useChat() {
-  const context = useContext(ChatContext)
-  if (context === undefined) {
-    throw new Error('useChat must be used within a ChatProvider')
+export const useChat = () => {
+  const context = useContext(ChatContext);
+  if (!context) {
+    throw new Error("useChat must be used within a ChatProvider");
   }
-  return context
-}
+  return context;
+};

@@ -976,34 +976,6 @@ export default function MessagesPage() {
               <span className="hidden sm:inline">Actualiser</span>
             </Button>
 
-            {/* Test Push Notification Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                console.log("🧪 Testing push notification...");
-                try {
-                  const response = await fetch("/api/push/send", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      userId: user?.id,
-                      title: "Test Notification",
-                      body: "This is a test push notification",
-                      data: { test: true },
-                    }),
-                  });
-                  const result = await response.json();
-                  console.log("🧪 Push test result:", result);
-                } catch (error) {
-                  console.error("🧪 Push test error:", error);
-                }
-              }}
-              className="flex items-center gap-1 sm:gap-2"
-            >
-              🧪 Test Push
-            </Button>
-
             {/* Unified Notification Toggle */}
             {notificationsSupported && (
               <Button

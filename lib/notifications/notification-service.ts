@@ -29,7 +29,7 @@ export class NotificationService {
   constructor(config?: Partial<NotificationServiceConfig>) {
     this.config = {
       enableSound: true,
-      soundUrl: "/notification.wav",
+      soundUrl: "/sounds/notification.mp3", // Changed to MP3
       enableVibration: true,
       defaultVibrationPattern: [200, 100, 200],
       ...config,
@@ -45,12 +45,60 @@ export class NotificationService {
   private initializeAudio() {
     if (typeof window !== "undefined" && this.config.enableSound) {
       try {
+        // Try to load the notification sound with fallback
         this.audio = new Audio(this.config.soundUrl);
         this.audio.preload = "auto";
         this.audio.volume = 0.7;
+
+        // Add error handling for missing audio file
+        this.audio.addEventListener("error", (e) => {
+          console.warn("Notification audio file not found, using fallback:", e);
+          // Try fallback sound or disable sound
+          this.tryFallbackAudio();
+        });
+
+        // Test if audio can be loaded
+        this.audio.addEventListener("canplaythrough", () => {
+          console.log("✅ Notification audio loaded successfully");
+        });
       } catch (error) {
         console.warn("Failed to initialize notification audio:", error);
+        this.tryFallbackAudio();
       }
+    }
+  }
+
+  private tryFallbackAudio() {
+    try {
+      // Try alternative sound files (MP3 first, then WAV)
+      const fallbackSounds = [
+        "/sounds/notification.mp3",
+        "/notification.mp3",
+        "/sounds/notification.wav",
+        "/notification.wav",
+      ];
+
+      for (const soundUrl of fallbackSounds) {
+        if (soundUrl !== this.config.soundUrl) {
+          try {
+            this.audio = new Audio(soundUrl);
+            this.audio.preload = "auto";
+            this.audio.volume = 0.7;
+            this.config.soundUrl = soundUrl;
+            console.log(`✅ Using fallback audio: ${soundUrl}`);
+            return;
+          } catch (fallbackError) {
+            continue;
+          }
+        }
+      }
+
+      // If no fallback works, disable sound
+      console.warn("No notification audio files found, disabling sound");
+      this.config.enableSound = false;
+    } catch (error) {
+      console.warn("Failed to initialize fallback audio:", error);
+      this.config.enableSound = false;
     }
   }
 
