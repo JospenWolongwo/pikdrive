@@ -201,7 +201,7 @@ export function useRidesData() {
     [user, supabase, toast, loadCancelledBookings]
   );
 
-  // Subscribe to real-time booking changes for immediate cancellation notifications
+  // Subscribe to real-time booking changes for immediate notifications
   useEffect(() => {
     if (!user || !ridesData.rides.length) return;
 
@@ -217,7 +217,7 @@ export function useRidesData() {
           table: "bookings",
           filter: `ride_id=in.(${rideIds.join(",")})`,
         },
-        (payload: any) => {
+        async (payload: any) => {
           // Check if this is a cancellation
           if (
             payload.new.status === "cancelled" &&
@@ -238,6 +238,45 @@ export function useRidesData() {
             setTimeout(() => {
               loadRides();
             }, 1000);
+          }
+
+          // Check if payment was completed (status changed to pending_verification)
+          if (
+            payload.new.status === "pending_verification" &&
+            payload.old.status === "pending"
+          ) {
+            console.log("💳 Payment completed for booking:", payload.new.id);
+
+            // Send push notification to driver about payment completion
+            try {
+              await fetch("/api/notifications/booking", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  notificationData: JSON.stringify({
+                    type: "payment_completed_driver",
+                    userId: user.id,
+                    title: "💳 Paiement Recu !",
+                    body: "Un passager a complete le paiement. Verifiez le code de reservation.",
+                    data: {
+                      bookingId: payload.new.id,
+                      rideId: payload.new.ride_id,
+                      type: "payment_completed_driver",
+                    },
+                  }),
+                }),
+              });
+            } catch (error) {
+              console.warn("⚠️ Failed to send payment notification:", error);
+            }
+          }
+
+          // Check if booking was confirmed (code verified)
+          if (
+            payload.new.status === "confirmed" &&
+            payload.old.status === "pending_verification"
+          ) {
+            console.log("✅ Booking confirmed:", payload.new.id);
           }
         }
       )

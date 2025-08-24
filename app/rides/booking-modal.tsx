@@ -155,6 +155,31 @@ export function BookingModal({
         }
       }
 
+      // Send push notification to driver about new booking
+      try {
+        await fetch("/api/notifications/booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            notificationData: JSON.stringify({
+              type: "new_booking",
+              userId: ride.driver_id,
+              title: "🚗 Nouvelle Reservation !",
+              body: `Nouvelle demande de reservation pour ${ride.from_city} → ${ride.to_city}`,
+              data: {
+                bookingId: data.id,
+                rideId: ride.id,
+                passengerId: user.id,
+                type: "new_booking",
+              },
+            }),
+          }),
+        });
+        console.log("✅ Push notification sent to driver about new booking");
+      } catch (error) {
+        console.warn("⚠️ Failed to send push notification to driver:", error);
+      }
+
       setBookingId(data.id);
       setStep(2);
     } catch (error) {

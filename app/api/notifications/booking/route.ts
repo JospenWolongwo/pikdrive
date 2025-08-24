@@ -1,0 +1,71 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { bookingNotificationService } from "@/lib/notifications/booking-notification-service";
+
+export async function POST(request: NextRequest) {
+  try {
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    // Verify user session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { notificationData } = await request.json();
+
+    if (!notificationData) {
+      return NextResponse.json(
+        { error: "Missing notification data" },
+        { status: 400 }
+      );
+    }
+
+    // Process the notification and send push notification
+    await bookingNotificationService.processDatabaseNotification(
+      notificationData
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("❌ Error processing booking notification:", error);
+    return NextResponse.json(
+      { error: "Failed to process notification" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    // Verify user session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Return notification service status
+    return NextResponse.json({
+      success: true,
+      message: "Booking notification service is running",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Error checking notification service:", error);
+    return NextResponse.json(
+      { error: "Failed to check service status" },
+      { status: 500 }
+    );
+  }
+}
