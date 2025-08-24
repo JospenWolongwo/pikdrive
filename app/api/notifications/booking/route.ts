@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import { bookingNotificationService } from "@/lib/notifications/booking-notification-service";
+import { processDatabaseNotification } from "@/lib/notifications/booking-notification-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,9 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process the notification and send push notification
-    await bookingNotificationService.processDatabaseNotification(
-      notificationData
-    );
+    await processDatabaseNotification(notificationData, supabase);
 
     return NextResponse.json({ success: true });
   } catch (error) {

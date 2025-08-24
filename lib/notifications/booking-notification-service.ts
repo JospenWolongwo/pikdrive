@@ -1,6 +1,3 @@
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
 import webpush from "web-push";
 
 // Configure web-push with VAPID keys
@@ -18,54 +15,61 @@ interface BookingNotification {
   data: Record<string, any>;
 }
 
-export class BookingNotificationService {
-  private static instance: BookingNotificationService;
-  private supabase: ReturnType<typeof createClient>;
+/**
+ * Check if a subscription is expired
+ */
+function isSubscriptionExpired(error: any): boolean {
+  if (!error) return false;
 
-  private constructor() {
-    this.supabase = createClient();
-  }
+  const errorMessage = error.message || "";
+  const statusCode = error.statusCode;
 
-  static getInstance(): BookingNotificationService {
-    if (!BookingNotificationService.instance) {
-      BookingNotificationService.instance = new BookingNotificationService();
+  return (
+    statusCode === 410 || // Gone
+    statusCode === 404 || // Not Found
+    errorMessage.includes("410") ||
+    errorMessage.includes("Gone") ||
+    errorMessage.includes("expired") ||
+    errorMessage.includes("unsubscribed") ||
+    errorMessage.includes("not found") ||
+    errorMessage.includes("invalid")
+  );
+}
+
+/**
+ * Send push notification to a specific user
+ */
+export async function sendPushNotification(
+  notification: BookingNotification,
+  supabase: any
+): Promise<void> {
+  try {
+    console.log("📤 Sending booking notification:", {
+      type: notification.type,
+      userId: notification.userId,
+      title: notification.title,
+    });
+
+    // Get user's push subscriptions
+    const { data: subscriptions, error } = await supabase
+      .from("push_subscriptions")
+      .select("subscription")
+      .eq("user_id", notification.userId)
+      .eq("is_active", true);
+
+    if (error) {
+      console.error("❌ Error fetching subscriptions:", error);
+      return;
     }
-    return BookingNotificationService.instance;
-  }
 
-  /**
-   * Send push notification to a specific user
-   */
-  async sendPushNotification(notification: BookingNotification): Promise<void> {
-    try {
-      console.log("📤 Sending booking notification:", {
-        type: notification.type,
-        userId: notification.userId,
-        title: notification.title,
-      });
+    if (!subscriptions?.length) {
+      console.log("ℹ️ No active subscriptions for user:", notification.userId);
+      return;
+    }
 
-      // Get user's push subscriptions
-      const { data: subscriptions, error } = await this.supabase
-        .from("push_subscriptions")
-        .select("subscription")
-        .eq("user_id", notification.userId)
-        .eq("is_active", true);
-
-      if (error) {
-        console.error("❌ Error fetching subscriptions:", error);
-        return;
-      }
-
-      if (!subscriptions?.length) {
-        console.log(
-          "ℹ️ No active subscriptions for user:",
-          notification.userId
-        );
-        return;
-      }
-
-      // Send to each subscription
-      const sendPromises = subscriptions.map(async ({ subscription }) => {
+    // Send to each subscription
+    const sendPromises = subscriptions.map(
+      async ({ subscription }: { subscription: any }) => {
         try {
           let subscriptionObj;
           if (typeof subscription === "string") {
@@ -107,70 +111,46 @@ export class BookingNotificationService {
           console.error("❌ Failed to send push notification:", error);
 
           // Check if subscription is expired and mark as inactive
-          if (this.isSubscriptionExpired(error)) {
-            await this.markSubscriptionInactive(subscription);
+          if (isSubscriptionExpired(error)) {
+            // Mark subscription as inactive
+            try {
+              await supabase
+                .from("push_subscriptions")
+                .update({
+                  is_active: false,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("subscription", JSON.stringify(subscription));
+
+              console.log("🗑️ Marked expired subscription as inactive");
+            } catch (updateError) {
+              console.error(
+                "❌ Failed to mark subscription inactive:",
+                updateError
+              );
+            }
           }
         }
-      });
-
-      await Promise.allSettled(sendPromises);
-    } catch (error) {
-      console.error("❌ Error in sendPushNotification:", error);
-    }
-  }
-
-  /**
-   * Check if a subscription is expired
-   */
-  private isSubscriptionExpired(error: any): boolean {
-    if (!error) return false;
-
-    const errorMessage = error.message || "";
-    const statusCode = error.statusCode;
-
-    return (
-      statusCode === 410 || // Gone
-      statusCode === 404 || // Not Found
-      errorMessage.includes("410") ||
-      errorMessage.includes("Gone") ||
-      errorMessage.includes("expired") ||
-      errorMessage.includes("unsubscribed") ||
-      errorMessage.includes("not found") ||
-      errorMessage.includes("invalid")
+      }
     );
-  }
 
-  /**
-   * Mark subscription as inactive
-   */
-  private async markSubscriptionInactive(subscription: any): Promise<void> {
-    try {
-      await this.supabase
-        .from("push_subscriptions")
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("subscription", JSON.stringify(subscription));
-
-      console.log("🗑️ Marked expired subscription as inactive");
-    } catch (error) {
-      console.error("❌ Failed to mark subscription inactive:", error);
-    }
-  }
-
-  /**
-   * Process database notification and send push notification
-   */
-  async processDatabaseNotification(notificationData: string): Promise<void> {
-    try {
-      const notification: BookingNotification = JSON.parse(notificationData);
-      await this.sendPushNotification(notification);
-    } catch (error) {
-      console.error("❌ Error processing database notification:", error);
-    }
+    await Promise.allSettled(sendPromises);
+  } catch (error) {
+    console.error("❌ Error in sendPushNotification:", error);
   }
 }
 
-export const bookingNotificationService =
-  BookingNotificationService.getInstance();
+/**
+ * Process database notification and send push notification
+ */
+export async function processDatabaseNotification(
+  notificationData: string,
+  supabase: any
+): Promise<void> {
+  try {
+    const notification: BookingNotification = JSON.parse(notificationData);
+    await sendPushNotification(notification, supabase);
+  } catch (error) {
+    console.error("❌ Error processing database notification:", error);
+  }
+}

@@ -51,7 +51,7 @@ export function useRidesData() {
         }
 
         // Fetch user profiles separately
-        const userIds = [...new Set(cancelled.map((b) => b.user_id))];
+        const userIds = [...new Set(cancelled.map((b: any) => b.user_id))];
         const { data: users } = await supabase
           .from("profiles")
           .select("id, full_name")
@@ -63,12 +63,12 @@ export function useRidesData() {
           .select("id, from_city, to_city")
           .in("id", rideIds);
 
-        const userMap = new Map(users?.map((u) => [u.id, u]) || []);
-        const rideMap = new Map(rides?.map((r) => [r.id, r]) || []);
+        const userMap = new Map(users?.map((u: any) => [u.id, u]) || []);
+        const rideMap = new Map(rides?.map((r: any) => [r.id, r]) || []);
 
         const formattedCancelled = cancelled.map((booking: any) => {
-          const user = userMap.get(booking.user_id);
-          const ride = rideMap.get(booking.ride_id);
+          const user = userMap.get(booking.user_id) as any;
+          const ride = rideMap.get(booking.ride_id) as any;
 
           return {
             id: booking.id,
@@ -133,12 +133,12 @@ export function useRidesData() {
             .select(
               "id, ride_id, user_id, seats, status, payment_status, created_at, updated_at"
             )
-            .or(rideIds.map((id) => `ride_id.eq.${id}`).join(","))
+            .or(rideIds.map((id: string) => `ride_id.eq.${id}`).join(","))
             .order("created_at", { ascending: false }),
           supabase
             .from("messages")
             .select("id, ride_id, sender_id, content, created_at")
-            .or(rideIds.map((id) => `ride_id.eq.${id}`).join(","))
+            .or(rideIds.map((id: string) => `ride_id.eq.${id}`).join(","))
             .order("created_at", { ascending: false }),
         ]);
 
