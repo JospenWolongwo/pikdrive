@@ -82,14 +82,9 @@ export function RideCard({
 
   // Helper function to check if ride can be deleted
   const canDeleteRide = () => {
-    return !ride.bookings.some(
-      (b) =>
-        b.status === "confirmed" ||
-        b.status === "pending" ||
-        b.status === "pending_verification" ||
-        b.payment_status === "completed" ||
-        b.payment_status === "paid"
-    );
+    // A ride cannot be deleted if it has any bookings at all
+    // This prevents deletion of rides that have been booked by passengers
+    return ride.bookings.length === 0;
   };
 
   const handleDeleteRide = async (rideId: string) => {
@@ -159,103 +154,55 @@ export function RideCard({
                 {/* Show warning if ride cannot be deleted */}
                 {!canDeleteRide() && (
                   <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                    ⚠️{" "}
-                    {(() => {
-                      const hasPaidBookings = ride.bookings.some(
-                        (b) =>
-                          b.payment_status === "completed" ||
-                          b.payment_status === "paid"
-                      );
-                      const hasActiveBookings = ride.bookings.some(
-                        (b) =>
-                          b.status === "confirmed" ||
-                          b.status === "pending" ||
-                          b.status === "pending_verification"
-                      );
-
-                      if (hasPaidBookings) {
-                        return "Paiements reçus";
-                      } else if (hasActiveBookings) {
-                        return "Réservations actives";
-                      }
-                      return "Réservations actives";
-                    })()}
+                    ⚠️ Réservations actives ({ride.bookings.length})
                   </div>
                 )}
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!canDeleteRide()}
-                      className={`flex items-center gap-1 ${
-                        !canDeleteRide()
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-red-600 hover:text-red-700 hover:bg-red-50"
-                      }`}
-                      title={
-                        !canDeleteRide()
-                          ? "Impossible de supprimer un trajet avec des réservations actives"
-                          : "Supprimer ce trajet"
-                      }
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Supprimer
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Êtes-vous sûr de vouloir supprimer ce trajet ?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Cette action est irréversible et supprimera
-                        définitivement ce trajet.
-                        {(() => {
-                          if (!canDeleteRide()) {
-                            const paidBookings = ride.bookings.filter(
-                              (b) =>
-                                b.payment_status === "completed" ||
-                                b.payment_status === "paid"
-                            );
-                            const activeBookings = ride.bookings.filter(
-                              (b) =>
-                                b.status === "confirmed" ||
-                                b.status === "pending" ||
-                                b.status === "pending_verification"
-                            );
-
-                            if (paidBookings.length > 0) {
-                              return ` ⚠️ Ce trajet a ${paidBookings.length} réservation(s) payée(s) et ne peut pas être supprimé.`;
-                            } else if (activeBookings.length > 0) {
-                              return ` ⚠️ Ce trajet a ${activeBookings.length} réservation(s) active(s) et ne peut pas être supprimé.`;
-                            }
-                            return "";
-                          }
-                          return "";
-                        })()}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annuler</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDeleteRide(ride.id)}
-                        disabled={!canDeleteRide() || isDeleting}
-                        className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                {canDeleteRide() && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Supprimer ce trajet"
                       >
-                        {isDeleting ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Suppression...
-                          </>
-                        ) : (
-                          "Supprimer"
-                        )}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <Trash2 className="h-3 w-3" />
+                        Supprimer
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Êtes-vous sûr de vouloir supprimer ce trajet ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Cette action est irréversible et supprimera
+                          définitivement ce trajet.
+                          {!canDeleteRide() &&
+                            ` ⚠️ Ce trajet a ${ride.bookings.length} réservation(s) et ne peut pas être supprimé.`}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteRide(ride.id)}
+                          disabled={!canDeleteRide() || isDeleting}
+                          className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isDeleting ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Suppression...
+                            </>
+                          ) : (
+                            "Supprimer"
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             )}
           </div>

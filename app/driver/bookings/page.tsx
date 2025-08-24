@@ -17,6 +17,7 @@ import {
   Search,
   X,
   SlidersHorizontal,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
@@ -51,7 +52,7 @@ interface Booking {
     id: string;
     full_name: string;
     avatar_url?: string;
-    phone_number?: string;
+    phone?: string;
     email: string;
   };
   ride: {
@@ -77,7 +78,7 @@ interface Profile {
   id: string;
   full_name: string;
   avatar_url?: string;
-  phone_number?: string;
+  phone?: string;
   email: string;
 }
 
@@ -97,7 +98,7 @@ interface EnrichedBooking extends RawBooking {
     id: string;
     full_name: string;
     avatar_url?: string;
-    phone_number?: string;
+    phone?: string;
     email: string | null;
   };
   ride: {
@@ -127,10 +128,15 @@ export default function DriverBookings() {
       id: string;
       full_name: string;
       avatar_url?: string;
-      phone_number?: string;
+      phone?: string;
     };
   } | null>(null);
   const [verifyingBooking, setVerifyingBooking] = useState<string | null>(null);
+  const [lastDataFetch, setLastDataFetch] = useState<number>(0);
+  const [cachedBookings, setCachedBookings] = useState<{
+    data: EnrichedBooking[];
+    timestamp: number;
+  } | null>(null);
 
   // Derived state for pagination
   const totalPages = Math.max(1, Math.ceil(totalBookings / itemsPerPage));
@@ -170,149 +176,182 @@ export default function DriverBookings() {
     return filteredAndSortedBookings.slice(startIndex, endIndex);
   }, [filteredAndSortedBookings, currentPage, itemsPerPage]);
 
-  const loadBookings = useCallback(async () => {
-    if (!user) return;
+  const loadBookings = useCallback(
+    async (forceRefresh = false) => {
+      if (!user) return;
 
-    try {
-      setLoading(true);
-      console.log("🚗 Loading bookings for driver:", user.id);
+      try {
+        // Check cache first
+        const now = Date.now();
+        const cacheAge = 5 * 60 * 1000; // 5 minutes
 
-      // Get all rides for the driver first (no pagination for rides anymore)
-      const { data: rides, error: ridesError } = await supabase
-        .from("rides")
-        .select("id")
-        .eq("driver_id", user.id);
+        if (
+          !forceRefresh &&
+          cachedBookings &&
+          now - cachedBookings.timestamp < cacheAge
+        ) {
+          console.log(
+            "📱 Using cached bookings data (age:",
+            Math.round((now - cachedBookings.timestamp) / 1000),
+            "seconds)"
+          );
+          setBookings(cachedBookings.data);
+          setTotalBookings(cachedBookings.data.length);
+          setLoading(false);
+          return;
+        }
 
-      if (ridesError) {
-        console.error("❌ Error fetching driver rides:", ridesError);
+        setLoading(true);
+        console.log("🚗 Loading bookings for driver:", user.id);
+
+        // Get all rides for the driver first (no pagination for rides anymore)
+        const { data: rides, error: ridesError } = await supabase
+          .from("rides")
+          .select("id")
+          .eq("driver_id", user.id);
+
+        if (ridesError) {
+          console.error("❌ Error fetching driver rides:", ridesError);
+          setLoading(false);
+          return;
+        }
+
+        if (!rides?.length) {
+          console.log("ℹ️ No rides found for driver");
+          setBookings([]);
+          setLoading(false);
+          return;
+        }
+
+        const rideIds = rides.map((r: { id: string }) => r.id);
+        console.log(`🔍 Found ${rideIds.length} rides, fetching bookings`);
+
+        // Get all data in parallel
+        const [
+          { data: rawBookings, error: bookingsError },
+          { data: bookingRides, error: ridesDataError },
+        ] = await Promise.all([
+          // Get all bookings for the driver's rides
+          supabase
+            .from("bookings")
+            .select(
+              "id, ride_id, user_id, seats, status, created_at, payment_status, code_verified"
+            )
+            .in("ride_id", rideIds),
+
+          // Get full ride details
+          supabase.from("rides").select("*").in("id", rideIds),
+        ]);
+
+        if (bookingsError) {
+          console.error("❌ Error fetching bookings:", bookingsError);
+          setLoading(false);
+          return;
+        }
+
+        if (ridesDataError) {
+          console.error("❌ Error fetching ride details:", ridesDataError);
+          setLoading(false);
+          return;
+        }
+
+        if (!rawBookings?.length) {
+          console.log("ℹ️ No bookings found for driver's rides");
+          setBookings([]);
+          setLoading(false);
+          return;
+        }
+
+        console.log(`✅ Found ${rawBookings.length} bookings`);
+
+        // Debug raw booking data in detail
+        console.log(
+          "🔎 Raw Bookings Data:",
+          JSON.stringify(rawBookings, null, 2)
+        );
+
+        // Get all user IDs from bookings
+        const userIds = [
+          ...new Set(rawBookings.map((b: RawBooking) => b.user_id)),
+        ];
+
+        // Fetch user profiles
+        const { data: users, error: usersError } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, phone, email")
+          .in("id", userIds);
+
+        if (usersError) {
+          console.error("❌ Error fetching user profiles:", usersError);
+        }
+
+        // Create lookup maps for rides and users
+        const rideMap = new Map(
+          bookingRides?.map((r: Ride) => [r.id, r]) || []
+        );
+        const userMap = new Map(users?.map((u: Profile) => [u.id, u]) || []);
+
+        // Combine data to create enriched bookings
+        const enrichedBookings = rawBookings.map((booking: RawBooking) => {
+          const userProfile = userMap.get(booking.user_id);
+          const rideDetails = rideMap.get(booking.ride_id);
+
+          // Ensure code_verified is properly handled as boolean
+          // (it might be coming as null from database)
+          const code_verified = booking.code_verified === true;
+
+          return {
+            ...booking,
+            code_verified,
+            user: userProfile || {
+              id: booking.user_id,
+              full_name: "Unknown User",
+              avatar_url: undefined,
+              phone: undefined,
+              email: null,
+            },
+            ride: rideDetails || {
+              id: booking.ride_id,
+              from_city: "Unknown",
+              to_city: "Unknown",
+              departure_time: new Date().toISOString(),
+              price: 0,
+              driver_id: user.id,
+            },
+          };
+        });
+
+        console.log(`🔄 Setting ${enrichedBookings.length} enriched bookings`);
+
+        // Set total bookings for pagination and reset to page 1 if needed
+        setTotalBookings(enrichedBookings.length);
+        if (currentPage > Math.ceil(enrichedBookings.length / itemsPerPage)) {
+          setCurrentPage(1);
+        }
+
+        // Use functional update to ensure atomic state update
+        setBookings((prev) => {
+          // Only update if there are actual changes
+          const hasChanges =
+            JSON.stringify(prev) !== JSON.stringify(enrichedBookings);
+          return hasChanges ? enrichedBookings : prev;
+        });
+
+        // Cache the data
+        setCachedBookings({ data: enrichedBookings, timestamp: now });
+      } catch (error) {
+        console.error("❌ Error in loadBookings:", error);
+      } finally {
         setLoading(false);
-        return;
       }
+    },
+    [user, supabase, currentPage, cachedBookings]
+  );
 
-      if (!rides?.length) {
-        console.log("ℹ️ No rides found for driver");
-        setBookings([]);
-        setLoading(false);
-        return;
-      }
-
-      const rideIds = rides.map((r: { id: string }) => r.id);
-      console.log(`🔍 Found ${rideIds.length} rides, fetching bookings`);
-
-      // Get all data in parallel
-      const [
-        { data: rawBookings, error: bookingsError },
-        { data: bookingRides, error: ridesDataError },
-      ] = await Promise.all([
-        // Get all bookings for the driver's rides
-        supabase
-          .from("bookings")
-          .select(
-            "id, ride_id, user_id, seats, status, created_at, payment_status, code_verified"
-          )
-          .in("ride_id", rideIds),
-
-        // Get full ride details
-        supabase.from("rides").select("*").in("id", rideIds),
-      ]);
-
-      if (bookingsError) {
-        console.error("❌ Error fetching bookings:", bookingsError);
-        setLoading(false);
-        return;
-      }
-
-      if (ridesDataError) {
-        console.error("❌ Error fetching ride details:", ridesDataError);
-        setLoading(false);
-        return;
-      }
-
-      if (!rawBookings?.length) {
-        console.log("ℹ️ No bookings found for driver's rides");
-        setBookings([]);
-        setLoading(false);
-        return;
-      }
-
-      console.log(`✅ Found ${rawBookings.length} bookings`);
-
-      // Debug raw booking data in detail
-      console.log(
-        "🔎 Raw Bookings Data:",
-        JSON.stringify(rawBookings, null, 2)
-      );
-
-      // Get all user IDs from bookings
-      const userIds = [
-        ...new Set(rawBookings.map((b: RawBooking) => b.user_id)),
-      ];
-
-      // Fetch user profiles
-      const { data: users, error: usersError } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, phone_number, email")
-        .in("id", userIds);
-
-      if (usersError) {
-        console.error("❌ Error fetching user profiles:", usersError);
-      }
-
-      // Create lookup maps for rides and users
-      const rideMap = new Map(bookingRides?.map((r: Ride) => [r.id, r]) || []);
-      const userMap = new Map(users?.map((u: Profile) => [u.id, u]) || []);
-
-      // Combine data to create enriched bookings
-      const enrichedBookings = rawBookings.map((booking: RawBooking) => {
-        const userProfile = userMap.get(booking.user_id);
-        const rideDetails = rideMap.get(booking.ride_id);
-
-        // Ensure code_verified is properly handled as boolean
-        // (it might be coming as null from database)
-        const code_verified = booking.code_verified === true;
-
-        return {
-          ...booking,
-          code_verified,
-          user: userProfile || {
-            id: booking.user_id,
-            full_name: "Unknown User",
-            avatar_url: undefined,
-            phone_number: undefined,
-            email: null,
-          },
-          ride: rideDetails || {
-            id: booking.ride_id,
-            from_city: "Unknown",
-            to_city: "Unknown",
-            departure_time: new Date().toISOString(),
-            price: 0,
-            driver_id: user.id,
-          },
-        };
-      });
-
-      console.log(`🔄 Setting ${enrichedBookings.length} enriched bookings`);
-
-      // Set total bookings for pagination and reset to page 1 if needed
-      setTotalBookings(enrichedBookings.length);
-      if (currentPage > Math.ceil(enrichedBookings.length / itemsPerPage)) {
-        setCurrentPage(1);
-      }
-
-      // Use functional update to ensure atomic state update
-      setBookings((prev) => {
-        // Only update if there are actual changes
-        const hasChanges =
-          JSON.stringify(prev) !== JSON.stringify(enrichedBookings);
-        return hasChanges ? enrichedBookings : prev;
-      });
-    } catch (error) {
-      console.error("❌ Error in loadBookings:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, supabase, currentPage]);
+  // Add refresh function for manual refresh
+  const refreshBookings = useCallback(() => {
+    loadBookings(true);
+  }, [loadBookings]);
 
   // Initial load
   useEffect(() => {
@@ -341,7 +380,7 @@ export default function DriverBookings() {
           payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
         ) => {
           console.log("📬 Received booking update:", payload);
-          await loadBookings();
+          await loadBookings(true); // Force refresh on real-time updates
         }
       )
       .subscribe(
@@ -364,7 +403,7 @@ export default function DriverBookings() {
           payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
         ) => {
           console.log("💰 Payment update received:", payload);
-          await loadBookings();
+          await loadBookings(true); // Force refresh on real-time updates
         }
       )
       .subscribe(
@@ -455,6 +494,18 @@ export default function DriverBookings() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Refresh button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={refreshBookings}
+          disabled={loading}
+          className="flex items-center gap-1"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Actualiser
+        </Button>
 
         <div>
           {searchQuery && (
@@ -566,9 +617,9 @@ export default function DriverBookings() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-end">
-                      {booking.user.phone_number && (
+                      {booking.user.phone && (
                         <Button variant="outline" size="sm" asChild>
-                          <a href={`tel:${booking.user.phone_number}`}>
+                          <a href={`tel:${booking.user.phone}`}>
                             <Phone className="h-4 w-4 mr-2" />
                             Call
                           </a>

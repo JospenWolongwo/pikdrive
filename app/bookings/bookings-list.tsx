@@ -1,15 +1,22 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useMemo } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
-import { useToast } from '@/components/ui/use-toast'
-import { BookingCard } from "./booking-card"
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Input } from "@/components/ui/input"
-import { Search, X } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
+import { BookingCard } from "./booking-card";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Input } from "@/components/ui/input";
+import { Search, X, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface Driver {
   full_name: string;
@@ -70,11 +77,11 @@ interface DatabaseBooking {
   payments?: Payment[];
 }
 
-interface BookingCardRide extends Omit<DatabaseRide, 'driver'> {
+interface BookingCardRide extends Omit<DatabaseRide, "driver"> {
   driver: Driver;
 }
 
-interface BookingCardBooking extends Omit<DatabaseBooking, 'ride'> {
+interface BookingCardBooking extends Omit<DatabaseBooking, "ride"> {
   ride: BookingCardRide;
 }
 
@@ -90,25 +97,29 @@ interface BookingWithReceipt extends BookingCardBooking {
 }
 
 export function BookingsList({ page }: { page: number }) {
-  const [bookings, setBookings] = useState<BookingWithReceipt[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [totalBookings, setTotalBookings] = useState(0)
-  const itemsPerPage = 10
-  const supabase = createClientComponentClient()
-  const router = useRouter()
-  const { toast } = useToast()
+  const [bookings, setBookings] = useState<BookingWithReceipt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [totalBookings, setTotalBookings] = useState(0);
+  const itemsPerPage = 10;
+  const supabase = createClientComponentClient();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [lastDataFetch, setLastDataFetch] = useState<number>(0);
+  const [cachedBookings, setCachedBookings] = useState<{
+    [key: number]: { data: BookingWithReceipt[]; timestamp: number };
+  }>({});
 
   // Create filtered bookings based on search query
   const filteredBookings = useMemo(() => {
     if (!searchQuery.trim()) return bookings;
-    
+
     const query = searchQuery.toLowerCase().trim();
-    return bookings.filter(booking => {
+    return bookings.filter((booking) => {
       // Skip bookings without required data
       if (!booking.ride) return false;
-      
+
       // Search across multiple fields
       return (
         booking.ride.from_city.toLowerCase().includes(query) ||
@@ -121,85 +132,142 @@ export function BookingsList({ page }: { page: number }) {
   }, [bookings, searchQuery]);
 
   // Count total pages based on filtered results
-  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / itemsPerPage));
-  
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredBookings.length / itemsPerPage)
+  );
+
   // Get current page items
   const currentPageBookings = useMemo(() => {
     const startIndex = (page - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, filteredBookings.length);
+    const endIndex = Math.min(
+      startIndex + itemsPerPage,
+      filteredBookings.length
+    );
     return filteredBookings.slice(startIndex, endIndex);
   }, [filteredBookings, page, itemsPerPage]);
 
-  useEffect(() => {
-    async function loadBookings() {
+  const loadBookings = useCallback(
+    async (forceRefresh = false) => {
       try {
-        setLoading(true)
-        
+        // Check cache first
+        const now = Date.now();
+        const cacheAge = 5 * 60 * 1000; // 5 minutes
+        const cachedData = cachedBookings[page];
+
+        if (
+          !forceRefresh &&
+          cachedData &&
+          now - cachedData.timestamp < cacheAge
+        ) {
+          console.log("📱 Using cached bookings data for page", page);
+          setBookings(cachedData.data);
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
+
         // Get authenticated user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        
-        if (userError) throw userError
-        
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) throw userError;
+
         if (!user) {
-          router.push('/auth')
-          return
+          router.push("/auth");
+          return;
         }
 
         // Get total count first for true pagination
         const { count, error: countError } = await supabase
-          .from('bookings')
-          .select('id', { count: 'exact' })
-          .eq('user_id', user.id)
-          
-        if (countError) throw countError
-        
-        setTotalBookings(count || 0)
+          .from("bookings")
+          .select("id", { count: "exact" })
+          .eq("user_id", user.id);
 
-        // Get user's bookings
+        if (countError) throw countError;
+
+        setTotalBookings(count || 0);
+
+        // Get user's bookings with simplified query to avoid foreign key issues
         const { data: bookingsData, error: bookingsError } = await supabase
-          .from('bookings')
-          .select(`
+          .from("bookings")
+          .select(
+            `
+          id,
+          seats,
+          status,
+          payment_status,
+          created_at,
+          ride:rides (
             id,
-            seats,
-            status,
-            payment_status,
-            created_at,
-            ride:rides (
-              id,
-              from_city,
-              to_city,
-              departure_time,
-              car_model,
-              car_color,
-              price,
-              driver:profiles (
-                full_name,
-                avatar_url
-              )
-            ),
-            payments (
-              id,
-              amount,
-              currency,
-              phone_number,
-              transaction_id,
-              payment_time,
-              metadata,
-              status
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .range((page - 1) * itemsPerPage, page * itemsPerPage - 1)
+            from_city,
+            to_city,
+            departure_time,
+            car_model,
+            car_color,
+            price,
+            driver_id
+          ),
+          payments (
+            id,
+            amount,
+            currency,
+            phone_number,
+            transaction_id,
+            payment_time,
+            metadata,
+            status
+          )
+        `
+          )
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .range((page - 1) * itemsPerPage, page * itemsPerPage - 1);
 
-        if (bookingsError) throw bookingsError
+        if (bookingsError) throw bookingsError;
+
+        // Fetch driver profiles separately to avoid foreign key issues
+        const driverIds = [
+          ...new Set(
+            (bookingsData || [])
+              .map((booking) => {
+                const rideData = Array.isArray(booking.ride)
+                  ? booking.ride[0]
+                  : booking.ride;
+                return rideData?.driver_id;
+              })
+              .filter(Boolean)
+          ),
+        ];
+
+        let driverProfiles: any = {};
+        if (driverIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url")
+            .in("id", driverIds);
+
+          if (!profilesError && profilesData) {
+            driverProfiles = Object.fromEntries(
+              profilesData.map((profile) => [profile.id, profile])
+            );
+          }
+        }
 
         // Process bookings and add receipts
         const bookingsWithReceipts = await Promise.all(
           (bookingsData || []).map(async (bookingData) => {
             // Handle ride data as array (Supabase returns it as array)
-            const rideData = Array.isArray(bookingData.ride) ? bookingData.ride[0] : bookingData.ride;
-            const driverData = Array.isArray(rideData.driver) ? rideData.driver[0] : rideData.driver;
+            const rideData = Array.isArray(bookingData.ride)
+              ? bookingData.ride[0]
+              : bookingData.ride;
+            const driverData = driverProfiles[rideData?.driver_id] || {
+              full_name: "Unknown User",
+              avatar_url: null,
+            };
 
             // Transform the data to match our interface
             const bookingForCard: BookingWithReceipt = {
@@ -216,9 +284,9 @@ export function BookingsList({ page }: { page: number }) {
                 car_model: rideData.car_model,
                 car_color: rideData.car_color,
                 price: rideData.price,
-                driver: driverData
+                driver: driverData,
               },
-              payments: bookingData.payments || []
+              payments: bookingData.payments || [],
             };
 
             // Add receipt if payment exists
@@ -226,9 +294,9 @@ export function BookingsList({ page }: { page: number }) {
               try {
                 // Fetch receipt directly using client-side Supabase
                 const { data: receipt, error: receiptError } = await supabase
-                  .from('payment_receipts')
-                  .select('id, receipt_number, issued_at, created_at, pdf_url')
-                  .eq('payment_id', bookingData.payments[0].id)
+                  .from("payment_receipts")
+                  .select("id, receipt_number, issued_at, created_at, pdf_url")
+                  .eq("payment_id", bookingData.payments[0].id)
                   .single();
 
                 if (!receiptError && receipt) {
@@ -238,11 +306,15 @@ export function BookingsList({ page }: { page: number }) {
                     created_at: receipt.created_at,
                     receipt_number: receipt.receipt_number,
                     issued_at: receipt.issued_at,
-                    pdf_url: receipt.pdf_url
+                    pdf_url: receipt.pdf_url,
                   };
                 }
               } catch (receiptError) {
-                console.warn('Could not fetch receipt for booking:', bookingData.id, receiptError);
+                console.warn(
+                  "Could not fetch receipt for booking:",
+                  bookingData.id,
+                  receiptError
+                );
                 // Continue without receipt
               }
             }
@@ -252,38 +324,56 @@ export function BookingsList({ page }: { page: number }) {
         );
 
         setBookings(bookingsWithReceipts || []);
+
+        // Cache the data
+        setCachedBookings((prev) => ({
+          ...prev,
+          [page]: {
+            data: bookingsWithReceipts || [],
+            timestamp: now,
+          },
+        }));
       } catch (err) {
-        console.error('❌ Error loading bookings:', err)
-        setError(err as Error)
+        console.error("❌ Error loading bookings:", err);
+        setError(err as Error);
         toast({
           variant: "destructive",
           title: "Erreur lors du chargement des réservations",
-          description: "Veuillez réessayer plus tard."
-        })
+          description: "Veuillez réessayer plus tard.",
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    },
+    [page, supabase, router, toast, cachedBookings, itemsPerPage]
+  );
 
-    loadBookings()
-  }, [page, supabase, router, toast])
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-4">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-muted-foreground">Chargement de vos réservations...</p>
+        <p className="text-sm text-muted-foreground">
+          Chargement de vos réservations...
+        </p>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
       <div className="text-center py-8 text-red-600">
-        <h3 className="font-semibold mb-2">Erreur lors du chargement des réservations</h3>
-        <p className="text-sm text-muted-foreground">Veuillez réessayer plus tard</p>
+        <h3 className="font-semibold mb-2">
+          Erreur lors du chargement des réservations
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Veuillez réessayer plus tard
+        </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -315,57 +405,76 @@ export function BookingsList({ page }: { page: number }) {
         )}
       </div>
 
+      {/* Refresh button */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => loadBookings(true)}
+          disabled={loading}
+          className="flex items-center gap-1"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Actualiser
+        </Button>
+      </div>
+
       {!filteredBookings.length ? (
         <div className="text-center py-8">
           <h3 className="font-semibold mb-2">Aucune réservation trouvée</h3>
           <p className="text-sm text-muted-foreground">
-            {searchQuery 
-              ? "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés." 
+            {searchQuery
+              ? "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés."
               : "Vous n'avez pas encore fait de réservations"}
           </p>
         </div>
       ) : (
         <>
           <div className="grid gap-4">
-            {currentPageBookings.filter(booking => booking.ride).map(booking => {
-              // Only include bookings that have a ride
-              const bookingWithRequiredRide = {
-                ...booking,
-                ride: booking.ride!, // We know ride exists because of the filter
-              };
-              return (
-                <BookingCard 
-                  key={booking.id} 
-                  booking={bookingWithRequiredRide}
-                />
-              );
-            })}
+            {currentPageBookings
+              .filter((booking) => booking.ride)
+              .map((booking) => {
+                // Only include bookings that have a ride
+                const bookingWithRequiredRide = {
+                  ...booking,
+                  ride: booking.ride!, // We know ride exists because of the filter
+                };
+                return (
+                  <BookingCard
+                    key={booking.id}
+                    booking={bookingWithRequiredRide}
+                  />
+                );
+              })}
           </div>
 
           {/* Pagination with results info */}
           <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Affichage de {Math.min(filteredBookings.length, (page - 1) * itemsPerPage + 1)}-
-              {Math.min(filteredBookings.length, page * itemsPerPage)} sur {filteredBookings.length} réservations
+              Affichage de{" "}
+              {Math.min(filteredBookings.length, (page - 1) * itemsPerPage + 1)}
+              -{Math.min(filteredBookings.length, page * itemsPerPage)} sur{" "}
+              {filteredBookings.length} réservations
             </div>
-            
+
             {totalPages > 1 && (
               <Pagination>
                 <PaginationContent>
                   {page > 1 && (
                     <PaginationItem>
-                      <PaginationPrevious 
+                      <PaginationPrevious
                         href={`/bookings?page=${page - 1}`}
                         onClick={(e) => {
                           if (searchQuery) {
                             e.preventDefault();
-                            if (page > 1) router.push(`/bookings?page=${page - 1}`);
+                            if (page > 1)
+                              router.push(`/bookings?page=${page - 1}`);
                           }
                         }}
                       />
                     </PaginationItem>
                   )}
-                  
+
                   {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                     // Show pages around the current page
                     let pageNum;
@@ -373,10 +482,13 @@ export function BookingsList({ page }: { page: number }) {
                       pageNum = i + 1;
                     } else {
                       // Calculate start page ensuring we always show 5 pages
-                      let startPage = Math.max(1, Math.min(page - 2, totalPages - 4));
+                      let startPage = Math.max(
+                        1,
+                        Math.min(page - 2, totalPages - 4)
+                      );
                       pageNum = startPage + i;
                     }
-                    
+
                     return (
                       <PaginationItem key={pageNum}>
                         <PaginationLink
@@ -397,12 +509,13 @@ export function BookingsList({ page }: { page: number }) {
 
                   {page < totalPages && (
                     <PaginationItem>
-                      <PaginationNext 
+                      <PaginationNext
                         href={`/bookings?page=${page + 1}`}
                         onClick={(e) => {
                           if (searchQuery) {
                             e.preventDefault();
-                            if (page < totalPages) router.push(`/bookings?page=${page + 1}`);
+                            if (page < totalPages)
+                              router.push(`/bookings?page=${page + 1}`);
                           }
                         }}
                       />
@@ -415,5 +528,5 @@ export function BookingsList({ page }: { page: number }) {
         </>
       )}
     </div>
-  )
+  );
 }

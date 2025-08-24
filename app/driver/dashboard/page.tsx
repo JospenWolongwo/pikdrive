@@ -53,8 +53,14 @@ export default function DriverDashboard() {
   const itemsPerPage = 10;
 
   // Custom hooks
-  const { ridesData, loading, cancelledBookings, loadRides, nowUTC } =
-    useRidesData();
+  const {
+    ridesData,
+    loading,
+    cancelledBookings,
+    loadRides,
+    refreshRides,
+    nowUTC,
+  } = useRidesData();
   const { upcomingRides, pastRides } = useRidesFiltering(
     ridesData.rides,
     nowUTC,
@@ -156,43 +162,13 @@ export default function DriverDashboard() {
 
   const handleDeleteRide = async (rideId: string) => {
     try {
-      // Check if the ride has active bookings
+      // Check if the ride has any bookings at all
       const ride = ridesData.rides.find((r) => r.id === rideId);
-      if (
-        ride &&
-        ride.bookings.some(
-          (b) =>
-            b.status === "confirmed" ||
-            b.status === "pending" ||
-            b.status === "pending_verification" ||
-            b.payment_status === "completed" ||
-            b.payment_status === "paid"
-        )
-      ) {
-        // Check if there are paid bookings
-        const hasPaidBookings = ride.bookings.some(
-          (b) => b.payment_status === "completed" || b.payment_status === "paid"
-        );
-
-        const hasActiveBookings = ride.bookings.some(
-          (b) =>
-            b.status === "confirmed" ||
-            b.status === "pending" ||
-            b.status === "pending_verification"
-        );
-
-        let description = "";
-        if (hasPaidBookings) {
-          description =
-            "Vous ne pouvez pas supprimer un trajet avec des réservations payées.";
-        } else if (hasActiveBookings) {
-          description =
-            "Vous ne pouvez pas supprimer un trajet avec des réservations actives.";
-        }
-
+      if (ride && ride.bookings.length > 0) {
         toast({
           title: "Suppression impossible",
-          description,
+          description:
+            "Vous ne pouvez pas supprimer un trajet avec des réservations.",
           variant: "destructive",
         });
         return;
@@ -223,7 +199,7 @@ export default function DriverDashboard() {
         });
 
         // Reload rides
-        await loadRides();
+        await refreshRides();
       }
     } catch (error) {
       console.error("❌ Error in delete process:", error);

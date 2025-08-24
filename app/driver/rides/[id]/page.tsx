@@ -191,14 +191,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         console.log("✅ Ride loaded successfully:", rideData);
         setRide(rideData);
 
-        // Check if there are any confirmed or pending bookings
-        const activeBookings = rideData.bookings?.filter(
-          (booking: { id: string; status: string; user_id: string }) =>
-            booking.status === "confirmed" ||
-            booking.status === "pending" ||
-            booking.status === "pending_verification"
-        );
-        setHasBookings(activeBookings && activeBookings.length > 0);
+        // Check if there are any bookings at all
+        setHasBookings(rideData.bookings && rideData.bookings.length > 0);
 
         // Parse departure time and set form values
         const departureDate = new Date(rideData.departure_time);
@@ -265,15 +259,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
 
       // If there are existing bookings, we shouldn't reduce seats below that number
       if (hasBookings) {
-        const bookedSeats =
-          ride.bookings
-            ?.filter(
-              (b) =>
-                b.status === "confirmed" ||
-                b.status === "pending" ||
-                b.status === "pending_verification"
-            )
-            .reduce((sum, b) => sum + 1, 0) || 0;
+        const bookedSeats = ride.bookings?.length || 0;
         if (parseInt(values.seats) < bookedSeats) {
           toast({
             title: "Impossible de réduire les places",

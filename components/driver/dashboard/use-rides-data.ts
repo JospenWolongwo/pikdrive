@@ -34,18 +34,10 @@ export function useRidesData() {
   const loadCancelledBookings = useCallback(
     async (rideIds: string[]) => {
       try {
+        // Get cancelled bookings without complex joins
         const { data: cancelled, error } = await supabase
           .from("bookings")
-          .select(
-            `
-            id,
-            seats,
-            created_at,
-            updated_at,
-            user:profiles(full_name),
-            ride:rides(from_city, to_city)
-          `
-          )
+          .select("id, user_id, seats, updated_at, ride_id")
           .in("ride_id", rideIds)
           .eq("status", "cancelled")
           .gte(
@@ -54,18 +46,40 @@ export function useRidesData() {
           ) // Last 24 hours
           .order("updated_at", { ascending: false });
 
-        if (error) {
+        if (error || !cancelled?.length) {
           return;
         }
 
-        const formattedCancelled =
-          cancelled?.map((booking: any) => ({
+        // Fetch user profiles separately
+        const userIds = [...new Set(cancelled.map((b) => b.user_id))];
+        const { data: users } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+
+        // Fetch ride details separately
+        const { data: rides } = await supabase
+          .from("rides")
+          .select("id, from_city, to_city")
+          .in("id", rideIds);
+
+        const userMap = new Map(users?.map((u) => [u.id, u]) || []);
+        const rideMap = new Map(rides?.map((r) => [r.id, r]) || []);
+
+        const formattedCancelled = cancelled.map((booking: any) => {
+          const user = userMap.get(booking.user_id);
+          const ride = rideMap.get(booking.ride_id);
+
+          return {
             id: booking.id,
-            passengerName: booking.user?.full_name || "Passager inconnu",
-            rideRoute: `${booking.ride?.from_city} → ${booking.ride?.to_city}`,
+            passengerName: user?.full_name || "Passager inconnu",
+            rideRoute: ride
+              ? `${ride.from_city} → ${ride.to_city}`
+              : "Trajet inconnu",
             seats: booking.seats,
             cancelledAt: booking.updated_at,
-          })) || [];
+          };
+        });
 
         setCancelledBookings(formattedCancelled);
       } catch (error) {
@@ -75,74 +89,117 @@ export function useRidesData() {
     [supabase]
   );
 
-  const loadRides = useCallback(async () => {
-    if (!user) return;
+  const loadRides = useCallback(
+    async (forceRefresh = false) => {
+      if (!user) return;
 
-    try {
-      setLoading(true);
+      // Check if we have recent data and don't need to refresh
+      const now = Date.now();
+      const dataAge = now - ridesData.lastUpdated;
+      const maxAge = 5 * 60 * 1000; // 5 minutes cache
 
-      // Get all rides without pagination to properly filter upcoming/past
-      const { data: simpleRides, error: simpleError } = await supabase
-        .from("rides")
-        .select("*")
-        .eq("driver_id", user.id)
-        .order("departure_time", { ascending: true });
-
-      if (simpleError) throw simpleError;
-      if (!simpleRides?.length) {
-        setRidesData({ rides: [], lastUpdated: Date.now() });
+      if (!forceRefresh && dataAge < maxAge && ridesData.rides.length > 0) {
+        console.log(
+          "📱 Using cached rides data (age:",
+          Math.round(dataAge / 1000),
+          "seconds)"
+        );
         return;
       }
 
-      // 2. Fetch related data in parallel for all rides
-      const rideIds = simpleRides.map((r: Ride) => r.id);
+      try {
+        setLoading(true);
 
-      const [{ data: bookings }, { data: messages }] = await Promise.all([
-        supabase
-          .from("bookings")
-          .select("*, user:profiles(id, full_name, avatar_url)")
-          .in("ride_id", rideIds),
-        supabase
-          .from("messages")
-          .select("*, sender:profiles(id, full_name, avatar_url)")
-          .in("ride_id", rideIds),
-      ]);
+        // Get all rides without pagination to properly filter upcoming/past
+        const { data: simpleRides, error: simpleError } = await supabase
+          .from("rides")
+          .select("*")
+          .eq("driver_id", user.id)
+          .order("departure_time", { ascending: true });
 
-      // 3. Combine data with error handling
-      const enrichedRides = simpleRides.map((ride: Ride) => {
-        const rideBookings =
-          bookings?.filter((b: any) => b.ride_id === ride.id) || [];
-        const rideMessages =
-          messages?.filter((m: any) => m.ride_id === ride.id) || [];
+        if (simpleError) throw simpleError;
+        if (!simpleRides?.length) {
+          setRidesData({ rides: [], lastUpdated: now });
+          return;
+        }
 
-        return {
-          ...ride,
-          bookings: rideBookings.map((booking: any) => ({
-            ...booking,
-            user: booking.user,
-          })),
-          messages: rideMessages.map((message: any) => ({
-            ...message,
-            sender: message.sender,
-          })),
-        };
-      });
+        // 2. Fetch related data in parallel for all rides
+        const rideIds = simpleRides.map((r: Ride) => r.id);
 
-      setRidesData({ rides: enrichedRides, lastUpdated: Date.now() });
+        // Fetch bookings without complex joins to avoid foreign key issues
+        const [{ data: bookings }, { data: messages }] = await Promise.all([
+          supabase
+            .from("bookings")
+            .select(
+              "id, ride_id, user_id, seats, status, payment_status, created_at, updated_at"
+            )
+            .or(rideIds.map((id) => `ride_id.eq.${id}`).join(","))
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("messages")
+            .select("id, ride_id, sender_id, content, created_at")
+            .or(rideIds.map((id) => `ride_id.eq.${id}`).join(","))
+            .order("created_at", { ascending: false }),
+        ]);
 
-      // Load cancelled bookings for notifications
-      await loadCancelledBookings(rideIds);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description:
-          "Erreur lors du chargement des trajets. Veuillez réessayer plus tard.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [user, supabase, toast, loadCancelledBookings]);
+        // Fetch user profiles separately
+        const userIds = [
+          ...new Set(bookings?.map((b: any) => b.user_id) || []),
+        ];
+        let userProfiles: {
+          [key: string]: { id: string; full_name: string; avatar_url?: string };
+        } = {};
+        if (userIds.length > 0) {
+          const { data: users } = await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url")
+            .in("id", userIds);
+
+          if (users) {
+            userProfiles = Object.fromEntries(users.map((u: any) => [u.id, u]));
+          }
+        }
+
+        // 3. Combine data with error handling
+        const enrichedRides = simpleRides.map((ride: Ride) => {
+          const rideBookings =
+            bookings?.filter((b: any) => b.ride_id === ride.id) || [];
+          const rideMessages =
+            messages?.filter((m: any) => m.ride_id === ride.id) || [];
+
+          return {
+            ...ride,
+            bookings: rideBookings.map((booking: any) => ({
+              ...booking,
+              user: userProfiles[booking.user_id] || {
+                full_name: "Unknown User",
+                avatar_url: null,
+              },
+            })),
+            messages: rideMessages.map((message: any) => ({
+              ...message,
+              sender: message.sender,
+            })),
+          };
+        });
+
+        setRidesData({ rides: enrichedRides, lastUpdated: Date.now() });
+
+        // Load cancelled bookings for notifications
+        await loadCancelledBookings(rideIds);
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description:
+            "Erreur lors du chargement des trajets. Veuillez réessayer plus tard.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, supabase, toast, loadCancelledBookings]
+  );
 
   // Subscribe to real-time booking changes for immediate cancellation notifications
   useEffect(() => {
@@ -198,11 +255,17 @@ export function useRidesData() {
     }
   }, [user, loadRides]);
 
+  // Function to force refresh data
+  const refreshRides = useCallback(() => {
+    loadRides(true);
+  }, [loadRides]);
+
   return {
     ridesData,
     loading,
     cancelledBookings,
     loadRides,
+    refreshRides,
     nowUTC,
   };
 }
