@@ -59,7 +59,7 @@ export function RidesTab({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {paginatedRides.map((ride: Ride) => (
         <RideCard
           key={ride.id}

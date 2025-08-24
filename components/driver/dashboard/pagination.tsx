@@ -25,8 +25,8 @@ export function PaginationComponent({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <div className="text-sm text-muted-foreground">
+    <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
         Affichage de{" "}
         {Math.min(totalItems, (currentPage - 1) * itemsPerPage + 1)}-
         {Math.min(totalItems, currentPage * itemsPerPage)} sur {totalItems}{" "}

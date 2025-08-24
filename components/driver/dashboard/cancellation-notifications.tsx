@@ -36,22 +36,22 @@ export function CancellationNotifications({
           {cancelledBookings.slice(0, 3).map((cancelled) => (
             <div
               key={cancelled.id}
-              className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-white rounded-lg border border-orange-200"
             >
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium text-orange-900">
+                <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-orange-900 text-sm sm:text-base">
                     {cancelled.passengerName} a annulé sa réservation
                   </p>
-                  <p className="text-sm text-orange-700">
+                  <p className="text-xs sm:text-sm text-orange-700 truncate">
                     {cancelled.rideRoute} • {cancelled.seats} place
                     {cancelled.seats > 1 ? "s" : ""} libérée
                     {cancelled.seats > 1 ? "s" : ""}
                   </p>
                 </div>
               </div>
-              <span className="text-xs text-orange-600">
+              <span className="text-xs text-orange-600 self-end sm:self-auto">
                 {format(new Date(cancelled.cancelledAt), "HH:mm")}
               </span>
             </div>

@@ -216,7 +216,7 @@ export default function DriverDashboard() {
   }
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-4 sm:px-6">
       <DashboardHeader />
 
       {/* Cancellation Notifications */}
@@ -233,13 +233,17 @@ export default function DriverDashboard() {
       {/* Tabs for upcoming and past rides */}
       <Tabs
         defaultValue="upcoming"
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
         value={activeTab}
         onValueChange={setActiveTab}
       >
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upcoming">Trajets à venir</TabsTrigger>
-          <TabsTrigger value="past">Trajets passés</TabsTrigger>
+          <TabsTrigger value="upcoming" className="text-sm sm:text-base">
+            Trajets à venir
+          </TabsTrigger>
+          <TabsTrigger value="past" className="text-sm sm:text-base">
+            Trajets passés
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="upcoming" className="space-y-6">

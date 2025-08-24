@@ -56,38 +56,79 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
-  
+
   /* Enhanced Typography */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply tracking-tight;
   }
-  
+
   /* Container Padding */
   .container {
     @apply px-4 md:px-6 lg:px-8 max-w-7xl mx-auto;
   }
-  
+
   /* Card Enhancements */
   .card {
     @apply transition-shadow hover:shadow-lg;
   }
-  
+
   /* Button Improvements */
   .button {
     @apply transition-all active:scale-95;
   }
-  
+
   /* Section Spacing */
   section {
     @apply py-12 md:py-16 lg:py-20;
+  }
+
+  /* Mobile-first improvements */
+  @media (max-width: 640px) {
+    .container {
+      @apply px-3;
+    }
+
+    /* Improve touch targets on mobile */
+    button,
+    [role="button"] {
+      @apply min-h-[44px] min-w-[44px];
+    }
+
+    /* Better text readability on mobile */
+    p,
+    span,
+    div {
+      @apply leading-relaxed;
+    }
+  }
+
+  /* Prevent horizontal scroll on mobile */
+  body {
+    @apply overflow-x-hidden;
+  }
+
+  /* Improve card shadows on mobile */
+  .card {
+    @apply shadow-sm sm:shadow-md;
   }
 }
 
 /* Custom Animations */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
