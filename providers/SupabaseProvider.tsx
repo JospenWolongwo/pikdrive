@@ -9,6 +9,7 @@ import {
   useRef,
 } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import { ssrSupabaseConfig } from "../lib/supabase-config";
 
 const SupabaseContext = createContext<any>(null);
 
@@ -19,8 +20,12 @@ export const SupabaseProvider = ({
 }) => {
   const [supabase] = useState(() =>
     createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ssrSupabaseConfig.supabaseUrl,
+      ssrSupabaseConfig.supabaseKey,
+      {
+        auth: ssrSupabaseConfig.auth,
+        cookies: ssrSupabaseConfig.cookies,
+      }
     )
   );
 

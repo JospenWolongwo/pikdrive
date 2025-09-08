@@ -3,10 +3,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createBrowserClient } from "@supabase/ssr";
+import {
+  ssrSupabaseConfig,
+  zustandPersistConfig,
+} from "../lib/supabase-config";
 
 const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ssrSupabaseConfig.supabaseUrl,
+  ssrSupabaseConfig.supabaseKey,
+  {
+    auth: ssrSupabaseConfig.auth,
+    cookies: ssrSupabaseConfig.cookies,
+  }
 );
 
 interface AuthState {
@@ -78,10 +86,7 @@ export const useAuth = create<AuthState>()(
         }
       },
     }),
-    {
-      name: "auth-storage",
-      skipHydration: true,
-    }
+    zustandPersistConfig
   )
 );
 

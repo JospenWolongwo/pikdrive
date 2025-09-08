@@ -1,6 +1,7 @@
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { supabaseConfig } from "./lib/supabase-config";
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
@@ -15,7 +16,13 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  const supabase = createMiddlewareClient({ req, res });
+  const supabase = createMiddlewareClient(
+    { req, res },
+    {
+      supabaseUrl: supabaseConfig.supabaseUrl,
+      supabaseKey: supabaseConfig.supabaseKey,
+    }
+  );
 
   // Protected routes that require authentication
   const protectedPaths = [
