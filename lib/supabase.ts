@@ -25,7 +25,6 @@ export async function sendVerificationCode(
 
     // TODO: Integrate with actual SMS gateway
     // For now, we'll log the verification code to the console
-    console.log(`Verification code for ${phone} created with ID: ${data}`);
 
     return { error: null };
   } catch (error) {

@@ -44,6 +44,7 @@ export const SupabaseProvider = ({
         data: { session: initialSession },
         error,
       } = await supabase.auth.getSession();
+
       if (error) throw error;
 
       if (initialSession?.user) {

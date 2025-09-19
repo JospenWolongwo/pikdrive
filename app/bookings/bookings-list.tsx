@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { BookingCard } from "./booking-card";
@@ -103,7 +103,7 @@ export function BookingsList({ page }: { page: number }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [totalBookings, setTotalBookings] = useState(0);
   const itemsPerPage = 10;
-  const supabase = createClientComponentClient();
+  const { supabase } = useSupabase();
   const router = useRouter();
   const { toast } = useToast();
   const [lastDataFetch, setLastDataFetch] = useState<number>(0);
@@ -160,7 +160,6 @@ export function BookingsList({ page }: { page: number }) {
           cachedData &&
           now - cachedData.timestamp < cacheAge
         ) {
-          console.log("📱 Using cached bookings data for page", page);
           setBookings(cachedData.data);
           setLoading(false);
           return;
@@ -168,7 +167,7 @@ export function BookingsList({ page }: { page: number }) {
 
         setLoading(true);
 
-        // Get authenticated user
+        // Get authenticated user (should be available from context)
         const {
           data: { user },
           error: userError,
@@ -177,8 +176,8 @@ export function BookingsList({ page }: { page: number }) {
         if (userError) throw userError;
 
         if (!user) {
-          router.push("/auth");
-          return;
+          console.error("❌ No authenticated user found in bookings list");
+          throw new Error("Authentication required");
         }
 
         // Get total count first for true pagination

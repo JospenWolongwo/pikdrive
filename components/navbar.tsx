@@ -42,6 +42,7 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+
   const [isOpen, setIsOpen] = useState(false);
   const [isDriver, setIsDriver] = useState(false);
   const [driverStatus, setDriverStatus] = useState<string | null>(null);
