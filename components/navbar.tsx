@@ -38,9 +38,10 @@ import { useShowAndroidPrompt } from "@/components/pwa/PWAPrompts";
 import { useDeviceDetect } from "@/hooks/useDeviceDetect";
 
 export function Navbar() {
-  const { supabase, user } = useSupabase();
+  const { supabase, user, loading } = useSupabase();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
   const [isOpen, setIsOpen] = useState(false);
   const [isDriver, setIsDriver] = useState(false);
   const [driverStatus, setDriverStatus] = useState<string | null>(null);
@@ -59,6 +60,7 @@ export function Navbar() {
       setShowAndroid(true);
     }
   }, [setShowAndroid, isIOSDevice]);
+
 
   useEffect(() => {
     if (user) {
@@ -120,22 +122,13 @@ export function Navbar() {
     }, []);
 
     const handleInstallClick = async () => {
-      console.log("🔍 Install button clicked:", {
-        isInstallable,
-        hasPrompt,
-        isIOSDevice,
-        isAndroidDevice,
-      });
-
       if (isIOSDevice) {
         setShowIOSPrompt(true);
       } else if (isAndroidDevice) {
         try {
-          console.log("🚀 Attempting installation...");
           const success = await install();
 
           if (!success) {
-            console.log("ℹ️ Installation not completed, showing custom dialog");
             setShowAndroid(true);
           }
         } catch (err) {
@@ -145,16 +138,6 @@ export function Navbar() {
       }
     };
 
-    // For debugging
-    useEffect(() => {
-      console.log("📱 PWA Status:", {
-        isInstallable,
-        hasPrompt,
-        isIOSDevice,
-        isAndroidDevice,
-        env: process.env.NODE_ENV,
-      });
-    }, [isInstallable, hasPrompt, isIOSDevice, isAndroidDevice]);
 
     // Don't show if not mounted
     if (!mounted) return null;
@@ -242,7 +225,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           {/* Messages Button with notification badge */}
-          {user && (
+          {!loading && user && (
             <Link href="/messages">
               <Button
                 variant="ghost"
@@ -261,7 +244,7 @@ export function Navbar() {
           )}
 
           {/* Quick Actions Dropdown for all users */}
-          {user && (
+          {!loading && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -352,7 +335,7 @@ export function Navbar() {
           </Button>
 
           {/* User Menu */}
-          {user ? (
+          {!loading && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -392,11 +375,11 @@ export function Navbar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
+          ) : !loading ? (
             <Button asChild>
               <Link href="/auth">Connexion</Link>
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

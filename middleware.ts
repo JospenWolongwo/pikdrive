@@ -16,13 +16,7 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  const supabase = createMiddlewareClient(
-    { req, res },
-    {
-      supabaseUrl: supabaseConfig.supabaseUrl,
-      supabaseKey: supabaseConfig.supabaseKey,
-    }
-  );
+  const supabase = createMiddlewareClient({ req, res });
 
   // Protected routes that require authentication
   const protectedPaths = [
@@ -41,39 +35,37 @@ export async function middleware(req: NextRequest) {
   // Only check auth for protected paths to reduce unnecessary processing
   if (isProtectedPath) {
     try {
-      // Use cached session when possible to reduce latency
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      // If trying to access protected routes without authentication
       if (!session) {
         const redirectUrl = new URL("/auth", req.url);
         redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
         return NextResponse.redirect(redirectUrl);
       }
     } catch (error) {
-      // Fallback redirect on auth error
       const redirectUrl = new URL("/auth", req.url);
       redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
       return NextResponse.redirect(redirectUrl);
     }
   }
 
-  // If the user is signed in and the current path is /auth,
-  // redirect the user to the intended destination or home
+  // Allow access to auth page for authentication
   if (req.nextUrl.pathname.startsWith("/auth")) {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (session) {
+      // If user has a valid session, redirect away from auth page
+      if (session && session.user) {
         const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
         return NextResponse.redirect(new URL(redirectTo, req.url));
       }
+      // If no session or invalid session, allow access to auth page
     } catch (error) {
-      // Continue to auth page on error
+      // On error, allow access to auth page
     }
   }
 
