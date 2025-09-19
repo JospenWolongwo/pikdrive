@@ -59,7 +59,7 @@ export class NotificationService {
 
         // Test if audio can be loaded
         this.audio.addEventListener("canplaythrough", () => {
-          console.log("✅ Notification audio loaded successfully");
+          // Audio loaded successfully
         });
       } catch (error) {
         console.warn("Failed to initialize notification audio:", error);
@@ -85,7 +85,6 @@ export class NotificationService {
             this.audio.preload = "auto";
             this.audio.volume = 0.7;
             this.config.soundUrl = soundUrl;
-            console.log(`✅ Using fallback audio: ${soundUrl}`);
             return;
           } catch (fallbackError) {
             continue;
@@ -105,10 +104,6 @@ export class NotificationService {
   private checkPermission() {
     if (typeof window !== "undefined" && "Notification" in window) {
       this.permissionGranted = Notification.permission === "granted";
-      console.log("🔐 Notification service permission check:", {
-        permission: Notification.permission,
-        granted: this.permissionGranted,
-      });
     }
   }
 
@@ -133,26 +128,17 @@ export class NotificationService {
 
     if (Notification.permission === "denied") {
       console.warn("❌ Notification permission was previously denied");
-      console.log("💡 To enable notifications:");
-      console.log("1. Click the 🔒 or ⓘ icon in the browser address bar");
-      console.log("2. Change notifications from 'Block' to 'Allow'");
-      console.log("3. Refresh the page and try again");
       return false;
     }
 
     try {
-      console.log("🔔 Requesting notification permission...");
       const permission = await Notification.requestPermission();
-      console.log("🔐 Permission result:", permission);
 
       this.permissionGranted = permission === "granted";
 
       // Process any queued notifications when permission is granted
       if (this.permissionGranted) {
-        console.log("🔔 Permission granted, processing queued notifications");
         notificationQueue.processQueue();
-      } else {
-        console.log("❌ Permission denied or dismissed");
       }
 
       return this.permissionGranted;
@@ -178,13 +164,12 @@ export class NotificationService {
         const playPromise = this.audio.play();
         if (playPromise !== undefined) {
           await playPromise;
-          console.log("🎵 HTML5 Audio notification played successfully");
         }
       } else {
         // Last resort - try audio manager fallback
         const fallbackWorked = await audioManager.playFallbackSound();
         if (fallbackWorked) {
-          console.log("🎵 Fallback audio notification played successfully");
+          // Fallback audio played successfully
         } else {
           console.warn("🎵 All audio methods failed");
         }
@@ -195,9 +180,6 @@ export class NotificationService {
       // Try audio manager fallback as last resort
       try {
         const fallbackWorked = await audioManager.playFallbackSound();
-        if (fallbackWorked) {
-          console.log("🎵 Last resort fallback worked");
-        }
       } catch (fallbackError) {
         console.error("🎵 All audio methods exhausted:", fallbackError);
       }
@@ -237,9 +219,6 @@ export class NotificationService {
 
     // Don't show visual notification if page is visible (user is actively using the app)
     if (document.visibilityState === "visible") {
-      console.log(
-        "👁️ Page is visible, skipping visual notification but sound/vibration played"
-      );
       return false;
     }
 
@@ -338,11 +317,6 @@ export class NotificationService {
     if (typeof window !== "undefined" && "Notification" in window) {
       const currentPermission = Notification.permission === "granted";
       if (currentPermission !== this.permissionGranted) {
-        console.log("🔄 Permission state sync:", {
-          was: this.permissionGranted,
-          now: currentPermission,
-          browserState: Notification.permission,
-        });
         this.permissionGranted = currentPermission;
       }
       return currentPermission;

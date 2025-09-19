@@ -154,8 +154,6 @@ export default function RidesPage() {
       try {
         setLoading(true);
 
-        console.log("🔍 Loading rides...");
-        console.log("📅 Current time:", new Date().toISOString());
 
         // Use provided filters or current state
         const activeFromCity = filters?.fromCity ?? fromCity;
@@ -188,7 +186,6 @@ export default function RidesPage() {
 
         if (countError) throw countError;
 
-        console.log("📊 Total future rides count:", count);
         setTotalPages(Math.ceil((count || 0) / itemsPerPage));
 
         // Then get paginated data
@@ -229,18 +226,14 @@ export default function RidesPage() {
           throw error;
         }
 
-        console.log("📦 Raw data from database:", data);
-
         // Set empty array if no data
         if (!data) {
-          console.log("⚠️ No data returned from database");
           setRides([]);
           return;
         }
 
         // Fetch vehicle images for all drivers
         const driverIds = [...new Set(data.map((ride: any) => ride.driver_id))];
-        console.log("🔍 Driver IDs to fetch vehicle images for:", driverIds);
 
         const { data: driverDocuments, error: docsError } = await supabase
           .from("driver_documents")
@@ -257,14 +250,7 @@ export default function RidesPage() {
           });
         }
 
-        console.log("📄 Raw driver documents from database:", driverDocuments);
-
         // Debug: Check if the driver IDs in rides match the ones with vehicle images
-        console.log("🔍 Driver IDs in rides:", driverIds);
-        console.log(
-          "📸 Driver IDs with vehicle images:",
-          driverDocuments?.map((doc: any) => doc.driver_id) || []
-        );
 
         // Check if there are any vehicle images in the database at all
         const { data: allDriverDocs, error: allDocsError } = await supabase
@@ -273,10 +259,7 @@ export default function RidesPage() {
           .not("vehicle_images", "is", null);
 
         if (!allDocsError && allDriverDocs) {
-          console.log(
-            "🌍 All driver documents with vehicle images:",
-            allDriverDocs
-          );
+          // Vehicle images found
         }
 
         // Create a map of driver_id to vehicle_images
@@ -289,11 +272,6 @@ export default function RidesPage() {
           });
         }
 
-        console.log("🚗 Vehicle images data:", {
-          driverIds,
-          driverDocuments,
-          vehicleImagesMap: Object.fromEntries(vehicleImagesMap),
-        });
 
         const processedRides = data.map((ride: any) => {
           // Get vehicle images for this driver
@@ -324,9 +302,6 @@ export default function RidesPage() {
           (ride: any) =>
             ride.driver?.vehicle_images && ride.driver.vehicle_images.length > 0
         );
-        console.log("📸 Rides with vehicle images:", ridesWithImages.length);
-
-        console.log("✅ Processed rides:", filteredRides);
         setRides(filteredRides);
       } catch (error) {
         console.error("❌ Error loading rides:", error);
@@ -416,7 +391,6 @@ export default function RidesPage() {
 
     try {
       manager.start();
-      console.log("🚗 BookingNotificationManager started for rides page");
     } catch (error) {
       console.error("❌ Failed to start BookingNotificationManager:", error);
     }

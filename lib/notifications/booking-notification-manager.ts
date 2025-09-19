@@ -47,24 +47,13 @@ export class BookingNotificationManager {
 
   async start(): Promise<void> {
     if (this.isActive) {
-      console.log(
-        "🚗 BookingNotificationManager already active, skipping start"
-      );
       return;
     }
 
     try {
-      console.log(
-        "🚗 Starting BookingNotificationManager for user:",
-        this.userId
-      );
       await this.loadRecentBookings();
       await this.setupRealtimeSubscription();
       this.isActive = true;
-      console.log(
-        "🚗 BookingNotificationManager started successfully for user:",
-        this.userId
-      );
     } catch (error) {
       console.error("❌ Failed to start BookingNotificationManager:", error);
     }
@@ -121,10 +110,6 @@ export class BookingNotificationManager {
         )
         .subscribe();
 
-      console.log(
-        "🔔 Subscribed to all booking changes for user:",
-        this.userId
-      );
     } catch (error) {
       console.error("❌ Error setting up booking subscription:", error);
     }
@@ -157,14 +142,12 @@ export class BookingNotificationManager {
         const driver = await this.getUserInfo(ride.driver_id);
         const driverName = driver?.full_name || driver?.phone || "Driver";
         await this.showUserBookingNotification(booking, ride, driverName);
-        console.log("✅ Passenger notification sent for booking:", booking.id);
       }
 
       // Check if this user is the driver
       if (ride.driver_id === this.userId) {
         // User is the driver - show driver notification
         await this.showDriverBookingNotification(booking, ride);
-        console.log("✅ Driver notification sent for booking:", booking.id);
       }
 
       if (this.recentNotifications.size > 50) {
@@ -210,8 +193,6 @@ export class BookingNotificationManager {
           }
         },
       });
-
-      console.log("✅ User booking notification shown");
     } catch (error) {
       console.error("❌ Error showing user booking notification:", error);
     }
@@ -239,8 +220,6 @@ export class BookingNotificationManager {
           }
         },
       });
-
-      console.log("✅ Driver booking notification shown");
     } catch (error) {
       console.error("❌ Error showing driver booking notification:", error);
     }
@@ -279,7 +258,6 @@ export class BookingNotificationManager {
         });
       }
 
-      console.log("✅ Immediate booking notification shown");
     } catch (error) {
       console.error("❌ Error showing immediate booking notification:", error);
     }
@@ -301,13 +279,7 @@ export function initializeGlobalBookingNotificationManager(
   userId: string,
   onBookingClick?: () => void
 ): BookingNotificationManager {
-  console.log(
-    "🔧 Initializing global booking notification manager for user:",
-    userId
-  );
-
   if (globalBookingNotificationManager) {
-    console.log("🔄 Stopping existing global manager");
     globalBookingNotificationManager.stop();
   }
 
@@ -317,16 +289,11 @@ export function initializeGlobalBookingNotificationManager(
     onBookingClick
   );
 
-  console.log(
-    "✅ Global booking notification manager initialized for user:",
-    userId
-  );
   return globalBookingNotificationManager;
 }
 
 export function cleanupGlobalBookingNotificationManager() {
   if (globalBookingNotificationManager) {
-    console.log("🧹 Cleaning up global booking notification manager");
     globalBookingNotificationManager.stop();
     globalBookingNotificationManager = null;
   }
