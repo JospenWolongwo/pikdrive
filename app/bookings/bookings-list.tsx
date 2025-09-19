@@ -264,7 +264,7 @@ export function BookingsList({ page }: { page: number }) {
 
         // Process bookings and add receipts
         const bookingsWithReceipts = await Promise.all(
-          (bookingsData || []).map(async (bookingData) => {
+          (bookingsData || []).map(async (bookingData: DatabaseBooking) => {
             // Handle ride data as array (Supabase returns it as array)
             const rideData = Array.isArray(bookingData.ride)
               ? bookingData.ride[0]
