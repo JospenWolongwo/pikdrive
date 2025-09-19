@@ -28,6 +28,12 @@ interface DatabaseDriver {
   avatar_url?: string;
 }
 
+interface Profile {
+  id: string;
+  full_name: string;
+  avatar_url?: string;
+}
+
 interface Ride {
   id: string;
   from_city: string;
@@ -251,7 +257,7 @@ export function BookingsList({ page }: { page: number }) {
 
           if (!profilesError && profilesData) {
             driverProfiles = Object.fromEntries(
-              profilesData.map((profile) => [profile.id, profile])
+              profilesData.map((profile: Profile) => [profile.id, profile])
             );
           }
         }
