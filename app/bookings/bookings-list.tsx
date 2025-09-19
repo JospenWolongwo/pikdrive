@@ -232,7 +232,7 @@ export function BookingsList({ page }: { page: number }) {
         const driverIds = [
           ...new Set(
             (bookingsData || [])
-              .map((booking) => {
+              .map((booking: DatabaseBooking) => {
                 const rideData = Array.isArray(booking.ride)
                   ? booking.ride[0]
                   : booking.ride;
