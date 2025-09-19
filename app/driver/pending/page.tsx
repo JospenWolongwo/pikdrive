@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/stores'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,7 +17,7 @@ interface DriverStatus {
 }
 
 export default function DriverPendingPage() {
-  const { user } = useAuth()
+  const { user } = useAuthStore()
   const { supabase } = useSupabase()
   const router = useRouter()
   const [driverStatus, setDriverStatus] = useState<DriverStatus | null>(null)

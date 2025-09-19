@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/stores'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { MapPin, Navigation, Phone, Shield, CreditCard, MessageSquare, Star, Users, Clock, ChevronRight, Check, HelpCircle } from 'lucide-react'
@@ -27,7 +27,7 @@ const staggerContainer = {
 }
 
 export default function Home() {
-  const { user } = useAuth()
+  const { user } = useAuthStore()
   const { supabase } = useSupabase()
   const router = useRouter()
 

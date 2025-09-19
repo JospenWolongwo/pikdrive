@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,7 +27,7 @@ function AuthContent() {
   const [error, setError] = useState("");
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const { signIn, verifyOTP } = useAuth();
+  const { signIn, verifyOTP } = useAuthStore();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();

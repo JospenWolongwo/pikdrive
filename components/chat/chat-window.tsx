@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores";
 import {
   Message,
   getMessages,
@@ -21,7 +21,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ conversationId, className }: ChatWindowProps) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);

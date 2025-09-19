@@ -1,5 +1,3 @@
-"use client";
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createBrowserClient } from "@supabase/ssr";
@@ -18,17 +16,14 @@ const supabase = createBrowserClient(
 );
 
 interface AuthState {
-  user: any;
+  user: any | null;
   signIn: (phone: string) => Promise<{ error: string | null }>;
-  verifyOTP: (
-    phone: string,
-    token: string
-  ) => Promise<{ error: string | null; data: any }>;
+  verifyOTP: (phone: string, token: string) => Promise<{ error: string | null; data: any | null }>;
   signOut: () => Promise<void>;
   getSession: () => Promise<void>;
 }
 
-export const useAuth = create<AuthState>()(
+export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
@@ -99,14 +94,5 @@ export const useAuth = create<AuthState>()(
 
 // Initialize session on app load
 if (typeof window !== "undefined") {
-  useAuth.getState().getSession();
-
-  // Set up auth state change listener
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (session?.user) {
-      useAuth.setState({ user: session.user });
-    } else {
-      useAuth.setState({ user: null });
-    }
-  });
+  useAuthStore.getState().getSession();
 }

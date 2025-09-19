@@ -1,0 +1,19 @@
+// Main API client exports
+export { ApiClient } from './client';
+export { ApiError } from './error';
+export type { RequestOptions } from './types';
+
+// Import for internal use
+import { ApiClient } from './client';
+
+/**
+ * Create a new API client instance
+ */
+export const createApiClient = (baseUrl?: string): ApiClient => {
+  return new ApiClient(baseUrl);
+};
+
+/**
+ * Default API client instance for internal API calls
+ */
+export const apiClient = createApiClient();
