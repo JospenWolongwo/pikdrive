@@ -122,9 +122,11 @@ export const SupabaseProvider = ({
       }
     };
 
-    // Try to refresh session after a short delay
-    const timeoutId = setTimeout(refreshSession, 1000);
-    return () => clearTimeout(timeoutId);
+    // Try to refresh session after a short delay, but only if we have a user from Zustand
+    if (zustandUser && !session) {
+      const timeoutId = setTimeout(refreshSession, 500); // Reduced delay for faster session establishment
+      return () => clearTimeout(timeoutId);
+    }
   }, [zustandUser, session, supabase]);
 
   return (

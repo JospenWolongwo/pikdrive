@@ -72,12 +72,51 @@ export async function middleware(req: NextRequest) {
         error: sessionError,
       } = await supabase.auth.getSession();
 
-      if (!session || !session.user) {
-        const redirectUrl = new URL("/auth", req.url);
-        redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
-        return NextResponse.redirect(redirectUrl);
+      // Check for session first
+      if (session && session.user) {
+        // Valid session found, allow access
+        return res;
       }
+
+      // If no session, check if there's an auth-storage cookie with user data
+      // This handles the race condition where user just logged in but session isn't established yet
+      const authStorageCookie = req.cookies.get("auth-storage");
+      if (authStorageCookie?.value) {
+        try {
+          const authData = JSON.parse(authStorageCookie.value);
+          const userData = authData?.state?.user;
+          
+          // If we have valid user data in the cookie, allow access
+          // The client-side auth provider will handle session establishment
+          if (userData && userData.id && userData.aud === "authenticated") {
+            return res;
+          }
+        } catch (parseError) {
+          // If we can't parse the auth storage, continue to redirect
+          console.warn("Failed to parse auth-storage cookie:", parseError);
+        }
+      }
+
+      // No valid session or user data found, redirect to auth
+      const redirectUrl = new URL("/auth", req.url);
+      redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
     } catch (error) {
+      // On error, still try to check auth-storage cookie as fallback
+      const authStorageCookie = req.cookies.get("auth-storage");
+      if (authStorageCookie?.value) {
+        try {
+          const authData = JSON.parse(authStorageCookie.value);
+          const userData = authData?.state?.user;
+          
+          if (userData && userData.id && userData.aud === "authenticated") {
+            return res;
+          }
+        } catch (parseError) {
+          // Continue to redirect
+        }
+      }
+      
       const redirectUrl = new URL("/auth", req.url);
       redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
       return NextResponse.redirect(redirectUrl);
@@ -95,6 +134,22 @@ export async function middleware(req: NextRequest) {
       if (session && session.user) {
         const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
         return NextResponse.redirect(new URL(redirectTo, req.url));
+      }
+
+      // Also check auth-storage cookie for authenticated users
+      const authStorageCookie = req.cookies.get("auth-storage");
+      if (authStorageCookie?.value) {
+        try {
+          const authData = JSON.parse(authStorageCookie.value);
+          const userData = authData?.state?.user;
+          
+          if (userData && userData.id && userData.aud === "authenticated") {
+            const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
+            return NextResponse.redirect(new URL(redirectTo, req.url));
+          }
+        } catch (parseError) {
+          // Continue to allow access to auth page
+        }
       }
       // If no session or invalid session, allow access to auth page
     } catch (error) {
