@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
-import type { Ride, CancelledBooking } from "./types";
+import type { RideWithDetails, CancelledBooking } from "@/types";
 
 export function useRidesData() {
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
   const [ridesData, setRidesData] = useState<{
-    rides: Ride[];
+    rides: RideWithDetails[];
     lastUpdated: number;
   }>({ rides: [], lastUpdated: 0 });
   const [loading, setLoading] = useState(true);
@@ -99,11 +99,6 @@ export function useRidesData() {
       const maxAge = 5 * 60 * 1000; // 5 minutes cache
 
       if (!forceRefresh && dataAge < maxAge && ridesData.rides.length > 0) {
-        console.log(
-          "📱 Using cached rides data (age:",
-          Math.round(dataAge / 1000),
-          "seconds)"
-        );
         return;
       }
 
@@ -124,7 +119,7 @@ export function useRidesData() {
         }
 
         // 2. Fetch related data in parallel for all rides
-        const rideIds = simpleRides.map((r: Ride) => r.id);
+        const rideIds = simpleRides.map((r: any) => r.id);
 
         // Fetch bookings without complex joins to avoid foreign key issues
         const [{ data: bookings }, { data: messages }] = await Promise.all([
@@ -161,7 +156,7 @@ export function useRidesData() {
         }
 
         // 3. Combine data with error handling
-        const enrichedRides = simpleRides.map((ride: Ride) => {
+        const enrichedRides = simpleRides.map((ride: any) => {
           const rideBookings =
             bookings?.filter((b: any) => b.ride_id === ride.id) || [];
           const rideMessages =

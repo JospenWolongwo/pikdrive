@@ -32,12 +32,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import type { Ride, Booking } from "./types";
+import type { RideWithDetails, DashboardBooking } from "@/types";
 
 interface RideCardProps {
-  ride: Ride;
+  ride: RideWithDetails;
   onOpenChat: (
-    ride: Ride,
+    ride: RideWithDetails,
     user: { id: string; full_name: string; avatar_url?: string }
   ) => void;
   onVerifyCode: (bookingId: string) => void;
@@ -265,7 +265,7 @@ export function RideCard({
                 .filter((booking) =>
                   isPastRide ? booking.status === "confirmed" : true
                 )
-                .map((booking: Booking) => (
+                .map((booking: DashboardBooking) => (
                   <div
                     key={booking.id}
                     className={`p-4 rounded-lg border bg-muted/50 ${

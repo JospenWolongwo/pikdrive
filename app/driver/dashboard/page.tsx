@@ -28,9 +28,9 @@ import {
 
 // Types
 import type {
-  Ride,
+  RideWithDetails,
   PaymentCheckRequest,
-} from "@/components/driver/dashboard/types";
+} from "@/types";
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -40,7 +40,7 @@ export default function DriverDashboard() {
 
   // State
   const [selectedChat, setSelectedChat] = useState<{
-    ride: Ride;
+    ride: RideWithDetails;
     user: { id: string; full_name: string; avatar_url?: string };
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,7 +120,7 @@ export default function DriverDashboard() {
   }, [user, supabase, router]);
 
   const handleOpenChat = (
-    ride: Ride,
+    ride: RideWithDetails,
     user: { id: string; full_name: string; avatar_url?: string }
   ) => {
     setSelectedChat({ ride, user });

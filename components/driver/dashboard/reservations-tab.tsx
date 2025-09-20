@@ -10,12 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { MessageCircle, RefreshCw, Calendar, MapPin, Users } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import type { RideWithPassengers, Passenger } from "@/types";
+import type { RideWithPassengers, Passenger, RideWithDetails } from "@/types";
 import { useDriverStore } from "@/stores/driverStore";
 import { ApiError } from "@/lib/api-client";
 
 interface ReservationsTabProps {
-  onOpenChat: (ride: { id: string; from_city: string; to_city: string; departure_time: string; price: number; total_seats: number; available_seats: number; driver_id: string; created_at: string; departure_date: string; price_per_seat: number }, user: { id: string; full_name: string; avatar_url?: string }) => void;
+  onOpenChat: (ride: RideWithDetails, user: { id: string; full_name: string; avatar_url?: string }) => void;
 }
 
 export function ReservationsTab({ onOpenChat }: ReservationsTabProps) {
@@ -218,7 +218,14 @@ export function ReservationsTab({ onOpenChat }: ReservationsTabProps) {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">{passenger.full_name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{passenger.full_name}</p>
+                                {passenger._profileError && (
+                                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                                    ⚠️ Profil indisponible
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-sm text-gray-600">
                                 {passenger.seats} place(s) • Réservé le{" "}
                                 {format(new Date(passenger.booking_created_at), "dd/MM/yyyy", { locale: fr })}
@@ -239,16 +246,18 @@ export function ReservationsTab({ onOpenChat }: ReservationsTabProps) {
                                 onOpenChat(
                                   {
                                     id: ride.id,
+                                    driver_id: "", // Will be set by the parent component
                                     from_city: ride.from_city,
                                     to_city: ride.to_city,
                                     departure_time: ride.departure_time,
                                     price: ride.price_per_seat,
-                                    total_seats: ride.total_seats,
-                                    available_seats: ride.available_seats,
-                                    driver_id: "", // Will be set by the parent component
+                                    seats_available: ride.available_seats,
+                                    car_model: "", // Not available in reservations data
+                                    car_color: "", // Not available in reservations data
                                     created_at: ride.created_at,
-                                    departure_date: ride.departure_date,
-                                    price_per_seat: ride.price_per_seat,
+                                    updated_at: ride.created_at, // Use created_at as fallback
+                                    bookings: [], // Not needed for chat context
+                                    messages: [], // Not needed for chat context
                                   },
                                   {
                                     id: passenger.user_id,

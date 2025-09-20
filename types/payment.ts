@@ -3,14 +3,14 @@ export interface Payment {
   readonly booking_id: string;
   readonly amount: number;
   readonly currency: string;
-  readonly status: PaymentStatus;
+  readonly status: PaymentTransactionStatus;
   readonly payment_method: PaymentMethod;
   readonly transaction_id?: string;
   readonly created_at: string;
   readonly updated_at: string;
 }
 
-export type PaymentStatus = 
+export type PaymentTransactionStatus = 
   | 'pending'
   | 'processing'
   | 'completed'
@@ -29,7 +29,7 @@ export interface MomoPayment {
   readonly booking_id: string;
   readonly amount: number;
   readonly currency: string;
-  readonly status: PaymentStatus;
+  readonly status: PaymentTransactionStatus;
   readonly momo_transaction_id?: string;
   readonly phone_number: string;
   readonly created_at: string;
@@ -46,6 +46,12 @@ export interface CreatePaymentRequest {
 export interface PaymentResponse {
   readonly success: boolean;
   readonly transaction_id?: string;
-  readonly status: PaymentStatus;
+  readonly status: PaymentTransactionStatus;
   readonly message?: string;
+}
+
+export interface PaymentCheckRequest {
+  readonly bookingId: string;
+  readonly transactionId: string;
+  readonly provider: string;
 }

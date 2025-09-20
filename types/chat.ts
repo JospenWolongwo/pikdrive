@@ -49,3 +49,16 @@ export interface CreateConversationRequest {
   readonly driver_id: string;
   readonly passenger_id: string;
 }
+
+// Ride-specific message type for dashboard
+export interface RideMessage {
+  readonly id: string;
+  readonly ride_id: string;
+  readonly content: string;
+  readonly created_at: string;
+  readonly sender: {
+    readonly id: string;
+    readonly full_name: string;
+    readonly avatar_url?: string;
+  };
+}

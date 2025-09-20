@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import type { Ride } from "./types";
+import type { RideWithDetails } from "@/types";
 
 export function useRidesFiltering(
-  rides: Ride[],
+  rides: RideWithDetails[],
   nowUTC: Date,
   searchQuery: string,
   sortOrder: "asc" | "desc"

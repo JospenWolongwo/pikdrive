@@ -6,4 +6,3 @@ export { RideCard } from "./ride-card";
 export { PaginationComponent } from "./pagination";
 export { useRidesData } from "./use-rides-data";
 export { useRidesFiltering } from "./use-rides-filtering";
-export type * from "./types";

@@ -1,15 +1,15 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { RideCard } from "./ride-card";
 import { PaginationComponent } from "./pagination";
-import type { Ride } from "./types";
+import type { RideWithDetails } from "@/types";
 
 interface RidesTabProps {
-  rides: Ride[];
+  rides: RideWithDetails[];
   currentPage: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onOpenChat: (
-    ride: Ride,
+    ride: RideWithDetails,
     user: { id: string; full_name: string; avatar_url?: string }
   ) => void;
   onVerifyCode: (bookingId: string) => void;
@@ -60,7 +60,7 @@ export function RidesTab({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {paginatedRides.map((ride: Ride) => (
+      {paginatedRides.map((ride: RideWithDetails) => (
         <RideCard
           key={ride.id}
           ride={ride}

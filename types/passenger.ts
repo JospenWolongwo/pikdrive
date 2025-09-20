@@ -8,6 +8,7 @@ export interface Passenger {
   readonly full_name: string;
   readonly avatar_url?: string;
   readonly phone?: string;
+  readonly _profileError?: boolean; // Flag to indicate profile fetch failed
 }
 
 export interface PassengerWithRide extends Passenger {

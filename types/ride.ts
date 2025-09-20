@@ -1,6 +1,8 @@
-import type { Booking } from './booking';
+import type { Booking, DashboardBooking } from './booking';
 import { Passenger } from './passenger';
+import type { RideMessage } from './chat';
 
+// Base Ride interface - core ride data
 export interface Ride {
   readonly id: string;
   readonly driver_id: string;
@@ -14,6 +16,12 @@ export interface Ride {
   readonly car_color?: string;
   readonly created_at: string;
   readonly updated_at: string;
+}
+
+// Extended Ride interface for dashboard with bookings and messages
+export interface RideWithDetails extends Ride {
+  readonly bookings: DashboardBooking[];
+  readonly messages: RideMessage[];
 }
 
 export interface RideWithPassengers {
@@ -53,4 +61,18 @@ export interface UpdateRideRequest {
   readonly description?: string;
   readonly car_model?: string;
   readonly car_color?: string;
+}
+
+// Additional ride-related types
+export interface UnreadCount {
+  readonly rideId: string;
+  readonly count: number;
+}
+
+export interface CancelledBooking {
+  readonly id: string;
+  readonly passengerName: string;
+  readonly rideRoute: string;
+  readonly seats: number;
+  readonly cancelledAt: string;
 }

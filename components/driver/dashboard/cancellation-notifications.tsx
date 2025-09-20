@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { CancelledBooking } from "./types";
+import type { CancelledBooking } from "@/types";
 
 interface CancellationNotificationsProps {
   cancelledBookings: CancelledBooking[];

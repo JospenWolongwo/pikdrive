@@ -123,7 +123,18 @@ export async function GET(request: NextRequest) {
 
         if (bookingsError) {
           console.error("Error fetching bookings for ride:", ride.id, bookingsError);
-          return { ...ride, passengers: [] };
+          return {
+            id: ride.id,
+            from_city: ride.from_city,
+            to_city: ride.to_city,
+            departure_time: ride.departure_time,
+            departure_date: ride.departure_time ? ride.departure_time.split('T')[0] : null,
+            price_per_seat: ride.price || 0,
+            total_seats: ride.seats_available || 0,
+            available_seats: ride.seats_available || 0,
+            created_at: ride.created_at,
+            passengers: [],
+          };
         }
 
         // Fetch user profiles for each booking
@@ -137,11 +148,31 @@ export async function GET(request: NextRequest) {
 
             if (profileError) {
               console.error("Error fetching profile for user:", booking.user_id, profileError);
+              
+              // Determine the appropriate fallback based on error type
+              let fallbackName = "Utilisateur inconnu";
+              if (profileError.code === 'PGRST116') {
+                // Profile not found
+                fallbackName = "Profil supprimé";
+              } else if (profileError.code === '42501') {
+                // Permission denied
+                fallbackName = "Accès refusé";
+              } else if (profileError.message?.includes('timeout')) {
+                // Network timeout
+                fallbackName = "Chargement...";
+              }
+              
               return {
-                ...booking,
-                full_name: "Unknown User",
-                avatar_url: null,
-                phone: null,
+                booking_id: booking.id,
+                user_id: booking.user_id,
+                seats: booking.seats,
+                status: booking.status,
+                payment_status: booking.payment_status,
+                booking_created_at: booking.created_at,
+                full_name: fallbackName,
+                avatar_url: undefined,
+                phone: undefined,
+                _profileError: true, // Flag to indicate this is a fallback
               };
             }
 
