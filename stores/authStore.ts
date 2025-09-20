@@ -1,19 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createBrowserClient } from "@supabase/ssr";
-import {
-  ssrSupabaseConfig,
-  zustandPersistConfig,
-} from "../lib/supabase-config";
-
-const supabase = createBrowserClient(
-  ssrSupabaseConfig.supabaseUrl,
-  ssrSupabaseConfig.supabaseKey,
-  {
-    auth: ssrSupabaseConfig.auth,
-    cookies: ssrSupabaseConfig.cookies,
-  }
-);
+import { supabaseClient } from "../lib/supabase-client";
+import { zustandPersistConfig } from "../lib/supabase-config";
 
 interface AuthState {
   user: any | null;
@@ -21,6 +9,7 @@ interface AuthState {
   verifyOTP: (phone: string, token: string) => Promise<{ error: string | null; data: any | null }>;
   signOut: () => Promise<void>;
   getSession: () => Promise<void>;
+  clearUser: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,7 +19,7 @@ export const useAuthStore = create<AuthState>()(
 
       signIn: async (phone: string) => {
         try {
-          const { error } = await supabase.auth.signInWithOtp({
+          const { error } = await supabaseClient.auth.signInWithOtp({
             phone,
             options: {
               channel: "sms",
@@ -47,7 +36,7 @@ export const useAuthStore = create<AuthState>()(
 
       verifyOTP: async (phone: string, token: string) => {
         try {
-          const { data, error } = await supabase.auth.verifyOtp({
+          const { data, error } = await supabaseClient.auth.verifyOtp({
             phone,
             token,
             type: "sms",
@@ -64,7 +53,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
-        await supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
         set({ user: null });
       },
 
@@ -73,7 +62,7 @@ export const useAuthStore = create<AuthState>()(
           const {
             data: { session },
             error,
-          } = await supabase.auth.getSession();
+          } = await supabaseClient.auth.getSession();
 
           if (error) {
             console.error("Session error:", error);
@@ -83,9 +72,15 @@ export const useAuthStore = create<AuthState>()(
           if (session?.user) {
             set({ user: session.user });
           }
+          // Don't clear user if no session - let it persist as fallback
         } catch (error) {
           console.error("Exception getting session:", error);
+          // Don't clear user on error - let it persist as fallback
         }
+      },
+
+      clearUser: () => {
+        set({ user: null });
       },
     }),
     zustandPersistConfig

@@ -6,11 +6,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthStore } from "@/stores";
+import { useSupabase } from "@/providers/SupabaseProvider";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AuthPage() {
+  const { user, loading } = useSupabase();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Redirect authenticated users
+  useEffect(() => {
+    if (!loading && user) {
+      const redirectTo = searchParams.get("redirectTo") || "/";
+      router.push(redirectTo);
+    }
+  }, [user, loading, router, searchParams]);
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Vérification de l'authentification...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render auth form if user is authenticated
+  if (user) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<div>Chargement...</div>}>
       <AuthContent />

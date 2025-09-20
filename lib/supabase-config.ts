@@ -8,8 +8,6 @@ const baseAuthConfig = {
   autoRefreshToken: true,
   detectSessionInUrl: true,
   storageKey: "auth-storage",
-  // Very long session expiry - 1 year in milliseconds
-  expireTime: 365 * 24 * 60 * 60 * 1000, // 1 year
 } as const;
 
 export const supabaseConfig = {
@@ -56,6 +54,4 @@ export const ssrSupabaseConfig = {
 export const zustandPersistConfig = {
   name: "auth-storage",
   skipHydration: true,
-  // Very long storage expiry - 1 year in milliseconds
-  expireTime: 365 * 24 * 60 * 60 * 1000, // 1 year
 } as const;
