@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
+import { useRidesStore } from "@/stores";
+import type { RideWithDriver } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   MapPin,
@@ -69,28 +71,7 @@ interface Booking {
   seats: number;
 }
 
-interface Ride {
-  id: string;
-  driver_id: string;
-  from_city: string;
-  to_city: string;
-  price: number;
-  departure_time: string;
-  estimated_duration: string;
-  seats_available: number;
-  car_model?: string;
-  car_color?: string;
-  bookings?: Booking[];
-  driver?: {
-    id: string;
-    full_name: string;
-    avatar_url?: string;
-    image?: string;
-    rating?: number;
-    trips?: number;
-    vehicle_images?: string[];
-  };
-}
+// Using RideWithDriver type from store instead of local interface
 
 interface UnreadCount {
   rideId: string;
@@ -108,11 +89,11 @@ export default function RidesPage() {
   const { unreadCounts: unreadCountsArray, subscribeToRide } = useChat();
   const { toast } = useToast();
   const router = useRouter();
-  const [rides, setRides] = useState<Ride[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { allRides, allRidesLoading, allRidesError, allRidesPagination, searchRides } = useRidesStore();
+  const loading = allRidesLoading;
   const [isNavigating, setIsNavigating] = useState(false);
-  const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
-  const [selectedChatRide, setSelectedChatRide] = useState<Ride | null>(null);
+  const [selectedRide, setSelectedRide] = useState<RideWithDriver | null>(null);
+  const [selectedChatRide, setSelectedChatRide] = useState<RideWithDriver | null>(null);
   const [message, setMessage] = useState("");
   const [seats, setSeats] = useState(1);
 
@@ -153,9 +134,6 @@ export default function RidesPage() {
       minSeats?: number;
     }) => {
       try {
-        setLoading(true);
-
-
         // Use provided filters or current state
         const activeFromCity = filters?.fromCity ?? fromCity;
         const activeToCity = filters?.toCity ?? toCity;
@@ -163,160 +141,39 @@ export default function RidesPage() {
         const activeMaxPrice = filters?.maxPrice ?? maxPrice;
         const activeMinSeats = filters?.minSeats ?? minSeats;
 
-        // First get total count for pagination
-        let countQuery = supabase
-          .from("rides")
-          .select("id", { count: "exact" })
-          .gt("departure_time", new Date().toISOString());
-
-        // Apply filters to count query
-        if (activeFromCity && activeFromCity !== "any") {
-          countQuery = countQuery.eq("from_city", activeFromCity);
-        }
-        if (activeToCity && activeToCity !== "any") {
-          countQuery = countQuery.eq("to_city", activeToCity);
-        }
-        if (activeMinPrice > 0) {
-          countQuery = countQuery.gte("price", activeMinPrice);
-        }
-        if (activeMaxPrice < 20000) {
-          countQuery = countQuery.lte("price", activeMaxPrice);
-        }
-
-        const { count, error: countError } = await countQuery;
-
-        if (countError) throw countError;
-
-        setTotalPages(Math.ceil((count || 0) / itemsPerPage));
-
-        // Then get paginated data
-        let query = supabase
-          .from("rides")
-          .select(
-            `
-          *,
-          driver:profiles(id, full_name, avatar_url),
-          bookings(id, seats)
-        `
-          )
-          .gt("departure_time", new Date().toISOString())
-          .order("departure_time", { ascending: true })
-          .range(
-            (currentPage - 1) * itemsPerPage,
-            currentPage * itemsPerPage - 1
-          );
-
-        // Apply filters
-        if (activeFromCity && activeFromCity !== "any") {
-          query = query.eq("from_city", activeFromCity);
-        }
-        if (activeToCity && activeToCity !== "any") {
-          query = query.eq("to_city", activeToCity);
-        }
-        if (activeMinPrice > 0) {
-          query = query.gte("price", activeMinPrice);
-        }
-        if (activeMaxPrice < 20000) {
-          query = query.lte("price", activeMaxPrice);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-          console.error("❌ Database error:", error);
-          throw error;
-        }
-
-        // Set empty array if no data
-        if (!data) {
-          setRides([]);
-          return;
-        }
-
-        // Fetch vehicle images for all drivers
-        const driverIds = [...new Set(data.map((ride: any) => ride.driver_id))];
-
-        const { data: driverDocuments, error: docsError } = await supabase
-          .from("driver_documents")
-          .select("driver_id, vehicle_images")
-          .in("driver_id", driverIds);
-
-        if (docsError) {
-          console.error("❌ Error fetching driver documents:", docsError);
-          console.error("❌ Error details:", {
-            code: docsError.code,
-            message: docsError.message,
-            details: docsError.details,
-            hint: docsError.hint,
-          });
-        }
-
-        // Debug: Check if the driver IDs in rides match the ones with vehicle images
-
-        // Check if there are any vehicle images in the database at all
-        const { data: allDriverDocs, error: allDocsError } = await supabase
-          .from("driver_documents")
-          .select("driver_id, vehicle_images")
-          .not("vehicle_images", "is", null);
-
-        if (!allDocsError && allDriverDocs) {
-          // Vehicle images found
-        }
-
-        // Create a map of driver_id to vehicle_images
-        const vehicleImagesMap = new Map<string, string[]>();
-        if (driverDocuments) {
-          driverDocuments.forEach((doc: any) => {
-            if (doc.vehicle_images && doc.vehicle_images.length > 0) {
-              vehicleImagesMap.set(doc.driver_id, doc.vehicle_images);
-            }
-          });
-        }
-
-
-        const processedRides = data.map((ride: any) => {
-          // Get vehicle images for this driver
-          const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
-
-          return {
-            ...ride,
-            seats_available:
-              ride.seats_available -
-              (ride.bookings?.reduce(
-                (sum: number, b: any) => sum + (b.seats || 0),
-                0
-              ) || 0),
-            driver: {
-              ...ride.driver,
-              vehicle_images: vehicleImages,
-            },
-          };
+        // Use Zustand store to search rides (automatically filters out past rides)
+        await searchRides({
+          from_city: activeFromCity && activeFromCity !== "any" ? activeFromCity : undefined,
+          to_city: activeToCity && activeToCity !== "any" ? activeToCity : undefined,
+          min_price: activeMinPrice,
+          max_price: activeMaxPrice,
+          min_seats: activeMinSeats,
+          page: currentPage,
+          limit: itemsPerPage,
         });
 
-        // Apply client-side seat filter
-        const filteredRides = processedRides.filter(
-          (ride: any) => ride.seats_available >= activeMinSeats
-        );
+        // Update pagination from store response
+        if (allRidesPagination) {
+          setTotalPages(allRidesPagination.total_pages);
+        }
 
-        // Debug: Check if any rides have vehicle images
-        const ridesWithImages = filteredRides.filter(
-          (ride: any) =>
-            ride.driver?.vehicle_images && ride.driver.vehicle_images.length > 0
-        );
-        setRides(filteredRides);
+        // Rides are now managed by Zustand store
+
+        // Vehicle images and other data are handled by the Zustand store
+
+
+        // All ride processing is handled by the Zustand store
       } catch (error) {
-        console.error("❌ Error loading rides:", error);
+        console.error("Error loading rides:", error);
         toast({
           variant: "destructive",
           title: "Error loading rides",
           description: "Please try again later.",
         });
-      } finally {
-        setLoading(false);
       }
     },
     [
-      supabase,
+      searchRides,
       fromCity,
       toCity,
       minPrice,
@@ -364,10 +221,10 @@ export default function RidesPage() {
   ]);
 
   useEffect(() => {
-    rides.forEach((ride) => {
+    allRides.forEach((ride) => {
       subscribeToRide(ride.id);
     });
-  }, [rides, subscribeToRide]);
+  }, [allRides, subscribeToRide]);
 
   // Set up global booking notification manager
   useEffect(() => {
@@ -401,7 +258,7 @@ export default function RidesPage() {
     };
   }, [user, supabase, router]);
 
-  const handleBooking = (ride: Ride) => {
+  const handleBooking = (ride: RideWithDriver) => {
     if (!user) {
       toast({
         title: "Connexion requise",
@@ -420,7 +277,7 @@ export default function RidesPage() {
     loadRides(); // Refresh the rides list
   };
 
-  const handleOpenChat = async (ride: Ride) => {
+  const handleOpenChat = async (ride: RideWithDriver) => {
     if (!user) {
       toast({
         title: "Connexion requise",
@@ -681,7 +538,7 @@ export default function RidesPage() {
           )}
         </div>
 
-        {rides.length === 0 ? (
+        {allRides.length === 0 ? (
           <div className="text-center py-20">
             <div className="max-w-lg mx-auto">
               <div className="relative mb-8">
@@ -705,7 +562,7 @@ export default function RidesPage() {
           </div>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {rides.map((ride, index) => (
+            {allRides.map((ride, index) => (
               <motion.div
                 key={ride.id}
                 initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -959,7 +816,7 @@ export default function RidesPage() {
           </div>
         )}
       </div>
-      {!loading && rides.length > 0 && (
+      {!loading && allRides.length > 0 && (
         <Pagination className="mt-4">
           <PaginationContent>
             {currentPage > 1 && (

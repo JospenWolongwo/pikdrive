@@ -3,7 +3,7 @@
 import { useAuthStore } from '@/stores'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-import { MapPin, Navigation, Phone, Shield, CreditCard, MessageSquare, Star, Users, Clock, ChevronRight, Check, HelpCircle } from 'lucide-react'
+import { MapPin, Navigation, Phone, Shield, CreditCard, MessageSquare, Star, Users, Clock, ChevronRight, Check, HelpCircle, Building2, Mountain, Waves } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
 import { Card } from '@/components/ui/card'
 import { motion } from 'framer-motion'
@@ -25,6 +25,20 @@ const staggerContainer = {
     }
   }
 }
+
+// Icon mapping function
+const getRouteIcon = (iconType: string) => {
+  switch (iconType) {
+    case 'city':
+      return <Building2 className="w-8 h-8 text-blue-600" />;
+    case 'mountain':
+      return <Mountain className="w-8 h-8 text-green-600" />;
+    case 'beach':
+      return <Waves className="w-8 h-8 text-cyan-600" />;
+    default:
+      return <MapPin className="w-8 h-8 text-gray-600" />;
+  }
+};
 
 export default function Home() {
   const { user } = useAuthStore()
@@ -229,7 +243,7 @@ export default function Home() {
                 to: "Yaoundé",
                 price: "5000",
                 duration: "4h",
-                icon: "🏙️",
+                icon: "city",
                 description: "Route économique vers la capitale"
               },
               {
@@ -237,7 +251,7 @@ export default function Home() {
                 to: "Bafoussam",
                 price: "4000",
                 duration: "3h",
-                icon: "🌄",
+                icon: "mountain",
                 description: "Trajet vers l'Ouest du pays"
               },
               {
@@ -245,7 +259,7 @@ export default function Home() {
                 to: "Kribi",
                 price: "3500",
                 duration: "3h",
-                icon: "🏖️",
+                icon: "beach",
                 description: "Destination balnéaire populaire"
               }
             ].map((route, index) => (
@@ -266,7 +280,9 @@ export default function Home() {
                     {/* Route Header */}
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
-                        <div className="text-3xl">{route.icon}</div>
+                        <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg">
+                          {getRouteIcon(route.icon)}
+                        </div>
                     <div>
                           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Itinéraire Populaire</p>
                           <h3 className="text-lg font-bold text-foreground">{route.from} → {route.to}</h3>

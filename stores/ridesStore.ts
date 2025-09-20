@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { 
   Ride, 
   RideWithDetails, 
+  RideWithDriver,
   CreateRideRequest, 
   UpdateRideRequest,
   PaginatedResponse 
@@ -11,7 +12,7 @@ import { ridesService } from "@/lib/services/rides-service";
 
 interface RidesState {
   // All rides state (for search/browse)
-  allRides: Ride[];
+  allRides: RideWithDriver[];
   allRidesLoading: boolean;
   allRidesError: string | null;
   allRidesPagination: {
@@ -81,6 +82,12 @@ interface RidesState {
   updateRide: (rideId: string, updateData: UpdateRideRequest) => Promise<Ride>;
   deleteRide: (rideId: string) => Promise<void>;
 
+  // User rides for messages/chat
+  userRides: Ride[];
+  userRidesLoading: boolean;
+  userRidesError: string | null;
+  fetchUserRides: (userId: string) => Promise<void>;
+
   // Search actions
   searchRides: (filters: {
     from_city?: string;
@@ -98,22 +105,26 @@ interface RidesState {
 export const useRidesStore = create<RidesState>()(
   persist(
     (set, get) => ({
-      // Initial state
-      allRides: [],
-      allRidesLoading: false,
-      allRidesError: null,
-      allRidesPagination: null,
+    // Initial state
+    allRides: [],
+    allRidesLoading: false,
+    allRidesError: null,
+    allRidesPagination: null,
 
-      driverRides: [],
-      driverRidesLoading: false,
-      driverRidesError: null,
-      lastDriverRidesFetch: null,
+    driverRides: [],
+    driverRidesLoading: false,
+    driverRidesError: null,
+    lastDriverRidesFetch: null,
 
-      currentRide: null,
-      currentRideLoading: false,
-      currentRideError: null,
+    currentRide: null,
+    currentRideLoading: false,
+    currentRideError: null,
 
-      searchFilters: {},
+    userRides: [],
+    userRidesLoading: false,
+    userRidesError: null,
+
+    searchFilters: {},
 
       // Actions for all rides
       fetchAllRides: async (params = {}) => {
@@ -313,6 +324,25 @@ export const useRidesStore = create<RidesState>()(
           }
         } catch (error) {
           console.error("Error deleting ride:", error);
+          throw error;
+        }
+      },
+
+      // Fetch user rides for messages/chat
+      fetchUserRides: async (userId: string) => {
+        set({ userRidesLoading: true, userRidesError: null });
+        try {
+          const rides = await ridesService.fetchUserRides(userId);
+          set({ 
+            userRides: rides, 
+            userRidesLoading: false 
+          });
+        } catch (error) {
+          console.error("Error fetching user rides:", error);
+          set({ 
+            userRidesError: error instanceof Error ? error.message : "Failed to fetch user rides",
+            userRidesLoading: false 
+          });
           throw error;
         }
       },

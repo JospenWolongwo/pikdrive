@@ -182,7 +182,7 @@ export function BookingsList({ page }: { page: number }) {
         if (userError) throw userError;
 
         if (!user) {
-          console.error("❌ No authenticated user found in bookings list");
+          console.error("No authenticated user found in bookings list");
           throw new Error("Authentication required");
         }
 
@@ -339,7 +339,7 @@ export function BookingsList({ page }: { page: number }) {
           },
         }));
       } catch (err) {
-        console.error("❌ Error loading bookings:", err);
+        console.error("Error loading bookings:", err);
         setError(err as Error);
         toast({
           variant: "destructive",

@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/api-client";
 import type { 
   Ride, 
   RideWithDetails, 
+  RideWithDriver,
   CreateRideRequest, 
   UpdateRideRequest,
   ApiResponse,
@@ -25,7 +26,7 @@ export class RidesService {
     upcoming?: boolean;
     page?: number;
     limit?: number;
-  }): Promise<PaginatedResponse<Ride>> {
+  }): Promise<PaginatedResponse<RideWithDriver>> {
     try {
       const searchParams = new URLSearchParams();
       
@@ -42,7 +43,7 @@ export class RidesService {
       const queryString = searchParams.toString();
       const endpoint = queryString ? `/api/rides?${queryString}` : "/api/rides";
 
-      const response = await apiClient.get<PaginatedResponse<Ride>>(endpoint);
+      const response = await apiClient.get<PaginatedResponse<RideWithDriver>>(endpoint);
 
       if (!response.success) {
         throw new Error(response.error || "Failed to fetch rides");
@@ -181,11 +182,24 @@ export class RidesService {
     min_seats?: number;
     page?: number;
     limit?: number;
-  }): Promise<PaginatedResponse<Ride>> {
+  }): Promise<PaginatedResponse<RideWithDriver>> {
     return this.getRides({
       ...filters,
       upcoming: true, // Only show upcoming rides for search
     });
+  }
+
+  /**
+   * Fetch user rides for messages/chat (both as driver and passenger)
+   */
+  async fetchUserRides(userId: string): Promise<Ride[]> {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: Ride[] }>(`/api/rides/user/${userId}`);
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching user rides:", error);
+      throw error;
+    }
   }
 }
 

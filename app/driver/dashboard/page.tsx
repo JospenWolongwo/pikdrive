@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
@@ -9,13 +9,14 @@ import { useToast } from "@/hooks/ui";
 import { ChatDialog } from "@/components/chat/chat-dialog";
 import { CodeVerificationForm } from "@/components/driver/code-verification-form";
 import { PaymentStatusChecker } from "@/components/payment/payment-status-checker";
+import { PageLoader } from "@/components/ui/page-loader";
+import { ContentLoader } from "@/components/ui/content-loader";
 
 // Dashboard components
 import { DashboardHeader } from "@/components/driver/dashboard/dashboard-header";
 import { CancellationNotifications } from "@/components/driver/dashboard/cancellation-notifications";
 import { SearchAndFilters } from "@/components/driver/dashboard/search-and-filters";
 import { RidesTab } from "@/components/driver/dashboard/rides-tab";
-import { ReservationsTab } from "@/components/driver/dashboard/reservations-tab";
 
 // Custom hooks - using centralized rides store
 import { useRidesStoreData } from "@/hooks/rides";
@@ -112,9 +113,9 @@ export default function DriverDashboard() {
 
     try {
       manager.start();
-      console.log("🚗 BookingNotificationManager started for driver dashboard");
+      console.log("BookingNotificationManager started for driver dashboard");
     } catch (error) {
-      console.error("❌ Failed to start BookingNotificationManager:", error);
+      console.error("Failed to start BookingNotificationManager:", error);
     }
 
     return () => {
@@ -187,7 +188,7 @@ export default function DriverDashboard() {
           .eq("driver_id", user.id);
 
         if (error) {
-          console.error("❌ Error deleting ride:", error);
+          console.error("Error deleting ride:", error);
           toast({
             title: "Erreur",
             description:
@@ -206,7 +207,7 @@ export default function DriverDashboard() {
         await refreshRides();
       }
     } catch (error) {
-      console.error("❌ Error in delete process:", error);
+      console.error("Error in delete process:", error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la suppression.",
@@ -216,7 +217,7 @@ export default function DriverDashboard() {
   };
 
   if (loading) {
-    return <div className="container py-10">Chargement...</div>;
+    return <PageLoader message="Chargement de vos trajets" />;
   }
 
 
@@ -235,59 +236,54 @@ export default function DriverDashboard() {
         onSortChange={handleSortChange}
       />
 
-      {/* Tabs for upcoming and past rides */}
-      <Tabs
-        defaultValue="upcoming"
-        className="space-y-4 sm:space-y-6"
-        value={activeTab}
-        onValueChange={setActiveTab}
-      >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upcoming" className="text-sm sm:text-base">
-            Trajets à venir
-          </TabsTrigger>
-          <TabsTrigger value="past" className="text-sm sm:text-base">
-            Trajets passés
-          </TabsTrigger>
-          <TabsTrigger value="reservations" className="text-sm sm:text-base">
-            Réservations
-          </TabsTrigger>
-        </TabsList>
+      <Suspense fallback={<ContentLoader size="lg" message="Chargement des trajets..." />}>
+        {/* Tabs for upcoming and past rides */}
+        <Tabs
+          defaultValue="upcoming"
+          className="space-y-4 sm:space-y-6"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upcoming" className="text-sm sm:text-base">
+              Trajets à venir
+            </TabsTrigger>
+            <TabsTrigger value="past" className="text-sm sm:text-base">
+              Trajets passés
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="upcoming" className="space-y-6">
-          <RidesTab
-            rides={upcomingRides}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-            onPageChange={handlePageChange}
-            onOpenChat={handleOpenChat}
-            onVerifyCode={handleVerifyCode}
-            onCheckPayment={handleCheckPayment}
-            onDeleteRide={handleDeleteRide}
-            isPastRide={false}
-            searchQuery={searchQuery}
-          />
-        </TabsContent>
+          <TabsContent value="upcoming" className="space-y-6">
+            <RidesTab
+              rides={upcomingRides}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onOpenChat={handleOpenChat}
+              onVerifyCode={handleVerifyCode}
+              onCheckPayment={handleCheckPayment}
+              onDeleteRide={handleDeleteRide}
+              isPastRide={false}
+              searchQuery={searchQuery}
+            />
+          </TabsContent>
 
-        <TabsContent value="past" className="space-y-6">
-          <RidesTab
-            rides={pastRides}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-            onPageChange={handlePageChange}
-            onOpenChat={handleOpenChat}
-            onVerifyCode={handleVerifyCode}
-            onCheckPayment={handleCheckPayment}
-            onDeleteRide={handleDeleteRide}
-            isPastRide={true}
-            searchQuery={searchQuery}
-          />
-        </TabsContent>
-
-        <TabsContent value="reservations" className="space-y-6">
-          <ReservationsTab onOpenChat={handleOpenChat} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="past" className="space-y-6">
+            <RidesTab
+              rides={pastRides}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onOpenChat={handleOpenChat}
+              onVerifyCode={handleVerifyCode}
+              onCheckPayment={handleCheckPayment}
+              onDeleteRide={handleDeleteRide}
+              isPastRide={true}
+              searchQuery={searchQuery}
+            />
+          </TabsContent>
+        </Tabs>
+      </Suspense>
 
       {/* Chat Dialog */}
       {selectedChat && selectedChat.ride && selectedChat.user && (

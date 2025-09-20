@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { RideWithPassengers } from "@/types";
-import { driverReservationsService } from "@/lib/services/driver-reservations-service";
+import { apiClient } from "@/lib/api-client";
 
 interface DriverState {
   // Reservations state
@@ -48,9 +48,15 @@ export const useDriverStore = create<DriverState>()(
         set({ reservationsLoading: true, reservationsError: null });
 
         try {
-          const data = await driverReservationsService.getDriverReservations();
+          const response = await apiClient.get<any>("/api/driver/reservations");
+          
+          // Handle the actual API response structure: {success: true, rides: [...]}
+          if (!response.success || !response.rides) {
+            throw new Error(response.error || "Failed to fetch reservations");
+          }
+          
           set({
-            reservations: data,
+            reservations: response.rides,
             reservationsLoading: false,
             reservationsError: null,
             lastFetched: now,

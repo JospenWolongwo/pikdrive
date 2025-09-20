@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { useRidesStore } from "@/stores";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -52,6 +53,7 @@ export default function NewRidePage() {
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { refreshDriverRides } = useRidesStore();
 
   // Create a sorted list of all cities
   const allCities = allCameroonCities.sort();
@@ -142,33 +144,39 @@ export default function NewRidePage() {
         return;
       }
 
-      // First create the ride
-      const { data: newRide, error: createError } = await supabase
-        .from("rides")
-        .insert({
-          driver_id: user.id,
+      // Create the ride using the API endpoint
+      const response = await fetch("/api/rides", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           from_city: values.fromCity,
           to_city: values.toCity,
-          departure_time: departureUTC.toISOString(), // Store as UTC ISO string
+          departure_time: departureUTC.toISOString(),
           price: values.price,
           seats_available: values.seatsAvailable,
           car_model: values.carModel,
           car_color: values.carColor,
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (createError) {
-        console.error("Error creating ride:", createError);
-        throw createError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error creating ride:", errorData);
+        throw new Error(errorData.error || "Failed to create ride");
       }
 
+      const { data: newRide } = await response.json();
       console.log("Created ride:", newRide);
 
       toast({
         title: "Trajet Créé",
         description: "Votre trajet a été créé avec succès.",
       });
+
+      // Refresh the rides store to show the new ride
+      await refreshDriverRides();
 
       // Wait a moment to ensure the ride is saved
       await new Promise((resolve) => setTimeout(resolve, 500));

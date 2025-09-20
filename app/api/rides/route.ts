@@ -124,11 +124,46 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Fetch vehicle images for all drivers
+    const driverIds = [...new Set((rides || []).map((ride: any) => ride.driver_id))];
+    
+    const { data: driverDocuments, error: docsError } = await supabase
+      .from("driver_documents")
+      .select("driver_id, vehicle_images")
+      .in("driver_id", driverIds);
+
+    if (docsError) {
+      console.error("Error fetching driver documents:", docsError);
+    }
+
+    // Create a map of driver_id to vehicle_images
+    const vehicleImagesMap = new Map<string, string[]>();
+    if (driverDocuments) {
+      driverDocuments.forEach((doc: any) => {
+        if (doc.vehicle_images && doc.vehicle_images.length > 0) {
+          vehicleImagesMap.set(doc.driver_id, doc.vehicle_images);
+        }
+      });
+    }
+
+    // Merge vehicle images with rides data
+    const ridesWithVehicleImages = (rides || []).map((ride: any) => {
+      const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
+      
+      return {
+        ...ride,
+        driver: {
+          ...ride.driver,
+          vehicle_images: vehicleImages,
+        },
+      };
+    });
+
     const totalPages = Math.ceil((count || 0) / limit);
 
     return NextResponse.json({
       success: true,
-      data: rides || [],
+      data: ridesWithVehicleImages,
       pagination: {
         page,
         limit,

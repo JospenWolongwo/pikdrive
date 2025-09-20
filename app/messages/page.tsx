@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
+import { useUserRides } from "@/hooks/rides";
 import { useToast } from "@/hooks/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ export default function MessagesPage() {
   const { supabase, user } = useSupabase();
   const { unreadCounts, markAsRead, subscribeToRide } = useChat();
   const { toast } = useToast();
+  const { userRides, userRidesLoading, userRidesError, loadUserRides } = useUserRides();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
@@ -387,110 +389,45 @@ export default function MessagesPage() {
     try {
       setLoading(true);
 
-      // First, get all rides where the user is a driver, passenger, or has messages
-      // We need multiple queries to handle all relationship types correctly
-      const [
-        { data: driverRides, error: driverRidesError },
-        { data: passengerRides, error: passengerRidesError },
-        { data: messageRides, error: messageRidesError },
-      ] = await Promise.all([
-        // Get rides where user is the driver
-        supabase
-          .from("rides")
-          .select(
-            `
+      // Load user rides using Zustand store
+      await loadUserRides(user.id);
+
+      // Get rides where user has sent or received messages
+      const { data: messageRides, error: messageRidesError } = await supabase
+        .from("messages")
+        .select(
+          `
+          ride_id,
+          rides!inner (
             id,
             from_city,
             to_city, 
             departure_time,
             driver_id
-          `
           )
-          .eq("driver_id", user.id),
+        `
+        )
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
-        // Get rides where user has bookings
-        supabase
-          .from("rides")
-          .select(
-            `
-          id,
-          from_city,
-          to_city, 
-          departure_time,
-          driver_id,
-          bookings!inner (
-            id,
-            user_id,
-            ride_id
-          )
-          `
-          )
-          .eq("bookings.user_id", user.id),
-
-        // Get rides where user has sent or received messages
-        // We need to use a different approach since .or() with nested columns doesn't work properly
-        supabase
-          .from("messages")
-          .select(
-            `
-            ride_id,
-            rides!inner (
-              id,
-              from_city,
-              to_city, 
-              departure_time,
-              driver_id
-            )
-          `
-          )
-          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`),
-      ]);
-
-      if (driverRidesError) throw driverRidesError;
-      if (passengerRidesError) throw passengerRidesError;
       if (messageRidesError) throw messageRidesError;
 
-      // Combine and deduplicate rides
-      const allRideIds = new Set();
-      const userRides: any[] = [];
-
-      // Add driver rides
-      if (driverRides) {
-        driverRides.forEach((ride: any) => {
-          if (!allRideIds.has(ride.id)) {
-            allRideIds.add(ride.id);
-            userRides.push(ride);
-          }
-        });
-      }
-
-      // Add passenger rides
-      if (passengerRides) {
-        passengerRides.forEach((ride: any) => {
-          if (!allRideIds.has(ride.id)) {
-            allRideIds.add(ride.id);
-            userRides.push(ride);
-          }
-        });
-      }
+      // Use rides from Zustand store
+      const userRidesFromStore = userRides || [];
 
       // Add message rides (data structure is different since we queried from messages table)
+      const allRideIds = new Set(userRidesFromStore.map(ride => ride.id));
       if (messageRides) {
         messageRides.forEach((messageRecord: any) => {
           const ride = messageRecord.rides;
           if (ride && !allRideIds.has(ride.id)) {
             allRideIds.add(ride.id);
-            userRides.push(ride);
+            userRidesFromStore.push(ride);
           }
         });
       }
 
       console.log(
-        `📍 Found ${userRides.length} total rides (${
-          driverRides?.length || 0
-        } as driver, ${passengerRides?.length || 0} as passenger, ${
-          messageRides?.length || 0
-        } with messages)`
+        `📍 Found ${userRidesFromStore.length} total rides (${messageRides?.length || 0} with messages)`
       );
 
       // Define ride type to avoid implicit any errors
@@ -503,8 +440,8 @@ export default function MessagesPage() {
       }
 
       // Then get the most recent message for each ride
-      if (userRides && userRides.length > 0) {
-        const rideIds = userRides.map((ride: RideInfo) => ride.id);
+      if (userRidesFromStore && userRidesFromStore.length > 0) {
+        const rideIds = userRidesFromStore.map((ride: RideInfo) => ride.id);
 
         // Subscribe to all ride channels for real-time updates
         rideIds.forEach((rideId: string) => {
@@ -575,7 +512,7 @@ export default function MessagesPage() {
 
           Object.values(lastMessageByRide).forEach((message: MessageData) => {
             // Determine which ride this message belongs to
-            const ride = userRides.find(
+            const ride = userRidesFromStore.find(
               (r: RideInfo) => r.id === message.ride_id
             );
 
@@ -645,7 +582,7 @@ export default function MessagesPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, supabase, subscribeToRide, toast]);
+  }, [user, supabase, subscribeToRide, toast, loadUserRides, userRides]);
 
   // Update unread counts in conversations without reloading everything
   useEffect(() => {

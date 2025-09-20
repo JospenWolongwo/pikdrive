@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { useRidesStore } from "@/stores";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -120,8 +121,9 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
-  const [ride, setRide] = useState<Ride | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { currentRide, currentRideLoading, currentRideError, fetchRideById, updateRide, deleteRide: deleteRideFromStore } = useRidesStore();
+  const ride = currentRide;
+  const loading = currentRideLoading;
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [hasBookings, setHasBookings] = useState(false);
@@ -147,79 +149,40 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       if (!user) return;
 
       try {
-        setLoading(true);
-        console.log(`🔍 Loading ride details for ID: ${params.id}`);
-
-        const { data: rideData, error } = await supabase
-          .from("rides")
-          .select(
-            `
-            *,
-            bookings (
-              id,
-              status,
-              user_id
-            )
-          `
-          )
-          .eq("id", params.id)
-          .eq("driver_id", user.id)
-          .single();
-
-        if (error) {
-          console.error("❌ Error loading ride:", error);
-          toast({
-            title: "Erreur",
-            description: "Impossible de charger les détails du trajet",
-            variant: "destructive",
-          });
-          router.push("/driver/dashboard");
-          return;
-        }
-
-        if (!rideData) {
-          toast({
-            title: "Trajet introuvable",
-            description:
-              "Ce trajet n'existe pas ou vous n'avez pas l'autorisation de le gérer",
-            variant: "destructive",
-          });
-          router.push("/driver/dashboard");
-          return;
-        }
-
-        console.log("✅ Ride loaded successfully:", rideData);
-        setRide(rideData);
-
+        // Use Zustand store to fetch ride
+        await fetchRideById(params.id);
+        
         // Check if there are any bookings at all
-        setHasBookings(rideData.bookings && rideData.bookings.length > 0);
+        if (currentRide) {
+          setHasBookings(currentRide.bookings && currentRide.bookings.length > 0);
+        }
 
         // Parse departure time and set form values
-        const departureDate = new Date(rideData.departure_time);
+        if (currentRide) {
+          const departureDate = new Date(currentRide.departure_time);
 
-        form.reset({
-          from_city: rideData.from_city,
-          to_city: rideData.to_city,
-          departure_date: format(departureDate, "yyyy-MM-dd"),
-          departure_time: format(departureDate, "HH:mm"),
-          price: rideData.price.toString(),
-          seats: rideData.seats_available.toString(),
-          description: rideData.description || "",
-        });
+          form.reset({
+            from_city: currentRide.from_city,
+            to_city: currentRide.to_city,
+            departure_date: format(departureDate, "yyyy-MM-dd"),
+            departure_time: format(departureDate, "HH:mm"),
+            price: currentRide.price.toString(),
+            seats: currentRide.seats_available.toString(),
+            description: currentRide.description || "",
+          });
+        }
       } catch (error) {
-        console.error("❌ Unexpected error:", error);
+        console.error("Unexpected error:", error);
         toast({
           title: "Erreur",
           description: "Une erreur s'est produite lors du chargement du trajet",
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
       }
     }
 
     loadRide();
-  }, [params.id, supabase, user, router, toast, form]);
+  }, [params.id, user, router, toast, form, fetchRideById, currentRide]);
 
   // Function to update ride details
   async function onSubmit(values: RideFormValues) {
@@ -233,12 +196,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       const dateTimeString = `${values.departure_date}T${values.departure_time}:00`;
       const departureTime = new Date(dateTimeString).toISOString();
 
-      console.log("🕐 Date/Time conversion:");
-      console.log("  - Input date:", values.departure_date);
-      console.log("  - Input time:", values.departure_time);
-      console.log("  - Combined string:", dateTimeString);
-      console.log("  - ISO string:", departureTime);
-      console.log("  - Local date object:", new Date(dateTimeString));
+     
 
       // Prepare update data with all required fields
       const updateData: {
@@ -271,155 +229,28 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         }
       }
 
-      // Update the ride in the database
+      // Update the ride using Zustand store
       console.log("🔄 Sending update data to database:", updateData);
 
-      const {
-        data: updateResult,
-        error,
-        count,
-      } = await supabase
-        .from("rides")
-        .update(updateData)
-        .eq("id", ride.id)
-        .eq("driver_id", user.id)
-        .select(); // Add .select() to get the updated data back
+      const updateResult = await updateRide(ride.id, updateData);
 
       console.log("🔄 Update response details:");
-      console.log("  - Error:", error);
-      console.log("  - Count:", count);
       console.log("  - Data:", updateResult);
 
-      if (error) {
-        console.error("❌ Error updating ride:", error);
-        throw error;
+      // The updateRide function from Zustand store returns the updated ride
+      if (!updateResult) {
+        console.error("❌ Failed to update ride");
+        throw new Error("Failed to update ride");
       }
 
-      // Check if any rows were actually updated
-      if (count === 0) {
-        console.error("❌ No rows were updated. This suggests:");
-        console.error("  - The ride ID doesn't exist");
-        console.error("  - The driver_id doesn't match");
-        console.error("  - RLS policies are blocking the update");
-        console.error("  - Database constraints are preventing the update");
+      console.log("✅ Ride updated successfully:", updateResult);
 
-        // Try to fetch the current ride to see what's in the database
-        const { data: currentRide, error: fetchError } = await supabase
-          .from("rides")
-          .select("*")
-          .eq("id", ride.id)
-          .single();
 
-        if (fetchError) {
-          console.error("❌ Error fetching current ride:", fetchError);
-        } else {
-          console.log("🔍 Current ride in database:", currentRide);
-          console.log("🔍 Current user ID:", user.id);
-          console.log("🔍 Ride driver ID:", currentRide?.driver_id);
-          console.log("🔍 IDs match?", currentRide?.driver_id === user.id);
 
-          // Check if the user can actually see this ride
-          const { data: canSeeRide, error: visibilityError } = await supabase
-            .from("rides")
-            .select("id")
-            .eq("id", ride.id)
-            .eq("driver_id", user.id)
-            .single();
 
-          if (visibilityError) {
-            console.error(
-              "❌ User cannot see this ride (RLS issue):",
-              visibilityError
-            );
-          } else {
-            console.log("✅ User can see this ride:", canSeeRide);
-          }
-
-          // Test update without driver_id constraint to see if RLS is the issue
-          console.log("🧪 Testing update without driver_id constraint...");
-          const {
-            data: testUpdate,
-            error: testError,
-            count: testCount,
-          } = await supabase
-            .from("rides")
-            .update({
-              description: "TEST UPDATE - " + new Date().toISOString(),
-            })
-            .eq("id", ride.id)
-            .select();
-
-          console.log("🧪 Test update result:", {
-            testUpdate,
-            testError,
-            testCount,
-          });
-
-          // Test update with just the description field
-          console.log("🧪 Testing simple description update...");
-          const {
-            data: simpleUpdate,
-            error: simpleError,
-            count: simpleCount,
-          } = await supabase
-            .from("rides")
-            .update({ description: "SIMPLE TEST" })
-            .eq("id", ride.id)
-            .eq("driver_id", user.id)
-            .select();
-
-          console.log("🧪 Simple update result:", {
-            simpleUpdate,
-            simpleError,
-            simpleCount,
-          });
-        }
-
-        throw new Error("No rows were updated. Check console for details.");
-      }
-
-      console.log(
-        "✅ Ride updated successfully. Database response:",
-        updateResult
-      );
-
-      // Check if the update actually changed anything
-      if (updateResult && updateResult.length > 0) {
-        const updatedRide = updateResult[0];
-        console.log("✅ Updated ride data from database:", updatedRide);
-
-        // Update local state with the actual database response
-        setRide(updatedRide);
-
-        // Reset the form with the updated values from database
-        const departureDate = new Date(updatedRide.departure_time);
-        form.reset({
-          from_city: updatedRide.from_city,
-          to_city: updatedRide.to_city,
-          departure_date: format(departureDate, "yyyy-MM-dd"),
-          departure_time: format(departureDate, "HH:mm"),
-          price: updatedRide.price.toString(),
-          seats: updatedRide.seats_available.toString(),
-          description: updatedRide.description || "",
-        });
-
-        // Show success state briefly
-        setUpdateSuccess(true);
-        setTimeout(() => setUpdateSuccess(false), 3000);
-      } else {
-        console.warn("⚠️ Update succeeded but no data returned");
-        // Fallback to refreshing the ride data
-        const { data: refreshedRide, error: refreshError } = await supabase
-          .from("rides")
-          .select("*")
-          .eq("id", ride.id)
-          .single();
-
-        if (!refreshError && refreshedRide) {
-          setRide(refreshedRide);
-          // Reset form with refreshed data...
-        }
-      }
+      // Show success state briefly
+      setUpdateSuccess(true);
+      setTimeout(() => setUpdateSuccess(false), 3000);
 
       toast({
         title: "Trajet mis à jour avec succès",
@@ -458,17 +289,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         return;
       }
 
-      // Delete the ride from the database
-      const { error } = await supabase
-        .from("rides")
-        .delete()
-        .eq("id", ride.id)
-        .eq("driver_id", user.id);
-
-      if (error) {
-        console.error("❌ Error deleting ride:", error);
-        throw error;
-      }
+      // Delete the ride using Zustand store
+      await deleteRideFromStore(ride.id);
 
       console.log("✅ Ride deleted successfully");
       toast({

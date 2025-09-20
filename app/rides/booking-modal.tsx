@@ -29,29 +29,12 @@ import { format } from "date-fns";
 import { PaymentStatusChecker } from "@/components/payment/payment-status-checker";
 import { useRouter } from "next/navigation";
 import { getGlobalBookingNotificationManager } from "@/lib/notifications/booking-notification-manager";
-
-interface Ride {
-  id: string;
-  driver_id: string; // Added this property for notification manager compatibility
-  from_city: string;
-  to_city: string;
-  price: number;
-  departure_time: string;
-  estimated_duration: string;
-  seats_available: number;
-  car_model?: string;
-  car_color?: string;
-  driver?: {
-    id: string;
-    full_name: string;
-    avatar_url?: string;
-  };
-}
+import type { RideWithDriver } from "@/types";
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  ride: Ride | null;
+  ride: RideWithDriver | null;
   onBookingComplete?: () => void;
 }
 
@@ -309,7 +292,7 @@ export function BookingModal({
                     </div>
                     <div className="flex items-center">
                       <Car className="mr-1 h-4 w-4" />
-                      {ride.estimated_duration}h
+                      {ride.estimated_duration || 'N/A'}h
                     </div>
                     <div className="flex items-center">
                       <Users className="mr-1 h-4 w-4" />

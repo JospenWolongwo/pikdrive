@@ -135,7 +135,7 @@ export function Navbar() {
             setShowAndroid(true);
           }
         } catch (err) {
-          console.error("❌ Installation error:", err);
+          console.error("Installation error:", err);
           setShowAndroid(true);
         }
       }
@@ -289,16 +289,7 @@ export function Navbar() {
                         className="flex items-center"
                       >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>Tableau de Bord</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        href="/driver/bookings"
-                        className="flex items-center"
-                      >
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        <span>Mes Trajets</span>
+                        <span>Vos Trajets</span>
                       </Link>
                     </DropdownMenuItem>
                   </>

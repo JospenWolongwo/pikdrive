@@ -3,12 +3,13 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { BookingsList } from './bookings-list';
-import { LoadingBookings } from './loading';
+import { PageLoader } from '@/components/ui/page-loader';
+import { ContentLoader } from '@/components/ui/content-loader';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { CalendarCheck } from 'lucide-react';
 
 interface BookingsPageProps {
   searchParams: {
@@ -22,18 +23,30 @@ function BookingsPageContent({ searchParams }: BookingsPageProps) {
 
   useEffect(() => {
     if (!loading && !user) {
-      console.error("🚫 BookingsPage: No authenticated user found");
+      console.error("BookingsPage: No authenticated user found");
     }
   }, [user, loading]);
 
   if (loading) {
-    return <LoadingBookings />;
+    return <PageLoader message="Chargement de vos réservations" />;
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Mes Réservations</h1>
-      <Suspense fallback={<LoadingBookings />}>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold flex items-center space-x-3">
+          <CalendarCheck className="w-8 h-8 text-blue-600" />
+          <span>Mes Réservations</span>
+        </h1>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p className="text-sm text-blue-800">
+          <strong>Vos réservations :</strong> Toutes vos réservations de trajets, que vous soyez passager ou conducteur.
+        </p>
+      </div>
+
+      <Suspense fallback={<ContentLoader size="lg" message="Chargement de vos réservations..." />}>
         <BookingsList page={searchParams.page ? parseInt(searchParams.page) : 1} />
       </Suspense>
     </div>
