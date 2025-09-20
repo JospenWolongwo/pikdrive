@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, createContext, useContext, useEffect, useCallback } from 'react';
-import { usePWA } from '@/hooks/usePWA';
-import { useDeviceDetect } from '@/hooks/useDeviceDetect';
+import { usePWA, useDeviceDetect } from '@/hooks/common';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

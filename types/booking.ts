@@ -59,3 +59,38 @@ export interface DashboardBooking {
     readonly avatar_url?: string;
   };
 }
+
+// Driver bookings page specific interface with embedded user and ride data
+export interface DriverBooking {
+  readonly id: string;
+  readonly ride_id: string;
+  readonly seats: number;
+  readonly status: string;
+  readonly created_at: string;
+  readonly payment_status: string;
+  readonly code_verified?: boolean;
+  readonly user_id: string;
+  readonly user: {
+    readonly id: string;
+    readonly full_name: string;
+    readonly avatar_url?: string;
+    readonly phone?: string;
+  };
+  readonly ride: {
+    readonly id: string;
+    readonly from_city: string;
+    readonly to_city: string;
+    readonly departure_time: string;
+    readonly price: number;
+  };
+}
+
+// Ride with bookings for driver bookings page
+export interface RideWithDriverBookings {
+  readonly id: string;
+  readonly from_city: string;
+  readonly to_city: string;
+  readonly departure_time: string;
+  readonly price: number;
+  readonly bookings: DriverBooking[];
+}

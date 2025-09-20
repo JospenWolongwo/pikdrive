@@ -36,15 +36,7 @@ export async function GET(request: NextRequest) {
       error: sessionError,
     } = await supabase.auth.getSession();
 
-    console.log("API Debug - Session check:", {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      sessionError: sessionError?.message,
-    });
-
     if (!session || !session.user) {
-      console.log("API Debug - Unauthorized access attempt");
       return NextResponse.json({ 
         error: "Unauthorized", 
         details: sessionError?.message || "No session found" 
@@ -68,7 +60,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch driver's rides first
-    console.log("API Debug - Fetching rides for driver:", userId);
     const { data: rides, error: ridesError } = await supabase
       .from("rides")
       .select(`
@@ -83,13 +74,6 @@ export async function GET(request: NextRequest) {
       .eq("driver_id", userId)
       .order("departure_time", { ascending: true });
 
-    console.log("API Debug - Rides query result:", {
-      ridesCount: rides?.length || 0,
-      error: ridesError?.message,
-      code: ridesError?.code,
-      sampleRide: rides?.[0] // Log first ride to see structure
-    });
-
     if (ridesError) {
       console.error("Error fetching driver rides:", ridesError);
       return NextResponse.json(
@@ -98,112 +82,85 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch bookings for each ride separately
-    const ridesWithBookings: RideWithPassengers[] = await Promise.all(
-      (rides || []).map(async (ride): Promise<RideWithPassengers> => {
-        console.log("API Debug - Fetching bookings for ride:", ride.id);
-        const { data: bookings, error: bookingsError } = await supabase
-          .from("bookings")
-          .select(`
-            id,
-            seats,
-            status,
-            payment_status,
-            created_at,
-            user_id
-          `)
-          .eq("ride_id", ride.id);
+    // Fetch ALL bookings for ALL rides in a single query (much more efficient)
+    const rideIds = rides?.map(r => r.id) || [];
+    const { data: allBookings, error: bookingsError } = await supabase
+      .from("bookings")
+      .select(`
+        id,
+        ride_id,
+        seats,
+        status,
+        payment_status,
+        code_verified,
+        created_at,
+        user_id
+      `)
+      .in("ride_id", rideIds);
 
-        console.log("API Debug - Bookings query result:", {
-          rideId: ride.id,
-          bookingsCount: bookings?.length || 0,
-          error: bookingsError?.message,
-          code: bookingsError?.code
-        });
 
-        if (bookingsError) {
-          console.error("Error fetching bookings for ride:", ride.id, bookingsError);
-          return {
-            id: ride.id,
-            from_city: ride.from_city,
-            to_city: ride.to_city,
-            departure_time: ride.departure_time,
-            departure_date: ride.departure_time ? ride.departure_time.split('T')[0] : null,
-            price_per_seat: ride.price || 0,
-            total_seats: ride.seats_available || 0,
-            available_seats: ride.seats_available || 0,
-            created_at: ride.created_at,
-            passengers: [],
-          };
-        }
+    if (bookingsError) {
+      console.error("Error fetching bookings:", bookingsError);
+      return NextResponse.json(
+        { error: "Failed to fetch bookings" },
+        { status: 500 }
+      );
+    }
 
-        // Fetch user profiles for each booking
-        const passengersWithProfiles: Passenger[] = await Promise.all(
-          (bookings || []).map(async (booking): Promise<Passenger> => {
-            const { data: profile, error: profileError } = await supabase
-              .from("profiles")
-              .select("id, full_name, avatar_url, phone")
-              .eq("id", booking.user_id)
-              .single();
+    // Fetch ALL user profiles for ALL bookings in a single query
+    const userIds = [...new Set(allBookings?.map(b => b.user_id) || [])]; // Remove duplicates
+    const { data: allProfiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, phone")
+      .in("id", userIds);
 
-            if (profileError) {
-              console.error("Error fetching profile for user:", booking.user_id, profileError);
-              
-              // Determine the appropriate fallback based on error type
-              let fallbackName = "Utilisateur inconnu";
-              if (profileError.code === 'PGRST116') {
-                // Profile not found
-                fallbackName = "Profil supprimé";
-              } else if (profileError.code === '42501') {
-                // Permission denied
-                fallbackName = "Accès refusé";
-              } else if (profileError.message?.includes('timeout')) {
-                // Network timeout
-                fallbackName = "Chargement...";
-              }
-              
-              return {
-                booking_id: booking.id,
-                user_id: booking.user_id,
-                seats: booking.seats,
-                status: booking.status,
-                payment_status: booking.payment_status,
-                booking_created_at: booking.created_at,
-                full_name: fallbackName,
-                avatar_url: undefined,
-                phone: undefined,
-                _profileError: true, // Flag to indicate this is a fallback
-              };
-            }
 
-            return {
-              booking_id: booking.id,
-              user_id: booking.user_id,
-              seats: booking.seats,
-              status: booking.status,
-              payment_status: booking.payment_status,
-              booking_created_at: booking.created_at,
-              full_name: profile.full_name,
-              avatar_url: profile.avatar_url,
-              phone: profile.phone,
-            };
-          })
-        );
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+      return NextResponse.json(
+        { error: "Failed to fetch user profiles" },
+        { status: 500 }
+      );
+    }
 
-        return {
-          id: ride.id,
-          from_city: ride.from_city,
-          to_city: ride.to_city,
-          departure_time: ride.departure_time,
-          departure_date: ride.departure_time ? ride.departure_time.split('T')[0] : null, // Extract date from datetime
-          price_per_seat: ride.price || 0,
-          total_seats: (ride.seats_available || 0) + passengersWithProfiles.reduce((sum, p) => sum + p.seats, 0),
-          available_seats: ride.seats_available || 0,
-          created_at: ride.created_at,
-          passengers: passengersWithProfiles,
-        };
-      })
-    );
+    // Group bookings by ride_id and merge with profiles
+    const bookingsByRide = (allBookings || []).reduce((acc, booking) => {
+      if (!acc[booking.ride_id]) {
+        acc[booking.ride_id] = [];
+      }
+      
+      const profile = allProfiles?.find(p => p.id === booking.user_id);
+      acc[booking.ride_id].push({
+        booking_id: booking.id,
+        user_id: booking.user_id,
+        seats: booking.seats,
+        status: booking.status,
+        payment_status: booking.payment_status,
+        booking_created_at: booking.created_at,
+        full_name: profile?.full_name || "Utilisateur inconnu",
+        avatar_url: profile?.avatar_url,
+        phone: profile?.phone,
+      });
+      
+      return acc;
+    }, {} as Record<string, Passenger[]>);
+
+    // Map rides with their bookings
+    const ridesWithBookings: RideWithPassengers[] = (rides || []).map(ride => {
+      const passengers = bookingsByRide[ride.id] || [];
+      return {
+        id: ride.id,
+        from_city: ride.from_city,
+        to_city: ride.to_city,
+        departure_time: ride.departure_time,
+        departure_date: ride.departure_time ? ride.departure_time.split('T')[0] : null,
+        price_per_seat: ride.price || 0,
+        total_seats: (ride.seats_available || 0) + passengers.reduce((sum, p) => sum + p.seats, 0),
+        available_seats: ride.seats_available || 0,
+        created_at: ride.created_at,
+        passengers: passengers,
+      };
+    });
 
     return NextResponse.json({
       success: true,

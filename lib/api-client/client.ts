@@ -78,6 +78,7 @@ export class ApiClient {
       const response = await fetch(url, {
         ...options,
         headers,
+        credentials: 'include', // Ensure cookies are included for authentication
       });
 
       // Handle non-JSON responses

@@ -11,11 +11,26 @@ export interface Ride {
   readonly departure_time: string;
   readonly price: number;
   readonly seats_available: number;
+  readonly estimated_duration?: string;
   readonly description?: string;
   readonly car_model?: string;
   readonly car_color?: string;
   readonly created_at: string;
   readonly updated_at: string;
+}
+
+// Extended Ride interface with driver details and vehicle images
+export interface RideWithDriver extends Ride {
+  readonly driver?: {
+    readonly id: string;
+    readonly full_name: string;
+    readonly avatar_url?: string;
+    readonly image?: string;
+    readonly rating?: number;
+    readonly trips?: number;
+    readonly vehicle_images?: string[];
+  };
+  readonly bookings?: { readonly id: string; readonly seats: number }[];
 }
 
 // Extended Ride interface for dashboard with bookings and messages
@@ -67,6 +82,10 @@ export interface UpdateRideRequest {
 export interface UnreadCount {
   readonly rideId: string;
   readonly count: number;
+}
+
+export interface UnreadCounts {
+  readonly [key: string]: number;
 }
 
 export interface CancelledBooking {

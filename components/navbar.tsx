@@ -7,7 +7,7 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { usePWA } from "@/hooks/usePWA";
+import { usePWA } from "@/hooks/common";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,12 +35,14 @@ import {
 import { cn } from "@/lib/utils";
 import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
 import { useShowAndroidPrompt } from "@/components/pwa/PWAPrompts";
-import { useDeviceDetect } from "@/hooks/useDeviceDetect";
+import { useDeviceDetect } from "@/hooks/common";
 
 export function Navbar() {
   const { supabase, user, loading } = useSupabase();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
+  // Debug logging
 
 
   const [isOpen, setIsOpen] = useState(false);

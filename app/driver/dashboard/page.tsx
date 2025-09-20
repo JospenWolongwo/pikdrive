@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/ui";
 import { ChatDialog } from "@/components/chat/chat-dialog";
 import { CodeVerificationForm } from "@/components/driver/code-verification-form";
 import { PaymentStatusChecker } from "@/components/payment/payment-status-checker";
@@ -18,9 +18,9 @@ import { SearchAndFilters } from "@/components/driver/dashboard/search-and-filte
 import { RidesTab } from "@/components/driver/dashboard/rides-tab";
 import { ReservationsTab } from "@/components/driver/dashboard/reservations-tab";
 
-// Custom hooks
-import { useRidesData } from "@/components/driver/dashboard/use-rides-data";
-import { useRidesFiltering } from "@/components/driver/dashboard/use-rides-filtering";
+// Custom hooks - using centralized rides store
+import { useRidesStoreData } from "@/hooks/rides";
+import { useRidesFilteringStore } from "@/hooks/rides";
 import {
   initializeGlobalBookingNotificationManager,
   cleanupGlobalBookingNotificationManager,
@@ -38,6 +38,7 @@ export default function DriverDashboard() {
   const { subscribeToRide } = useChat();
   const { toast } = useToast();
 
+
   // State
   const [selectedChat, setSelectedChat] = useState<{
     ride: RideWithDetails;
@@ -53,7 +54,7 @@ export default function DriverDashboard() {
 
   const itemsPerPage = 10;
 
-  // Custom hooks
+  // Custom hooks - using centralized rides store
   const {
     ridesData,
     loading,
@@ -61,13 +62,16 @@ export default function DriverDashboard() {
     loadRides,
     refreshRides,
     nowUTC,
-  } = useRidesData();
-  const { upcomingRides, pastRides } = useRidesFiltering(
-    ridesData.rides,
+  } = useRidesStoreData();
+  
+  // Use the filtering hook to get search and sort filtered rides
+  const { upcomingRides, pastRides } = useRidesFilteringStore({
+    rides: ridesData.rides,
     nowUTC,
     searchQuery,
-    sortOrder
-  );
+    sortOrder,
+  });
+
 
   // Subscribe to messages for each ride
   useEffect(() => {
@@ -215,6 +219,7 @@ export default function DriverDashboard() {
   if (loading) {
     return <div className="container py-10">Chargement...</div>;
   }
+
 
   return (
     <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-4 sm:px-6">

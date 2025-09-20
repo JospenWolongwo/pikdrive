@@ -54,8 +54,6 @@ export default function DriverBookingsPageComplete() {
   const { unreadCounts, subscribeToRide } = useChat();
   const { toast } = useToast();
 
-  // Debug logging
-
   // Use our centralized driver bookings hook
   const {
     bookings: ridesWithBookings,

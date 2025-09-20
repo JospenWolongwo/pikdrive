@@ -4,6 +4,7 @@ export interface Passenger {
   readonly seats: number;
   readonly status: string;
   readonly payment_status: string;
+  readonly code_verified?: boolean;
   readonly booking_created_at: string;
   readonly full_name: string;
   readonly avatar_url?: string;

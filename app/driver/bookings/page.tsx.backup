@@ -39,36 +39,89 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/ui";
 
-// Import our new centralized driver bookings hook
-import { useDriverBookings } from "@/hooks/driver";
-import type { DriverBooking, RideWithDriverBookings } from "@/types";
+interface Booking {
+  id: string;
+  ride_id: string;
+  seats: number;
+  status: string;
+  created_at: string;
+  payment_status: string;
+  user_id: string;
+  user: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+    phone?: string;
+    email: string;
+  };
+  ride: {
+    id: string;
+    from_city: string;
+    to_city: string;
+    departure_time: string;
+    price: number;
+    driver_id: string;
+  };
+}
 
-/**
- * Complete migrated driver bookings page with ALL original features
- * This includes real-time subscriptions, sorting, verification, and more
- */
-export default function DriverBookingsPageComplete() {
+interface Ride {
+  id: string;
+  from_city: string;
+  to_city: string;
+  departure_time: string;
+  price: number;
+  driver_id: string;
+}
+
+interface Profile {
+  id: string;
+  full_name: string;
+  avatar_url?: string;
+  phone?: string;
+  email: string;
+}
+
+interface RawBooking {
+  id: string;
+  ride_id: string;
+  user_id: string;
+  seats: number;
+  status: string;
+  created_at: string;
+  payment_status: string | null;
+  code_verified?: boolean;
+}
+
+interface EnrichedBooking extends RawBooking {
+  user: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+    phone?: string;
+    email: string | null;
+  };
+  ride: {
+    id: string;
+    from_city: string;
+    to_city: string;
+    departure_time: string;
+    price: number;
+    driver_id: string | null;
+  };
+  code_verified?: boolean;
+}
+
+export default function DriverBookings() {
   const { supabase, user } = useSupabase();
   const { unreadCounts, subscribeToRide } = useChat();
-  const { toast } = useToast();
-
-  // Debug logging
-
-  // Use our centralized driver bookings hook
-  const {
-    bookings: ridesWithBookings,
-    loading,
-    error,
-    refreshBookings,
-    loadBookings,
-  } = useDriverBookings();
-
-  // Local state (matching original exactly)
+  const [bookings, setBookings] = useState<EnrichedBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalBookings, setTotalBookings] = useState(0);
+  const itemsPerPage = 5;
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"latest" | "earliest">("latest");
-  const [currentPage, setCurrentPage] = useState(1);
   const [selectedChat, setSelectedChat] = useState<{
     ride_id: string;
     user: {
@@ -79,33 +132,19 @@ export default function DriverBookingsPageComplete() {
     };
   } | null>(null);
   const [verifyingBooking, setVerifyingBooking] = useState<string | null>(null);
+  const [lastDataFetch, setLastDataFetch] = useState<number>(0);
+  const [cachedBookings, setCachedBookings] = useState<{
+    data: EnrichedBooking[];
+    timestamp: number;
+  } | null>(null);
 
-  const itemsPerPage = 5; // Match original
+  // Derived state for pagination
+  const totalPages = Math.max(1, Math.ceil(totalBookings / itemsPerPage));
 
-  // Flatten all bookings from all rides
-  const allBookings = useMemo(() => {
-    const bookings: DriverBooking[] = [];
-    ridesWithBookings.forEach(ride => {
-      ride.bookings?.forEach(booking => {
-        bookings.push({
-          ...booking,
-          ride: {
-            id: ride.id,
-            from_city: ride.from_city,
-            to_city: ride.to_city,
-            departure_time: ride.departure_time,
-            price: ride.price,
-          },
-        });
-      });
-    });
-    return bookings;
-  }, [ridesWithBookings]);
-
-  // Filter and sort bookings (matching original logic exactly)
+  // Filter and sort bookings
   const filteredAndSortedBookings = useMemo(() => {
     return (
-      allBookings
+      bookings
         .filter((booking) => {
           if (!searchQuery) return true;
 
@@ -128,36 +167,200 @@ export default function DriverBookingsPageComplete() {
             : dateA - dateB; // Earliest first
         })
     );
-  }, [allBookings, searchQuery, sortOrder]);
+  }, [bookings, searchQuery, sortOrder]);
 
-  // Pagination (matching original logic exactly)
-  const totalPages = Math.max(1, Math.ceil(filteredAndSortedBookings.length / itemsPerPage));
+  // Get current page of bookings
   const currentBookings = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredAndSortedBookings.slice(startIndex, endIndex);
   }, [filteredAndSortedBookings, currentPage, itemsPerPage]);
 
-  // Load bookings on mount
-  useEffect(() => {
-    loadBookings();
+  const loadBookings = useCallback(
+    async (forceRefresh = false) => {
+      if (!user) return;
+
+      try {
+        // Check cache first
+        const now = Date.now();
+        const cacheAge = 5 * 60 * 1000; // 5 minutes
+
+        if (
+          !forceRefresh &&
+          cachedBookings &&
+          now - cachedBookings.timestamp < cacheAge
+        ) {
+          console.log(
+            "📱 Using cached bookings data (age:",
+            Math.round((now - cachedBookings.timestamp) / 1000),
+            "seconds)"
+          );
+          setBookings(cachedBookings.data);
+          setTotalBookings(cachedBookings.data.length);
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
+        console.log("🚗 Loading bookings for driver:", user.id);
+
+        // Get all rides for the driver first (no pagination for rides anymore)
+        const { data: rides, error: ridesError } = await supabase
+          .from("rides")
+          .select("id")
+          .eq("driver_id", user.id);
+
+        if (ridesError) {
+          console.error("❌ Error fetching driver rides:", ridesError);
+          setLoading(false);
+          return;
+        }
+
+        if (!rides?.length) {
+          console.log("ℹ️ No rides found for driver");
+          setBookings([]);
+          setLoading(false);
+          return;
+        }
+
+        const rideIds = rides.map((r: { id: string }) => r.id);
+        console.log(`🔍 Found ${rideIds.length} rides, fetching bookings`);
+
+        // Get all data in parallel
+        const [
+          { data: rawBookings, error: bookingsError },
+          { data: bookingRides, error: ridesDataError },
+        ] = await Promise.all([
+          // Get all bookings for the driver's rides
+          supabase
+            .from("bookings")
+            .select(
+              "id, ride_id, user_id, seats, status, created_at, payment_status, code_verified"
+            )
+            .in("ride_id", rideIds),
+
+          // Get full ride details
+          supabase.from("rides").select("*").in("id", rideIds),
+        ]);
+
+        if (bookingsError) {
+          console.error("❌ Error fetching bookings:", bookingsError);
+          setLoading(false);
+          return;
+        }
+
+        if (ridesDataError) {
+          console.error("❌ Error fetching ride details:", ridesDataError);
+          setLoading(false);
+          return;
+        }
+
+        if (!rawBookings?.length) {
+          console.log("ℹ️ No bookings found for driver's rides");
+          setBookings([]);
+          setLoading(false);
+          return;
+        }
+
+        console.log(`✅ Found ${rawBookings.length} bookings`);
+
+        // Debug raw booking data in detail
+        console.log(
+          "🔎 Raw Bookings Data:",
+          JSON.stringify(rawBookings, null, 2)
+        );
+
+        // Get all user IDs from bookings
+        const userIds = [
+          ...new Set(rawBookings.map((b: RawBooking) => b.user_id)),
+        ];
+
+        // Fetch user profiles
+        const { data: users, error: usersError } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, phone, email")
+          .in("id", userIds);
+
+        if (usersError) {
+          console.error("❌ Error fetching user profiles:", usersError);
+        }
+
+        // Create lookup maps for rides and users
+        const rideMap = new Map(
+          bookingRides?.map((r: Ride) => [r.id, r]) || []
+        );
+        const userMap = new Map(users?.map((u: Profile) => [u.id, u]) || []);
+
+        // Combine data to create enriched bookings
+        const enrichedBookings = rawBookings.map((booking: RawBooking) => {
+          const userProfile = userMap.get(booking.user_id);
+          const rideDetails = rideMap.get(booking.ride_id);
+
+          // Ensure code_verified is properly handled as boolean
+          // (it might be coming as null from database)
+          const code_verified = booking.code_verified === true;
+
+          return {
+            ...booking,
+            code_verified,
+            user: userProfile || {
+              id: booking.user_id,
+              full_name: "Unknown User",
+              avatar_url: undefined,
+              phone: undefined,
+              email: null,
+            },
+            ride: rideDetails || {
+              id: booking.ride_id,
+              from_city: "Unknown",
+              to_city: "Unknown",
+              departure_time: new Date().toISOString(),
+              price: 0,
+              driver_id: user.id,
+            },
+          };
+        });
+
+        console.log(`🔄 Setting ${enrichedBookings.length} enriched bookings`);
+
+        // Set total bookings for pagination and reset to page 1 if needed
+        setTotalBookings(enrichedBookings.length);
+        if (currentPage > Math.ceil(enrichedBookings.length / itemsPerPage)) {
+          setCurrentPage(1);
+        }
+
+        // Use functional update to ensure atomic state update
+        setBookings((prev) => {
+          // Only update if there are actual changes
+          const hasChanges =
+            JSON.stringify(prev) !== JSON.stringify(enrichedBookings);
+          return hasChanges ? enrichedBookings : prev;
+        });
+
+        // Cache the data
+        setCachedBookings({ data: enrichedBookings, timestamp: now });
+      } catch (error) {
+        console.error("❌ Error in loadBookings:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, supabase, currentPage, cachedBookings]
+  );
+
+  // Add refresh function for manual refresh
+  const refreshBookings = useCallback(() => {
+    loadBookings(true);
   }, [loadBookings]);
 
-  // Subscribe to messages for each ride
+  // Initial load
   useEffect(() => {
-    if (!allBookings.length) return;
+    if (user) {
+      loadBookings();
+    }
+  }, [loadBookings, user]);
 
-    const rideIds = new Set(allBookings.map((b) => b.ride_id));
-    console.log(
-      "💬 Setting up message subscriptions for rides:",
-      Array.from(rideIds)
-    );
-    rideIds.forEach((rideId) => {
-      subscribeToRide(rideId);
-    });
-  }, [allBookings, subscribeToRide]);
-
-  // Subscribe to real-time updates (matching original exactly)
+  // Subscribe to bookings changes
   useEffect(() => {
     if (!user) return;
 
@@ -177,7 +380,7 @@ export default function DriverBookingsPageComplete() {
           payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
         ) => {
           console.log("📬 Received booking update:", payload);
-          await refreshBookings(); // Force refresh on real-time updates
+          await loadBookings(true); // Force refresh on real-time updates
         }
       )
       .subscribe(
@@ -200,7 +403,7 @@ export default function DriverBookingsPageComplete() {
           payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
         ) => {
           console.log("💰 Payment update received:", payload);
-          await refreshBookings(); // Force refresh on real-time updates
+          await loadBookings(true); // Force refresh on real-time updates
         }
       )
       .subscribe(
@@ -214,22 +417,22 @@ export default function DriverBookingsPageComplete() {
       bookingsSubscription.unsubscribe();
       paymentsSubscription.unsubscribe();
     };
-  }, [user, supabase, refreshBookings]);
+  }, [user, supabase, loadBookings]);
 
-  // Handle chat (matching original)
-  const handleOpenChat = (booking: DriverBooking) => {
-    setSelectedChat({
-      ride_id: booking.ride_id,
-      user: booking.user,
+  // Subscribe to messages for each booking's ride
+  useEffect(() => {
+    if (!bookings.length) return;
+
+    const rideIds = new Set(bookings.map((b) => b.ride_id));
+    console.log(
+      "💬 Setting up message subscriptions for rides:",
+      Array.from(rideIds)
+    );
+    rideIds.forEach((rideId) => {
+      subscribeToRide(rideId);
     });
-  };
+  }, [bookings, subscribeToRide]);
 
-  // Handle refresh (matching original)
-  const handleRefresh = useCallback(() => {
-    refreshBookings();
-  }, [refreshBookings]);
-
-  // Status color function (matching original exactly)
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "confirmed":
@@ -251,7 +454,7 @@ export default function DriverBookingsPageComplete() {
     <div className="container mx-auto py-10 space-y-8">
       <h1 className="text-2xl font-bold">Mes Trajets</h1>
 
-      {/* Search and filter bar (matching original exactly) */}
+      {/* Search and filter bar */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -267,7 +470,7 @@ export default function DriverBookingsPageComplete() {
           />
         </div>
 
-        {/* Sort dropdown (matching original) */}
+        {/* Sort dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -292,11 +495,11 @@ export default function DriverBookingsPageComplete() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Refresh button (matching original) */}
+        {/* Refresh button */}
         <Button
           variant="outline"
           size="sm"
-          onClick={handleRefresh}
+          onClick={refreshBookings}
           disabled={loading}
           className="flex items-center gap-1"
         >
@@ -304,7 +507,6 @@ export default function DriverBookingsPageComplete() {
           Actualiser
         </Button>
 
-        {/* Search results badge (matching original) */}
         <div>
           {searchQuery && (
             <Badge variant="outline" className="flex items-center gap-1">
@@ -338,7 +540,7 @@ export default function DriverBookingsPageComplete() {
           </Card>
         ) : (
           <>
-            {currentBookings.map((booking: DriverBooking) => (
+            {currentBookings.map((booking: EnrichedBooking) => (
               <Card key={booking.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -415,7 +617,6 @@ export default function DriverBookingsPageComplete() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-end">
-                      {/* Phone call button (matching original) */}
                       {booking.user.phone && (
                         <Button variant="outline" size="sm" asChild>
                           <a href={`tel:${booking.user.phone}`}>
@@ -424,12 +625,15 @@ export default function DriverBookingsPageComplete() {
                           </a>
                         </Button>
                       )}
-                      
-                      {/* Message button with unread count (matching original) */}
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenChat(booking)}
+                        onClick={() =>
+                          setSelectedChat({
+                            ride_id: booking.ride_id,
+                            user: booking.user,
+                          })
+                        }
                         className="relative"
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
@@ -449,7 +653,7 @@ export default function DriverBookingsPageComplete() {
                         )}
                       </Button>
 
-                      {/* Verification button (matching original) */}
+                      {/* Show verify button for bookings that require verification */}
                       {booking.status === "pending_verification" &&
                         booking.code_verified !== true &&
                         String(booking.payment_status).toLowerCase() ===
@@ -482,14 +686,25 @@ export default function DriverBookingsPageComplete() {
                     </div>
                   </div>
 
-                  {/* Verification form (matching original) */}
+                  {/* Verification form */}
                   {verifyingBooking === booking.id && (
                     <div className="mt-4">
                       <CodeVerificationForm
                         bookingId={booking.id}
                         onSuccess={() => {
                           setVerifyingBooking(null);
-                          handleRefresh();
+                          // Update the local state to avoid having to reload all data
+                          setBookings((prev) =>
+                            prev.map((b) =>
+                              b.id === booking.id
+                                ? {
+                                    ...b,
+                                    code_verified: true,
+                                    status: "confirmed",
+                                  }
+                                : b
+                            )
+                          );
                         }}
                       />
                     </div>
@@ -498,7 +713,7 @@ export default function DriverBookingsPageComplete() {
               </Card>
             ))}
 
-            {/* Pagination with results count (matching original exactly) */}
+            {/* Pagination with results count */}
             {filteredAndSortedBookings.length > 0 && (
               <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <span className="text-sm text-muted-foreground">
@@ -587,7 +802,6 @@ export default function DriverBookingsPageComplete() {
         )}
       </div>
 
-      {/* Chat Dialog (matching original) */}
       {selectedChat && (
         <ChatDialog
           isOpen={!!selectedChat}

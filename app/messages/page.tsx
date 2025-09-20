@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { notificationService } from "@/lib/notifications/notification-service";
 import { pushNotificationService } from "@/lib/notifications/push-notification-service";
-import { useServiceWorker } from "@/hooks/useServiceWorker";
+import { useServiceWorker } from "@/hooks/common";
 import {
   initializeGlobalMessageNotificationManager,
   cleanupGlobalMessageNotificationManager,

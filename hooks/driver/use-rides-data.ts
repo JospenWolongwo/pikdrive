@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/ui";
 import type { RideWithDetails, CancelledBooking } from "@/types";
 
 export function useRidesData() {

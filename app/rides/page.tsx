@@ -40,7 +40,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/ui";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   allCameroonCities,
@@ -106,6 +106,7 @@ const sortedCameroonCities = allCameroonCities;
 export default function RidesPage() {
   const { supabase, user } = useSupabase();
   const { unreadCounts: unreadCountsArray, subscribeToRide } = useChat();
+  const { toast } = useToast();
   const router = useRouter();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
