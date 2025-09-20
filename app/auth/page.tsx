@@ -12,6 +12,14 @@ import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <AuthPageContent />
+    </Suspense>
+  );
+}
+
+function AuthPageContent() {
   const { user, loading } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();

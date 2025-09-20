@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChat } from "@/providers/ChatProvider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
