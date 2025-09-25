@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChat } from "@/providers/ChatProvider";
+import { useChatStore } from "@/stores/chatStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/ui";
 import { ChatDialog } from "@/components/chat/chat-dialog";
@@ -35,7 +35,7 @@ import type {
 export default function DriverDashboard() {
   const router = useRouter();
   const { user, supabase } = useSupabase();
-  const { subscribeToRide } = useChat();
+  const { subscribeToRide } = useChatStore();
   const { toast } = useToast();
 
 

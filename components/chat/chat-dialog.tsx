@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { useChatStore } from "@/stores/chatStore";
 import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,11 +47,25 @@ export function ChatDialog({
   otherUserName,
   otherUserAvatar,
 }: ChatDialogProps) {
-  const { supabase, user } = useSupabase();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { user } = useSupabase();
+  const {
+    messages,
+    messagesLoading,
+    messagesError,
+    fetchMessages,
+    sendMessage,
+    markAsRead,
+    subscribeToRide,
+    unsubscribeFromRide,
+    getOrCreateConversation,
+  } = useChatStore();
+  
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const rideMessages = messages[rideId] || [];
+  const isLoading = messagesLoading[rideId] || false;
+  const error = messagesError[rideId] || null;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,147 +73,44 @@ export function ChatDialog({
 
   useEffect(() => {
     if (isOpen && user) {
-      loadMessages();
-      // Subscribe to new messages
-      const channel = supabase
-        .channel(`chat:${rideId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-            filter: `ride_id=eq.${rideId}`,
-          },
-          async (payload: { new: Record<string, any> }) => {
-            const rawMessage = payload.new;
-
-            // Fetch sender information for the new message
-            const { data: senderData } = await supabase
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("id", rawMessage.sender_id)
-              .single();
-
-            const newMessage = {
-              ...rawMessage,
-              sender: senderData || { full_name: "Unknown", avatar_url: null },
-            } as Message;
-
-            setMessages((prev) => {
-              // Prevent duplicates by checking if message already exists
-              const exists = prev.some((msg) => msg.id === newMessage.id);
-              if (exists) {
-                return prev; // Don't add if already exists
-              }
-              return [...prev, newMessage];
-            });
-            scrollToBottom();
-          }
-        )
-        .subscribe();
+      // Fetch messages and subscribe to real-time updates
+      fetchMessages(rideId);
+      subscribeToRide(rideId);
 
       return () => {
-        channel.unsubscribe();
+        unsubscribeFromRide(rideId);
       };
     }
-  }, [isOpen, user, rideId, supabase]);
+  }, [isOpen, user, rideId, fetchMessages, subscribeToRide, unsubscribeFromRide]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [rideMessages]);
 
-  const loadMessages = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("messages")
-        .select(
-          `
-          *,
-          sender:profiles!messages_sender_id_fkey (
-            full_name,
-            avatar_url
-          )
-        `
-        )
-        .eq("ride_id", rideId)
-        .order("created_at", { ascending: true });
 
-      if (error) throw error;
-      setMessages(data || []);
-    } catch (error) {
-      console.error("Error loading messages:", error);
-      toast({
-        variant: "destructive",
-        title: "Error loading messages",
-        description: "Please try again later.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const sendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;
 
     const messageContent = newMessage.trim();
-    const tempId = `temp-${Date.now()}`; // Temporary ID for optimistic update
     setNewMessage(""); // Clear input immediately for better UX
 
-    // Create optimistic message
-    const optimisticMessage = {
-      id: tempId,
-      content: messageContent,
-      sender_id: user.id,
-      receiver_id: otherUserId,
-      ride_id: rideId,
-      created_at: new Date().toISOString(),
-      sender: {
-        full_name: user.user_metadata?.full_name || "You",
-        avatar_url: user.user_metadata?.avatar_url || null,
-      },
-    };
-
-    // Add optimistic message immediately
-    setMessages((prev) => [...prev, optimisticMessage]);
-    scrollToBottom();
-
     try {
-      const { data, error } = await supabase
-        .from("messages")
-        .insert([
-          {
-            content: messageContent,
-            sender_id: user.id,
-            receiver_id: otherUserId,
-            ride_id: rideId,
-          },
-        ])
-        .select(
-          "*, sender:profiles!messages_sender_id_fkey (full_name, avatar_url)"
-        )
-        .single();
+      // First, get or create conversation
+      const conversation = await getOrCreateConversation({
+        ride_id: rideId,
+        driver_id: rideId, // This needs to be determined based on ride data
+        passenger_id: otherUserId,
+      });
 
-      if (error) throw error;
+      // Send message using chatStore
+      await sendMessage({
+        conversation_id: conversation.id,
+        content: messageContent,
+      });
 
-      // Replace optimistic message with real one
-      if (data) {
-        setMessages((prev) => {
-          // Remove the temporary message and add the real one
-          const withoutTemp = prev.filter((msg) => msg.id !== tempId);
-          // Check if real message already exists (from real-time)
-          const realExists = withoutTemp.some((msg) => msg.id === data.id);
-          if (realExists) {
-            return withoutTemp; // Real message already added by real-time
-          }
-          return [...withoutTemp, data]; // Add the real message
-        });
-      }
+      scrollToBottom();
     } catch (error) {
       console.error("Error sending message:", error);
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
       setNewMessage(messageContent); // Restore message if failed
       toast({
         variant: "destructive",
@@ -210,26 +122,15 @@ export function ChatDialog({
 
   useEffect(() => {
     if (isOpen && user) {
-      const markAsRead = async () => {
-        try {
-          await supabase
-            .from("messages")
-            .update({ read: true })
-            .eq("ride_id", rideId)
-            .eq("receiver_id", user.id)
-            .eq("read", false);
-        } catch (error) {
-          console.error("Error marking messages as read:", error);
-        }
-      };
-      markAsRead();
+      // Mark messages as read when opening the chat
+      markAsRead(rideId, user.id);
     }
-  }, [isOpen, user, rideId, supabase]);
+  }, [isOpen, user, rideId, markAsRead]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSendMessage();
     }
   };
 
@@ -250,7 +151,20 @@ export function ChatDialog({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4 pr-4">
-            {messages.map((message) => (
+            {isLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-4 text-red-500">
+                <p>Error loading messages: {error}</p>
+              </div>
+            ) : rideMessages.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                <p>No messages yet. Start the conversation!</p>
+              </div>
+            ) : (
+              rideMessages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${
@@ -285,7 +199,8 @@ export function ChatDialog({
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            )}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
@@ -301,7 +216,7 @@ export function ChatDialog({
               rows={1}
             />
             <Button
-              onClick={sendMessage}
+              onClick={handleSendMessage}
               size="icon"
               disabled={!newMessage.trim()}
             >

@@ -5,7 +5,6 @@ import { Providers } from "@/app/providers";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { SupabaseProvider } from "@/providers/SupabaseProvider";
-import { ChatProvider } from "@/providers/ChatProvider";
 import { RouteOptimizer } from "@/components/performance/route-optimizer";
 import PWAPrompts from "@/components/pwa/PWAPrompts";
 import { Analytics } from "@vercel/analytics/react";
@@ -79,19 +78,17 @@ export default function RootLayout({
       </head>
       <body className={`h-full ${inter.className}`}>
         <SupabaseProvider>
-          <ChatProvider>
-            <Providers>
-              <RouteOptimizer>
-                <div className="relative flex min-h-screen flex-col">
-                  <PWAPrompts />
-                  <Navbar />
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                  <Analytics />
-                </div>
-              </RouteOptimizer>
-            </Providers>
-          </ChatProvider>
+          <Providers>
+            <RouteOptimizer>
+              <div className="relative flex min-h-screen flex-col">
+                <PWAPrompts />
+                <Navbar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <Analytics />
+              </div>
+            </RouteOptimizer>
+          </Providers>
         </SupabaseProvider>
       </body>
     </html>

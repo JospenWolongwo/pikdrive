@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChat } from "@/providers/ChatProvider";
+import { useChatStore } from "@/stores/chatStore";
 import { useRidesStore } from "@/stores";
 import type { RideWithDriver } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ const sortedCameroonCities = allCameroonCities;
 
 export default function RidesPage() {
   const { supabase, user } = useSupabase();
-  const { unreadCounts: unreadCountsArray, subscribeToRide } = useChat();
+  const { unreadCounts: unreadCountsArray, subscribeToRide } = useChatStore();
   const { toast } = useToast();
   const router = useRouter();
   const { allRides, allRidesLoading, allRidesError, allRidesPagination, searchRides } = useRidesStore();

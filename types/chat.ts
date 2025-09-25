@@ -6,6 +6,11 @@ export interface Message {
   readonly message_type: MessageType;
   readonly created_at: string;
   readonly updated_at: string;
+  readonly sender?: {
+    readonly id: string;
+    readonly full_name: string;
+    readonly avatar_url?: string;
+  };
 }
 
 export type MessageType = 
@@ -35,6 +40,13 @@ export interface ConversationWithParticipants extends Conversation {
     readonly full_name: string;
     readonly avatar_url?: string;
   };
+  readonly ride?: {
+    readonly id: string;
+    readonly from_city: string;
+    readonly to_city: string;
+    readonly departure_time: string;
+    readonly driver_id: string;
+  };
   readonly messages?: Message[];
 }
 
@@ -48,6 +60,23 @@ export interface CreateConversationRequest {
   readonly ride_id: string;
   readonly driver_id: string;
   readonly passenger_id: string;
+}
+
+// UI-specific conversation type for messages page
+export interface UIConversation {
+  readonly id: string;
+  readonly rideId: string;
+  readonly otherUserId: string;
+  readonly otherUserName: string;
+  readonly otherUserAvatar?: string;
+  readonly lastMessage: string;
+  readonly lastMessageTime: string;
+  readonly unreadCount: number;
+  readonly ride: {
+    readonly from_city: string;
+    readonly to_city: string;
+    readonly departure_time: string;
+  };
 }
 
 // Ride-specific message type for dashboard

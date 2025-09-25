@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChat } from "@/providers/ChatProvider";
+import { useChatStore } from "@/stores/chatStore";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePWA } from "@/hooks/common";
@@ -53,7 +53,7 @@ export function Navbar() {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
-  const { unreadCounts } = useChat();
+  const { unreadCounts } = useChatStore();
 
   useEffect(() => {
     setMounted(true);

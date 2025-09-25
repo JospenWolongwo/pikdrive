@@ -1,5 +1,6 @@
 import { ApiError } from './error';
 import type { RequestOptions } from './types';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Simple, robust API client for internal API calls
@@ -134,12 +135,21 @@ export class ApiClient {
   }
 
   /**
-   * Get authentication headers (cookies are automatically included by fetch)
-   * This method can be extended to add custom auth headers if needed
+   * Get authentication headers for Supabase
    */
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    // Cookies are automatically included by fetch in browser environment
-    // For server-side requests, we might need to pass auth headers explicitly
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        return {
+          'Authorization': `Bearer ${session.access_token}`,
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to get auth headers:', error);
+    }
+    
     return {};
   }
 }

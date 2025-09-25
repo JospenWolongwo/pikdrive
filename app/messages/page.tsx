@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChat } from "@/providers/ChatProvider";
+import { useChatStore } from "@/stores/chatStore";
 import { useUserRides } from "@/hooks/rides";
 import { useToast } from "@/hooks/ui";
+import type { UIConversation } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,32 +36,23 @@ import { ChatDialog } from "@/components/chat/chat-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
-// Types
-interface Conversation {
-  id: string;
-  rideId: string;
-  otherUserId: string;
-  otherUserName: string;
-  otherUserAvatar: string | null;
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount: number;
-  ride: {
-    from_city: string;
-    to_city: string;
-    departure_time: string;
-  };
-}
+// Use UIConversation type from types/chat.ts
 
 export default function MessagesPage() {
   const router = useRouter();
-  const { supabase, user } = useSupabase();
-  const { unreadCounts, markAsRead, subscribeToRide } = useChat();
+  const { user } = useSupabase();
+  const {
+    conversations,
+    conversationsLoading,
+    conversationsError,
+    unreadCounts,
+    fetchConversations,
+    markAsRead,
+    subscribeToRide,
+  } = useChatStore();
   const { toast } = useToast();
   const { userRides, userRidesLoading, userRidesError, loadUserRides } = useUserRides();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
+  const [selectedChat, setSelectedChat] = useState<UIConversation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsSupported, setNotificationsSupported] = useState(false);
@@ -382,195 +374,16 @@ export default function MessagesPage() {
     }
   };
 
-  // Load conversations
+  // Load conversations using chatStore
   const loadConversations = useCallback(async () => {
     if (!user) return;
-
+    
     try {
-      setLoading(true);
-
       // Load user rides using Zustand store
       await loadUserRides(user.id);
-
-      // Get rides where user has sent or received messages
-      const { data: messageRides, error: messageRidesError } = await supabase
-        .from("messages")
-        .select(
-          `
-          ride_id,
-          rides!inner (
-            id,
-            from_city,
-            to_city, 
-            departure_time,
-            driver_id
-          )
-        `
-        )
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
-
-      if (messageRidesError) throw messageRidesError;
-
-      // Use rides from Zustand store
-      const userRidesFromStore = userRides || [];
-
-      // Add message rides (data structure is different since we queried from messages table)
-      const allRideIds = new Set(userRidesFromStore.map(ride => ride.id));
-      if (messageRides) {
-        messageRides.forEach((messageRecord: any) => {
-          const ride = messageRecord.rides;
-          if (ride && !allRideIds.has(ride.id)) {
-            allRideIds.add(ride.id);
-            userRidesFromStore.push(ride);
-          }
-        });
-      }
-
-      console.log(
-        `📍 Found ${userRidesFromStore.length} total rides (${messageRides?.length || 0} with messages)`
-      );
-
-      // Define ride type to avoid implicit any errors
-      interface RideInfo {
-        id: string;
-        from_city: string;
-        to_city: string;
-        departure_time: string;
-        [key: string]: any; // For any other properties
-      }
-
-      // Then get the most recent message for each ride
-      if (userRidesFromStore && userRidesFromStore.length > 0) {
-        const rideIds = userRidesFromStore.map((ride: RideInfo) => ride.id);
-
-        // Subscribe to all ride channels for real-time updates
-        rideIds.forEach((rideId: string) => {
-          subscribeToRide(rideId);
-        });
-
-        // Get the last message for each ride
-        const { data: messages, error: messagesError } = await supabase
-          .from("messages")
-          .select(
-            `
-            id,
-            content,
-            created_at,
-            ride_id,
-            sender_id,
-            receiver_id,
-            sender:profiles!messages_sender_id_fkey (
-              id,
-              full_name,
-              avatar_url
-            ),
-            receiver:profiles!messages_receiver_id_fkey (
-              id,
-              full_name,
-              avatar_url
-            )
-          `
-          )
-          .in("ride_id", rideIds)
-          .order("created_at", { ascending: false });
-
-        if (messagesError) throw messagesError;
-
-        // Define message interface to avoid implicit any errors
-        interface MessageData {
-          id: string;
-          content: string;
-          created_at: string;
-          ride_id: string;
-          sender_id: string;
-          receiver_id: string;
-          sender: {
-            id: string;
-            full_name: string;
-            avatar_url: string | null;
-          };
-          receiver: {
-            id: string;
-            full_name: string;
-            avatar_url: string | null;
-          };
-          [key: string]: any; // For any other properties
-        }
-
-        if (messages && messages.length > 0) {
-          // Group messages by ride_id to find the most recent one for each ride
-          const lastMessageByRide: Record<string, MessageData> = {};
-
-          messages.forEach((message: MessageData) => {
-            if (!lastMessageByRide[message.ride_id]) {
-              lastMessageByRide[message.ride_id] = message;
-            }
-          });
-
-          // Build conversations array with proper deduplication
-          const conversationMap = new Map<string, Conversation>();
-
-          Object.values(lastMessageByRide).forEach((message: MessageData) => {
-            // Determine which ride this message belongs to
-            const ride = userRidesFromStore.find(
-              (r: RideInfo) => r.id === message.ride_id
-            );
-
-            // Determine the other user (not the current user)
-            const isCurrentUserSender = message.sender_id === user.id;
-            const otherUser = isCurrentUserSender
-              ? message.receiver
-              : message.sender;
-
-            // Get unread count for this ride
-            const unreadCount =
-              unreadCounts.find((count) => count.rideId === message.ride_id)
-                ?.count || 0;
-
-            const conversationId = `${message.ride_id}-${otherUser.id}`;
-            const conversation: Conversation = {
-              id: conversationId,
-              rideId: message.ride_id,
-              otherUserId: otherUser.id,
-              otherUserName: otherUser.full_name,
-              otherUserAvatar: otherUser.avatar_url,
-              lastMessage: message.content,
-              lastMessageTime: message.created_at,
-              unreadCount,
-              ride: {
-                from_city: ride?.from_city || "",
-                to_city: ride?.to_city || "",
-                departure_time: ride?.departure_time || "",
-              },
-            };
-
-            // Only add if not already in map (deduplication)
-            if (!conversationMap.has(conversationId)) {
-              conversationMap.set(conversationId, conversation);
-            }
-          });
-
-          // Convert map to array
-          const conversationsArray: Conversation[] = Array.from(
-            conversationMap.values()
-          );
-
-          // Sort by latest message
-          conversationsArray.sort(
-            (a, b) =>
-              new Date(b.lastMessageTime).getTime() -
-              new Date(a.lastMessageTime).getTime()
-          );
-
-          setConversations(conversationsArray);
-        } else {
-          console.log("📭 No messages found for any rides");
-          setConversations([]);
-        }
-      } else {
-        console.log("🚫 No rides found for user");
-        setConversations([]);
-      }
+      
+      // Fetch conversations using chatStore
+      await fetchConversations(user.id);
     } catch (error) {
       console.error("Error loading conversations:", error);
       toast({
@@ -579,151 +392,28 @@ export default function MessagesPage() {
           "Impossible de charger vos conversations. Veuillez réessayer.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  }, [user, supabase, subscribeToRide, toast, loadUserRides, userRides]);
+  }, [user, loadUserRides, fetchConversations, toast]);
 
-  // Update unread counts in conversations without reloading everything
-  useEffect(() => {
-    if (conversations.length === 0) return;
+  // Note: Unread counts are now handled by the chatStore automatically
 
-    setConversations((prevConversations) =>
-      prevConversations.map((conversation) => {
-        const unreadCount =
-          unreadCounts.find((count) => count.rideId === conversation.rideId)
-            ?.count || 0;
-        return {
-          ...conversation,
-          unreadCount,
-        };
-      })
-    );
-  }, [unreadCounts]);
-
-  // Subscribe to new messages to update conversations in real-time
-  useEffect(() => {
-    if (!user) return;
-
-    const subscription = supabase
-      .channel("messages-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        async (payload: any) => {
-          const newMessage = payload.new as any;
-
-          // Check if this message belongs to any of our conversations
-          const relevantConversation = conversations.find(
-            (c) => c.rideId === newMessage.ride_id
-          );
-
-          // If this is a new conversation (message from a ride we haven't seen before), reload everything
-          if (!relevantConversation) {
-            console.log(
-              "🆕 New conversation detected, reloading conversations..."
-            );
-            // Use debounced version to prevent rapid successive calls
-            debouncedLoadConversations();
-            return;
-          }
-
-          try {
-            // Get the full message data with sender/receiver info
-            const { data: messageData, error } = await supabase
-              .from("messages")
-              .select(
-                `
-                id,
-                content,
-                created_at,
-                ride_id,
-                sender_id,
-                receiver_id,
-                sender:profiles!messages_sender_id_fkey (
-                  id,
-                  full_name,
-                  avatar_url
-                ),
-                receiver:profiles!messages_receiver_id_fkey (
-                  id,
-                  full_name,
-                  avatar_url
-                )
-              `
-              )
-              .eq("id", newMessage.id)
-              .single();
-
-            if (error || !messageData) {
-              console.error("Error fetching new message data:", error);
-              return;
-            }
-
-            // Update the conversation with the new last message
-            const updateConversations = (conversations: Conversation[]) => {
-              return conversations
-                .map((conversation) => {
-                  if (conversation.rideId === newMessage.ride_id) {
-                    const isCurrentUserSender =
-                      messageData.sender_id === user.id;
-                    const otherUser = isCurrentUserSender
-                      ? messageData.receiver
-                      : messageData.sender;
-
-                    return {
-                      ...conversation,
-                      lastMessage: messageData.content,
-                      lastMessageTime: messageData.created_at,
-                      otherUserName: otherUser.full_name,
-                      otherUserAvatar: otherUser.avatar_url,
-                      // unreadCount will be updated by the unreadCounts effect
-                    };
-                  }
-                  return conversation;
-                })
-                .sort(
-                  (a, b) =>
-                    new Date(b.lastMessageTime).getTime() -
-                    new Date(a.lastMessageTime).getTime()
-                );
-            };
-
-            setConversations(updateConversations);
-          } catch (error) {
-            console.error(
-              "Error updating conversation with new message:",
-              error
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user, supabase, conversations]);
+  // Note: Real-time updates are now handled by the chatStore automatically
 
   // Handle URL parameters for opening specific conversations
   // Open chat with a specific user - wrapped in useCallback to prevent re-renders
   const openChat = useCallback(
-    (conversation: Conversation) => {
+    (conversation: UIConversation) => {
       console.log(
         `📱 Opening chat with ${conversation.otherUserName} for ride ${conversation.rideId}`
       );
       setSelectedChat(conversation);
 
       // Mark messages as read when opening the chat
-      if (conversation.unreadCount > 0) {
-        markAsRead(conversation.rideId);
+      if (conversation.unreadCount > 0 && user) {
+        markAsRead(conversation.rideId, user.id);
       }
     },
-    [markAsRead]
+    [markAsRead, user]
   );
 
   const [urlParams, setUrlParams] = useState<{
@@ -789,28 +479,7 @@ export default function MessagesPage() {
     }
   }, [user, loadConversations]);
 
-  // Reload conversations when unread counts change (indicating new messages)
-  useEffect(() => {
-    if (unreadCounts.length > 0 && conversations.length > 0) {
-      console.log(
-        "🔄 Unread counts changed, checking if we need to reload conversations..."
-      );
-
-      // Check if any unread count is for a ride we don't have a conversation for
-      const currentRideIds = new Set(conversations.map((c) => c.rideId));
-      const newRideIds = unreadCounts
-        .map((uc) => uc.rideId)
-        .filter((rideId) => !currentRideIds.has(rideId));
-
-      if (newRideIds.length > 0) {
-        console.log(
-          `🆕 Found ${newRideIds.length} new ride(s) with messages, reloading conversations...`
-        );
-        // Use debounced version to prevent rapid successive calls
-        debouncedLoadConversations();
-      }
-    }
-  }, [unreadCounts, conversations, debouncedLoadConversations]);
+  // Note: Unread counts and conversation updates are now handled by the chatStore automatically
 
   // Memoized conversation filtering to prevent unnecessary re-computations
   const filteredConversations = useMemo(() => {
@@ -828,52 +497,7 @@ export default function MessagesPage() {
     );
   }, [searchQuery, conversations]);
 
-  // Set up global message notification manager
-  useEffect(() => {
-    console.log("🔍 MessageNotificationManager useEffect triggered");
-    console.log("🔍 useEffect debug - user:", user);
-    console.log("🔍 useEffect debug - window:", typeof window !== "undefined");
-
-    if (!user || typeof window === "undefined") {
-      console.log("❌ Early return - conditions not met");
-      cleanupGlobalMessageNotificationManager();
-      return;
-    }
-
-    // Prevent multiple managers from starting
-    if (window.__messageNotificationManager) {
-      console.log("🔒 MessageNotificationManager already exists, skipping...");
-      return;
-    }
-
-    console.log("🔧 Starting MessageNotificationManager");
-
-    const manager = initializeGlobalMessageNotificationManager({
-      supabase,
-      userId: user.id,
-      onMessageClick: (rideId: string) => {
-        // Navigate to the specific ride conversation
-        router.push(`/messages?ride=${rideId}`);
-      },
-      onNewMessage: () => {
-        // Refresh conversations when new message is received
-        debouncedLoadConversations();
-      },
-    });
-
-    console.log("🔧 Manager initialized:", manager);
-
-    try {
-      manager.start();
-      console.log("✅ MessageNotificationManager started successfully");
-    } catch (error) {
-      console.error("❌ Failed to start MessageNotificationManager:", error);
-    }
-
-    return () => {
-      cleanupGlobalMessageNotificationManager();
-    };
-  }, [user, supabase, router]); // Removed loadConversations from dependencies
+  // Note: Message notification manager setup removed - handled by chatStore
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -956,7 +580,7 @@ export default function MessagesPage() {
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
-            {loading ? (
+            {conversationsLoading ? (
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
@@ -1059,7 +683,7 @@ export default function MessagesPage() {
           </TabsContent>
 
           <TabsContent value="unread" className="space-y-4">
-            {loading ? (
+            {conversationsLoading ? (
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
