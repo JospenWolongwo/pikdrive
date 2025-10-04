@@ -22,7 +22,8 @@ import {
 import { PaymentMethodSelector } from "@/components/payment/payment-method-selector";
 import { PhoneNumberInput } from "@/components/payment/phone-number-input";
 import { PaymentService } from "@/lib/payment/payment-service";
-import { PaymentStatus, PaymentProviderType } from "@/lib/payment/types";
+import { PaymentStatus as PaymentServiceStatus, PaymentProviderType } from "@/lib/payment/types";
+import type { PaymentStatus } from "@/types/booking";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -133,7 +134,7 @@ export function BookingModal({
         setSeats(cachedBooking.seats);
         setBookingId(cachedBooking.id);
         
-        if (cachedBooking.payment_status === 'completed') {
+        if (cachedBooking.payment_status === 'paid') {
           setStep(2);
         }
         return; // Exit early with cached data
@@ -147,7 +148,7 @@ export function BookingModal({
         setSeats(existing.seats);
         setBookingId(existing.id);
         
-        if (existing.payment_status === 'completed') {
+        if (existing.payment_status === 'paid') {
           setStep(2);
         }
       }
@@ -160,13 +161,30 @@ export function BookingModal({
     if (!user || isCreatingBooking) return;
 
     try {
-      // Use the booking store to create/update booking
+      // Use the booking store to create/update booking (without auto-refresh for performance)
       const booking = await createBooking({
         ride_id: ride.id,
         user_id: user.id,
         seats: seats,
-      });
+      }, { refreshUserBookings: false }); // Don't auto-refresh for performance
 
+      // Move to step 2 IMMEDIATELY - don't wait for notifications
+      setBookingId(booking.id);
+      setStep(2);
+
+      // Run notifications in background (don't await)
+      showNotificationsInBackground(booking, ride, user);
+    } catch (error) {
+      console.error("Booking creation failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create booking"
+      );
+    }
+  };
+
+  // Background notification function (non-blocking)
+  const showNotificationsInBackground = async (booking: any, ride: any, user: any) => {
+    try {
       // Show immediate notification to user
       const bookingManager = getGlobalBookingNotificationManager();
       if (bookingManager) {
@@ -177,10 +195,7 @@ export function BookingModal({
             false // false = user notification, not driver
           );
         } catch (notificationError) {
-          console.warn(
-            "Failed to show immediate notification:",
-            notificationError
-          );
+          console.warn("Failed to show immediate notification:", notificationError);
         }
       }
 
@@ -208,14 +223,37 @@ export function BookingModal({
       } catch (error) {
         console.warn("⚠️ Failed to send push notification to driver:", error);
       }
-
-      setBookingId(booking.id);
-      setStep(2);
     } catch (error) {
-      console.error("Booking creation failed:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create booking"
-      );
+      console.warn("⚠️ Background notification error:", error);
+    }
+  };
+
+  // Background driver payment notification function (non-blocking)
+  const showDriverPaymentNotificationInBackground = async () => {
+    try {
+      const bookingManager = getGlobalBookingNotificationManager();
+      if (bookingManager && ride.driver_id && bookingId) {
+        try {
+          // Get the booking data to show driver notification
+          const { data: booking } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("id", bookingId)
+            .single();
+
+          if (booking) {
+            await bookingManager.showImmediateBookingNotification(
+              booking,
+              ride,
+              true // true = driver notification
+            );
+          }
+        } catch (notificationError) {
+          console.warn("Failed to show driver payment notification:", notificationError);
+        }
+      }
+    } catch (error) {
+      console.warn("⚠️ Background driver payment notification error:", error);
     }
   };
 
@@ -306,7 +344,7 @@ export function BookingModal({
     }
   };
 
-  const handlePaymentComplete = async (status: PaymentStatus) => {
+  const handlePaymentComplete = async (status: PaymentServiceStatus) => {
     if (status === "completed") {
       setStep(3);
       if (onBookingComplete) {
@@ -436,45 +474,20 @@ export function BookingModal({
                   provider={selectedProvider!}
                   onPaymentComplete={async (status) => {
                     if (status === "completed") {
-                      // Show success notification to driver
-                      const bookingManager =
-                        getGlobalBookingNotificationManager();
-                      if (bookingManager && ride.driver_id) {
-                        try {
-                          // Get the booking data to show driver notification
-                          const { data: booking } = await supabase
-                            .from("bookings")
-                            .select("*")
-                            .eq("id", bookingId)
-                            .single();
-
-                          if (booking) {
-                            await bookingManager.showImmediateBookingNotification(
-                              booking,
-                              ride,
-                              true // true = driver notification
-                            );
-                          }
-                        } catch (notificationError) {
-                          console.warn(
-                            "Failed to show driver notification:",
-                            notificationError
-                          );
-                        }
+                      // Move to success step immediately
+                      setStep(3);
+                      if (onBookingComplete) {
+                        onBookingComplete();
                       }
-
-                      // Show success message briefly before redirecting
+                      
+                      // Close modal and redirect after showing success message
                       setTimeout(() => {
-                        setStep(3);
-                        if (onBookingComplete) {
-                          onBookingComplete();
-                        }
-                        // Close modal and redirect after showing success message
-                        setTimeout(() => {
-                          onClose();
-                          router.replace("/bookings");
-                        }, 1500);
-                      }, 1000);
+                        onClose();
+                        router.replace("/bookings");
+                      }, 1500);
+
+                      // Show success notification to driver in background
+                      showDriverPaymentNotificationInBackground();
                     }
                   }}
                 />

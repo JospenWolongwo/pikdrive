@@ -15,8 +15,11 @@ export interface BookingSearchParams {
   limit?: number;
 }
 
-
-export class BookingService {
+/**
+ * Server-side BookingService for use in API routes
+ * Uses direct Supabase client access (no HTTP calls)
+ */
+export class ServerBookingService {
   constructor(private supabase: SupabaseClient) {}
 
   /**
@@ -43,13 +46,13 @@ export class BookingService {
         .single();
 
       if (upsertError) {
-        console.error('BookingService.createBooking upsert error:', upsertError);
+        console.error('ServerBookingService.createBooking upsert error:', upsertError);
         throw new Error(`Failed to create/update booking: ${upsertError.message}`);
       }
 
       return booking;
     } catch (error) {
-      console.error('BookingService.createBooking error:', error);
+      console.error('ServerBookingService.createBooking error:', error);
       throw error;
     }
   }
@@ -103,7 +106,7 @@ export class BookingService {
 
       return enrichedBookings;
     } catch (error) {
-      console.error('BookingService.getUserBookings error:', error);
+      console.error('ServerBookingService.getUserBookings error:', error);
       throw error;
     }
   }
@@ -140,7 +143,7 @@ export class BookingService {
 
       return data || [];
     } catch (error) {
-      console.error('BookingService.getDriverBookings error:', error);
+      console.error('ServerBookingService.getDriverBookings error:', error);
       throw error;
     }
   }
@@ -166,7 +169,7 @@ export class BookingService {
 
       return data;
     } catch (error) {
-      console.error('BookingService.updateBooking error:', error);
+      console.error('ServerBookingService.updateBooking error:', error);
       throw error;
     }
   }
@@ -185,7 +188,7 @@ export class BookingService {
         throw new Error(`Failed to cancel booking: ${error.message}`);
       }
     } catch (error) {
-      console.error('BookingService.cancelBooking error:', error);
+      console.error('ServerBookingService.cancelBooking error:', error);
       throw error;
     }
   }
@@ -209,7 +212,7 @@ export class BookingService {
 
       return isValid;
     } catch (error) {
-      console.error('BookingService.verifyBookingCode error:', error);
+      console.error('ServerBookingService.verifyBookingCode error:', error);
       throw error;
     }
   }
@@ -249,7 +252,7 @@ export class BookingService {
 
       return data;
     } catch (error) {
-      console.error('BookingService.getBookingById error:', error);
+      console.error('ServerBookingService.getBookingById error:', error);
       throw error;
     }
   }
@@ -276,7 +279,7 @@ export class BookingService {
 
       return data;
     } catch (error) {
-      console.error('BookingService.getExistingBookingForRide error:', error);
+      console.error('ServerBookingService.getExistingBookingForRide error:', error);
       throw error;
     }
   }

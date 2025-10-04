@@ -8,7 +8,7 @@ import type {
   UpdateRideRequest,
   PaginatedResponse 
 } from "@/types";
-import { ridesService } from "@/lib/services/rides-service";
+import { ridesApiClient } from "@/lib/api-client/rides";
 
 interface RidesState {
   // All rides state (for search/browse)
@@ -139,7 +139,12 @@ export const useRidesStore = create<RidesState>()(
         set({ allRidesLoading: true, allRidesError: null });
 
         try {
-          const response = await ridesService.getRides(params);
+          const response = await ridesApiClient.getRides(params);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch rides');
+          }
+          
           set({
             allRides: response.data || [],
             allRidesLoading: false,
@@ -186,10 +191,14 @@ export const useRidesStore = create<RidesState>()(
         try {
           // If no specific params are provided, fetch ALL rides (both upcoming and past)
           // This ensures the dashboard has complete data for filtering
-          const data = await ridesService.getDriverRides(params);
+          const response = await ridesApiClient.getDriverRides(params);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch driver rides');
+          }
           
           set({
-            driverRides: data,
+            driverRides: response.data || [],
             driverRidesLoading: false,
             driverRidesError: null,
             lastDriverRidesFetch: now,
@@ -239,9 +248,14 @@ export const useRidesStore = create<RidesState>()(
         set({ currentRideLoading: true, currentRideError: null });
 
         try {
-          const data = await ridesService.getRideById(rideId);
+          const response = await ridesApiClient.getRideById(rideId);
+          
+          if (!response.success || !response.data) {
+            throw new Error(response.error || 'Failed to fetch ride details');
+          }
+          
           set({
-            currentRide: data,
+            currentRide: response.data,
             currentRideLoading: false,
             currentRideError: null,
           });
@@ -276,10 +290,15 @@ export const useRidesStore = create<RidesState>()(
       // CRUD actions
       createRide: async (rideData: CreateRideRequest) => {
         try {
-          const newRide = await ridesService.createRide(rideData);
+          const response = await ridesApiClient.createRide(rideData);
+          
+          if (!response.success || !response.data) {
+            throw new Error(response.error || 'Failed to create ride');
+          }
+          
           // Refresh driver rides to include the new ride
           await get().refreshDriverRides();
-          return newRide;
+          return response.data;
         } catch (error) {
           console.error("Error creating ride:", error);
           throw error;
@@ -288,7 +307,14 @@ export const useRidesStore = create<RidesState>()(
 
       updateRide: async (rideId: string, updateData: UpdateRideRequest) => {
         try {
-          const updatedRide = await ridesService.updateRide(rideId, updateData);
+          const response = await ridesApiClient.updateRide(rideId, updateData);
+          
+          if (!response.success || !response.data) {
+            throw new Error(response.error || 'Failed to update ride');
+          }
+          
+          const updatedRide = response.data;
+          
           // Update the ride in driver rides if it exists
           const { driverRides } = get();
           const updatedDriverRides = driverRides.map(ride => 
@@ -311,7 +337,12 @@ export const useRidesStore = create<RidesState>()(
 
       deleteRide: async (rideId: string) => {
         try {
-          await ridesService.deleteRide(rideId);
+          const response = await ridesApiClient.deleteRide(rideId);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to delete ride');
+          }
+          
           // Remove the ride from driver rides
           const { driverRides } = get();
           const filteredDriverRides = driverRides.filter(ride => ride.id !== rideId);
@@ -332,9 +363,14 @@ export const useRidesStore = create<RidesState>()(
       fetchUserRides: async (userId: string) => {
         set({ userRidesLoading: true, userRidesError: null });
         try {
-          const rides = await ridesService.fetchUserRides(userId);
+          const response = await ridesApiClient.fetchUserRides(userId);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch user rides');
+          }
+          
           set({ 
-            userRides: rides, 
+            userRides: response.data || [], 
             userRidesLoading: false 
           });
         } catch (error) {
@@ -352,7 +388,12 @@ export const useRidesStore = create<RidesState>()(
         set({ allRidesLoading: true, allRidesError: null });
 
         try {
-          const response = await ridesService.searchRides(filters);
+          const response = await ridesApiClient.searchRides(filters);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to search rides');
+          }
+          
           set({
             allRides: response.data || [],
             allRidesLoading: false,

@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';`nimport { createApiSupabaseClient } from '@/lib/supabase/server-client';
-
-
-import { BookingService } from '@/lib/services/booking-service';
+import { NextRequest, NextResponse } from 'next/server';
+import { createApiSupabaseClient } from '@/lib/supabase/server-client';
+import { ServerBookingService } from '@/lib/services/server/booking-service';
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = createApiSupabaseClient();
-    const bookingService = new BookingService(supabase);
+    const bookingService = new ServerBookingService(supabase);
     
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();

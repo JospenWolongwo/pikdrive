@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createApiSupabaseClient } from "@/lib/supabase/server-client";
 import type { Ride, CreateRideRequest, UpdateRideRequest } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -52,18 +51,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const countQuery = supabase
+    let countQuery = supabase
       .from("rides")
       .select("*", { count: "exact", head: true });
     
     // Apply same filters to count query
-    if (driverId) countQuery.eq("driver_id", driverId);
-    if (fromCity && fromCity !== "any") countQuery.eq("from_city", fromCity);
-    if (toCity && toCity !== "any") countQuery.eq("to_city", toCity);
-    if (minPrice) countQuery.gte("price", parseInt(minPrice));
-    if (maxPrice) countQuery.lte("price", parseInt(maxPrice));
-    if (minSeats) countQuery.gte("seats_available", parseInt(minSeats));
-    if (upcoming) countQuery.gt("departure_time", new Date().toISOString());
+    if (driverId) countQuery = countQuery.eq("driver_id", driverId);
+    if (fromCity && fromCity !== "any") countQuery = countQuery.eq("from_city", fromCity);
+    if (toCity && toCity !== "any") countQuery = countQuery.eq("to_city", toCity);
+    if (minPrice) countQuery = countQuery.gte("price", parseInt(minPrice));
+    if (maxPrice) countQuery = countQuery.lte("price", parseInt(maxPrice));
+    if (minSeats) countQuery = countQuery.gte("seats_available", parseInt(minSeats));
+    if (upcoming) countQuery = countQuery.gt("departure_time", new Date().toISOString());
     
     const { count, error: countError } = await countQuery;
 

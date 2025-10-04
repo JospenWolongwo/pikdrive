@@ -9,7 +9,8 @@ import type {
   CreateConversationRequest,
   RideMessage
 } from "@/types";
-import { chatService } from "@/lib/services/chat-service";
+import { chatApiClient } from "@/lib/api-client/chat";
+import { supabase } from "@/lib/supabase/client";
 
 interface UnreadCount {
   rideId: string;
@@ -93,10 +94,38 @@ export const useChatStore = create<ChatState>()(
         set({ conversationsLoading: true, conversationsError: null });
 
         try {
-          const conversations = await chatService.getConversations(userId);
+          const response = await chatApiClient.getConversations(userId);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch conversations');
+          }
+          
+          const conversationsData = response.data || [];
+          
+          // Transform to UI format
+          const uiConversations: UIConversation[] = conversationsData.map((conv): UIConversation => {
+            // Determine the other user (not the current user)
+            const otherUser = conv.driver.id === userId ? conv.passenger : conv.driver;
+            
+            return {
+              id: conv.id,
+              rideId: conv.ride_id,
+              otherUserId: otherUser.id,
+              otherUserName: otherUser.full_name,
+              otherUserAvatar: otherUser.avatar_url || undefined,
+              lastMessage: conv.last_message?.content || "No messages yet",
+              lastMessageTime: conv.last_message?.created_at || conv.created_at,
+              unreadCount: 0, // Will be updated by unread counts
+              ride: {
+                from_city: conv.ride?.from_city || "",
+                to_city: conv.ride?.to_city || "",
+                departure_time: conv.ride?.departure_time || "",
+              },
+            };
+          });
           
           // Merge with unread counts
-          const conversationsWithUnreadCounts = conversations.map(conv => {
+          const conversationsWithUnreadCounts = uiConversations.map(conv => {
             const unreadCount = get().unreadCounts.find(uc => uc.rideId === conv.rideId)?.count || 0;
             return {
               ...conv,
@@ -141,9 +170,14 @@ export const useChatStore = create<ChatState>()(
         }));
 
         try {
-          const messages = await chatService.getMessages(rideId);
+          const response = await chatApiClient.getMessages(rideId);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch messages');
+          }
+          
           set((state) => ({
-            messages: { ...state.messages, [rideId]: messages },
+            messages: { ...state.messages, [rideId]: response.data || [] },
             messagesLoading: { ...state.messagesLoading, [rideId]: false },
             messagesError: { ...state.messagesError, [rideId]: null },
           }));
@@ -158,7 +192,13 @@ export const useChatStore = create<ChatState>()(
 
       sendMessage: async (messageData: CreateMessageRequest) => {
         try {
-          const newMessage = await chatService.sendMessage(messageData);
+          const response = await chatApiClient.sendMessage(messageData);
+          
+          if (!response.success || !response.data) {
+            throw new Error(response.error || 'Failed to send message');
+          }
+          
+          const newMessage = response.data;
           
           // Add message to local state
           set((state) => {
@@ -214,9 +254,14 @@ export const useChatStore = create<ChatState>()(
         set({ unreadCountsLoading: true, unreadCountsError: null });
 
         try {
-          const unreadCounts = await chatService.getUnreadCounts(userId);
+          const response = await chatApiClient.getUnreadCounts(userId);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch unread counts');
+          }
+          
           set({
-            unreadCounts,
+            unreadCounts: response.data || [],
             unreadCountsLoading: false,
             unreadCountsError: null,
           });
@@ -231,7 +276,7 @@ export const useChatStore = create<ChatState>()(
 
       markAsRead: async (rideId: string, userId: string) => {
         try {
-          await chatService.markMessagesAsRead(rideId, userId);
+          await chatApiClient.markMessagesAsRead(rideId, userId);
           set((state) => {
             // Update unread counts
             const newUnreadCounts = state.unreadCounts.filter((count) => count.rideId !== rideId);
@@ -303,7 +348,7 @@ export const useChatStore = create<ChatState>()(
         
         if (channels.has(rideId)) return; // Already subscribed
 
-        const channel = chatService.subscribeToMessages(rideId, (message) => {
+        const channel = chatApiClient.subscribeToMessages(supabase, rideId, (message) => {
           // Add new message to local state
           set((state) => {
             const existingMessages = state.messages[rideId] || [];
@@ -335,7 +380,7 @@ export const useChatStore = create<ChatState>()(
         const channel = channels.get(rideId);
         
         if (channel) {
-          chatService.unsubscribe(channel);
+          chatApiClient.unsubscribe(supabase, channel);
           set((state) => {
             const newChannels = new Map(state.channels);
             newChannels.delete(rideId);
@@ -356,7 +401,7 @@ export const useChatStore = create<ChatState>()(
         
         if (channels.has('unread-updates')) return; // Already subscribed
 
-        const channel = chatService.subscribeToUnreadUpdates(userId, (unreadCounts) => {
+        const channel = chatApiClient.subscribeToUnreadUpdates(supabase, userId, (unreadCounts) => {
           set({ unreadCounts });
         });
 
@@ -370,7 +415,7 @@ export const useChatStore = create<ChatState>()(
         const channel = channels.get('unread-updates');
         
         if (channel) {
-          chatService.unsubscribe(channel);
+          chatApiClient.unsubscribe(supabase, channel);
           set((state) => {
             const newChannels = new Map(state.channels);
             newChannels.delete('unread-updates');
@@ -382,7 +427,13 @@ export const useChatStore = create<ChatState>()(
       // Utility actions
       getOrCreateConversation: async (conversationData: CreateConversationRequest) => {
         try {
-          return await chatService.getOrCreateConversation(conversationData);
+          const response = await chatApiClient.getOrCreateConversation(conversationData);
+          
+          if (!response.success || !response.data) {
+            throw new Error(response.error || 'Failed to get/create conversation');
+          }
+          
+          return response.data;
         } catch (error) {
           console.error("Error getting/creating conversation:", error);
           throw error;
@@ -391,7 +442,13 @@ export const useChatStore = create<ChatState>()(
 
       getRideMessages: async (rideId: string) => {
         try {
-          return await chatService.getRideMessages(rideId);
+          const response = await chatApiClient.getRideMessages(rideId);
+          
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch ride messages');
+          }
+          
+          return response.data || [];
         } catch (error) {
           console.error("Error fetching ride messages:", error);
           throw error;

@@ -7,7 +7,7 @@ import type {
   BookingWithDetails,
   DriverBooking 
 } from "@/types";
-import { bookingApiClient, type BookingApiResponse } from "@/lib/api-client/booking";
+import { bookingApiClient } from "@/lib/api-client/booking";
 
 interface BookingState {
   // User bookings state
@@ -53,7 +53,7 @@ interface BookingState {
   clearCurrentBooking: () => void;
 
   // CRUD actions
-  createBooking: (params: CreateBookingRequest & { user_id: string }) => Promise<Booking>;
+  createBooking: (params: CreateBookingRequest & { user_id: string }, options?: { refreshUserBookings?: boolean }) => Promise<Booking>;
   updateBooking: (bookingId: string, params: UpdateBookingRequest) => Promise<Booking>;
   cancelBooking: (bookingId: string) => Promise<void>;
   verifyBookingCode: (bookingId: string, verificationCode: string) => Promise<boolean>;
@@ -244,7 +244,7 @@ export const useBookingStore = create<BookingState>()(
       },
 
       // CRUD actions
-      createBooking: async (params) => {
+      createBooking: async (params, options = {}) => {
         set({ isCreatingBooking: true, createBookingError: null });
 
         try {
@@ -254,8 +254,8 @@ export const useBookingStore = create<BookingState>()(
             throw new Error(response.error || "Failed to create booking");
           }
 
-          // Refresh user bookings to include the new booking
-          if (params.user_id) {
+          // Only refresh user bookings if explicitly requested (for performance)
+          if (options.refreshUserBookings && params.user_id) {
             await get().refreshUserBookings(params.user_id);
           }
 

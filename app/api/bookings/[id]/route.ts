@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { BookingService } from '@/lib/services/booking-service';
+import { ServerBookingService } from '@/lib/services/server/booking-service';
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const supabase = createApiSupabaseClient();
-    const bookingService = new BookingService(supabase);
+    const bookingService = new ServerBookingService(supabase);
     
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -50,7 +50,7 @@ export async function PUT(
 ) {
   try {
     const supabase = createApiSupabaseClient();
-    const bookingService = new BookingService(supabase);
+    const bookingService = new ServerBookingService(supabase);
     
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -95,7 +95,7 @@ export async function DELETE(
 ) {
   try {
     const supabase = createApiSupabaseClient();
-    const bookingService = new BookingService(supabase);
+    const bookingService = new ServerBookingService(supabase);
     
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
