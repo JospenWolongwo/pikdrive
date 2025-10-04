@@ -58,7 +58,8 @@ export const SupabaseProvider = ({
     } finally {
       setLoading(false);
     }
-  }, [supabase, zustandUser, getSession, clearUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]); // Only depend on supabase to prevent re-initialization
 
   useEffect(() => {
     initializeAuth();
@@ -73,12 +74,16 @@ export const SupabaseProvider = ({
       }
 
       setSession(session);
-      setUser(session?.user ?? null);
-
-      // Only clear Zustand store if we explicitly get a sign out event
-      if (event === 'SIGNED_OUT' && zustandUser) {
+      
+      // Only update user if we have a session or if it's an explicit sign out
+      // This prevents clearing user during race conditions after login
+      if (session?.user) {
+        setUser(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
         clearUser();
       }
+      // Don't clear user for other events (TOKEN_REFRESHED, INITIAL_SESSION, etc)
 
       // Set loading to false if we haven't already
       if (loading) {
@@ -92,16 +97,15 @@ export const SupabaseProvider = ({
         clearTimeout(sessionCheckRef.current);
       }
     };
-  }, [supabase, initializeAuth, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, initializeAuth]); // Removed loading from deps as it's only set once
 
-  // Listen to Zustand user changes
+  // Listen to Zustand user changes - only sync from Zustand to local state, not the reverse
   useEffect(() => {
     if (zustandUser && !user) {
       setUser(zustandUser);
-    } else if (!zustandUser && user) {
-      setUser(null);
-      setSession(null);
     }
+    // Don't clear user based on Zustand state - let auth state change handle that
   }, [zustandUser, user]);
 
   // Manual session refresh mechanism

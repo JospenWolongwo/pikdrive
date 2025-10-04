@@ -83,7 +83,13 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null });
       },
     }),
-    zustandPersistConfig
+    {
+      ...zustandPersistConfig,
+      // Only persist user data, not functions
+      partialize: (state) => ({
+        user: state.user,
+      }),
+    }
   )
 );
 

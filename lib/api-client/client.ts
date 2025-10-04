@@ -136,20 +136,11 @@ export class ApiClient {
 
   /**
    * Get authentication headers for Supabase
+   * Note: We rely on cookies for authentication in API routes, not bearer tokens
    */
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.access_token) {
-        return {
-          'Authorization': `Bearer ${session.access_token}`,
-        };
-      }
-    } catch (error) {
-      console.warn('Failed to get auth headers:', error);
-    }
-    
+    // API routes use cookies for authentication via createRouteHandlerClient
+    // No need to manually add Authorization headers
     return {};
   }
 }

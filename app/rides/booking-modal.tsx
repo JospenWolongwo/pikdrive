@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { PaymentStatusChecker } from "@/components/payment/payment-status-checker";
 import { useRouter } from "next/navigation";
 import { getGlobalBookingNotificationManager } from "@/lib/notifications/booking-notification-manager";
+import { useBookingStore } from "@/stores";
 import type { RideWithDriver } from "@/types";
 
 interface BookingModalProps {
@@ -46,16 +47,27 @@ export function BookingModal({
 }: BookingModalProps) {
   const { supabase, user } = useSupabase();
   const router = useRouter();
+  const { 
+    createBooking, 
+    isCreatingBooking, 
+    createBookingError,
+    getExistingBookingForRide,
+    getCachedBookingForRide,
+    userBookings,
+    userBookingsLoading,
+    fetchUserBookings
+  } = useBookingStore();
+  
   const [step, setStep] = useState(1);
   const [seats, setSeats] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [selectedProvider, setSelectedProvider] =
     useState<PaymentProviderType>();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isPhoneValid, setIsPhoneValid] = useState(false);
   const [paymentService] = useState(() => new PaymentService(supabase));
   const [bookingId, setBookingId] = useState<string>();
+  const [existingBooking, setExistingBooking] = useState<any>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<
     string | null
   >(null);
@@ -67,66 +79,100 @@ export function BookingModal({
 
   if (!ride) return null;
 
+  // Show loading state while user bookings are being loaded
+  if (isOpen && userBookingsLoading && userBookings.length === 0) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Loading booking information...</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const totalPrice = seats * ride.price;
   const providers = paymentService.getAvailableProviders();
+
+  // Reset modal state when it closes
+  useEffect(() => {
+    if (!isOpen) {
+      setStep(1);
+      setSeats(1);
+      setExistingBooking(null);
+      setBookingId(undefined);
+      setSelectedProvider(undefined);
+      setPhoneNumber("");
+      setIsPhoneValid(false);
+      setPaymentTransactionId(null);
+      setPaymentStatus(null);
+      setStatusMessage("");
+      setIsPolling(false);
+    }
+  }, [isOpen]);
+
+  // Check for existing booking when modal opens - optimized with cache
+  useEffect(() => {
+    if (isOpen && user && ride && user.id && !userBookingsLoading) {
+      checkExistingBooking();
+    }
+  }, [isOpen, user, ride, userBookings, userBookingsLoading]);
+
+  const checkExistingBooking = async () => {
+    try {
+      // First, check cached user bookings for instant response
+      const cachedBooking = getCachedBookingForRide(ride.id, user.id);
+      
+      if (cachedBooking) {
+        // Use cached data immediately for instant UI update
+        setExistingBooking(cachedBooking);
+        setSeats(cachedBooking.seats);
+        setBookingId(cachedBooking.id);
+        
+        if (cachedBooking.payment_status === 'completed') {
+          setStep(2);
+        }
+        return; // Exit early with cached data
+      }
+      
+      // If not in cache, fetch from API (this should rarely happen)
+      const existing = await getExistingBookingForRide(ride.id, user.id);
+      
+      if (existing) {
+        setExistingBooking(existing);
+        setSeats(existing.seats);
+        setBookingId(existing.id);
+        
+        if (existing.payment_status === 'completed') {
+          setStep(2);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking existing booking:', error);
+    }
+  };
 
   const handleCreateBooking = async () => {
     if (!user || isCreatingBooking) return;
 
     try {
-      setIsCreatingBooking(true);
-
-      // Check if user already has a pending or confirmed booking for this ride
-      const { data: existingBooking, error: checkError } = await supabase
-        .from("bookings")
-        .select("id, status, payment_status")
-        .eq("ride_id", ride.id)
-        .eq("user_id", user.id)
-        .in("status", ["pending", "confirmed"])
-        .single();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        // PGRST116 = no rows returned
-        console.error("Error checking existing booking:", checkError);
-        toast.error("Error checking existing booking");
-        return;
-      }
-
-      if (existingBooking) {
-        console.warn(
-          "User already has a booking for this ride:",
-          existingBooking.id
-        );
-        toast.error("You already have a booking for this ride");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("bookings")
-        .insert([
-          {
-            ride_id: ride.id,
-            user_id: user.id,
-            seats: seats,
-            status: "pending",
-            payment_status: "pending",
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Booking creation failed:", error);
-        toast.error(error.message || "Failed to create booking");
-        return;
-      }
+      // Use the booking store to create/update booking
+      const booking = await createBooking({
+        ride_id: ride.id,
+        user_id: user.id,
+        seats: seats,
+      });
 
       // Show immediate notification to user
       const bookingManager = getGlobalBookingNotificationManager();
       if (bookingManager) {
         try {
           await bookingManager.showImmediateBookingNotification(
-            data,
+            booking,
             ride,
             false // false = user notification, not driver
           );
@@ -150,7 +196,7 @@ export function BookingModal({
               title: "🚗 Nouvelle Reservation !",
               body: `Nouvelle demande de reservation pour ${ride.from_city} → ${ride.to_city}`,
               data: {
-                bookingId: data.id,
+                bookingId: booking.id,
                 rideId: ride.id,
                 passengerId: user.id,
                 type: "new_booking",
@@ -163,15 +209,13 @@ export function BookingModal({
         console.warn("⚠️ Failed to send push notification to driver:", error);
       }
 
-      setBookingId(data.id);
+      setBookingId(booking.id);
       setStep(2);
     } catch (error) {
       console.error("Booking creation failed:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to create booking"
       );
-    } finally {
-      setIsCreatingBooking(false);
     }
   };
 
@@ -277,6 +321,15 @@ export function BookingModal({
         return (
           <>
             <div className="space-y-6">
+              {existingBooking && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Modification de réservation :</strong> Vous avez déjà une réservation pour ce trajet. 
+                    Vous pouvez modifier le nombre de places ou procéder au paiement.
+                  </p>
+                </div>
+              )}
+              
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center space-x-2 mb-2">
@@ -335,11 +388,11 @@ export function BookingModal({
                 {isCreatingBooking ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    {existingBooking ? 'Updating...' : 'Creating...'}
                   </>
                 ) : (
                   <>
-                    Continue to Payment
+                    {existingBooking ? 'Update & Continue to Payment' : 'Continue to Payment'}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}

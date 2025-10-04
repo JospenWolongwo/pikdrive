@@ -5,6 +5,7 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { BookingCard } from "./booking-card";
+import { useBookingStore } from "@/stores";
 import {
   Pagination,
   PaginationContent,
@@ -103,26 +104,27 @@ interface BookingWithReceipt extends BookingCardBooking {
 }
 
 export function BookingsList({ page }: { page: number }) {
-  const [bookings, setBookings] = useState<BookingWithReceipt[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { user } = useSupabase();
+  const router = useRouter();
+  const { toast } = useToast();
+  const { 
+    userBookings, 
+    userBookingsLoading, 
+    userBookingsError, 
+    fetchUserBookings,
+    refreshUserBookings 
+  } = useBookingStore();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [totalBookings, setTotalBookings] = useState(0);
   const itemsPerPage = 10;
-  const { supabase } = useSupabase();
-  const router = useRouter();
-  const { toast } = useToast();
-  const [lastDataFetch, setLastDataFetch] = useState<number>(0);
-  const [cachedBookings, setCachedBookings] = useState<{
-    [key: number]: { data: BookingWithReceipt[]; timestamp: number };
-  }>({});
 
   // Create filtered bookings based on search query
   const filteredBookings = useMemo(() => {
-    if (!searchQuery.trim()) return bookings;
+    if (!searchQuery.trim()) return userBookings;
 
     const query = searchQuery.toLowerCase().trim();
-    return bookings.filter((booking) => {
+    return userBookings.filter((booking) => {
       // Skip bookings without required data
       if (!booking.ride) return false;
 
@@ -135,7 +137,7 @@ export function BookingsList({ page }: { page: number }) {
         booking.ride.driver.full_name.toLowerCase().includes(query)
       );
     });
-  }, [bookings, searchQuery]);
+  }, [userBookings, searchQuery]);
 
   // Count total pages based on filtered results
   const totalPages = Math.max(
@@ -155,209 +157,33 @@ export function BookingsList({ page }: { page: number }) {
 
   const loadBookings = useCallback(
     async (forceRefresh = false) => {
+      if (!user) return;
+      
       try {
-        // Check cache first
-        const now = Date.now();
-        const cacheAge = 5 * 60 * 1000; // 5 minutes
-        const cachedData = cachedBookings[page];
-
-        if (
-          !forceRefresh &&
-          cachedData &&
-          now - cachedData.timestamp < cacheAge
-        ) {
-          setBookings(cachedData.data);
-          setLoading(false);
-          return;
+        if (forceRefresh) {
+          await refreshUserBookings(user.id);
+        } else {
+          await fetchUserBookings(user.id);
         }
-
-        setLoading(true);
-
-        // Get authenticated user (should be available from context)
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) throw userError;
-
-        if (!user) {
-          console.error("No authenticated user found in bookings list");
-          throw new Error("Authentication required");
-        }
-
-        // Get total count first for true pagination
-        const { count, error: countError } = await supabase
-          .from("bookings")
-          .select("id", { count: "exact" })
-          .eq("user_id", user.id);
-
-        if (countError) throw countError;
-
-        setTotalBookings(count || 0);
-
-        // Get user's bookings with simplified query to avoid foreign key issues
-        const { data: bookingsData, error: bookingsError } = await supabase
-          .from("bookings")
-          .select(
-            `
-          id,
-          seats,
-          status,
-          payment_status,
-          created_at,
-          ride:rides (
-            id,
-            from_city,
-            to_city,
-            departure_time,
-            car_model,
-            car_color,
-            price,
-            driver_id
-          ),
-          payments (
-            id,
-            amount,
-            currency,
-            phone_number,
-            transaction_id,
-            payment_time,
-            metadata,
-            status
-          )
-        `
-          )
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .range((page - 1) * itemsPerPage, page * itemsPerPage - 1);
-
-        if (bookingsError) throw bookingsError;
-
-        // Fetch driver profiles separately to avoid foreign key issues
-        const driverIds = [
-          ...new Set(
-            (bookingsData || [])
-              .map((booking: DatabaseBooking) => {
-                const rideData = Array.isArray(booking.ride)
-                  ? booking.ride[0]
-                  : booking.ride;
-                return rideData?.driver_id;
-              })
-              .filter(Boolean)
-          ),
-        ];
-
-        let driverProfiles: any = {};
-        if (driverIds.length > 0) {
-          const { data: profilesData, error: profilesError } = await supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url")
-            .in("id", driverIds);
-
-          if (!profilesError && profilesData) {
-            driverProfiles = Object.fromEntries(
-              profilesData.map((profile: Profile) => [profile.id, profile])
-            );
-          }
-        }
-
-        // Process bookings and add receipts
-        const bookingsWithReceipts = await Promise.all(
-          (bookingsData || []).map(async (bookingData: DatabaseBooking) => {
-            // Handle ride data as array (Supabase returns it as array)
-            const rideData = Array.isArray(bookingData.ride)
-              ? bookingData.ride[0]
-              : bookingData.ride;
-            const driverData = driverProfiles[rideData?.driver_id] || {
-              full_name: "Unknown User",
-              avatar_url: null,
-            };
-
-            // Transform the data to match our interface
-            const bookingForCard: BookingWithReceipt = {
-              id: bookingData.id,
-              seats: bookingData.seats,
-              status: bookingData.status,
-              payment_status: bookingData.payment_status,
-              created_at: bookingData.created_at,
-              ride: {
-                id: rideData.id,
-                from_city: rideData.from_city,
-                to_city: rideData.to_city,
-                departure_time: rideData.departure_time,
-                car_model: rideData.car_model,
-                car_color: rideData.car_color,
-                price: rideData.price,
-                driver: driverData,
-              },
-              payments: bookingData.payments || [],
-            };
-
-            // Add receipt if payment exists
-            if (bookingData.payments && bookingData.payments.length > 0) {
-              try {
-                // Fetch receipt directly using client-side Supabase
-                const { data: receipt, error: receiptError } = await supabase
-                  .from("payment_receipts")
-                  .select("id, receipt_number, issued_at, created_at, pdf_url")
-                  .eq("payment_id", bookingData.payments[0].id)
-                  .single();
-
-                if (!receiptError && receipt) {
-                  bookingForCard.receipt = {
-                    id: receipt.id,
-                    payment_id: bookingData.payments[0].id,
-                    created_at: receipt.created_at,
-                    receipt_number: receipt.receipt_number,
-                    issued_at: receipt.issued_at,
-                    pdf_url: receipt.pdf_url,
-                  };
-                }
-              } catch (receiptError) {
-                console.warn(
-                  "Could not fetch receipt for booking:",
-                  bookingData.id,
-                  receiptError
-                );
-                // Continue without receipt
-              }
-            }
-
-            return bookingForCard;
-          })
-        );
-
-        setBookings(bookingsWithReceipts || []);
-
-        // Cache the data
-        setCachedBookings((prev) => ({
-          ...prev,
-          [page]: {
-            data: bookingsWithReceipts || [],
-            timestamp: now,
-          },
-        }));
+        
+        setTotalBookings(userBookings.length);
       } catch (err) {
         console.error("Error loading bookings:", err);
-        setError(err as Error);
         toast({
           variant: "destructive",
           title: "Erreur lors du chargement des réservations",
           description: "Veuillez réessayer plus tard.",
         });
-      } finally {
-        setLoading(false);
       }
     },
-    [page, supabase, router, toast, cachedBookings, itemsPerPage]
+    [user, fetchUserBookings, refreshUserBookings, userBookings.length, toast]
   );
 
   useEffect(() => {
     loadBookings();
   }, [loadBookings]);
 
-  if (loading) {
+  if (userBookingsLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-4">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -368,14 +194,14 @@ export function BookingsList({ page }: { page: number }) {
     );
   }
 
-  if (error) {
+  if (userBookingsError) {
     return (
       <div className="text-center py-8 text-red-600">
         <h3 className="font-semibold mb-2">
           Erreur lors du chargement des réservations
         </h3>
         <p className="text-sm text-muted-foreground">
-          Veuillez réessayer plus tard
+          {userBookingsError}
         </p>
       </div>
     );
@@ -416,10 +242,10 @@ export function BookingsList({ page }: { page: number }) {
           variant="outline"
           size="sm"
           onClick={() => loadBookings(true)}
-          disabled={loading}
+          disabled={userBookingsLoading}
           className="flex items-center gap-1"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-4 w-4 ${userBookingsLoading ? "animate-spin" : ""}`} />
           Actualiser
         </Button>
       </div>

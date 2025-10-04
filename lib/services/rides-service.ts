@@ -57,6 +57,23 @@ export class RidesService {
   }
 
   /**
+   * Search rides with filters (alias for getRides for consistency)
+   */
+  async searchRides(params?: {
+    driver_id?: string;
+    from_city?: string;
+    to_city?: string;
+    min_price?: number;
+    max_price?: number;
+    min_seats?: number;
+    upcoming?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<RideWithDriver>> {
+    return this.getRides(params);
+  }
+
+  /**
    * Fetch a single ride by ID with full details
    */
   async getRideById(rideId: string): Promise<RideWithDetails> {

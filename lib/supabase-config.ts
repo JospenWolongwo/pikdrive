@@ -52,6 +52,6 @@ export const ssrSupabaseConfig = {
 
 // Zustand persist configuration for long-term storage
 export const zustandPersistConfig = {
-  name: "auth-storage",
-  skipHydration: true,
+  // Use a unique key to avoid any collisions with Supabase auth storage
+  name: "auth-zustand-storage",
 } as const;

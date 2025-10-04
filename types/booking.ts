@@ -41,6 +41,7 @@ export interface UpdateBookingRequest {
   readonly status?: BookingStatus;
   readonly payment_status?: PaymentStatus;
   readonly code_verified?: boolean;
+  readonly seats?: number;
 }
 
 // Dashboard-specific booking type with embedded user data

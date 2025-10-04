@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
-import { useRidesStore } from "@/stores";
+import { useRidesStore, useBookingStore } from "@/stores";
 import type { RideWithDriver } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +90,7 @@ export default function RidesPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { allRides, allRidesLoading, allRidesError, allRidesPagination, searchRides } = useRidesStore();
+  const { fetchUserBookings } = useBookingStore();
   const loading = allRidesLoading;
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedRide, setSelectedRide] = useState<RideWithDriver | null>(null);
@@ -184,6 +185,11 @@ export default function RidesPage() {
     ]
   );
 
+  // Load rides on component mount
+  useEffect(() => {
+    loadRides();
+  }, []); // Run once on mount
+
   useEffect(() => {
     loadRides();
   }, [currentPage, loadRides]);
@@ -225,6 +231,13 @@ export default function RidesPage() {
       subscribeToRide(ride.id);
     });
   }, [allRides, subscribeToRide]);
+
+  // Preload user bookings for instant modal performance
+  useEffect(() => {
+    if (user?.id && fetchUserBookings) {
+      fetchUserBookings(user.id);
+    }
+  }, [user?.id]); // Remove fetchUserBookings from dependencies
 
   // Set up global booking notification manager
   useEffect(() => {
