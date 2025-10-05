@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createApiSupabaseClient } from "@/lib/supabase/server-client";
 import { processDatabaseNotification } from "@/lib/notifications/booking-notification-service";
 
 export async function POST(request: NextRequest) {
