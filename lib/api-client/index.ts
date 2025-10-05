@@ -17,3 +17,9 @@ export const createApiClient = (baseUrl?: string): ApiClient => {
  * Default API client instance for internal API calls
  */
 export const apiClient = createApiClient();
+
+// Export specialized API clients
+export { bookingApiClient } from './booking';
+export { paymentApiClient } from './payment';
+export { ridesApiClient } from './rides';
+export { chatApiClient } from './chat';
