@@ -28,9 +28,9 @@ export class ServerOneSignalNotificationService {
       });
 
       // Get service role key for authentication
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
       if (!serviceRoleKey) {
-        throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+        throw new Error('NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY not configured');
       }
 
       // Call Edge Function

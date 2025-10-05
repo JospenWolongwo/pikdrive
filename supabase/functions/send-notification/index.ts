@@ -5,10 +5,10 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.5";
 
 // Environment variables
-const ONESIGNAL_APP_ID = Deno.env.get("ONESIGNAL_APP_ID")!;
-const ONESIGNAL_API_KEY = Deno.env.get("ONESIGNAL_API_KEY")!;
+const NEXT_PUBLIC_ONESIGNAL_APP_ID = Deno.env.get("NEXT_PUBLIC_ONESIGNAL_APP_ID")!;
+const NEXT_PUBLIC_ONESIGNAL_API_KEY = Deno.env.get("NEXT_PUBLIC_ONESIGNAL_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface NotificationRequest {
   readonly userId: string;
@@ -35,10 +35,10 @@ async function sendViaOneSignal(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Basic ${ONESIGNAL_API_KEY}`,
+      Authorization: `Basic ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
     },
     body: JSON.stringify({
-      app_id: ONESIGNAL_APP_ID,
+      app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
       include_external_user_ids: [request.userId],
       contents: { en: request.message, fr: request.message },
       headings: { en: request.title, fr: request.title },
@@ -164,7 +164,7 @@ serve(async (req) => {
     });
 
     // Log notification to database
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(SUPABASE_URL, NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY);
     await logNotification(
       supabase,
       notificationRequest,

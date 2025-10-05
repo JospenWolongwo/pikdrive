@@ -173,8 +173,8 @@ supabase/functions/
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const ONESIGNAL_APP_ID = Deno.env.get('ONESIGNAL_APP_ID')!
-const ONESIGNAL_API_KEY = Deno.env.get('ONESIGNAL_API_KEY')!
+const NEXT_PUBLIC_ONESIGNAL_APP_ID = Deno.env.get('NEXT_PUBLIC_ONESIGNAL_APP_ID')!
+const NEXT_PUBLIC_ONESIGNAL_API_KEY = Deno.env.get('NEXT_PUBLIC_ONESIGNAL_API_KEY')!
 
 serve(async (req) => {
   try {
@@ -185,10 +185,10 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_API_KEY}`
+        'Authorization': `Basic ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`
       },
       body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
+        app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
         include_external_user_ids: [userId],
         contents: { en: message },
         headings: { en: title },

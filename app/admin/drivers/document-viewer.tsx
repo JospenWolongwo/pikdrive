@@ -59,7 +59,7 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
     const createAdminClient = () => {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const supabaseServiceKey =
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+        process.env.NEXT_PUBLIC_NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
       if (supabaseServiceKey) {
         console.log("🔑 Creating admin client for document viewer...");

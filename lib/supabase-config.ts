@@ -50,8 +50,6 @@ export const ssrSupabaseConfig = {
   },
 } as const;
 
-// Zustand persist configuration for long-term storage
-export const zustandPersistConfig = {
-  // Use a unique key to avoid any collisions with Supabase auth storage
-  name: "auth-zustand-storage",
-} as const;
+// Note: We removed auth-zustand-storage config because authentication
+// is now handled entirely by Supabase cookies (auth-storage).
+// Zustand is only used for other app state like bookings, rides, etc.

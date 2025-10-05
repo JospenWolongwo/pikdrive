@@ -147,13 +147,13 @@ Add to your `.env.local`:
 
 ```env
 # OneSignal Configuration
-ONESIGNAL_APP_ID=144cd70b-0d97-4216-8cff-80d1c903b93d
-ONESIGNAL_API_KEY=your_generated_rest_api_key_here
+NEXT_PUBLIC_ONESIGNAL_APP_ID=144cd70b-0d97-4216-8cff-80d1c903b93d
+NEXT_PUBLIC_ONESIGNAL_API_KEY=your_generated_rest_api_key_here
 
 # Supabase (if not already set)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 **Replace `your_generated_rest_api_key_here` with the REST API key you just created!**
@@ -459,8 +459,8 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 ### 3.7 Set Edge Function Secrets
 
 ```bash
-supabase secrets set ONESIGNAL_APP_ID=144cd70b-0d97-4216-8cff-80d1c903b93d
-supabase secrets set ONESIGNAL_API_KEY=your_generated_rest_api_key_here
+supabase secrets set NEXT_PUBLIC_ONESIGNAL_APP_ID=144cd70b-0d97-4216-8cff-80d1c903b93d
+supabase secrets set NEXT_PUBLIC_ONESIGNAL_API_KEY=your_generated_rest_api_key_here
 ```
 
 **Replace `your_generated_rest_api_key_here` with your actual REST API key!**
@@ -879,7 +879,7 @@ supabase functions deploy send-notification --no-verify-jwt
 
 ### Permission Denied
 
-- Make sure `SUPABASE_SERVICE_ROLE_KEY` is set correctly
+- Make sure `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` is set correctly
 - Verify RLS policies on `notification_logs` table
 
 ### Webhook Issues

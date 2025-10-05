@@ -130,7 +130,7 @@ export default function AdminDriversPage() {
   const createAdminClient = useCallback(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     const supabaseServiceKey =
-      process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+      process.env.NEXT_PUBLIC_NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
     console.log("🔍 Admin client setup check:", {
       hasUrl: !!supabaseUrl,

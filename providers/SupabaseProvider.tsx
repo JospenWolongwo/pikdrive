@@ -9,7 +9,6 @@ import {
   useRef,
 } from "react";
 import { supabaseClient } from "../lib/supabase-client";
-import { useAuthStore } from "../stores/authStore";
 
 const SupabaseContext = createContext<any>(null);
 
@@ -19,13 +18,11 @@ export const SupabaseProvider = ({
   children: React.ReactNode;
 }) => {
   const [supabase] = useState(() => supabaseClient);
-  const { user: zustandUser, getSession, clearUser } = useAuthStore();
 
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const initializedRef = useRef(false);
-  const sessionCheckRef = useRef<NodeJS.Timeout | null>(null);
 
   const initializeAuth = useCallback(async () => {
     if (initializedRef.current) return;
@@ -39,27 +36,20 @@ export const SupabaseProvider = ({
 
       if (error) {
         console.error("Session error:", error);
-        throw error;
+        setLoading(false);
+        return;
       }
 
       if (initialSession?.user) {
         setSession(initialSession);
         setUser(initialSession.user);
-      } else {
-        // Check if Zustand store has user data
-        if (zustandUser) {
-          setUser(zustandUser);
-          // Don't try to refresh session here as it might clear the user
-          // The user will be used as fallback until a proper session is established
-        }
       }
     } catch (error) {
       console.error("Error loading session:", error);
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]); // Only depend on supabase to prevent re-initialization
+  }, [supabase]);
 
   useEffect(() => {
     initializeAuth();
@@ -67,23 +57,9 @@ export const SupabaseProvider = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      // Clear any pending session checks
-      if (sessionCheckRef.current) {
-        clearTimeout(sessionCheckRef.current);
-        sessionCheckRef.current = null;
-      }
-
+      console.log("Auth state change:", event, session ? "session exists" : "no session");
       setSession(session);
-      
-      // Only update user if we have a session or if it's an explicit sign out
-      // This prevents clearing user during race conditions after login
-      if (session?.user) {
-        setUser(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        clearUser();
-      }
-      // Don't clear user for other events (TOKEN_REFRESHED, INITIAL_SESSION, etc)
+      setUser(session?.user || null);
 
       // Set loading to false if we haven't already
       if (loading) {
@@ -93,45 +69,9 @@ export const SupabaseProvider = ({
 
     return () => {
       subscription.unsubscribe();
-      if (sessionCheckRef.current) {
-        clearTimeout(sessionCheckRef.current);
-      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, initializeAuth]); // Removed loading from deps as it's only set once
-
-  // Listen to Zustand user changes - only sync from Zustand to local state, not the reverse
-  useEffect(() => {
-    if (zustandUser && !user) {
-      setUser(zustandUser);
-    }
-    // Don't clear user based on Zustand state - let auth state change handle that
-  }, [zustandUser, user]);
-
-  // Manual session refresh mechanism
-  useEffect(() => {
-    const refreshSession = async () => {
-      if (zustandUser && !session) {
-        try {
-          const { data, error } = await supabase.auth.refreshSession();
-          if (error) {
-            console.error("Session refresh failed:", error.message);
-          } else if (data.session) {
-            setSession(data.session);
-            setUser(data.session.user);
-          }
-        } catch (error) {
-          console.error("Session refresh error:", error);
-        }
-      }
-    };
-
-    // Try to refresh session after a short delay, but only if we have a user from Zustand
-    if (zustandUser && !session) {
-      const timeoutId = setTimeout(refreshSession, 500); // Reduced delay for faster session establishment
-      return () => clearTimeout(timeoutId);
-    }
-  }, [zustandUser, session, supabase]);
+  }, [supabase, initializeAuth]);
 
   return (
     <SupabaseContext.Provider value={{ supabase, user, session, loading }}>
