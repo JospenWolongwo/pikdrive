@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
-import { processDatabaseNotification } from "@/lib/notifications/booking-notification-service";
+import { ServerOneSignalNotificationService } from "@/lib/services/server/onesignal-notification-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,8 +24,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process the notification and send push notification
-    await processDatabaseNotification(notificationData, supabase);
+    // Send notification via OneSignal Edge Function
+    const notificationService = new ServerOneSignalNotificationService(supabase);
+    
+    await notificationService.sendNotification({
+      userId: session.user.id,
+      title: notificationData.title || 'PikDrive Notification',
+      message: notificationData.message || 'You have a new notification',
+      notificationType: notificationData.type || 'general',
+      data: notificationData.data,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

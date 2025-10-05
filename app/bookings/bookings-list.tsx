@@ -134,7 +134,7 @@ export function BookingsList({ page }: { page: number }) {
         booking.ride.to_city.toLowerCase().includes(query) ||
         booking.status.toLowerCase().includes(query) ||
         booking.payment_status?.toLowerCase().includes(query) ||
-        booking.ride.driver.full_name.toLowerCase().includes(query)
+        booking.ride.driver?.full_name?.toLowerCase().includes(query)
       );
     });
   }, [userBookings, searchQuery]);
@@ -266,14 +266,16 @@ export function BookingsList({ page }: { page: number }) {
               .filter((booking) => booking.ride)
               .map((booking) => {
                 // Only include bookings that have a ride
-                const bookingWithRequiredRide = {
+                const bookingWithPayments = {
                   ...booking,
                   ride: booking.ride!, // We know ride exists because of the filter
+                  payments: [], // Initialize empty payments array
+                  receipt: undefined, // No receipt by default
                 };
                 return (
                   <BookingCard
                     key={booking.id}
-                    booking={bookingWithRequiredRide}
+                    booking={bookingWithPayments}
                   />
                 );
               })}

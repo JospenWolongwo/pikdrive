@@ -8,6 +8,7 @@ import { SupabaseProvider } from "@/providers/SupabaseProvider";
 import { RouteOptimizer } from "@/components/performance/route-optimizer";
 import PWAPrompts from "@/components/pwa/PWAPrompts";
 import { Analytics } from "@vercel/analytics/react";
+import { OneSignalInitializer } from "@/components/notifications/OneSignalInitializer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -75,10 +76,16 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
+        {/* OneSignal SDK - Professional Push Notifications */}
+        <script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+          defer
+        />
       </head>
       <body className={`h-full ${inter.className}`}>
         <SupabaseProvider>
           <Providers>
+            <OneSignalInitializer />
             <RouteOptimizer>
               <div className="relative flex min-h-screen flex-col">
                 <PWAPrompts />

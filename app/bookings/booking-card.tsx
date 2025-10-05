@@ -27,53 +27,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-interface Driver {
-  full_name: string;
-  avatar_url?: string;
-}
+import type { BookingWithPayments } from '@/types';
 
-interface Ride {
-  id: string;
-  from_city: string;
-  to_city: string;
-  departure_time: string;
-  car_model: string;
-  car_color: string;
-  price: number;
-  driver: Driver;
-}
-
-interface Payment {
-  id: string;
-  amount: number;
-  currency: string;
-  phone_number: string;
-  transaction_id?: string;
-  payment_time?: string;
-  metadata?: {
-    financialTransactionId?: string;
-    [key: string]: any;
-  };
-  status?: string;
-}
-
-interface Booking {
-  id: string;
-  seats: number;
-  status: string;
-  payment_status: string;
-  created_at: string;
-  ride: Ride;
-  payments?: Payment[];
-  receipt?: {
-    id: string;
-    payment_id: string;
-    created_at: string;
-  };
-}
 
 interface BookingCardProps {
-  booking: Booking;
+  booking: BookingWithPayments;
 }
 
 export function BookingCard({ booking }: BookingCardProps) {
@@ -153,11 +111,11 @@ export function BookingCard({ booking }: BookingCardProps) {
       <CardContent>
         <div className="grid gap-2">
           <div>
-            <strong>Chauffeur :</strong> {booking.ride.driver.full_name}
+            <strong>Chauffeur :</strong> {booking.ride.driver?.full_name || 'Non disponible'}
           </div>
           <div>
-            <strong>Voiture :</strong> {booking.ride.car_model} (
-            {booking.ride.car_color})
+            <strong>Voiture :</strong> {booking.ride.car_model || 'Non spécifié'} (
+            {booking.ride.car_color || 'Non spécifié'})
           </div>
           <div>
             <strong>Places :</strong> {booking.seats}

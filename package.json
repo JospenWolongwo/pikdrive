@@ -85,6 +85,7 @@
     "postcss": "^8.5.1",
     "pwa-asset-generator": "^6.4.0",
     "style-loader": "^4.0.0",
+    "supabase": "^2.48.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "uuid": "^11.1.0"

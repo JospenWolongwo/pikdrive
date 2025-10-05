@@ -1,4 +1,4 @@
-import type { Ride } from './ride';
+import type { Ride, RideWithDriver } from './ride';
 import type { UserProfile } from './user';
 
 export interface Booking {
@@ -18,18 +18,41 @@ export type BookingStatus =
   | 'confirmed'
   | 'cancelled'
   | 'completed'
-  | 'expired';
+  | 'expired'
+  | 'pending_verification';
 
 export type PaymentStatus = 
   | 'pending'
   | 'paid'
+  | 'completed'
   | 'failed'
   | 'refunded'
   | 'partial';
 
 export interface BookingWithDetails extends Booking {
-  readonly ride: Ride;
+  readonly ride: RideWithDriver;
   readonly user: UserProfile;
+}
+
+export interface BookingWithPayments extends BookingWithDetails {
+  readonly payments?: Array<{
+    readonly id: string;
+    readonly amount: number;
+    readonly currency: string;
+    readonly phone_number: string;
+    readonly payment_time?: string;
+    readonly metadata?: {
+      readonly financialTransactionId?: string;
+      readonly [key: string]: any;
+    };
+    readonly status?: string;
+    readonly [key: string]: any;
+  }>;
+  readonly receipt?: {
+    readonly id: string;
+    readonly payment_id: string;
+    readonly created_at: string;
+  };
 }
 
 export interface CreateBookingRequest {

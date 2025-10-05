@@ -91,3 +91,14 @@ export interface RideMessage {
     readonly avatar_url?: string;
   };
 }
+
+// Conversation summary for ride dashboard
+export interface RideConversationSummary {
+  readonly conversationId: string;
+  readonly passengerId: string;
+  readonly passengerName: string;
+  readonly passengerAvatar?: string;
+  readonly lastMessage: string;
+  readonly lastMessageTime: string;
+  readonly unreadCount: number;
+}

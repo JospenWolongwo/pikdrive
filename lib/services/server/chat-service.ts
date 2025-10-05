@@ -5,7 +5,8 @@ import type {
   ConversationWithParticipants,
   CreateMessageRequest,
   CreateConversationRequest,
-  RideMessage 
+  RideMessage,
+  RideConversationSummary 
 } from '@/types';
 
 /**
@@ -38,14 +39,25 @@ export class ServerChatService {
   /**
    * Send a new message
    */
-  async sendMessage(messageData: CreateMessageRequest): Promise<Message> {
+  async sendMessage(messageData: CreateMessageRequest, senderId: string): Promise<Message> {
+    // First, get the conversation to extract ride_id
+    const { data: conversation, error: convError } = await this.supabase
+      .from('conversations')
+      .select('ride_id')
+      .eq('id', messageData.conversation_id)
+      .single();
+
+    if (convError) {
+      throw new Error(`Failed to fetch conversation: ${convError.message}`);
+    }
+
     const { data, error } = await this.supabase
       .from('messages')
       .insert({
         conversation_id: messageData.conversation_id,
-        sender_id: messageData.sender_id,
+        sender_id: senderId,
         content: messageData.content,
-        ride_id: messageData.ride_id,
+        ride_id: conversation.ride_id,
       })
       .select(`
         *,
@@ -172,7 +184,7 @@ export class ServerChatService {
   /**
    * Get ride messages for driver dashboard
    */
-  async getRideMessages(rideId: string): Promise<RideMessage[]> {
+  async getRideMessages(rideId: string): Promise<RideConversationSummary[]> {
     // Get all conversations for this ride
     const { data: conversations, error: convError } = await this.supabase
       .from('conversations')
@@ -213,7 +225,7 @@ export class ServerChatService {
     });
 
     // Combine conversation and message data
-    const rideMessages: RideMessage[] = conversations.map((conv: any) => {
+    const rideMessages: RideConversationSummary[] = conversations.map((conv: any) => {
       const lastMessage = lastMessages.get(conv.id);
       
       return {

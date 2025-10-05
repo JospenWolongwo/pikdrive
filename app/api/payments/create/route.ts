@@ -5,11 +5,13 @@ import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
 import { OrangeMoneyService } from '@/lib/payment/orange-money-service';
 import { MockOrangeMoneyService } from '@/lib/payment/mock-orange-money-service';
 import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
+import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createApiSupabaseClient();
     const paymentService = new ServerPaymentService(supabase);
+    const notificationService = new ServerOneSignalNotificationService(supabase);
     
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -112,6 +114,24 @@ export async function POST(request: NextRequest) {
       await paymentService.updatePaymentStatus(payment.id, 'processing', {
         transaction_id: transactionId,
       });
+
+      // Send payment processing notification (professional MTN MoMo style)
+      try {
+        await notificationService.sendPaymentNotification(
+          user.id,
+          payment.id,
+          'processing',
+          amount,
+          {
+            provider: provider,
+            transactionId: transactionId,
+          }
+        );
+        console.log('✅ Payment notification sent');
+      } catch (notifError) {
+        // Don't fail payment if notification fails
+        console.error('❌ Failed to send payment notification:', notifError);
+      }
     }
 
     // Return consistent response

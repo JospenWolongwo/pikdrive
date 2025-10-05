@@ -1,15 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Payment } from '@/types';
 import { SMSService } from '@/lib/notifications/sms-service';
+import { ServerOneSignalNotificationService } from './onesignal-notification-service';
 
 /**
  * Server-side PaymentNotificationService for use in API routes
  * 
  * SINGLE RESPONSIBILITY: Payment-related notifications
- * Handles SMS, push notifications, and email for payment events
+ * Handles SMS and push notifications for payment events
  */
 export class ServerPaymentNotificationService {
   private smsService: SMSService;
+  private oneSignalService: ServerOneSignalNotificationService;
 
   constructor(private supabase: SupabaseClient) {
     this.smsService = new SMSService({
@@ -23,6 +25,9 @@ export class ServerPaymentNotificationService {
           ? "production"
           : "sandbox",
     });
+    
+    // Use OneSignal Edge Function instead of self-managed push
+    this.oneSignalService = new ServerOneSignalNotificationService(supabase);
   }
 
   /**
@@ -58,10 +63,30 @@ export class ServerPaymentNotificationService {
         console.error('❌ SMS sending error:', err)
       );
 
-      // Send push notifications (non-blocking)
+      // Send push notifications via OneSignal Edge Function (non-blocking)
       Promise.all([
-        this.sendPassengerNotification(booking.user_id, ride, payment),
-        this.sendDriverNotification(ride.driver_id, ride, payment),
+        this.oneSignalService.sendNotification({
+          userId: booking.user_id,
+          title: '🎉 Paiement Confirmé !',
+          message: `Votre réservation pour ${ride.from_city} → ${ride.to_city} est confirmée. Le chauffeur va bientôt vérifier votre code.`,
+          notificationType: 'payment_completed',
+          data: {
+            bookingId: payment.booking_id,
+            paymentId: payment.id,
+            type: 'payment_completed',
+          },
+        }),
+        this.oneSignalService.sendNotification({
+          userId: ride.driver_id,
+          title: '💳 Paiement Reçu !',
+          message: `Un passager a complété le paiement pour ${ride.from_city} → ${ride.to_city}. Vérifiez le code de réservation.`,
+          notificationType: 'payment_completed_driver',
+          data: {
+            bookingId: payment.booking_id,
+            paymentId: payment.id,
+            type: 'payment_completed_driver',
+          },
+        }),
       ]).catch(err => 
         console.warn('⚠️ Push notification error:', err)
       );

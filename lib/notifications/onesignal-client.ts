@@ -1,0 +1,218 @@
+// Professional OneSignal SDK wrapper
+// Clean interface for OneSignal operations
+
+import type { NotificationType, NotificationData } from '@/types/notification';
+
+declare global {
+  interface Window {
+    OneSignalDeferred?: Array<(OneSignal: any) => void>;
+    OneSignal?: any;
+  }
+}
+
+export class OneSignalClient {
+  private static instance: OneSignalClient;
+  private initialized = false;
+  private oneSignal: any = null;
+
+  private constructor() {}
+
+  /**
+   * Singleton instance
+   */
+  static getInstance(): OneSignalClient {
+    if (!OneSignalClient.instance) {
+      OneSignalClient.instance = new OneSignalClient();
+    }
+    return OneSignalClient.instance;
+  }
+
+  /**
+   * Initialize OneSignal SDK
+   */
+  async initialize(appId: string): Promise<void> {
+    if (this.initialized) {
+      console.log('✅ OneSignal already initialized');
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      console.warn('⚠️ OneSignal can only be initialized in browser');
+      return;
+    }
+
+    try {
+      // Wait for OneSignal to be available
+      await new Promise<void>((resolve) => {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async (OneSignal) => {
+          this.oneSignal = OneSignal;
+          await OneSignal.init({
+            appId: appId,
+            allowLocalhostAsSecureOrigin: true,
+            notifyButton: {
+              enable: false, // We'll use custom UI
+            },
+          });
+          resolve();
+        });
+      });
+
+      this.initialized = true;
+      console.log('✅ OneSignal initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize OneSignal:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if user has granted notification permission
+   */
+  async getPermission(): Promise<NotificationPermission> {
+    if (!this.oneSignal) {
+      return 'default';
+    }
+
+    try {
+      const permission = await this.oneSignal.Notifications.permission;
+      return permission;
+    } catch (error) {
+      console.error('Error getting permission:', error);
+      return 'default';
+    }
+  }
+
+  /**
+   * Request notification permission from user
+   */
+  async requestPermission(): Promise<boolean> {
+    if (!this.oneSignal) {
+      console.error('OneSignal not initialized');
+      return false;
+    }
+
+    try {
+      console.log('📱 Requesting notification permission...');
+      const result = await this.oneSignal.Notifications.requestPermission();
+      console.log(`✅ Permission result: ${result}`);
+      return result;
+    } catch (error) {
+      console.error('❌ Error requesting permission:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if user is subscribed to notifications
+   */
+  async isSubscribed(): Promise<boolean> {
+    if (!this.oneSignal) {
+      return false;
+    }
+
+    try {
+      const permission = await this.oneSignal.Notifications.permission;
+      return permission === true;
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Set external user ID (link with Supabase auth)
+   */
+  async setExternalUserId(userId: string): Promise<void> {
+    if (!this.oneSignal) {
+      console.error('OneSignal not initialized');
+      return;
+    }
+
+    try {
+      await this.oneSignal.login(userId);
+      console.log(`✅ External user ID set: ${userId}`);
+    } catch (error) {
+      console.error('Error setting external user ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove external user ID (on logout)
+   */
+  async removeExternalUserId(): Promise<void> {
+    if (!this.oneSignal) {
+      return;
+    }
+
+    try {
+      await this.oneSignal.logout();
+      console.log('✅ External user ID removed');
+    } catch (error) {
+      console.error('Error removing external user ID:', error);
+    }
+  }
+
+  /**
+   * Add listener for notification clicks
+   */
+  onNotificationClick(
+    callback: (event: { notification: { data: NotificationData } }) => void
+  ): void {
+    if (!this.oneSignal) {
+      console.error('OneSignal not initialized');
+      return;
+    }
+
+    try {
+      this.oneSignal.Notifications.addEventListener('click', callback);
+      console.log('✅ Notification click listener added');
+    } catch (error) {
+      console.error('Error adding notification click listener:', error);
+    }
+  }
+
+  /**
+   * Add listener for notifications displayed (foreground)
+   */
+  onNotificationDisplayed(
+    callback: (event: { notification: { data: NotificationData } }) => void
+  ): void {
+    if (!this.oneSignal) {
+      console.error('OneSignal not initialized');
+      return;
+    }
+
+    try {
+      this.oneSignal.Notifications.addEventListener('foregroundWillDisplay', callback);
+      console.log('✅ Notification display listener added');
+    } catch (error) {
+      console.error('Error adding notification display listener:', error);
+    }
+  }
+
+  /**
+   * Get user's OneSignal ID
+   */
+  async getOneSignalId(): Promise<string | null> {
+    if (!this.oneSignal) {
+      return null;
+    }
+
+    try {
+      const user = await this.oneSignal.User.getUser();
+      return user?.onesignalId || null;
+    } catch (error) {
+      console.error('Error getting OneSignal ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if OneSignal is initialized
+   */
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+}

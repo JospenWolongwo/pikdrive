@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createApiSupabaseClient } from "@/lib/supabase/server-client";
 import type { RideWithDetails } from "@/types";
 
 export async function GET(request: NextRequest) {
