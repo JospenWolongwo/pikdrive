@@ -47,6 +47,11 @@ OneSignalSDKWorker.js
 OneSignalSDKUpdaterWorker.js
 ._OneSignalSDK*
 
+# PWA generated files (deprecated - using OneSignal now)
+public/sw.js
+public/sw-custom.js
+public/workbox-*.js
+
 # IDE
 .vscode/
 .idea/

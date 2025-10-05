@@ -1,1 +1,133 @@
-if(!self.define){let e,s={};const a=(a,c)=>(a=new URL(a+".js",c).href,s[a]||new Promise(s=>{if("document"in self){const e=document.createElement("script");e.src=a,e.onload=s,document.head.appendChild(e)}else e=a,importScripts(a),s()}).then(()=>{let e=s[a];if(!e)throw new Error(`Module ${a} didn’t register its module`);return e}));self.define=(c,i)=>{const n=e||("document"in self?document.currentScript.src:"")||location.href;if(s[n])return;let r={};const t=e=>a(e,n),u={module:{uri:n},exports:r,require:t};s[n]=Promise.all(c.map(e=>u[e]||t(e))).then(e=>(i(...e),r))}}define(["./workbox-4754cb34"],function(e){"use strict";importScripts(),self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"/_next/static/I5cX1jPQFAuKdgLruWxvM/_buildManifest.js",revision:"9c7382fd35d00c592133795a6a0fc0cb"},{url:"/_next/static/I5cX1jPQFAuKdgLruWxvM/_ssgManifest.js",revision:"b6652df95db52feb4daf4eca35380933"},{url:"/_next/static/chunks/192.8c0885f8e57bae34.js",revision:"8c0885f8e57bae34"},{url:"/_next/static/chunks/app/_not-found-38bb7a6c0a3cc4eb.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/about/page-0c9562aa2770cd9e.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/admin/drivers/page-42ee08852892d82e.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/admin/layout-bb1d63c46d47c8d8.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/admin/page-f79f3b01400a970e.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/advice/page-6ca9bc219733f9d8.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/auth/layout-c2ab15e64134f739.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/auth/page-78dbe367af39ab44.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/become-driver/confirmation/page-3b15cdd35e19f6c6.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/become-driver/page-b5f2c7f1fd0ca6ab.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/become-driver/success/page-7bc2dd81514f2183.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/bookings/page-320b78d64f546cf4.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/contact/page-df02a1b809f2e81c.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/cookies/page-ee5f1dab544ac6cf.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/driver/dashboard/page-a943b3b4e3ba0c3e.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/driver/pending/page-79bd5b1ffe4cf184.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/driver/profile/page-dba37ac69e2eea5b.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/driver/rides/%5Bid%5D/messages/page-1a327459124fe095.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/driver/rides/%5Bid%5D/page-03f16ed1f873ba37.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/driver/rides/new/page-70bd06b734361a8d.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/drivers/page-399a04590e404693.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/layout-2881f7497f5146c1.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/messages/page-60fdb77edd049c20.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/offline/page-8d0bf7512ab5c153.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/page-84d8d02afd0b3ab6.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/payments/status/page-ab3c3748ea6f3200.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/privacy/page-67004e6394df0c25.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/profile/page-e90825830e3f77d7.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/receipts/%5Bid%5D/page-1441a7feadc896d6.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/rides/page-e5479588688b4b57.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/settings/page-71b8d94523abfb95.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/terms/page-4a67d769fa9b7538.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/app/test-page/page-0b253e72fcb45472.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/common-dbaad1cc005a16a4.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/main-741f1ca54e23fc1f.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/main-app-d448f929209c5494.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/pages/_app-00609c5080e8cf45.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/pages/_error-6fb3cfbc9cf65b52.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js",revision:"837c0df77fd5009c9e46d446188ecfd0"},{url:"/_next/static/chunks/vendors-7b3b465e5288399c.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/chunks/webpack-04661eaf8032d554.js",revision:"I5cX1jPQFAuKdgLruWxvM"},{url:"/_next/static/css/1f4ac63e1bbd6c23.css",revision:"1f4ac63e1bbd6c23"},{url:"/_next/static/media/19cfc7226ec3afaa-s.woff2",revision:"9dda5cfc9a46f256d0e131bb535e46f8"},{url:"/_next/static/media/21350d82a1f187e9-s.woff2",revision:"4e2553027f1d60eff32898367dd4d541"},{url:"/_next/static/media/8e9860b6e62d6359-s.woff2",revision:"01ba6c2a184b8cba08b0d57167664d75"},{url:"/_next/static/media/ba9851c3c22cd980-s.woff2",revision:"9e494903d6b0ffec1a1e14d34427d44d"},{url:"/_next/static/media/c5fe6dc8356a8c31-s.woff2",revision:"027a89e9ab733a145db70f09b8a18b42"},{url:"/_next/static/media/df0a9ae256c0569c-s.woff2",revision:"d54db44de5ccb18886ece2fda72bdfe0"},{url:"/_next/static/media/e4af272ccee01ff0-s.p.woff2",revision:"65850a373e258f1c897a2b3d75eb74de"},{url:"/apple-icon-120x120.png",revision:"61ac98122debc3cef4640ad222781a1c"},{url:"/apple-icon-152x152.png",revision:"22b1402281521250b394c8524d44bb54"},{url:"/apple-icon-180x180.png",revision:"601f00b58f2bdee9ff867e3709a7261d"},{url:"/apple-touch-icon.png",revision:"601f00b58f2bdee9ff867e3709a7261d"},{url:"/defaults/avatar.svg",revision:"36a25e4da5bae99eb13a7126c094e108"},{url:"/defaults/car-placeholder.svg",revision:"a9c813ea2353bbfeed53c283f5f68d55"},{url:"/favicon-16x16.png",revision:"893f456a340d84b45faf2c2604290ac3"},{url:"/favicon-32x32.png",revision:"f4b93b5e0d8ae6ef955bfab06c365437"},{url:"/favicon.ico",revision:"becf1aadb8eb9bcbf4966d1173570c7a"},{url:"/favicon.svg",revision:"f0ea3e7ca9a3e78166ba4ced4c6894a5"},{url:"/hero-background.mp4",revision:"717cf6571ee689fb2a897f305be8640f"},{url:"/icons/badge-72x72.svg",revision:"46fb2e16f6666c68ade4e3f4c9d7f61e"},{url:"/icons/icon-128x128.png",revision:"6c5ca6871a2b5df54b49fba13d5134a7"},{url:"/icons/icon-144x144.png",revision:"b7e89d88bfc50677f4aeb28efcc22729"},{url:"/icons/icon-152x152.png",revision:"22b1402281521250b394c8524d44bb54"},{url:"/icons/icon-192x192.png",revision:"03a1ae63ffeda279d44913d5fb096044"},{url:"/icons/icon-384x384.png",revision:"5ac4fed30ef4cca033866e7df4e8b3c5"},{url:"/icons/icon-512x512.png",revision:"a66592a39cee470949b6b11f0d671670"},{url:"/icons/icon-72x72.png",revision:"b28f2395ff2e6765273f3dbddb22cb38"},{url:"/icons/icon-96x96.png",revision:"ad8b351b0771accea2d4e64786f9490d"},{url:"/images/payment-providers/mtn.png",revision:"5db5ae859afefc41dacf2a5af741ceaf"},{url:"/images/payment-providers/orange.png",revision:"ebb2e30eea48f09fe2922fdf8adf1e57"},{url:"/images/screenshots/desktop-view.png",revision:"09c444c1a267df22b69ed0392052a2d0"},{url:"/images/screenshots/mobile-view.png",revision:"f40df80acf643d6c42be1c77f8cd73ad"},{url:"/manifest.json",revision:"4c2f58d20d699a8d5850f1ddf7d814e4"},{url:"/site.webmanifest",revision:"5ae7cd188cf2586243a85eb3d6bced6b"},{url:"/sounds/announcement.wav",revision:"eb1d56fca1bf95ab3401e69bf77ba65b"},{url:"/sounds/booking-cancelled.wav",revision:"a39555e1f062991c3dce928a41abed2f"},{url:"/sounds/booking-confirmed.wav",revision:"a39555e1f062991c3dce928a41abed2f"},{url:"/sounds/new-message.wav",revision:"eb1d56fca1bf95ab3401e69bf77ba65b"},{url:"/sounds/payment-failed.wav",revision:"a39555e1f062991c3dce928a41abed2f"},{url:"/sounds/payment-success.wav",revision:"a39555e1f062991c3dce928a41abed2f"},{url:"/testimonials/user1.jpg",revision:"530ce0f0b454b6e480fd4941ebb5f946"},{url:"/testimonials/user2.jpg",revision:"f4308b13d013c33587fd46605e96e5b8"},{url:"/testimonials/user3.jpg",revision:"2b5dd4dccd19bfc287b1a8f2fe59ef5d"}],{ignoreURLParametersMatching:[]}),e.cleanupOutdatedCaches(),e.registerRoute("/",new e.NetworkFirst({cacheName:"start-url",plugins:[{cacheWillUpdate:async({request:e,response:s,event:a,state:c})=>s&&"opaqueredirect"===s.type?new Response(s.body,{status:200,statusText:"OK",headers:s.headers}):s}]}),"GET"),e.registerRoute(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,new e.CacheFirst({cacheName:"google-fonts",plugins:[new e.ExpirationPlugin({maxEntries:4,maxAgeSeconds:31536e3})]}),"GET"),e.registerRoute(/\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,new e.StaleWhileRevalidate({cacheName:"static-font-assets",plugins:[new e.ExpirationPlugin({maxEntries:4,maxAgeSeconds:604800})]}),"GET"),e.registerRoute(/\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,new e.StaleWhileRevalidate({cacheName:"static-image-assets",plugins:[new e.ExpirationPlugin({maxEntries:64,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/\/_next\/image\?url=.+$/i,new e.StaleWhileRevalidate({cacheName:"next-image",plugins:[new e.ExpirationPlugin({maxEntries:64,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/\.(?:mp3|wav|ogg)$/i,new e.CacheFirst({cacheName:"static-audio-assets",plugins:[new e.RangeRequestsPlugin,new e.ExpirationPlugin({maxEntries:32,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/\.(?:js)$/i,new e.StaleWhileRevalidate({cacheName:"static-js-assets",plugins:[new e.ExpirationPlugin({maxEntries:32,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/\.(?:css|less)$/i,new e.StaleWhileRevalidate({cacheName:"static-style-assets",plugins:[new e.ExpirationPlugin({maxEntries:32,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/\.(?:json|xml|csv)$/i,new e.NetworkFirst({cacheName:"static-data-assets",plugins:[new e.ExpirationPlugin({maxEntries:32,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/\/api\/.*$/i,new e.NetworkFirst({cacheName:"apis",networkTimeoutSeconds:5,plugins:[new e.ExpirationPlugin({maxEntries:16,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/.*/i,new e.NetworkFirst({cacheName:"others",networkTimeoutSeconds:5,plugins:[new e.ExpirationPlugin({maxEntries:32,maxAgeSeconds:86400})]}),"GET")});
+// Simple Service Worker for PikDrive PWA
+// Provides basic caching and offline functionality without complex workbox setup
+
+const CACHE_NAME = 'pikdrive-v1';
+const STATIC_CACHE_URLS = [
+  '/',
+  '/manifest.json',
+  '/favicon.ico',
+  '/icon-192x192.png',
+  '/icon-512x512.png'
+];
+
+// Install event - cache static assets
+self.addEventListener('install', (event) => {
+  console.log('🔧 Service Worker installing...');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('📦 Caching static assets');
+        return cache.addAll(STATIC_CACHE_URLS);
+      })
+      .then(() => {
+        console.log('✅ Service Worker installed successfully');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker installation failed:', error);
+      })
+  );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  console.log('🚀 Service Worker activating...');
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('🗑️ Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        console.log('✅ Service Worker activated successfully');
+        return self.clients.claim();
+      })
+  );
+});
+
+// Fetch event - serve from cache when offline
+self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          console.log('📱 Serving from cache:', event.request.url);
+          return cachedResponse;
+        }
+
+        // If not in cache, try to fetch from network
+        return fetch(event.request)
+          .then((response) => {
+            // Don't cache non-successful responses
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response
+            const responseToCache = response.clone();
+
+            // Cache successful responses
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          })
+          .catch(() => {
+            // If network fails and no cache, show offline page for navigation requests
+            if (event.request.mode === 'navigate') {
+              return caches.match('/') || new Response('Offline', { status: 503 });
+            }
+          });
+      })
+  );
+});
+
+// Handle background sync for offline actions (future enhancement)
+self.addEventListener('sync', (event) => {
+  console.log('🔄 Background sync triggered:', event.tag);
+  // Future: Handle offline booking submissions, payment retries, etc.
+});
+
+// Handle push notifications (handled by OneSignal)
+self.addEventListener('push', (event) => {
+  console.log('🔔 Push notification received:', event);
+  // OneSignal handles push notifications, so we just log here
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  console.log('👆 Notification clicked:', event);
+  event.notification.close();
+  
+  // Focus or open the app
+  event.waitUntil(
+    clients.matchAll().then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});

@@ -1,11 +1,11 @@
 {
   "name": "PikDrive",
   "short_name": "PikDrive",
-  "description": "Your personal cloud storage solution",
+  "description": "Your trusted intercity ride-sharing platform in Cameroon",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#28C496",
   "orientation": "portrait",
   "icons": [
     {
@@ -59,12 +59,22 @@
   ],
   "scope": "/",
   "prefer_related_applications": false,
-  "categories": ["productivity", "utilities"],
+  "categories": ["travel", "transportation"],
   "shortcuts": [
     {
-      "name": "Home",
-      "url": "/",
-      "description": "Go to home page"
+      "name": "Find Rides",
+      "url": "/rides",
+      "description": "Search for available rides"
+    },
+    {
+      "name": "My Bookings",
+      "url": "/bookings",
+      "description": "View your bookings"
+    },
+    {
+      "name": "Driver Dashboard",
+      "url": "/driver",
+      "description": "Driver management"
     }
   ],
   "screenshots": [],
