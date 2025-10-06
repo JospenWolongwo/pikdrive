@@ -1,7 +1,14 @@
 // Simple Service Worker for PikDrive PWA
 // Provides basic caching and offline functionality without complex workbox setup
+// OneSignal integration: import OneSignal's SW into our existing root-scoped SW
+try {
+  // Import OneSignal Service Worker via local proxy (avoids tracker blocking)
+  self.importScripts('/api/onesignal/sw');
+} catch (e) {
+  // No-op if it fails; main SW functions still work
+}
 
-const CACHE_NAME = 'pikdrive-v1';
+const CACHE_NAME = 'pikdrive-v2'; // Incremented to bust old cache with auth issues
 const STATIC_CACHE_URLS = [
   '/',
   '/manifest.json',

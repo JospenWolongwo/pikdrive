@@ -162,7 +162,7 @@ export class BookingNotificationManager {
   private async getUserInfo(userId: string): Promise<User | null> {
     try {
       const { data: user } = await this.supabase
-        .from("users")
+        .from("profiles")
         .select("id, full_name, phone")
         .eq("id", userId)
         .single();
@@ -180,13 +180,15 @@ export class BookingNotificationManager {
     driverName: string
   ): Promise<void> {
     try {
+      // NOTE: No sound notification for booking creation - only after successful payment
+      // Sound notifications will be handled by payment completion flow
       await notificationService.showNotification({
-        title: "🎉 Reservation Confirmee !",
-        body: `Votre reservation pour ${ride.from_city} → ${ride.to_city} a ete confirmee. ${driverName} vous attendra.`,
+        title: "🎫 Reservation Creee !",
+        body: `Votre reservation pour ${ride.from_city} → ${ride.to_city} a ete creee. Completez le paiement pour confirmer.`,
         icon: "/icons/icon-192x192.png",
-        tag: "booking-confirmed",
-        sound: true,
-        vibrate: [200, 100, 200],
+        tag: "booking-created",
+        sound: false, // No sound - only after payment success
+        vibrate: false, // No vibration - only after payment success
         onClick: () => {
           if (this.onBookingClick) {
             this.onBookingClick();
@@ -236,25 +238,27 @@ export class BookingNotificationManager {
         const passengerName =
           passenger?.full_name || passenger?.phone || "Passenger";
 
+        // NOTE: No sound notification for booking creation - only after successful payment
         await notificationService.showNotification({
           title: "🚗 Nouvelle Reservation !",
           body: `${passengerName} a reserve ${booking.seats} place(s) pour ${ride.from_city} → ${ride.to_city}.`,
           icon: "/icons/icon-192x192.png",
           tag: "new-booking-immediate",
-          sound: true,
-          vibrate: [200, 100, 200],
+          sound: false, // No sound - only after payment success
+          vibrate: false, // No vibration - only after payment success
         });
       } else {
         const driver = await this.getUserInfo(ride.driver_id);
         const driverName = driver?.full_name || driver?.phone || "Driver";
 
+        // NOTE: No sound notification for booking creation - only after successful payment
         await notificationService.showNotification({
-          title: "🎉 Reservation Creee !",
-          body: `Votre reservation pour ${ride.from_city} → ${ride.to_city} a ete creee. ${driverName} sera notifie.`,
+          title: "🎫 Reservation Creee !",
+          body: `Votre reservation pour ${ride.from_city} → ${ride.to_city} a ete creee. Completez le paiement pour confirmer.`,
           icon: "/icons/icon-192x192.png",
           tag: "booking-created",
-          sound: true,
-          vibrate: [200, 100, 200],
+          sound: false, // No sound - only after payment success
+          vibrate: false, // No vibration - only after payment success
         });
       }
 

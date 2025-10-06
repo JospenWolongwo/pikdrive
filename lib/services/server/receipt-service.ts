@@ -25,11 +25,11 @@ export class ServerReceiptService {
       // Check if receipt already exists
       const existing = await this.getReceiptByPaymentId(paymentId);
       if (existing) {
-        console.log('Receipt already exists for payment:', paymentId);
+        console.log('✅ Receipt already exists for payment:', paymentId);
         return existing;
       }
 
-      // Try to use the RPC function first
+      // Try to use the RPC function first (it handles duplicates)
       try {
         const { data: receipt, error: rpcError } = await this.supabase
           .rpc('create_receipt', { payment_id_param: paymentId })
@@ -48,28 +48,48 @@ export class ServerReceiptService {
         console.warn('RPC receipt creation error, falling back to manual:', rpcError);
       }
 
-      // Fallback: Create receipt manually
+      // Fallback: Create receipt manually with duplicate handling
       const receiptNumber = this.generateReceiptNumber();
       const now = new Date().toISOString();
 
-      const { data: receipt, error } = await this.supabase
-        .from('payment_receipts')
-        .insert({
-          payment_id: paymentId,
-          receipt_number: receiptNumber,
-          issued_at: now,
-          created_at: now,
-          updated_at: now,
-        })
-        .select()
-        .single();
+      try {
+        const { data: receipt, error } = await this.supabase
+          .from('payment_receipts')
+          .insert({
+            payment_id: paymentId,
+            receipt_number: receiptNumber,
+            issued_at: now,
+            created_at: now,
+            updated_at: now,
+          })
+          .select()
+          .single();
 
-      if (error) {
-        throw new Error(`Failed to create receipt: ${error.message}`);
+        if (error) {
+          // If it's a duplicate key error, try to fetch the existing receipt
+          if (error.code === '23505' && error.message.includes('payment_receipts_payment_id_key')) {
+            console.log('🔄 Duplicate receipt detected, fetching existing receipt for payment:', paymentId);
+            const existingReceipt = await this.getReceiptByPaymentId(paymentId);
+            if (existingReceipt) {
+              return existingReceipt;
+            }
+          }
+          throw new Error(`Failed to create receipt: ${error.message}`);
+        }
+
+        console.log('✅ Receipt created manually:', receipt);
+        return receipt;
+      } catch (insertError) {
+        // If insert fails due to duplicate, try to fetch existing receipt
+        if (insertError instanceof Error && insertError.message.includes('duplicate key')) {
+          console.log('🔄 Duplicate receipt detected during insert, fetching existing receipt for payment:', paymentId);
+          const existingReceipt = await this.getReceiptByPaymentId(paymentId);
+          if (existingReceipt) {
+            return existingReceipt;
+          }
+        }
+        throw insertError;
       }
-
-      console.log('✅ Receipt created manually:', receipt);
-      return receipt;
     } catch (error) {
       console.error('ServerReceiptService.createReceipt error:', error);
       throw error;

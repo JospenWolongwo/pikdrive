@@ -4,17 +4,24 @@ import { ServerBookingService } from '@/lib/services/server/booking-service';
 
 export async function POST(request: NextRequest) {
   try {
+    // Create a Supabase client using cookie-based authentication
     const supabase = createApiSupabaseClient();
-    const bookingService = new ServerBookingService(supabase);
-    
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+
+    // Verify user session
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: "Unauthorized", details: sessionError?.message },
         { status: 401 }
       );
     }
+
+    const userId = session.user.id;
+    const bookingService = new ServerBookingService(supabase);
 
     // Get request body
     const body = await request.json();
@@ -30,7 +37,7 @@ export async function POST(request: NextRequest) {
     // Create booking
     const booking = await bookingService.createBooking({
       ride_id,
-      user_id: user.id,
+      user_id: userId,
       seats
     });
 
@@ -52,28 +59,35 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Create a Supabase client using cookie-based authentication
     const supabase = createApiSupabaseClient();
-    const bookingService = new ServerBookingService(supabase);
-    
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+
+    // Verify user session
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: "Unauthorized", details: sessionError?.message },
         { status: 401 }
       );
     }
 
+    const currentUserId = session.user.id;
+    const bookingService = new ServerBookingService(supabase);
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const requestedUserId = searchParams.get('userId');
     const driverId = searchParams.get('driverId');
     const status = searchParams.get('status');
 
-    if (userId) {
+    if (requestedUserId) {
       // Get user bookings
       const bookings = await bookingService.getUserBookings({
-        userId,
+        userId: requestedUserId,
         status: status || undefined
       });
 

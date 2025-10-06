@@ -88,13 +88,20 @@ export class ServerPaymentOrchestrationService {
           status: 'pending_verification',
         }),
 
-        // Create receipt
-        this.receiptService.createReceipt(payment.id),
+        // Create receipt (with error handling for duplicates)
+        this.receiptService.createReceipt(payment.id).catch(err => {
+          console.warn('⚠️ Receipt creation error (non-critical):', err);
+          // Don't throw - receipt creation failure shouldn't block the workflow
+        }),
 
         // Send notifications (non-blocking)
-        this.notificationService.notifyPaymentCompleted(payment).catch(err =>
-          console.warn('⚠️ Notification error (non-critical):', err)
-        ),
+        this.notificationService.notifyPaymentCompleted(payment)
+          .then(() => {
+            console.log('✅ Payment notifications sent successfully for payment:', payment.id);
+          })
+          .catch(err => {
+            console.error('❌ Notification error (non-critical):', err);
+          }),
       ]);
 
       console.log('✅ Completed payment workflow finished');

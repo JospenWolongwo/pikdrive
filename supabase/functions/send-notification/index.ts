@@ -31,6 +31,23 @@ interface OneSignalResponse {
 async function sendViaOneSignal(
   request: NotificationRequest
 ): Promise<OneSignalResponse> {
+  // Determine sound based on notification type
+  const soundMap: Record<string, string> = {
+    'payment_success': 'payment-success.wav',
+    'payment_failed': 'payment-failed.wav',
+    'payment_pending': 'notification.wav',
+    'payment_processing': 'notification.wav',
+    'booking_confirmed': 'booking-confirmed.wav',
+    'booking_cancelled': 'booking-cancelled.wav',
+    'new_message': 'new-message.wav',
+    'general': 'announcement.wav',
+  };
+
+  const sound = soundMap[request.notificationType || 'general'] || 'notification.wav';
+  const webAppUrl = Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://pikdrive.com";
+  // Use app icon - Lucide icons are rendered on the frontend
+  const iconUrl = `${webAppUrl}/icons/icon-192x192.png`;
+
   const response = await fetch("https://onesignal.com/api/v1/notifications", {
     method: "POST",
     headers: {
@@ -50,16 +67,16 @@ async function sendViaOneSignal(
       // iOS specific
       ios_badgeType: "Increase",
       ios_badgeCount: 1,
-      ios_sound: "notification.wav",
+      ios_sound: sound,
       // Android specific
       android_channel_id: "pikdrive_notifications",
-      android_sound: "notification",
+      android_sound: sound.replace('.wav', ''),
       small_icon: "ic_notification",
-      large_icon: request.imageUrl || "ic_launcher",
+      large_icon: iconUrl,
       // Web specific
       web_push_topic: request.notificationType || "general",
-      chrome_web_icon: request.imageUrl || "/icons/icon-192x192.png",
-      chrome_web_badge: "/icons/badge-72x72.png",
+      chrome_web_icon: iconUrl,
+      chrome_web_badge: `${webAppUrl}/icons/badge-72x72.png`,
       // Delivery
       priority: 10,
       ttl: 86400, // 24 hours

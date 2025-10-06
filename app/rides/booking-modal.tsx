@@ -183,23 +183,11 @@ export function BookingModal({
   };
 
   // Background notification function (non-blocking)
+  // NOTE: Removed immediate sound notifications - only send notifications after successful payment
   const showNotificationsInBackground = async (booking: any, ride: any, user: any) => {
     try {
-      // Show immediate notification to user
-      const bookingManager = getGlobalBookingNotificationManager();
-      if (bookingManager) {
-        try {
-          await bookingManager.showImmediateBookingNotification(
-            booking,
-            ride,
-            false // false = user notification, not driver
-          );
-        } catch (notificationError) {
-          console.warn("Failed to show immediate notification:", notificationError);
-        }
-      }
-
-      // Send push notification to driver about new booking
+      // Only send push notification to driver about new booking (no sound notification)
+      // Sound notifications will only be sent after successful payment
       try {
         await fetch("/api/notifications/booking", {
           method: "POST",
@@ -331,11 +319,11 @@ export function BookingModal({
         throw new Error(data.message || "Payment failed");
       }
 
-      if (data.success && data.transactionId) {
-        setPaymentTransactionId(data.transactionId);
+      if (data.success && data.data?.transaction_id) {
+        setPaymentTransactionId(data.data.transaction_id);
         toast.success("Payment request sent. Check your phone to approve.");
       } else {
-        throw new Error("Payment failed");
+        throw new Error(data.error || "Payment failed");
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Payment failed");
@@ -472,6 +460,7 @@ export function BookingModal({
                 <PaymentStatusChecker
                   transactionId={paymentTransactionId}
                   provider={selectedProvider!}
+                  bookingId={bookingId} // ✅ Pass bookingId for resilient fallback queries
                   onPaymentComplete={async (status) => {
                     if (status === "completed") {
                       // Move to success step immediately

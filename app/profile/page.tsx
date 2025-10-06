@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores";
+// Removed useAuthStore - using useSupabase for auth state
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,8 +79,7 @@ interface DriverDocuments {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
-  const { supabase } = useSupabase();
+  const { user, supabase } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);

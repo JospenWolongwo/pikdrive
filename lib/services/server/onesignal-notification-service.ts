@@ -14,6 +14,7 @@ export class ServerOneSignalNotificationService {
   constructor(private supabase: SupabaseClient) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     this.edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-notification`;
+    console.log('🔧 OneSignal Edge Function URL configured:', this.edgeFunctionUrl);
   }
 
   /**
@@ -34,6 +35,7 @@ export class ServerOneSignalNotificationService {
       }
 
       // Call Edge Function
+      console.log('🌐 Calling OneSignal Edge Function:', this.edgeFunctionUrl);
       const response = await fetch(this.edgeFunctionUrl, {
         method: 'POST',
         headers: {
@@ -42,6 +44,8 @@ export class ServerOneSignalNotificationService {
         },
         body: JSON.stringify(request),
       });
+
+      console.log('📡 OneSignal Edge Function response status:', response.status);
 
       if (!response.ok) {
         const error = await response.json();
@@ -81,20 +85,23 @@ export class ServerOneSignalNotificationService {
   ): Promise<NotificationResponse> {
     const messages = {
       created: {
-        title: '🎫 Réservation Créée',
-        message: `Votre réservation pour ${rideDetails.from} → ${rideDetails.to} est en attente de paiement.`,
+        title: 'Booking Created',
+        message: `Your booking for ${rideDetails.from} to ${rideDetails.to} is pending payment.`,
+        icon: 'Ticket', // Lucide icon
       },
       confirmed: {
-        title: '✅ Réservation Confirmée',
-        message: `Votre voyage ${rideDetails.from} → ${rideDetails.to} est confirmé! Bon voyage!`,
+        title: 'Booking Confirmed',
+        message: `Your trip from ${rideDetails.from} to ${rideDetails.to} is confirmed. Have a safe journey!`,
+        icon: 'TicketCheck', // Lucide icon
       },
       cancelled: {
-        title: '❌ Réservation Annulée',
-        message: `Votre réservation pour ${rideDetails.from} → ${rideDetails.to} a été annulée.`,
+        title: 'Booking Cancelled',
+        message: `Your booking for ${rideDetails.from} to ${rideDetails.to} has been cancelled.`,
+        icon: 'TicketX', // Lucide icon
       },
     };
 
-    const { title, message } = messages[type];
+    const { title, message, icon } = messages[type];
 
     return this.sendNotification({
       userId,
@@ -104,6 +111,7 @@ export class ServerOneSignalNotificationService {
       data: {
         bookingId,
         type: `booking_${type}`,
+        icon, // Lucide icon name
         rideFrom: rideDetails.from,
         rideTo: rideDetails.to,
       },
@@ -125,24 +133,28 @@ export class ServerOneSignalNotificationService {
 
     const messages = {
       pending: {
-        title: 'Payment Pending ⏳',
+        title: 'Payment Pending',
         message: `Please complete payment of ${formatAmount(amount)} XAF on your ${provider} phone.`,
+        icon: 'Clock', // Lucide icon
       },
       processing: {
-        title: 'Payment Processing ⏳',
+        title: 'Payment Processing',
         message: `Your payment of ${formatAmount(amount)} XAF via ${provider} is being processed...`,
+        icon: 'Loader2', // Lucide icon
       },
       completed: {
-        title: 'Payment Successful ✅',
+        title: 'Payment Successful',
         message: `${formatAmount(amount)} XAF paid via ${provider}.${metadata?.transactionId ? ` Transaction ID: ${metadata.transactionId}` : ''}`,
+        icon: 'CheckCircle2', // Lucide icon
       },
       failed: {
-        title: 'Payment Failed ❌',
+        title: 'Payment Failed',
         message: `Payment could not be processed. ${metadata?.reason || 'Please try again.'}`,
+        icon: 'XCircle', // Lucide icon
       },
     };
 
-    const { title, message } = messages[type];
+    const { title, message, icon } = messages[type];
 
     return this.sendNotification({
       userId,
@@ -155,6 +167,7 @@ export class ServerOneSignalNotificationService {
         provider: metadata?.provider,
         transactionId: metadata?.transactionId,
         type: `payment_${type}`,
+        icon, // Lucide icon name
       },
     });
   }
@@ -171,13 +184,14 @@ export class ServerOneSignalNotificationService {
   ): Promise<NotificationResponse> {
     return this.sendNotification({
       userId,
-      title: `💬 Nouveau message de ${senderName}`,
+      title: `New message from ${senderName}`,
       message: messagePreview,
       notificationType: 'new_message',
       data: {
         conversationId,
         senderId,
         type: 'new_message',
+        icon: 'MessageSquare', // Lucide icon
       },
     });
   }

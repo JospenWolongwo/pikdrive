@@ -8,6 +8,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 interface PaymentStatusCheckerProps {
   transactionId: string;
   provider: string;
+  bookingId?: string; // ✅ Add bookingId for resilient fallback queries
   onPaymentComplete?: (status: PaymentStatus) => void;
   pollingInterval?: number;
   maxAttempts?: number;
@@ -16,6 +17,7 @@ interface PaymentStatusCheckerProps {
 export function PaymentStatusChecker({
   transactionId,
   provider,
+  bookingId, // ✅ Accept bookingId prop
   onPaymentComplete,
   pollingInterval = 5000, // 5 seconds
   maxAttempts = 60 // 5 minutes total
@@ -44,7 +46,7 @@ export function PaymentStatusChecker({
         return;
       }
 
-      console.log('🔄 Checking payment status:', { transactionId, provider, attempt: attempts + 1 });
+      console.log('🔄 Checking payment status:', { transactionId, provider, bookingId, attempt: attempts + 1 });
 
       try {
         // Use our server API endpoint as a proxy to avoid CORS issues
@@ -54,7 +56,11 @@ export function PaymentStatusChecker({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ transactionId, provider }),
+          body: JSON.stringify({ 
+            transactionId, 
+            provider,
+            bookingId // ✅ Pass bookingId for resilient fallback queries
+          }),
         });
 
         if (!response.ok) {
@@ -62,42 +68,46 @@ export function PaymentStatusChecker({
           throw new Error(errorData.error || `Server responded with ${response.status}`);
         }
 
-        const data = await response.json();
+        const responseData = await response.json();
+        
+        // Extract status and message from the nested data structure
+        const paymentStatus = responseData.data?.status;
+        const paymentMessage = responseData.data?.message;
         
         console.log('✅ Payment status update:', { 
           transactionId,
           currentStatus: status,
-          newStatus: data.status,
-          message: data.message,
+          newStatus: paymentStatus,
+          message: paymentMessage,
           timestamp: new Date().toISOString()
         });
         
         // Use functional updates to ensure state consistency
-        setStatus(prev => data.status !== prev ? data.status : prev);
+        setStatus(prev => paymentStatus !== prev ? paymentStatus : prev);
         setLastUpdated(Date.now());
         
-        if (data.status === 'completed') {
+        if (paymentStatus === 'completed') {
           setIsPolling(prev => false);
           setMessage(prev => 'Payment completed successfully!');
-          toast.success(data.message || 'Payment completed successfully!');
-          onPaymentComplete?.(data.status);
+          toast.success(paymentMessage || 'Payment completed successfully!');
+          onPaymentComplete?.(paymentStatus);
           return;
         }
 
-        if (data.status === 'failed') {
+        if (paymentStatus === 'failed') {
           setIsPolling(prev => false);
-          setMessage(prev => data.message || 'Payment failed');
-          toast.error(data.message || 'Payment failed');
-          onPaymentComplete?.(data.status);
+          setMessage(prev => paymentMessage || 'Payment failed');
+          toast.error(paymentMessage || 'Payment failed');
+          onPaymentComplete?.(paymentStatus);
           return;
         }
 
-        if (data.status === 'processing') {
+        if (paymentStatus === 'processing') {
           setMessage(prev => 'Processing payment...');
         }
 
         // Continue polling if still pending or processing
-        if ((data.status === 'pending' || data.status === 'processing') && isPolling) {
+        if ((paymentStatus === 'pending' || paymentStatus === 'processing') && isPolling) {
           if (attempts < maxAttempts) {
             setAttempts(prev => prev + 1);
             timeoutId = setTimeout(checkStatus, pollingInterval);

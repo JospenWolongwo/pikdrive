@@ -124,17 +124,13 @@ Use online tools to optimize:
 ### **Step 3: Rename & Organize**
 ```bash
 # Rename files to match our naming convention
-public/sounds/notifications/
-├── payment-success.mp3
-├── payment-failed.mp3
-├── booking-confirmed.mp3
-├── booking-cancelled.mp3
-├── new-message.mp3
-├── driver-arriving.mp3
-├── driver-arrived.mp3
-├── ride-started.mp3
-├── ride-completed.mp3
-└── announcement.mp3
+public/sounds/
+├── payment-success.wav
+├── payment-failed.wav
+├── booking-confirmed.wav
+├── booking-cancelled.wav
+├── new-message.wav
+├── announcement.wav
 ```
 
 ---
@@ -276,7 +272,7 @@ Ride Started: https://freesound.org/s/320653/
 Ride Completed: https://freesound.org/s/320655/
 ```
 
-Download, rename, and place in `public/sounds/notifications/`!
+Download, rename, and place in `public/sounds/`!
 
 ---
 

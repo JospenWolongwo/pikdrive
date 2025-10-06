@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuthStore } from "@/stores";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
@@ -65,7 +64,8 @@ function AuthContent() {
   const [error, setError] = useState("");
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const { signIn, verifyOTP } = useAuthStore();
+  // Get auth actions from Supabase client directly
+  const { supabase } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -100,8 +100,13 @@ function AuthContent() {
       const phoneToUse = phone || savedPhone || "";
       const formattedPhone = formatPhoneNumber(phoneToUse);
 
-      const { error: signInError } = await signIn(formattedPhone);
-      if (signInError) throw new Error(signInError);
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+        options: {
+          channel: "sms",
+        },
+      });
+      if (signInError) throw new Error(signInError.message);
 
       // Save phone number for future use
       localStorage.setItem("lastPhoneNumber", formattedPhone);
@@ -132,11 +137,12 @@ function AuthContent() {
       const phoneToUse = phone || savedPhone || "";
       const formattedPhone = formatPhoneNumber(phoneToUse);
 
-      const { error: verifyError, data } = await verifyOTP(
-        formattedPhone,
-        code
-      );
-      if (verifyError) throw new Error(verifyError);
+      const { error: verifyError, data } = await supabase.auth.verifyOtp({
+        phone: formattedPhone,
+        token: code,
+        type: "sms",
+      });
+      if (verifyError) throw new Error(verifyError.message);
 
       if (!data?.user) {
         throw new Error("Verification successful but no user returned");
@@ -173,9 +179,14 @@ function AuthContent() {
       }
 
       const formattedPhone = formatPhoneNumber(phoneToUse);
-      const { error: signInError } = await signIn(formattedPhone);
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+        options: {
+          channel: "sms",
+        },
+      });
 
-      if (signInError) throw new Error(signInError);
+      if (signInError) throw new Error(signInError.message);
 
       // Set cooldown for 60 seconds
       setResendCooldown(60);

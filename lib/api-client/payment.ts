@@ -17,7 +17,7 @@ export interface PaymentStatusResult {
 export interface CreatePaymentParams {
   readonly booking_id: string;
   readonly amount: number;
-  readonly payment_method: string;
+  readonly provider: string;
   readonly phone_number: string;
 }
 
@@ -33,21 +33,23 @@ export class PaymentApiClient {
     return apiClient.post('/api/payments/create', {
       bookingId: params.booking_id,
       amount: params.amount,
-      provider: params.payment_method,
+      provider: params.provider,
       phoneNumber: params.phone_number,
     });
   }
 
   /**
-   * Check payment status
+   * Check payment status (with optional bookingId for fallback)
    */
   async checkPaymentStatus(
     transactionId: string, 
-    provider: string
+    provider: string,
+    bookingId?: string
   ): Promise<PaymentApiResponse<PaymentStatusResult>> {
     return apiClient.post('/api/payments/check-status', {
       transactionId,
       provider,
+      bookingId, // Optional fallback for resilient querying
     });
   }
 

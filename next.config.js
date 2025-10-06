@@ -3,6 +3,10 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Cache busting for auth migration
+  generateBuildId: async () => {
+    return `build-${Date.now()}`;
+  },
   // Performance optimizations
   experimental: {
     // Enable optimizations for better performance

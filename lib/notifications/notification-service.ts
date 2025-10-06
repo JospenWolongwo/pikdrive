@@ -29,7 +29,7 @@ export class NotificationService {
   constructor(config?: Partial<NotificationServiceConfig>) {
     this.config = {
       enableSound: true,
-      soundUrl: "/sounds/notification.mp3", // Changed to MP3
+      soundUrl: "/sounds/new-message.wav", // Using WAV files only
       enableVibration: true,
       defaultVibrationPattern: [200, 100, 200],
       ...config,
@@ -70,12 +70,14 @@ export class NotificationService {
 
   private tryFallbackAudio() {
     try {
-      // Try alternative sound files (MP3 first, then WAV)
+      // Try alternative WAV sound files
       const fallbackSounds = [
-        "/sounds/notification.mp3",
-        "/notification.mp3",
-        "/sounds/notification.wav",
-        "/notification.wav",
+        "/sounds/new-message.wav",
+        "/sounds/announcement.wav",
+        "/sounds/booking-confirmed.wav",
+        "/sounds/booking-cancelled.wav",
+        "/sounds/payment-success.wav",
+        "/sounds/payment-failed.wav",
       ];
 
       for (const soundUrl of fallbackSounds) {

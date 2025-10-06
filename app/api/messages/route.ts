@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { createApiSupabaseClient } from "@/lib/supabase/server-client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,36 +12,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the current user from the request headers
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader) {
+    // Create a Supabase client using cookie-based authentication
+    const supabaseClient = createApiSupabaseClient();
+
+    // Verify user session
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabaseClient.auth.getSession();
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { success: false, error: "Authorization header required" },
+        { success: false, error: "Unauthorized", details: sessionError?.message },
         { status: 401 }
       );
     }
 
-    // Create a Supabase client with the user's token
-    const supabaseClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: authHeader,
-          },
-        },
-      }
-    );
-
-    // Get the current user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Invalid authentication" },
-        { status: 401 }
-      );
-    }
+    const user = session.user;
 
     // Filter sensitive information
     const filteredContent = filterSensitiveInfo(content);

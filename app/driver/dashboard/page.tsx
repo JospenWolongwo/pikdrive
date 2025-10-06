@@ -302,6 +302,7 @@ export default function DriverDashboard() {
         <PaymentStatusChecker
           transactionId={checkingPayment.transactionId}
           provider={checkingPayment.provider}
+          bookingId={checkingPayment.bookingId} // ✅ Pass bookingId for resilient fallback queries
           onPaymentComplete={(status) => {
             if (status === "completed") {
               setCheckingPayment(null);

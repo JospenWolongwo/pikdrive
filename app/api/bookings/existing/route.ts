@@ -7,14 +7,20 @@ export async function GET(request: NextRequest) {
     const supabase = createApiSupabaseClient();
     const bookingService = new ServerBookingService(supabase);
     
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    // Verify user session
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: "Unauthorized", details: sessionError?.message },
         { status: 401 }
       );
     }
+
+    const user = session.user;
 
     // Get query parameters
     const { searchParams } = new URL(request.url);

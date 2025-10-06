@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuthStore } from '@/stores'
+// Removed useAuthStore - using useSupabase for auth state
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { MapPin, Navigation, Phone, Shield, CreditCard, MessageSquare, Star, Users, Clock, ChevronRight, Check, HelpCircle, Building2, Mountain, Waves } from 'lucide-react'
@@ -41,8 +41,7 @@ const getRouteIcon = (iconType: string) => {
 };
 
 export default function Home() {
-  const { user } = useAuthStore()
-  const { supabase } = useSupabase()
+  const { user, supabase } = useSupabase()
   const router = useRouter()
 
   return (

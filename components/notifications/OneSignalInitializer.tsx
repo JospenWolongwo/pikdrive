@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useOneSignal } from '@/hooks/notifications/useOneSignal';
-import { useAuthStore } from '@/stores/authStore';
+import { useSupabase } from '@/providers/SupabaseProvider';
 
 /**
  * OneSignal Initialization Component
@@ -16,7 +16,7 @@ import { useAuthStore } from '@/stores/authStore';
  */
 export function OneSignalInitializer() {
   const { initialize, setUserId, removeUserId, isInitialized } = useOneSignal();
-  const { user } = useAuthStore();
+  const { user } = useSupabase();
 
   // Initialize OneSignal once
   useEffect(() => {

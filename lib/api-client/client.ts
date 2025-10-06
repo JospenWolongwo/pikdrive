@@ -71,9 +71,8 @@ export class ApiClient {
       ...options.headers,
     };
 
-    // Add authentication if available
-    const authHeaders = await this.getAuthHeaders();
-    Object.assign(headers, authHeaders);
+    // Note: Authentication is now handled via cookies (credentials: 'include')
+    // No need to manually add authorization headers
 
     try {
       const response = await fetch(url, {
@@ -134,13 +133,5 @@ export class ApiClient {
     }
   }
 
-  /**
-   * Get authentication headers for Supabase
-   * Note: We rely on cookies for authentication in API routes, not bearer tokens
-   */
-  private async getAuthHeaders(): Promise<Record<string, string>> {
-    // API routes use cookies for authentication via createRouteHandlerClient
-    // No need to manually add Authorization headers
-    return {};
-  }
+  // Authentication is now handled via cookies - no need for manual auth headers
 }

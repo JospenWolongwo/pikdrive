@@ -13,14 +13,20 @@ export async function POST(request: NextRequest) {
     const paymentService = new ServerPaymentService(supabase);
     const notificationService = new ServerOneSignalNotificationService(supabase);
     
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    // Verify user session
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: "Unauthorized", details: sessionError?.message },
         { status: 401 }
       );
     }
+
+    const user = session.user;
 
     // Get request body
     const body = await request.json();
@@ -52,7 +58,7 @@ export async function POST(request: NextRequest) {
     const payment = await paymentService.createPayment({
       booking_id: bookingId,
       amount,
-      payment_method: provider,
+      provider, // Column name is 'provider', not 'payment_method'
       phone_number: formattedPhone,
       idempotency_key: idempotencyKey,
     });
@@ -81,6 +87,7 @@ export async function POST(request: NextRequest) {
       });
 
       transactionId = momoResponse.transactionId;
+      console.log('🔄 MTN MOMO response:', { transactionId, momoResponse });
     } else if (provider === 'orange') {
       const orangeConfig = {
         merchantId: process.env.ORANGE_MONEY_MERCHANT_ID || '',
@@ -102,6 +109,7 @@ export async function POST(request: NextRequest) {
       });
 
       transactionId = orangeResponse.transactionId;
+      console.log('🟠 Orange Money response:', { transactionId, orangeResponse });
     } else {
       return NextResponse.json(
         { success: false, error: `Unsupported payment provider: ${provider}` },
@@ -111,9 +119,19 @@ export async function POST(request: NextRequest) {
 
     // Update payment with transaction ID
     if (transactionId) {
-      await paymentService.updatePaymentStatus(payment.id, 'processing', {
+      console.log('🔄 Updating payment with transaction_id:', { paymentId: payment.id, transactionId });
+      const updatedPayment = await paymentService.updatePaymentStatus(payment.id, 'processing', {
         transaction_id: transactionId,
       });
+      console.log('✅ Payment updated successfully:', { paymentId: updatedPayment.id, transaction_id: updatedPayment.transaction_id });
+      
+      // Verify the update worked by querying the database directly
+      const { data: verifyPayment } = await supabase
+        .from('payments')
+        .select('id, transaction_id, status')
+        .eq('id', payment.id)
+        .single();
+      console.log('🔍 Verification query result:', verifyPayment);
 
       // Send payment processing notification (professional MTN MoMo style)
       try {
@@ -135,6 +153,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Return consistent response
+    console.log('🎯 Payment creation complete - returning response:', {
+      paymentId: payment.id,
+      transactionId: transactionId,
+      bookingId: payment.booking_id,
+    });
+
     return NextResponse.json({
       success: true,
       data: {

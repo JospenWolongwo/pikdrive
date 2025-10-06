@@ -32,13 +32,23 @@ export class ServerPaymentNotificationService {
 
   /**
    * Send notification when payment is completed
+   * Enterprise-level: Enriched with comprehensive booking details for driver
    */
   async notifyPaymentCompleted(payment: Payment): Promise<void> {
     try {
-      // Get booking and ride details
+      console.log('🚀 Starting payment completion notifications for payment:', payment.id);
+      // Get booking with comprehensive details
       const { data: booking } = await this.supabase
         .from('bookings')
-        .select('user_id, ride_id')
+        .select(`
+          id,
+          user_id,
+          ride_id,
+          seats,
+          verification_code,
+          status,
+          payment_status
+        `)
         .eq('id', payment.booking_id)
         .single();
 
@@ -47,9 +57,10 @@ export class ServerPaymentNotificationService {
         return;
       }
 
+      // Get ride details
       const { data: ride } = await this.supabase
         .from('rides')
-        .select('driver_id, from_city, to_city')
+        .select('driver_id, from_city, to_city, departure_time, price')
         .eq('id', booking.ride_id)
         .single();
 
@@ -58,40 +69,83 @@ export class ServerPaymentNotificationService {
         return;
       }
 
+      // Get passenger details for driver notification
+      const { data: passenger } = await this.supabase
+        .from('profiles')
+        .select('id, full_name, phone, avatar_url')
+        .eq('id', booking.user_id)
+        .single();
+
+      const passengerName = passenger?.full_name || passenger?.phone || 'Passager';
+      const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+
       // Send SMS notification (non-blocking)
       this.sendPaymentSMS(payment, true).catch(err => 
         console.error('❌ SMS sending error:', err)
       );
 
       // Send push notifications via OneSignal Edge Function (non-blocking)
-      Promise.all([
+      console.log('📤 Sending push notifications via OneSignal...');
+      const notificationPromises = Promise.all([
+        // Passenger notification - Professional template
         this.oneSignalService.sendNotification({
           userId: booking.user_id,
-          title: '🎉 Paiement Confirmé !',
-          message: `Votre réservation pour ${ride.from_city} → ${ride.to_city} est confirmée. Le chauffeur va bientôt vérifier votre code.`,
-          notificationType: 'payment_completed',
+          title: 'Payment Confirmed',
+          message: `Your payment of ${formatAmount(payment.amount)} XAF has been confirmed for ${ride.from_city} to ${ride.to_city}. Verification code: ${booking.verification_code}`,
+          notificationType: 'payment_success',
           data: {
             bookingId: payment.booking_id,
             paymentId: payment.id,
+            rideId: ride.id,
             type: 'payment_completed',
+            icon: 'CheckCircle2', // Lucide icon name
+            verificationCode: booking.verification_code,
+            amount: payment.amount,
+            fromCity: ride.from_city,
+            toCity: ride.to_city,
+            departureTime: ride.departure_time,
           },
         }),
+        
+        // Driver notification - ENRICHED with passenger and booking details
         this.oneSignalService.sendNotification({
           userId: ride.driver_id,
-          title: '💳 Paiement Reçu !',
-          message: `Un passager a complété le paiement pour ${ride.from_city} → ${ride.to_city}. Vérifiez le code de réservation.`,
-          notificationType: 'payment_completed_driver',
+          title: 'Payment Received',
+          message: `${passengerName} paid ${formatAmount(payment.amount)} XAF for ${ride.from_city} to ${ride.to_city}. ${booking.seats} seat${booking.seats > 1 ? 's' : ''}. Code: ${booking.verification_code}`,
+          notificationType: 'payment_success',
           data: {
             bookingId: payment.booking_id,
             paymentId: payment.id,
+            rideId: ride.id,
             type: 'payment_completed_driver',
+            icon: 'Wallet', // Lucide icon name
+            // Enhanced driver data
+            passengerId: passenger?.id,
+            passengerName: passengerName,
+            passengerPhone: passenger?.phone,
+            passengerAvatar: passenger?.avatar_url,
+            seats: booking.seats,
+            verificationCode: booking.verification_code,
+            amount: payment.amount,
+            provider: payment.provider,
+            transactionId: payment.transaction_id,
+            // Ride details
+            fromCity: ride.from_city,
+            toCity: ride.to_city,
+            departureTime: ride.departure_time,
           },
         }),
-      ]).catch(err => 
-        console.warn('⚠️ Push notification error:', err)
-      );
+      ]).then(results => {
+        console.log('✅ Payment completion notifications sent successfully:', {
+          paymentId: payment.id,
+          results: results.map(r => ({ success: r.success, notificationId: r.notificationId }))
+        });
+      }).catch(err => {
+        console.error('❌ Push notification error:', err);
+        throw err;
+      });
 
-      console.log('✅ Payment completion notifications initiated');
+      console.log('✅ Payment completion notifications initiated with enriched details');
     } catch (error) {
       console.error('ServerPaymentNotificationService.notifyPaymentCompleted error:', error);
       // Don't throw - notifications are non-critical

@@ -47,7 +47,8 @@ export class ServerPaymentService {
           amount: params.amount,
           currency: 'XAF',
           status: 'pending',
-          payment_method: params.payment_method,
+          provider: params.provider, // Column name is 'provider'
+          phone_number: params.phone_number,
           transaction_id: params.transaction_id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -93,24 +94,75 @@ export class ServerPaymentService {
   }
 
   /**
-   * Get payment by transaction ID
+   * Get payment by transaction ID (with smart fallback logic)
+   * 
+   * RESILIENCE STRATEGY:
+   * 1. Try exact transaction_id match
+   * 2. If not found, check for recent pending/processing payments (race condition)
+   * 3. Return most recent match
+   * 
+   * This handles the case where frontend checks before transaction_id is saved
    */
   async getPaymentByTransactionId(transactionId: string): Promise<Payment | null> {
     try {
+      console.log('🔍 PaymentService: Searching for transaction_id:', transactionId);
+      
+      // Primary query: exact match on transaction_id
       const { data, error } = await this.supabase
         .from('payments')
         .select('*')
         .eq('transaction_id', transactionId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null; // Payment not found
-        }
+        console.error('🔍 PaymentService: Database error:', error);
         throw new Error(`Failed to fetch payment: ${error.message}`);
       }
 
-      return data;
+      if (data) {
+        console.log('✅ PaymentService: Payment found by transaction_id:', { 
+          id: data.id, 
+          transaction_id: data.transaction_id,
+          status: data.status 
+        });
+        return data;
+      }
+
+      // Fallback: transaction_id might not be set yet (race condition)
+      // Search for very recent payments in pending/processing state
+      console.log('⚠️ PaymentService: No exact match, checking recent payments...');
+      
+      const { data: recentPayments, error: recentError } = await this.supabase
+        .from('payments')
+        .select('*')
+        .in('status', ['pending', 'processing'])
+        .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Last 5 minutes
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (recentError) {
+        console.error('🔍 PaymentService: Recent payments query error:', recentError);
+        return null;
+      }
+
+      if (recentPayments && recentPayments.length > 0) {
+        console.log('⚠️ PaymentService: Found recent pending payments:', 
+          recentPayments.map(p => ({ 
+            id: p.id, 
+            transaction_id: p.transaction_id,
+            status: p.status,
+            created_at: p.created_at 
+          }))
+        );
+        
+        // Return the most recent one (likely the one being checked)
+        const payment = recentPayments[0];
+        console.log('⚠️ PaymentService: Returning most recent payment as fallback:', payment.id);
+        return payment;
+      }
+
+      console.log('❌ PaymentService: Payment not found (no match or recent payments)');
+      return null;
     } catch (error) {
       console.error('ServerPaymentService.getPaymentByTransactionId error:', error);
       throw error;
@@ -128,18 +180,65 @@ export class ServerPaymentService {
         .eq('booking_id', bookingId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle(); // Use maybeSingle() to avoid 406 errors
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null; // Payment not found
-        }
         throw new Error(`Failed to fetch payment: ${error.message}`);
       }
 
       return data;
     } catch (error) {
       console.error('ServerPaymentService.getPaymentByBooking error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get payment with multiple fallback strategies (ULTRA RESILIENT)
+   * 
+   * Priority:
+   * 1. Search by transaction_id
+   * 2. If not found, search by booking_id
+   * 3. If still not found, search by idempotency_key
+   * 
+   * Use this for status checks where you want maximum resilience
+   */
+  async getPaymentWithFallbacks(params: {
+    transactionId?: string;
+    bookingId?: string;
+    idempotencyKey?: string;
+  }): Promise<Payment | null> {
+    try {
+      // Strategy 1: Try transaction_id
+      if (params.transactionId) {
+        const payment = await this.getPaymentByTransactionId(params.transactionId);
+        if (payment) return payment;
+      }
+
+      // Strategy 2: Try booking_id
+      if (params.bookingId) {
+        console.log('🔄 Fallback: Searching by booking_id:', params.bookingId);
+        const payment = await this.getPaymentByBooking(params.bookingId);
+        if (payment) {
+          console.log('✅ Payment found by booking_id');
+          return payment;
+        }
+      }
+
+      // Strategy 3: Try idempotency_key
+      if (params.idempotencyKey) {
+        console.log('🔄 Fallback: Searching by idempotency_key:', params.idempotencyKey);
+        const payment = await this.getPaymentByIdempotencyKey(params.idempotencyKey);
+        if (payment) {
+          console.log('✅ Payment found by idempotency_key');
+          return payment;
+        }
+      }
+
+      console.log('❌ Payment not found with any strategy');
+      return null;
+    } catch (error) {
+      console.error('ServerPaymentService.getPaymentWithFallbacks error:', error);
       throw error;
     }
   }
@@ -153,13 +252,11 @@ export class ServerPaymentService {
         .from('payments')
         .select('*')
         .eq('idempotency_key', idempotencyKey)
-        .single();
+        .maybeSingle(); // Use maybeSingle() to avoid 406 errors
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null; // Payment not found
-        }
-        throw new Error(`Failed to fetch payment: ${error.message}`);
+        console.error('ServerPaymentService.getPaymentByIdempotencyKey error:', error);
+        return null; // Don't throw, just return null for idempotency checks
       }
 
       return data;

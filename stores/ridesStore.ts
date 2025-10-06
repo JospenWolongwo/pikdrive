@@ -15,6 +15,7 @@ interface RidesState {
   allRides: RideWithDriver[];
   allRidesLoading: boolean;
   allRidesError: string | null;
+  lastAllRidesFetch: number | null;
   allRidesPagination: {
     page: number;
     limit: number;
@@ -109,6 +110,7 @@ export const useRidesStore = create<RidesState>()(
     allRides: [],
     allRidesLoading: false,
     allRidesError: null,
+    lastAllRidesFetch: null,
     allRidesPagination: null,
 
     driverRides: [],
@@ -128,11 +130,11 @@ export const useRidesStore = create<RidesState>()(
 
       // Actions for all rides
       fetchAllRides: async (params = {}) => {
-        const { lastDriverRidesFetch } = get();
+        const { lastAllRidesFetch } = get();
         const now = Date.now();
         
-        // Check cache for driver rides (5 minutes cache)
-        if (params.driver_id && lastDriverRidesFetch && now - lastDriverRidesFetch < 5 * 60 * 1000) {
+        // Check cache (5 minutes cache)
+        if (lastAllRidesFetch && now - lastAllRidesFetch < 5 * 60 * 1000) {
           return;
         }
 
@@ -150,6 +152,7 @@ export const useRidesStore = create<RidesState>()(
             allRidesLoading: false,
             allRidesError: null,
             allRidesPagination: response.pagination,
+            lastAllRidesFetch: now,
           });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Failed to fetch rides";
@@ -168,10 +171,17 @@ export const useRidesStore = create<RidesState>()(
         set({ allRidesError: error });
       },
 
+      refreshAllRides: async (params = {}) => {
+        // Force refresh by clearing cache
+        set({ lastAllRidesFetch: null });
+        await get().fetchAllRides(params);
+      },
+
       clearAllRides: () => {
         set({
           allRides: [],
           allRidesError: null,
+          lastAllRidesFetch: null,
           allRidesPagination: null,
         });
       },
@@ -423,6 +433,8 @@ export const useRidesStore = create<RidesState>()(
       name: 'rides-storage',
       // Only persist the data, not loading states
       partialize: (state) => ({
+        allRides: state.allRides,
+        lastAllRidesFetch: state.lastAllRidesFetch,
         driverRides: state.driverRides,
         lastDriverRidesFetch: state.lastDriverRidesFetch,
         searchFilters: state.searchFilters,

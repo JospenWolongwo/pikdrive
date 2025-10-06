@@ -4,8 +4,9 @@ export interface Payment {
   readonly amount: number;
   readonly currency: string;
   readonly status: PaymentTransactionStatus;
-  readonly payment_method: PaymentMethod;
+  readonly provider: PaymentMethod; // Database column is 'provider'
   readonly transaction_id?: string;
+  readonly phone_number?: string;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -19,10 +20,14 @@ export type PaymentTransactionStatus =
   | 'refunded';
 
 export type PaymentMethod = 
-  | 'momo'
+  | 'mtn'
+  | 'orange'
   | 'card'
   | 'cash'
   | 'bank_transfer';
+
+// Alias for backward compatibility
+export type PaymentProvider = 'mtn' | 'orange';
 
 export interface MomoPayment {
   readonly id: string;
@@ -39,8 +44,9 @@ export interface MomoPayment {
 export interface CreatePaymentRequest {
   readonly booking_id: string;
   readonly amount: number;
-  readonly payment_method: PaymentMethod;
+  readonly provider: PaymentMethod; // Database column is 'provider'
   readonly phone_number?: string; // For Momo payments
+  readonly idempotency_key?: string;
 }
 
 export interface PaymentResponse {
