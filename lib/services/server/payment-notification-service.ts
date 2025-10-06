@@ -60,7 +60,7 @@ export class ServerPaymentNotificationService {
       // Get ride details
       const { data: ride } = await this.supabase
         .from('rides')
-        .select('driver_id, from_city, to_city, departure_time, price')
+        .select('id, driver_id, from_city, to_city, departure_time, price')
         .eq('id', booking.ride_id)
         .single();
 
