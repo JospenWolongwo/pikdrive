@@ -188,7 +188,7 @@ export class BookingNotificationManager {
         icon: "/icons/icon-192x192.png",
         tag: "booking-created",
         sound: false, // No sound - only after payment success
-        vibrate: false, // No vibration - only after payment success
+        vibrate: [], // No vibration - only after payment success
         onClick: () => {
           if (this.onBookingClick) {
             this.onBookingClick();
@@ -245,7 +245,7 @@ export class BookingNotificationManager {
           icon: "/icons/icon-192x192.png",
           tag: "new-booking-immediate",
           sound: false, // No sound - only after payment success
-          vibrate: false, // No vibration - only after payment success
+          vibrate: [], // No vibration - only after payment success
         });
       } else {
         const driver = await this.getUserInfo(ride.driver_id);
@@ -258,7 +258,7 @@ export class BookingNotificationManager {
           icon: "/icons/icon-192x192.png",
           tag: "booking-created",
           sound: false, // No sound - only after payment success
-          vibrate: false, // No vibration - only after payment success
+          vibrate: [], // No vibration - only after payment success
         });
       }
 
