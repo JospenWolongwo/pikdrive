@@ -95,6 +95,8 @@ export interface NotificationRequest {
   readonly data?: Record<string, any>;
   readonly notificationType?: string;
   readonly imageUrl?: string;
+  readonly phoneNumber?: string; // For SMS notifications
+  readonly sendSMS?: boolean; // Flag to enable SMS
 }
 
 export interface NotificationResponse {

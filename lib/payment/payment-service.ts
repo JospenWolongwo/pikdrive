@@ -8,13 +8,11 @@ import {
 import { MTNMomoService } from "./mtn-momo-service";
 import { OrangeMoneyService } from "./orange-money-service";
 import { MockOrangeMoneyService } from "./mock-orange-money-service";
-import { SMSService } from "@/lib/notifications/sms-service";
 
 export class PaymentService {
   private supabase: SupabaseClient;
   private mtnMomoService: MTNMomoService;
   private orangeMoneyService: OrangeMoneyService | MockOrangeMoneyService;
-  private smsService: SMSService;
 
   constructor(supabase: SupabaseClient) {
     this.supabase = supabase;
@@ -55,17 +53,7 @@ export class PaymentService {
       this.orangeMoneyService = new OrangeMoneyService(orangeConfig);
     }
 
-    this.smsService = new SMSService({
-      accountSid: process.env.TWILIO_ACCOUNT_SID!,
-      authToken: process.env.TWILIO_AUTH_TOKEN!,
-      fromNumber: process.env.TWILIO_FROM_NUMBER!,
-      environment:
-        process.env.TWILIO_ENVIRONMENT === "production"
-          ? "production"
-          : process.env.NODE_ENV === "production"
-          ? "production"
-          : "sandbox",
-    });
+    // SMS service removed - using OneSignal only for cost efficiency
   }
 
   private async createPaymentRecord(data: {
@@ -539,18 +527,7 @@ export class PaymentService {
 
     console.log("✅ Updated payment status");
 
-    // Send SMS notification
-    try {
-      await this.smsService.sendPaymentNotification(
-        payment.phone_number,
-        payment.amount,
-        data.status === "SUCCESSFUL"
-      );
-      console.log("✅ SMS notification sent");
-    } catch (error) {
-      console.error("❌ Error sending payment notification:", error);
-      // Don't throw here - we don't want to fail the callback just because SMS failed
-    }
+    // SMS notifications removed - using OneSignal only for cost efficiency
 
     console.log("✅ Payment callback processed successfully");
   }
@@ -764,30 +741,7 @@ export class PaymentService {
         throw paymentUpdate.error;
       }
 
-      // Send SMS notification
-      if (newStatus === "completed" || newStatus === "failed") {
-        const smsMessage =
-          newStatus === "completed"
-            ? this.smsService.getPaymentConfirmationMessage({
-                amount: payment.amount,
-                provider: payment.provider,
-                transactionId: payment.transactionId!,
-                bookingId: payment.bookingId,
-              })
-            : this.smsService.getPaymentFailureMessage({
-                amount: payment.amount,
-                provider: payment.provider,
-                bookingId: payment.bookingId,
-              });
-
-        // Don't await SMS sending to avoid delaying the response
-        this.smsService
-          .sendMessage({
-            to: payment.phoneNumber,
-            message: smsMessage,
-          })
-          .catch((err) => console.error("❌ SMS sending error:", err));
-      }
+      // SMS notifications removed - using OneSignal only for cost efficiency
 
       // Update booking status if payment is completed
       if (newStatus === "completed") {

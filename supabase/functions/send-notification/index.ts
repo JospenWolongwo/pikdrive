@@ -17,6 +17,8 @@ interface NotificationRequest {
   readonly data?: Record<string, any>;
   readonly notificationType?: string;
   readonly imageUrl?: string;
+  readonly phoneNumber?: string; // For SMS notifications
+  readonly sendSMS?: boolean; // Flag to enable SMS
 }
 
 interface OneSignalResponse {
@@ -26,9 +28,50 @@ interface OneSignalResponse {
 }
 
 /**
- * Send notification via OneSignal
+ * Send SMS via OneSignal
  */
-async function sendViaOneSignal(
+async function sendSMSViaOneSignal(
+  request: NotificationRequest
+): Promise<OneSignalResponse> {
+  if (!request.phoneNumber) {
+    throw new Error('Phone number is required for SMS');
+  }
+
+  const response = await fetch("https://onesignal.com/api/v1/notifications", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
+    },
+    body: JSON.stringify({
+      app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
+      include_phone_numbers: [request.phoneNumber],
+      contents: { en: request.message, fr: request.message },
+      headings: { en: request.title, fr: request.title },
+      data: {
+        ...request.data,
+        notificationType: request.notificationType || "general",
+        timestamp: Date.now(),
+        channel: "sms"
+      },
+      // SMS specific settings
+      priority: 10,
+      ttl: 86400, // 24 hours
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`OneSignal SMS API error: ${JSON.stringify(error)}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Send push notification via OneSignal
+ */
+async function sendPushViaOneSignal(
   request: NotificationRequest
 ): Promise<OneSignalResponse> {
   // Determine sound based on notification type
@@ -172,29 +215,59 @@ serve(async (req) => {
       type: notificationRequest.notificationType,
     });
 
-    // Send notification via OneSignal
-    const oneSignalResponse = await sendViaOneSignal(notificationRequest);
+    // Send notifications via OneSignal
+    const results = [];
+    
+    // Send push notification
+    try {
+      const pushResponse = await sendPushViaOneSignal(notificationRequest);
+      results.push({
+        type: 'push',
+        id: pushResponse.id,
+        recipients: pushResponse.recipients
+      });
+      console.log("✅ Push notification sent:", pushResponse);
+    } catch (error) {
+      console.error("❌ Push notification failed:", error);
+      results.push({ type: 'push', error: error.message });
+    }
 
-    console.log("✅ Notification sent:", {
-      id: oneSignalResponse.id,
-      recipients: oneSignalResponse.recipients,
-    });
+    // Send SMS if requested and phone number provided
+    if (notificationRequest.sendSMS && notificationRequest.phoneNumber) {
+      try {
+        const smsResponse = await sendSMSViaOneSignal(notificationRequest);
+        results.push({
+          type: 'sms',
+          id: smsResponse.id,
+          recipients: smsResponse.recipients
+        });
+        console.log("✅ SMS sent:", smsResponse);
+      } catch (error) {
+        console.error("❌ SMS failed:", error);
+        results.push({ type: 'sms', error: error.message });
+      }
+    }
 
-    // Log notification to database
+    // Log notifications to database
     const supabase = createClient(SUPABASE_URL, NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY);
-    await logNotification(
-      supabase,
-      notificationRequest,
-      oneSignalResponse.id,
-      oneSignalResponse.recipients
-    );
+    for (const result of results) {
+      if (result.id) {
+        await logNotification(
+          supabase,
+          notificationRequest,
+          result.id,
+          result.recipients
+        );
+      }
+    }
 
     // Return success
     return new Response(
       JSON.stringify({
         success: true,
-        notificationId: oneSignalResponse.id,
-        recipients: oneSignalResponse.recipients,
+        results: results,
+        pushNotification: results.find(r => r.type === 'push'),
+        smsNotification: results.find(r => r.type === 'sms'),
       }),
       {
         status: 200,

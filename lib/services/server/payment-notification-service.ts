@@ -1,32 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Payment } from '@/types';
-import { SMSService } from '@/lib/notifications/sms-service';
 import { ServerOneSignalNotificationService } from './onesignal-notification-service';
 
 /**
  * Server-side PaymentNotificationService for use in API routes
  * 
- * SINGLE RESPONSIBILITY: Payment-related notifications
- * Handles SMS and push notifications for payment events
+ * SINGLE RESPONSIBILITY: Payment-related notifications via OneSignal
+ * Cost-effective, rich notifications with no per-message fees
  */
 export class ServerPaymentNotificationService {
-  private smsService: SMSService;
   private oneSignalService: ServerOneSignalNotificationService;
 
   constructor(private supabase: SupabaseClient) {
-    this.smsService = new SMSService({
-      accountSid: process.env.TWILIO_ACCOUNT_SID!,
-      authToken: process.env.TWILIO_AUTH_TOKEN!,
-      fromNumber: process.env.TWILIO_FROM_NUMBER!,
-      environment:
-        process.env.TWILIO_ENVIRONMENT === "production"
-          ? "production"
-          : process.env.NODE_ENV === "production"
-          ? "production"
-          : "sandbox",
-    });
-    
-    // Use OneSignal Edge Function instead of self-managed push
+    // Use OneSignal Edge Function for all notifications
     this.oneSignalService = new ServerOneSignalNotificationService(supabase);
   }
 
@@ -79,40 +65,42 @@ export class ServerPaymentNotificationService {
       const passengerName = passenger?.full_name || passenger?.phone || 'Passager';
       const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
-      // Send SMS notification (non-blocking)
-      this.sendPaymentSMS(payment, true).catch(err => 
-        console.error('❌ SMS sending error:', err)
-      );
-
-      // Send push notifications via OneSignal Edge Function (non-blocking)
-      console.log('📤 Sending push notifications via OneSignal...');
+      // Send both push notifications and SMS via OneSignal (non-blocking)
+      console.log('📤 Sending notifications via OneSignal (Push + SMS)...');
       const notificationPromises = Promise.all([
-        // Passenger notification - Professional template
+        // Passenger notification - Push + SMS for booking confirmation
         this.oneSignalService.sendNotification({
           userId: booking.user_id,
-          title: 'Payment Confirmed',
-          message: `Your payment of ${formatAmount(payment.amount)} XAF has been confirmed for ${ride.from_city} to ${ride.to_city}. Verification code: ${booking.verification_code}`,
+          title: '✅ Paiement Confirmé!',
+          message: `Votre paiement de ${formatAmount(payment.amount)} XAF est confirmé pour ${ride.from_city} → ${ride.to_city}. Code de vérification: ${booking.verification_code}`,
           notificationType: 'payment_success',
+          imageUrl: '/icons/payment-success.svg',
+          phoneNumber: passenger?.phone, // For SMS
+          sendSMS: true, // Enable SMS for booking confirmations
           data: {
             bookingId: payment.booking_id,
             paymentId: payment.id,
             rideId: ride.id,
             type: 'payment_completed',
-            icon: 'CheckCircle2', // Lucide icon name
+            icon: 'CheckCircle2',
             verificationCode: booking.verification_code,
             amount: payment.amount,
             fromCity: ride.from_city,
             toCity: ride.to_city,
             departureTime: ride.departure_time,
+            action: 'view_booking',
+            priority: 'high'
           },
         }),
         
-        // Driver notification - ENRICHED with passenger and booking details
+        // Driver notification - Push only (no SMS for drivers)
         this.oneSignalService.sendNotification({
           userId: ride.driver_id,
-          title: 'Payment Received',
-          message: `${passengerName} paid ${formatAmount(payment.amount)} XAF for ${ride.from_city} to ${ride.to_city}. ${booking.seats} seat${booking.seats > 1 ? 's' : ''}. Code: ${booking.verification_code}`,
+          title: '💰 Paiement Reçu!',
+          message: `${passengerName} a payé ${formatAmount(payment.amount)} XAF pour ${ride.from_city} → ${ride.to_city}. ${booking.seats} place${booking.seats > 1 ? 's' : ''}. Code: ${booking.verification_code}`,
           notificationType: 'payment_success',
+          imageUrl: '/icons/payment-received.svg',
+          sendSMS: false, // No SMS for drivers - push only
           data: {
             bookingId: payment.booking_id,
             paymentId: payment.id,
@@ -157,59 +145,56 @@ export class ServerPaymentNotificationService {
    */
   async notifyPaymentFailed(payment: Payment, reason?: string): Promise<void> {
     try {
-      // Send SMS notification (non-blocking)
-      this.sendPaymentSMS(payment, false, reason).catch(err => 
-        console.error('❌ SMS sending error:', err)
-      );
+      // Get booking details for notification
+      const { data: booking } = await this.supabase
+        .from('bookings')
+        .select('user_id, ride_id')
+        .eq('id', payment.booking_id)
+        .single();
 
-      console.log('✅ Payment failure notifications initiated');
+      if (!booking) return;
+
+      // Get ride details
+      const { data: ride } = await this.supabase
+        .from('rides')
+        .select('id, driver_id, from_city, to_city')
+        .eq('id', booking.ride_id)
+        .single();
+
+      if (!ride) return;
+
+      const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+
+      // Send failure notification to passenger
+      await this.oneSignalService.sendNotification({
+        userId: booking.user_id,
+        title: '❌ Paiement Échoué',
+        message: `Votre paiement de ${formatAmount(payment.amount)} XAF pour ${ride.from_city} → ${ride.to_city} a échoué. ${reason || 'Veuillez réessayer.'}`,
+        notificationType: 'payment_failed',
+        imageUrl: '/icons/payment-failed.svg',
+        data: {
+          bookingId: payment.booking_id,
+          paymentId: payment.id,
+          rideId: ride.id,
+          type: 'payment_failed',
+          icon: 'XCircle',
+          amount: payment.amount,
+          fromCity: ride.from_city,
+          toCity: ride.to_city,
+          reason: reason,
+          action: 'retry_payment',
+          priority: 'high'
+        },
+      });
+
+      console.log('✅ Payment failure notification sent via OneSignal');
     } catch (error) {
       console.error('ServerPaymentNotificationService.notifyPaymentFailed error:', error);
       // Don't throw - notifications are non-critical
     }
   }
 
-  /**
-   * Send SMS notification for payment
-   */
-  private async sendPaymentSMS(
-    payment: Payment, 
-    success: boolean, 
-    reason?: string
-  ): Promise<void> {
-    try {
-      // Get phone number from payment or booking
-      const { data: booking } = await this.supabase
-        .from('bookings')
-        .select('user_id')
-        .eq('id', payment.booking_id)
-        .single();
-
-      if (!booking) return;
-
-      const { data: profile } = await this.supabase
-        .from('profiles')
-        .select('phone')
-        .eq('id', booking.user_id)
-        .single();
-
-      if (!profile?.phone) return;
-
-      const message = success
-        ? `✅ Paiement confirmé! Montant: ${payment.amount} XAF. Transaction: ${payment.transaction_id}. Votre réservation est confirmée.`
-        : `❌ Paiement échoué. Montant: ${payment.amount} XAF. ${reason || 'Veuillez réessayer.'}`;
-
-      await this.smsService.sendMessage({
-        to: profile.phone,
-        message,
-      });
-
-      console.log('✅ Payment SMS sent');
-    } catch (error) {
-      console.error('Error sending payment SMS:', error);
-      throw error;
-    }
-  }
+  // SMS functionality removed - using OneSignal only for cost efficiency
 
   /**
    * Send push notification to passenger
