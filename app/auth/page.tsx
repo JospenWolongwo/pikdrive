@@ -156,11 +156,17 @@ function AuthContent() {
         description: "Vous vous êtes connecté avec succès",
       });
 
+      // Ensure long-lived session by forcing a refresh cycle once after sign-in
+      // This obtains a fresh access token and sets long-lived cookies
+      try {
+        await supabase.auth.refreshSession();
+      } catch (_) {}
+
       // Ensure session cookies are persisted before navigating
       // Retry briefly until session is available to avoid immediate redirect loops
       let attempts = 0;
       let sessionUser = data.user;
-      while (!sessionUser && attempts < 5) {
+      while (!sessionUser && attempts < 8) {
         await new Promise((r) => setTimeout(r, 150));
         const { data: sessionData } = await supabase.auth.getSession();
         sessionUser = sessionData.session?.user as any;

@@ -78,6 +78,17 @@ export async function middleware(req: NextRequest) {
         return res;
       }
 
+      // Attempt to refresh session server-side before redirecting
+      try {
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+        if (!refreshError && refreshed?.session?.user) {
+          // Session refreshed successfully, allow access and include updated cookies
+          return res;
+        }
+      } catch (_) {
+        // ignore and fall through to redirect
+      }
+
       // No valid session found - redirect to auth
       // Note: We don't check any fallback storage - if there's no session, user needs to re-authenticate
 
@@ -117,6 +128,21 @@ export async function middleware(req: NextRequest) {
           redirectResponse.cookies.set(cookie);
         });
         return redirectResponse;
+      }
+
+      // Attempt a server-side refresh so returning users don't get stuck
+      try {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed?.session?.user) {
+          const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
+          const redirectResponse = NextResponse.redirect(new URL(redirectTo, req.url));
+          res.cookies.getAll().forEach((cookie) => {
+            redirectResponse.cookies.set(cookie);
+          });
+          return redirectResponse;
+        }
+      } catch (_) {
+        // ignore; allow access to auth page
       }
 
       // If no session, allow access to auth page
