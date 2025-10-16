@@ -84,12 +84,21 @@ export async function middleware(req: NextRequest) {
       // No valid session or user data found, redirect to auth
       const redirectUrl = new URL("/auth", req.url);
       redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
-      return NextResponse.redirect(redirectUrl);
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      // Forward cookies set on this response so auth tokens persist across redirects
+      res.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
     } catch (error) {
       // On error, redirect to auth
       const redirectUrl = new URL("/auth", req.url);
       redirectUrl.searchParams.set("redirectTo", req.nextUrl.pathname);
-      return NextResponse.redirect(redirectUrl);
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      res.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
     }
   }
 
@@ -103,7 +112,11 @@ export async function middleware(req: NextRequest) {
       // If user has a valid session, redirect away from auth page
       if (session && session.user) {
         const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
-        return NextResponse.redirect(new URL(redirectTo, req.url));
+        const redirectResponse = NextResponse.redirect(new URL(redirectTo, req.url));
+        res.cookies.getAll().forEach((cookie) => {
+          redirectResponse.cookies.set(cookie);
+        });
+        return redirectResponse;
       }
 
       // If no session, allow access to auth page

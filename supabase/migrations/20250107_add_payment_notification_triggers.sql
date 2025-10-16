@@ -334,3 +334,4 @@ COMMENT ON FUNCTION process_payment_event_queue(INT) IS 'Batch processes pending
 COMMENT ON FUNCTION cleanup_old_payment_events() IS 'Removes old processed events to prevent table bloat';
 
 
+

@@ -17,12 +17,14 @@ const setCookie = (name: string, value: string): void => {
   if (typeof document === "undefined") return;
   const expires = new Date();
   expires.setFullYear(expires.getFullYear() + 1); // 1 year expiration
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+  const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
 };
 
 const deleteCookie = (name: string): void => {
   if (typeof document === "undefined") return;
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+  const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
 };
 
 export const supabaseClient = createBrowserClient(

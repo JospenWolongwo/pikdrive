@@ -156,8 +156,24 @@ function AuthContent() {
         description: "Vous vous êtes connecté avec succès",
       });
 
+      // Ensure session cookies are persisted before navigating
+      // Retry briefly until session is available to avoid immediate redirect loops
+      let attempts = 0;
+      let sessionUser = data.user;
+      while (!sessionUser && attempts < 5) {
+        await new Promise((r) => setTimeout(r, 150));
+        const { data: sessionData } = await supabase.auth.getSession();
+        sessionUser = sessionData.session?.user as any;
+        attempts += 1;
+      }
+
       const redirectTo = searchParams.get("redirectTo");
-      router.push(redirectTo || "/");
+      // Use hard navigation to ensure cookies are sent on first protected route load
+      if (typeof window !== "undefined") {
+        window.location.assign(redirectTo || "/");
+      } else {
+        router.replace(redirectTo || "/");
+      }
     } catch (error: any) {
       setError(error.message);
     } finally {
