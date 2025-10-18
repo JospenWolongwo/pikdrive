@@ -3,7 +3,6 @@ export interface Message {
   readonly conversation_id: string;
   readonly sender_id: string;
   readonly content: string;
-  readonly message_type: MessageType;
   readonly created_at: string;
   readonly updated_at: string;
   readonly sender?: {
@@ -12,12 +11,6 @@ export interface Message {
     readonly avatar_url?: string;
   };
 }
-
-export type MessageType = 
-  | 'text'
-  | 'image'
-  | 'file'
-  | 'system';
 
 export interface Conversation {
   readonly id: string;
@@ -51,9 +44,9 @@ export interface ConversationWithParticipants extends Conversation {
 }
 
 export interface CreateMessageRequest {
-  readonly conversation_id: string;
+  readonly conversation_id?: string;
+  readonly ride_id?: string;
   readonly content: string;
-  readonly message_type?: MessageType;
 }
 
 export interface CreateConversationRequest {

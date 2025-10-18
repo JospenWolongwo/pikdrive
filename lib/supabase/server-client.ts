@@ -22,10 +22,30 @@ export function createApiSupabaseClient(): SupabaseClient {
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
+          const isProd = process.env.NODE_ENV === 'production';
+          const merged = {
+            name,
+            value,
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax' as const,
+            secure: isProd,
+            ...options,
+          };
+          cookieStore.set(merged);
         },
         remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options });
+          const isProd = process.env.NODE_ENV === 'production';
+          const merged = {
+            name,
+            value: "",
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax' as const,
+            secure: isProd,
+            ...options,
+          };
+          cookieStore.set(merged);
         },
       },
       auth: {
@@ -33,6 +53,44 @@ export function createApiSupabaseClient(): SupabaseClient {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storageKey: "auth-storage",
+      },
+      global: {
+        fetch: async (url, options = {}) => {
+          // Add retry logic for network failures
+          const maxRetries = 3;
+          let lastError: Error | null = null;
+          
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              const response = await fetch(url, {
+                ...options,
+                // Add timeout to prevent hanging requests
+                signal: AbortSignal.timeout(10000), // 10 second timeout
+              });
+              return response;
+            } catch (error) {
+              lastError = error as Error;
+              console.warn(`Supabase fetch attempt ${attempt}/${maxRetries} failed:`, error);
+              
+              // Only retry on network errors, not auth errors
+              if (attempt < maxRetries && (
+                error instanceof TypeError && error.message.includes('fetch failed') ||
+                error instanceof Error && error.message.includes('ECONNRESET')
+              )) {
+                // Exponential backoff: wait 1s, 2s, 4s
+                const delay = Math.pow(2, attempt - 1) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+              }
+              
+              // Don't retry on other errors or if we've exhausted retries
+              break;
+            }
+          }
+          
+          // If all retries failed, throw the last error
+          throw lastError || new Error('Supabase fetch failed after all retries');
+        },
       },
     }
   );
@@ -55,4 +113,49 @@ export async function createAuthenticatedSupabaseClient(): Promise<{
   }
   
   return { supabase, user };
+}
+
+/**
+ * Helper to get the authenticated user with limited retry on network errors.
+ * Returns a tuple { user, errorType } where errorType can be 'network' | 'unauthorized' | 'other'.
+ */
+export async function getUserWithRetry(
+  supabase: SupabaseClient,
+  maxRetries: number = 2,
+  backoffMs: number = 250
+): Promise<{ user: any | null; errorType?: 'network' | 'unauthorized' | 'other'; error?: any }>{
+  let lastError: any = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        const msg = String(error.message || '');
+        if (msg.includes('fetch failed') || msg.includes('ECONNRESET')) {
+          lastError = error;
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, backoffMs * attempt));
+            continue;
+          }
+          return { user: null, errorType: 'network', error };
+        }
+        return { user: null, errorType: 'unauthorized', error };
+      }
+      if (!user) {
+        return { user: null, errorType: 'unauthorized' };
+      }
+      return { user };
+    } catch (err: any) {
+      lastError = err;
+      const msg = String(err?.message || '');
+      if (msg.includes('fetch failed') || msg.includes('ECONNRESET')) {
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, backoffMs * attempt));
+          continue;
+        }
+        return { user: null, errorType: 'network', error: err };
+      }
+      return { user: null, errorType: 'other', error: err };
+    }
+  }
+  return { user: null, errorType: 'other', error: lastError };
 }

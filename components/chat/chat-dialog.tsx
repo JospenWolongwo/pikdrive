@@ -34,6 +34,7 @@ interface ChatDialogProps {
   isOpen: boolean;
   onClose: () => void;
   rideId: string;
+  conversationId: string;
   otherUserId: string;
   otherUserName: string;
   otherUserAvatar?: string;
@@ -43,6 +44,7 @@ export function ChatDialog({
   isOpen,
   onClose,
   rideId,
+  conversationId,
   otherUserId,
   otherUserName,
   otherUserAvatar,
@@ -57,15 +59,15 @@ export function ChatDialog({
     markAsRead,
     subscribeToRide,
     unsubscribeFromRide,
-    getOrCreateConversation,
   } = useChatStore();
   
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fetchedConversationsRef = useRef<Set<string>>(new Set());
   
-  const rideMessages = messages[rideId] || [];
-  const isLoading = messagesLoading[rideId] || false;
-  const error = messagesError[rideId] || null;
+  const conversationMessages = messages[conversationId] || [];
+  const isLoading = messagesLoading[conversationId] || false;
+  const error = messagesError[conversationId] || null;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -73,19 +75,29 @@ export function ChatDialog({
 
   useEffect(() => {
     if (isOpen && user) {
-      // Fetch messages and subscribe to real-time updates
-      fetchMessages(rideId);
+      // Only fetch messages if not already fetched for this conversation
+      if (!fetchedConversationsRef.current.has(conversationId)) {
+        fetchMessages(conversationId);
+        fetchedConversationsRef.current.add(conversationId);
+      }
       subscribeToRide(rideId);
 
       return () => {
         unsubscribeFromRide(rideId);
       };
     }
-  }, [isOpen, user, rideId, fetchMessages, subscribeToRide, unsubscribeFromRide]);
+  }, [isOpen, user, conversationId, fetchMessages, subscribeToRide, unsubscribeFromRide]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [rideMessages]);
+  }, [conversationMessages]);
+
+  // Clear fetched conversations when conversationId changes
+  useEffect(() => {
+    return () => {
+      fetchedConversationsRef.current.clear();
+    };
+  }, [conversationId]);
 
 
   const handleSendMessage = async () => {
@@ -95,16 +107,9 @@ export function ChatDialog({
     setNewMessage(""); // Clear input immediately for better UX
 
     try {
-      // First, get or create conversation
-      const conversation = await getOrCreateConversation({
-        ride_id: rideId,
-        driver_id: rideId, // This needs to be determined based on ride data
-        passenger_id: otherUserId,
-      });
-
-      // Send message using chatStore
+      // Send message directly - the backend will handle conversation lookup/creation
       await sendMessage({
-        conversation_id: conversation.id,
+        ride_id: rideId,
         content: messageContent,
       });
 
@@ -122,8 +127,10 @@ export function ChatDialog({
 
   useEffect(() => {
     if (isOpen && user) {
-      // Mark messages as read when opening the chat
-      markAsRead(rideId, user.id);
+      // Mark messages as read when opening the chat (non-blocking)
+      markAsRead(rideId, user.id).catch(err => {
+        console.warn('Failed to mark as read (non-critical):', err.message);
+      });
     }
   }, [isOpen, user, rideId, markAsRead]);
 
@@ -159,12 +166,12 @@ export function ChatDialog({
               <div className="text-center py-4 text-red-500">
                 <p>Error loading messages: {error}</p>
               </div>
-            ) : rideMessages.length === 0 ? (
+            ) : conversationMessages.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
                 <p>No messages yet. Start the conversation!</p>
               </div>
             ) : (
-              rideMessages.map((message) => (
+              conversationMessages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${

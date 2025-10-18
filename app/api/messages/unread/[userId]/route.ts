@@ -18,20 +18,18 @@ export async function GET(
     // Create a Supabase client using cookie-based authentication
     const supabaseClient = createApiSupabaseClient();
 
-    // Verify user session
+    // Verify user authentication
     const {
-      data: { session },
-      error: sessionError,
-    } = await supabaseClient.auth.getSession();
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
 
-    if (!session || !session.user) {
+    if (!user || userError) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized", details: sessionError?.message },
+        { success: false, error: "Unauthorized", details: userError?.message },
         { status: 401 }
       );
     }
-
-    const user = session.user;
 
     // Verify the user is requesting their own unread counts
     if (user.id !== userId) {
@@ -41,11 +39,11 @@ export async function GET(
       );
     }
 
-    // Fetch unread messages count by ride
+    // Fetch unread messages count by conversation
     const { data, error } = await supabaseClient
       .from("messages")
-      .select("ride_id")
-      .eq("receiver_id", userId)
+      .select("conversation_id, sender_id, read")
+      .neq("sender_id", userId)
       .eq("read", false);
 
     if (error) {
@@ -56,18 +54,18 @@ export async function GET(
       );
     }
 
-    // Count messages by ride_id
+    // Count messages by conversation_id
     const unreadCounts = (data || []).reduce(
-      (acc: Record<string, number>, msg: { ride_id: string }) => {
-        acc[msg.ride_id] = (acc[msg.ride_id] || 0) + 1;
+      (acc: Record<string, number>, msg: { conversation_id: string }) => {
+        acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>
     );
 
     // Convert to array format
-    const result = Object.entries(unreadCounts).map(([rideId, count]) => ({
-      rideId,
+    const result = Object.entries(unreadCounts).map(([conversationId, count]) => ({
+      conversationId: conversationId,
       count,
     }));
 

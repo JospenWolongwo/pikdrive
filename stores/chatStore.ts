@@ -12,8 +12,17 @@ import type {
 import { chatApiClient } from "@/lib/api-client/chat";
 import { supabase } from "@/lib/supabase/client";
 
+// Helper function to sort conversations by latest message time
+const sortConversationsByLatest = (conversations: UIConversation[]): UIConversation[] => {
+  return [...conversations].sort((a, b) => {
+    const timeA = new Date(a.lastMessageTime).getTime();
+    const timeB = new Date(b.lastMessageTime).getTime();
+    return timeB - timeA; // Descending order (newest first)
+  });
+};
+
 interface UnreadCount {
-  rideId: string;
+  conversationId: string;
   count: number;
 }
 
@@ -23,10 +32,10 @@ interface ChatState {
   conversationsLoading: boolean;
   conversationsError: string | null;
 
-  // Messages state (per ride)
-  messages: Record<string, Message[]>; // rideId -> messages[]
-  messagesLoading: Record<string, boolean>;
-  messagesError: Record<string, string | null>;
+  // Messages state (per conversation)
+  messages: Record<string, Message[]>; // conversationId -> messages[]
+  messagesLoading: Record<string, boolean>; // conversationId -> loading
+  messagesError: Record<string, string | null>; // conversationId -> error
 
   // Unread counts state
   unreadCounts: UnreadCount[];
@@ -37,6 +46,7 @@ interface ChatState {
   activeConversations: Set<string>;
   subscribedRides: Set<string>;
   channels: Map<string, any>; // rideId -> channel
+  globalChannel: any | null; // Global subscription channel
 
   // Actions for conversations
   fetchConversations: (userId: string) => Promise<void>;
@@ -45,24 +55,26 @@ interface ChatState {
   clearConversations: () => void;
 
   // Actions for messages
-  fetchMessages: (rideId: string) => Promise<void>;
+  fetchMessages: (conversationId: string) => Promise<void>;
   sendMessage: (messageData: CreateMessageRequest) => Promise<Message>;
-  setMessagesLoading: (rideId: string, loading: boolean) => void;
-  setMessagesError: (rideId: string, error: string | null) => void;
-  clearMessages: (rideId: string) => void;
+  setMessagesLoading: (conversationId: string, loading: boolean) => void;
+  setMessagesError: (conversationId: string, error: string | null) => void;
+  clearMessages: (conversationId: string) => void;
 
   // Actions for unread counts
   fetchUnreadCounts: (userId: string) => Promise<void>;
-  markAsRead: (rideId: string, userId: string) => Promise<void>;
-  updateUnreadCount: (rideId: string, count: number) => void;
-  addUnreadCount: (rideId: string) => void;
-  clearUnreadCount: (rideId: string) => void;
+  markAsRead: (conversationId: string, userId: string) => Promise<void>;
+  updateUnreadCount: (conversationId: string, count: number) => void;
+  addUnreadCount: (conversationId: string) => void;
+  clearUnreadCount: (conversationId: string) => void;
 
   // Real-time subscription actions
   subscribeToRide: (rideId: string) => void;
   unsubscribeFromRide: (rideId: string) => void;
   subscribeToUnreadUpdates: (userId: string) => void;
   unsubscribeFromUnreadUpdates: () => void;
+  subscribeToAllConversations: (userId: string) => void;
+  unsubscribeFromAllConversations: () => void;
 
   // Utility actions
   getOrCreateConversation: (conversationData: CreateConversationRequest) => Promise<Conversation>;
@@ -88,6 +100,7 @@ export const useChatStore = create<ChatState>()(
       activeConversations: new Set(),
       subscribedRides: new Set(),
       channels: new Map(),
+      globalChannel: null,
 
       // Actions for conversations
       fetchConversations: async (userId: string) => {
@@ -126,15 +139,18 @@ export const useChatStore = create<ChatState>()(
           
           // Merge with unread counts
           const conversationsWithUnreadCounts = uiConversations.map(conv => {
-            const unreadCount = get().unreadCounts.find(uc => uc.rideId === conv.rideId)?.count || 0;
+            const unreadCount = get().unreadCounts.find(uc => uc.conversationId === conv.id)?.count || 0;
             return {
               ...conv,
               unreadCount,
             };
           });
           
+          // Sort by lastMessageTime (newest first)
+          const sortedConversations = sortConversationsByLatest(conversationsWithUnreadCounts);
+          
           set({
-            conversations: conversationsWithUnreadCounts,
+            conversations: sortedConversations,
             conversationsLoading: false,
             conversationsError: null,
           });
@@ -163,29 +179,40 @@ export const useChatStore = create<ChatState>()(
       },
 
       // Actions for messages
-      fetchMessages: async (rideId: string) => {
+      fetchMessages: async (conversationId: string) => {
         set((state) => ({
-          messagesLoading: { ...state.messagesLoading, [rideId]: true },
-          messagesError: { ...state.messagesError, [rideId]: null },
+          messagesLoading: { ...state.messagesLoading, [conversationId]: true },
+          messagesError: { ...state.messagesError, [conversationId]: null },
         }));
 
         try {
-          const response = await chatApiClient.getMessages(rideId);
+          // Get rideId from conversation to call API
+          const conversation = get().conversations.find(c => c.id === conversationId);
+          if (!conversation) {
+            throw new Error('Conversation not found');
+          }
+          
+          const response = await chatApiClient.getMessages(conversation.rideId);
           
           if (!response.success) {
             throw new Error(response.error || 'Failed to fetch messages');
           }
           
+          // Filter messages for THIS conversation only
+          const conversationMessages = (response.data || []).filter(
+            msg => msg.conversation_id === conversationId
+          );
+          
           set((state) => ({
-            messages: { ...state.messages, [rideId]: response.data || [] },
-            messagesLoading: { ...state.messagesLoading, [rideId]: false },
-            messagesError: { ...state.messagesError, [rideId]: null },
+            messages: { ...state.messages, [conversationId]: conversationMessages },
+            messagesLoading: { ...state.messagesLoading, [conversationId]: false },
+            messagesError: { ...state.messagesError, [conversationId]: null },
           }));
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Failed to fetch messages";
           set((state) => ({
-            messagesLoading: { ...state.messagesLoading, [rideId]: false },
-            messagesError: { ...state.messagesError, [rideId]: errorMessage },
+            messagesLoading: { ...state.messagesLoading, [conversationId]: false },
+            messagesError: { ...state.messagesError, [conversationId]: errorMessage },
           }));
         }
       },
@@ -200,15 +227,42 @@ export const useChatStore = create<ChatState>()(
           
           const newMessage = response.data;
           
-          // Add message to local state
+          // Get conversationId from the response
+          const conversationId = newMessage.conversation_id;
+          
+          // Update local state
           set((state) => {
-            const rideId = messageData.conversation_id; // Assuming conversation_id maps to rideId
-            const existingMessages = state.messages[rideId] || [];
+            const existingMessages = state.messages[conversationId] || [];
+            const updatedMessages = [...existingMessages, newMessage];
+            
+            // Update conversation's last_message and move to top
+            // Match by conversation_id for exact conversation, not rideId
+            const updatedConversations = state.conversations.map(conv => {
+              if (conv.id === conversationId) {
+                return {
+                  ...conv,
+                  lastMessage: newMessage.content,
+                  lastMessageTime: newMessage.created_at,
+                  updated_at: newMessage.created_at,
+                };
+              }
+              return conv;
+            });
+            
+            // Move the updated conversation to the top and sort
+            const updatedConv = updatedConversations.find(conv => conv.id === conversationId);
+            const otherConvs = updatedConversations.filter(conv => conv.id !== conversationId);
+            const reorderedConversations = updatedConv ? [updatedConv, ...otherConvs] : updatedConversations;
+            
+            // Apply full sort by lastMessageTime
+            const sortedConversations = sortConversationsByLatest(reorderedConversations);
+            
             return {
               messages: {
                 ...state.messages,
-                [rideId]: [...existingMessages, newMessage],
+                [conversationId]: updatedMessages,
               },
+              conversations: sortedConversations,
             };
           });
 
@@ -219,27 +273,27 @@ export const useChatStore = create<ChatState>()(
         }
       },
 
-      setMessagesLoading: (rideId, loading) => {
+      setMessagesLoading: (conversationId, loading) => {
         set((state) => ({
-          messagesLoading: { ...state.messagesLoading, [rideId]: loading },
+          messagesLoading: { ...state.messagesLoading, [conversationId]: loading },
         }));
       },
 
-      setMessagesError: (rideId, error) => {
+      setMessagesError: (conversationId, error) => {
         set((state) => ({
-          messagesError: { ...state.messagesError, [rideId]: error },
+          messagesError: { ...state.messagesError, [conversationId]: error },
         }));
       },
 
-      clearMessages: (rideId) => {
+      clearMessages: (conversationId) => {
         set((state) => {
           const newMessages = { ...state.messages };
           const newMessagesLoading = { ...state.messagesLoading };
           const newMessagesError = { ...state.messagesError };
           
-          delete newMessages[rideId];
-          delete newMessagesLoading[rideId];
-          delete newMessagesError[rideId];
+          delete newMessages[conversationId];
+          delete newMessagesLoading[conversationId];
+          delete newMessagesError[conversationId];
 
           return {
             messages: newMessages,
@@ -274,16 +328,23 @@ export const useChatStore = create<ChatState>()(
         }
       },
 
-      markAsRead: async (rideId: string, userId: string) => {
+      markAsRead: async (conversationId: string, userId: string) => {
         try {
-          await chatApiClient.markMessagesAsRead(rideId, userId);
+          // Get rideId from conversation for API call
+          const conversation = get().conversations.find(c => c.id === conversationId);
+          if (!conversation) {
+            console.warn("Conversation not found for markAsRead:", conversationId);
+            return;
+          }
+          
+          await chatApiClient.markMessagesAsRead(conversation.rideId, userId);
           set((state) => {
             // Update unread counts
-            const newUnreadCounts = state.unreadCounts.filter((count) => count.rideId !== rideId);
+            const newUnreadCounts = state.unreadCounts.filter((count) => count.conversationId !== conversationId);
             
             // Update conversations to remove unread count
             const updatedConversations = state.conversations.map(conv => 
-              conv.rideId === rideId ? { ...conv, unreadCount: 0 } : conv
+              conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
             );
             
             return {
@@ -297,25 +358,25 @@ export const useChatStore = create<ChatState>()(
         }
       },
 
-      updateUnreadCount: (rideId: string, count: number) => {
+      updateUnreadCount: (conversationId: string, count: number) => {
         set((state) => {
           const existingIndex = state.unreadCounts.findIndex(
-            (item) => item.rideId === rideId
+            (item) => item.conversationId === conversationId
           );
 
           let newUnreadCounts;
           if (existingIndex >= 0) {
             // Update existing count
             newUnreadCounts = [...state.unreadCounts];
-            newUnreadCounts[existingIndex] = { rideId, count };
+            newUnreadCounts[existingIndex] = { conversationId, count };
           } else {
             // Add new count
-            newUnreadCounts = [...state.unreadCounts, { rideId, count }];
+            newUnreadCounts = [...state.unreadCounts, { conversationId, count }];
           }
 
           // Update conversations with new unread count
           const updatedConversations = state.conversations.map(conv => 
-            conv.rideId === rideId ? { ...conv, unreadCount: count } : conv
+            conv.id === conversationId ? { ...conv, unreadCount: count } : conv
           );
 
           return { 
@@ -325,20 +386,20 @@ export const useChatStore = create<ChatState>()(
         });
       },
 
-      addUnreadCount: (rideId: string) => {
+      addUnreadCount: (conversationId: string) => {
         const { unreadCounts } = get();
-        const existing = unreadCounts.find((item) => item.rideId === rideId);
+        const existing = unreadCounts.find((item) => item.conversationId === conversationId);
         
         if (existing) {
-          get().updateUnreadCount(rideId, existing.count + 1);
+          get().updateUnreadCount(conversationId, existing.count + 1);
         } else {
-          get().updateUnreadCount(rideId, 1);
+          get().updateUnreadCount(conversationId, 1);
         }
       },
 
-      clearUnreadCount: (rideId: string) => {
+      clearUnreadCount: (conversationId: string) => {
         set((state) => ({
-          unreadCounts: state.unreadCounts.filter((item) => item.rideId !== rideId),
+          unreadCounts: state.unreadCounts.filter((item) => item.conversationId !== conversationId),
         }));
       },
 
@@ -349,18 +410,44 @@ export const useChatStore = create<ChatState>()(
         if (channels.has(rideId)) return; // Already subscribed
 
         const channel = chatApiClient.subscribeToMessages(supabase, rideId, (message) => {
-          // Add new message to local state
+          // Add new message to local state and update conversation
           set((state) => {
-            const existingMessages = state.messages[rideId] || [];
+            const conversationId = message.conversation_id;
+            const existingMessages = state.messages[conversationId] || [];
             const exists = existingMessages.some((msg) => msg.id === message.id);
             
             if (exists) return state; // Don't add duplicates
 
+            const updatedMessages = [...existingMessages, message];
+            
+            // Update conversation's last_message and move to top
+            // Match by conversation_id for exact conversation, not rideId
+            const updatedConversations = state.conversations.map(conv => {
+              if (conv.id === conversationId) {
+                return {
+                  ...conv,
+                  lastMessage: message.content,
+                  lastMessageTime: message.created_at,
+                  updated_at: message.created_at,
+                };
+              }
+              return conv;
+            });
+            
+            // Move the updated conversation to the top and sort
+            const updatedConv = updatedConversations.find(conv => conv.id === conversationId);
+            const otherConvs = updatedConversations.filter(conv => conv.id !== conversationId);
+            const reorderedConversations = updatedConv ? [updatedConv, ...otherConvs] : updatedConversations;
+            
+            // Apply full sort by lastMessageTime
+            const sortedConversations = sortConversationsByLatest(reorderedConversations);
+
             return {
               messages: {
                 ...state.messages,
-                [rideId]: [...existingMessages, message],
+                [conversationId]: updatedMessages,
               },
+              conversations: sortedConversations,
             };
           });
 
@@ -421,6 +508,79 @@ export const useChatStore = create<ChatState>()(
             newChannels.delete('unread-updates');
             return { channels: newChannels };
           });
+        }
+      },
+
+      subscribeToAllConversations: (userId: string) => {
+        const { globalChannel } = get();
+        
+        if (globalChannel) return; // Already subscribed
+        
+        const channel = supabase
+          .channel(`user-conversations:${userId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages',
+            },
+            async (payload) => {
+              const message = payload.new;
+              
+              // Find affected conversation
+              const { data: conversation } = await supabase
+                .from('conversations')
+                .select('id, participants')
+                .eq('id', message.conversation_id)
+                .single();
+              
+              if (!conversation || !conversation.participants.includes(userId)) return;
+              
+              // Update conversation in store
+              set((state) => {
+                const updatedConversations = state.conversations.map(conv => {
+                  if (conv.id === message.conversation_id) {
+                    const newUnreadCount = message.sender_id !== userId 
+                      ? (conv.unreadCount || 0) + 1 
+                      : conv.unreadCount;
+                    
+                    return {
+                      ...conv,
+                      lastMessage: message.content,
+                      lastMessageTime: message.created_at,
+                      unreadCount: newUnreadCount,
+                    };
+                  }
+                  return conv;
+                });
+                
+                // Sync unreadCounts array with conversation unreadCount
+                const updatedUnreadCounts = updatedConversations
+                  .filter(conv => conv.unreadCount > 0)
+                  .map(conv => ({
+                    conversationId: conv.id,
+                    count: conv.unreadCount
+                  }));
+                
+                return {
+                  conversations: sortConversationsByLatest(updatedConversations),
+                  unreadCounts: updatedUnreadCounts,
+                };
+              });
+            }
+          )
+          .subscribe();
+        
+        set({ globalChannel: channel });
+      },
+
+      unsubscribeFromAllConversations: () => {
+        const { globalChannel } = get();
+        
+        if (globalChannel) {
+          supabase.removeChannel(globalChannel);
+          set({ globalChannel: null });
         }
       },
 

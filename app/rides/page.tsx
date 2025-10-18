@@ -86,7 +86,7 @@ const sortedCameroonCities = allCameroonCities;
 
 export default function RidesPage() {
   const { supabase, user } = useSupabase();
-  const { unreadCounts: unreadCountsArray, subscribeToRide } = useChatStore();
+  const { unreadCounts: unreadCountsArray, subscribeToRide, conversations } = useChatStore();
   const { toast } = useToast();
   const router = useRouter();
   const { allRides, allRidesLoading, allRidesError, allRidesPagination, searchRides } = useRidesStore();
@@ -94,7 +94,10 @@ export default function RidesPage() {
   const loading = allRidesLoading;
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedRide, setSelectedRide] = useState<RideWithDriver | null>(null);
-  const [selectedChatRide, setSelectedChatRide] = useState<RideWithDriver | null>(null);
+  const [selectedChatRide, setSelectedChatRide] = useState<{
+    ride: RideWithDriver;
+    conversationId: string;
+  } | null>(null);
   const [message, setMessage] = useState("");
   const [seats, setSeats] = useState(1);
 
@@ -117,13 +120,18 @@ export default function RidesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
 
-  // Convert unreadCounts array to dictionary
+  // Convert unreadCounts array to dictionary by rideId
+  // Since unreadCounts are now stored by conversationId, we need to map them to rideId
   const unreadCounts: UnreadCounts = (unreadCountsArray || []).reduce(
-    (acc, curr) => ({
-      ...acc,
-      [curr.rideId]: curr.count,
-    }),
-    {}
+    (acc: UnreadCounts, curr) => {
+      // Find the conversation to get the rideId
+      const conversation = conversations.find(conv => conv.id === curr.conversationId);
+      if (conversation) {
+        acc[conversation.rideId] = curr.count;
+      }
+      return acc;
+    },
+    {} as UnreadCounts
   );
 
   const loadRides = useCallback(
@@ -303,7 +311,18 @@ export default function RidesPage() {
       return;
     }
 
-    setSelectedChatRide(ride);
+    // Find the conversation for this ride and driver
+    const conversation = conversations.find(conv => 
+      conv.rideId === ride.id && conv.otherUserId === ride.driver_id
+    );
+    
+    if (conversation) {
+      setSelectedChatRide({ ride, conversationId: conversation.id });
+    } else {
+      // If no conversation exists, we'll need to create one
+      // For now, we'll use the rideId as a fallback and let the ChatDialog handle creation
+      setSelectedChatRide({ ride, conversationId: ride.id });
+    }
   };
 
   const handleSendMessage = async () => {
@@ -898,10 +917,11 @@ export default function RidesPage() {
         <ChatDialog
           isOpen={!!selectedChatRide}
           onClose={() => setSelectedChatRide(null)}
-          rideId={selectedChatRide.id}
-          otherUserId={selectedChatRide.driver_id}
-          otherUserName={selectedChatRide.driver?.full_name || "Driver"}
-          otherUserAvatar={selectedChatRide.driver?.avatar_url}
+          rideId={selectedChatRide.ride.id}
+          conversationId={selectedChatRide.conversationId}
+          otherUserId={selectedChatRide.ride.driver_id}
+          otherUserName={selectedChatRide.ride.driver?.full_name || "Driver"}
+          otherUserAvatar={selectedChatRide.ride.driver?.avatar_url}
         />
       )}
     </div>

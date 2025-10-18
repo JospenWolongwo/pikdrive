@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { useSupabase } from "@/providers/SupabaseProvider";
@@ -47,8 +47,11 @@ export default function MessagesPage() {
     conversationsError,
     unreadCounts,
     fetchConversations,
+    fetchUnreadCounts,
     markAsRead,
     subscribeToRide,
+    subscribeToAllConversations,
+    unsubscribeFromAllConversations,
   } = useChatStore();
   const { toast } = useToast();
   const { userRides, userRidesLoading, userRidesError, loadUserRides } = useUserRides();
@@ -66,6 +69,9 @@ export default function MessagesPage() {
 
   // Flag to prevent auto-enabling after user manually disables
   const [userManuallyDisabled, setUserManuallyDisabled] = useState(false);
+  
+  // Track if conversations have been loaded to prevent unnecessary refetches
+  const conversationsLoadedRef = useRef(false);
 
   // Service worker and push notification hooks
   const {
@@ -75,14 +81,7 @@ export default function MessagesPage() {
     unsubscribeFromPushNotifications,
   } = useServiceWorker();
 
-  // Debounced version of loadConversations to prevent rapid successive calls
-  const debouncedLoadConversations = useCallback(
-    debounce(async () => {
-      if (!user) return;
-      await loadConversations();
-    }, 1000), // 1 second debounce
-    [user]
-  );
+  // Debounced version removed - conversations load only once on mount
 
   // Check if notifications are supported and update permission state
   useEffect(() => {
@@ -374,16 +373,23 @@ export default function MessagesPage() {
     }
   };
 
-  // Load conversations using chatStore
-  const loadConversations = useCallback(async () => {
+  // Manual refresh function for the refresh button
+  const handleManualRefresh = useCallback(async () => {
     if (!user) return;
     
     try {
-      // Load user rides using Zustand store
-      await loadUserRides(user.id);
+      console.log("🔄 Manual refresh triggered");
+      // Reset the loaded flag to force fresh fetch
+      conversationsLoadedRef.current = false;
       
-      // Fetch conversations using chatStore
+      // Load user rides using Zustand store (non-blocking)
+      loadUserRides(user.id).catch((error) => {
+        console.warn("Failed to load user rides during refresh (non-blocking):", error);
+      });
+      
+      // Fetch conversations using chatStore (this is the important part)
       await fetchConversations(user.id);
+      conversationsLoadedRef.current = true;
     } catch (error) {
       console.error("Error loading conversations:", error);
       toast({
@@ -410,7 +416,7 @@ export default function MessagesPage() {
 
       // Mark messages as read when opening the chat
       if (conversation.unreadCount > 0 && user) {
-        markAsRead(conversation.rideId, user.id);
+        markAsRead(conversation.id, user.id);
       }
     },
     [markAsRead, user]
@@ -474,10 +480,55 @@ export default function MessagesPage() {
 
   // Load conversations on mount and when user changes
   useEffect(() => {
-    if (user) {
-      loadConversations();
+    if (!user) {
+      conversationsLoadedRef.current = false; // Reset when user logs out
+      return;
     }
-  }, [user, loadConversations]);
+    
+    const loadConversations = async () => {
+      try {
+        // Load user rides using Zustand store (non-blocking)
+        loadUserRides(user.id).catch((error) => {
+          console.warn("Failed to load user rides (non-blocking):", error);
+          // Don't show error toast for rides - conversations are more important
+        });
+        
+        // Fetch unread counts
+        await fetchUnreadCounts(user.id);
+        
+        // Only fetch conversations if not already loaded (caching)
+        if (!conversationsLoadedRef.current) {
+          console.log("📱 Loading conversations from API...");
+          await fetchConversations(user.id);
+          conversationsLoadedRef.current = true;
+        } else {
+          console.log("📱 Using cached conversations:", conversations.length);
+        }
+      } catch (error) {
+        console.error("Error loading conversations:", error);
+        toast({
+          title: "Erreur de chargement",
+          description:
+            "Impossible de charger vos conversations. Veuillez réessayer.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadConversations();
+  }, [user, loadUserRides, fetchConversations, fetchUnreadCounts, toast]); // Remove conversations from deps to prevent infinite loop
+
+  // Initialize global conversation subscription for real-time updates
+  useEffect(() => {
+    if (!user) return;
+    
+    // Subscribe to all conversations for real-time updates
+    subscribeToAllConversations(user.id);
+    
+    return () => {
+      unsubscribeFromAllConversations();
+    };
+  }, [user, subscribeToAllConversations, unsubscribeFromAllConversations]);
 
   // Note: Unread counts and conversation updates are now handled by the chatStore automatically
 
@@ -514,10 +565,7 @@ export default function MessagesPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                console.log("🔄 Manual refresh triggered");
-                loadConversations();
-              }}
+              onClick={handleManualRefresh}
               className="flex items-center gap-1 sm:gap-2"
             >
               <RefreshCw className="h-4 w-4" />
@@ -770,6 +818,7 @@ export default function MessagesPage() {
           isOpen={!!selectedChat}
           onClose={() => setSelectedChat(null)}
           rideId={selectedChat.rideId}
+          conversationId={selectedChat.id}
           otherUserId={selectedChat.otherUserId}
           otherUserName={selectedChat.otherUserName}
           otherUserAvatar={selectedChat.otherUserAvatar || undefined}

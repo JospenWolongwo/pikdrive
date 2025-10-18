@@ -19,14 +19,14 @@ export class ServerChatService {
   /**
    * Get messages for a specific ride
    */
-  async getMessages(rideId: string): Promise<Message[]> {
+  async getMessages(conversationId: string): Promise<Message[]> {
     const { data, error } = await this.supabase
       .from('messages')
       .select(`
         *,
-        sender:profiles!messages_sender_id_fkey(id, full_name, avatar_url)
+        sender:profiles!inner(id, full_name, avatar_url)
       `)
-      .eq('ride_id', rideId)
+      .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -40,28 +40,16 @@ export class ServerChatService {
    * Send a new message
    */
   async sendMessage(messageData: CreateMessageRequest, senderId: string): Promise<Message> {
-    // First, get the conversation to extract ride_id
-    const { data: conversation, error: convError } = await this.supabase
-      .from('conversations')
-      .select('ride_id')
-      .eq('id', messageData.conversation_id)
-      .single();
-
-    if (convError) {
-      throw new Error(`Failed to fetch conversation: ${convError.message}`);
-    }
-
     const { data, error } = await this.supabase
       .from('messages')
       .insert({
         conversation_id: messageData.conversation_id,
         sender_id: senderId,
         content: messageData.content,
-        ride_id: conversation.ride_id,
       })
       .select(`
         *,
-        sender:profiles!messages_sender_id_fkey(id, full_name, avatar_url)
+        sender:profiles!inner(id, full_name, avatar_url)
       `)
       .single();
 
@@ -142,12 +130,12 @@ export class ServerChatService {
   /**
    * Mark messages as read
    */
-  async markMessagesAsRead(rideId: string, userId: string): Promise<void> {
+  async markMessagesAsRead(conversationId: string, userId: string): Promise<void> {
     const { error } = await this.supabase
       .from('messages')
       .update({ read: true })
-      .eq('ride_id', rideId)
-      .eq('receiver_id', userId)
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', userId)
       .eq('read', false);
 
     if (error) {
@@ -161,8 +149,8 @@ export class ServerChatService {
   async getUnreadCounts(userId: string): Promise<{ rideId: string; count: number }[]> {
     const { data, error } = await this.supabase
       .from('messages')
-      .select('ride_id')
-      .eq('receiver_id', userId)
+      .select('conversation_id')
+      .neq('sender_id', userId)
       .eq('read', false);
 
     if (error) {
@@ -171,12 +159,12 @@ export class ServerChatService {
 
     // Group by ride_id and count
     const counts = (data || []).reduce((acc: any, msg: any) => {
-      acc[msg.ride_id] = (acc[msg.ride_id] || 0) + 1;
+      acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
       return acc;
     }, {});
 
-    return Object.entries(counts).map(([rideId, count]) => ({
-      rideId,
+    return Object.entries(counts).map(([conversationId, count]) => ({
+      rideId: conversationId as string,
       count: count as number,
     }));
   }

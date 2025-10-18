@@ -38,31 +38,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     try {
       initializedRef.current = true;
-      // First get all unread messages
+      // First get all unread messages by conversation (not sent by current user)
       const { data: messages, error } = await supabase
         .from("messages")
-        .select("ride_id")
-        .eq("receiver_id", user.id)
+        .select("conversation_id, sender_id, read")
+        .neq("sender_id", user.id)
         .eq("read", false);
 
       if (error) throw error;
 
-      // Then count them by ride_id
+      // Then count them by conversation_id
       const counts = messages
         ? messages.reduce(
-            (acc: Record<string, number>, msg: { ride_id: string }) => {
-              acc[msg.ride_id] = (acc[msg.ride_id] || 0) + 1;
+            (acc: Record<string, number>, msg: { conversation_id: string }) => {
+              acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
               return acc;
             },
             {} as Record<string, number>
           )
         : {};
 
-      // Convert to our UnreadCount format
+      // Convert to our UnreadCount format (reuse rideId as conversationId for now)
       setUnreadCounts(
         Object.entries(counts).map(
-          ([ride_id, count]): UnreadCount => ({
-            rideId: ride_id,
+          ([conversation_id, count]): UnreadCount => ({
+            rideId: conversation_id,
             count: count as number,
           })
         )
@@ -80,14 +80,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from("messages")
-        .update({ read: true })
-        .eq("ride_id", rideId)
-        .eq("receiver_id", user.id)
-        .eq("read", false);
-
-      if (error) throw error;
+      await fetch(`/api/messages/read/${rideId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: user.id }),
+      });
 
       setUnreadCounts((prev) =>
         prev.filter((count) => count.rideId !== rideId)
@@ -98,33 +96,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const subscribeToRide = useCallback(
-    (rideId: string) => {
-      if (subscribedRides.has(rideId) || channelsRef.current.has(rideId))
+    (conversationId: string) => {
+      if (subscribedRides.has(conversationId) || channelsRef.current.has(conversationId))
         return;
 
       const channel = supabase
-        .channel(`chat:${rideId}`)
+        .channel(`chat:${conversationId}`)
         .on(
           "postgres_changes",
           {
             event: "INSERT",
             schema: "public",
             table: "messages",
-            filter: `ride_id=eq.${rideId}`,
+            filter: `conversation_id=eq.${conversationId}`,
           },
-          (payload: {
-            new: { ride_id: string; receiver_id: string; read: boolean };
-          }) => {
-            const message = payload.new;
-            if (message.receiver_id === user?.id && !message.read) {
+          (payload: any) => {
+            const message = payload.new as { sender_id: string; read: boolean };
+            if (message.sender_id !== user?.id && !message.read) {
               setUnreadCounts((prev) => {
-                const existing = prev.find((c) => c.rideId === rideId);
+                const existing = prev.find((c) => c.rideId === conversationId);
                 if (existing) {
                   return prev.map((c) =>
-                    c.rideId === rideId ? { ...c, count: c.count + 1 } : c
+                    c.rideId === conversationId ? { ...c, count: c.count + 1 } : c
                   );
                 } else {
-                  return [...prev, { rideId, count: 1 }];
+                  return [...prev, { rideId: conversationId, count: 1 }];
                 }
               });
             }
@@ -132,8 +128,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         )
         .subscribe();
 
-      channelsRef.current.set(rideId, channel);
-      setSubscribedRides((prev) => new Set(prev).add(rideId));
+      channelsRef.current.set(conversationId, channel);
+      setSubscribedRides((prev) => new Set(prev).add(conversationId));
     },
     [supabase, user, subscribedRides]
   );

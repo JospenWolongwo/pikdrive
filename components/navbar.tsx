@@ -53,7 +53,7 @@ export function Navbar() {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
-  const { unreadCounts } = useChatStore();
+  const { unreadCounts, fetchUnreadCounts } = useChatStore();
 
   useEffect(() => {
     setMounted(true);
@@ -87,6 +87,13 @@ export function Navbar() {
       getDriverStatus();
     }
   }, [user, supabase]);
+
+  // Fetch unread counts when user is available
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCounts(user.id);
+    }
+  }, [user, fetchUnreadCounts]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

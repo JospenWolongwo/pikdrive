@@ -35,7 +35,7 @@ import type {
 export default function DriverDashboard() {
   const router = useRouter();
   const { user, supabase } = useSupabase();
-  const { subscribeToRide } = useChatStore();
+  const { subscribeToRide, conversations } = useChatStore();
   const { toast } = useToast();
 
 
@@ -43,6 +43,7 @@ export default function DriverDashboard() {
   const [selectedChat, setSelectedChat] = useState<{
     ride: RideWithDetails;
     user: { id: string; full_name: string; avatar_url?: string };
+    conversationId: string;
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -127,7 +128,18 @@ export default function DriverDashboard() {
     ride: RideWithDetails,
     user: { id: string; full_name: string; avatar_url?: string }
   ) => {
-    setSelectedChat({ ride, user });
+    // Find the conversation for this ride and user
+    const conversation = conversations.find(conv => 
+      conv.rideId === ride.id && conv.otherUserId === user.id
+    );
+    
+    if (conversation) {
+      setSelectedChat({ ride, user, conversationId: conversation.id });
+    } else {
+      // If no conversation exists, we'll need to create one
+      // For now, we'll use the rideId as a fallback and let the ChatDialog handle creation
+      setSelectedChat({ ride, user, conversationId: ride.id });
+    }
   };
 
   const handleVerifyCode = (bookingId: string) => {
@@ -291,6 +303,7 @@ export default function DriverDashboard() {
           isOpen={!!selectedChat}
           onClose={handleCloseChat}
           rideId={selectedChat.ride.id}
+          conversationId={selectedChat.conversationId}
           otherUserId={selectedChat.user.id}
           otherUserName={selectedChat.user.full_name}
           otherUserAvatar={selectedChat.user.avatar_url}

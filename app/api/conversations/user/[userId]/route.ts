@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createApiSupabaseClient } from "@/lib/supabase/server-client";
+import { createApiSupabaseClient, getUserWithRetry } from "@/lib/supabase/server-client";
 
 export async function GET(
   request: NextRequest,
@@ -18,20 +18,21 @@ export async function GET(
     // Create a Supabase client using cookie-based authentication
     const supabaseClient = createApiSupabaseClient();
 
-    // Verify user session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabaseClient.auth.getSession();
+    // Verify user authentication with retry
+    const { user, errorType, error: authError } = await getUserWithRetry(supabaseClient);
 
-    if (!session || !session.user) {
+    if (!user) {
+      if (errorType === 'network') {
+        return NextResponse.json(
+          { success: false, error: "Service temporarily unavailable", details: "Network error during authentication" },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
-        { success: false, error: "Unauthorized", details: sessionError?.message },
+        { success: false, error: "Unauthorized", details: authError?.message },
         { status: 401 }
       );
     }
-
-    const user = session.user;
 
     // Verify the user is requesting their own conversations
     if (user.id !== userId) {
@@ -53,12 +54,6 @@ export async function GET(
           to_city,
           departure_time,
           driver_id
-        ),
-        last_message:messages (
-          id,
-          content,
-          created_at,
-          sender_id
         )
         `
       )
@@ -73,7 +68,7 @@ export async function GET(
       );
     }
 
-    // Transform the data to include participant details
+    // Transform the data to include participant details and latest message
     const conversationsWithParticipants = await Promise.all(
       (data || []).map(async (conversation: any) => {
         // Get participant details
@@ -99,10 +94,25 @@ export async function GET(
           .eq("id", passengerId)
           .single();
 
+        // Get the latest message for this conversation
+        const { data: lastMessage } = await supabaseClient
+          .from("messages")
+          .select("id, content, created_at, sender_id")
+          .eq("conversation_id", conversation.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+
         return {
           ...conversation,
           driver: driver || { id: driverId, full_name: "Unknown", avatar_url: null },
           passenger: passenger || { id: passengerId, full_name: "Unknown", avatar_url: null },
+          last_message: lastMessage ? {
+            content: lastMessage.content,
+            created_at: lastMessage.created_at,
+            sender_id: lastMessage.sender_id
+          } : null,
         };
       })
     );

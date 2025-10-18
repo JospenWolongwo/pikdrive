@@ -52,8 +52,8 @@ export class ChatApiClient {
   /**
    * Get unread message counts for user
    */
-  async getUnreadCounts(userId: string): Promise<ApiResponse<{ rideId: string; count: number }[]>> {
-    return apiClient.get<ApiResponse<{ rideId: string; count: number }[]>>(`/api/messages/unread/${userId}`);
+  async getUnreadCounts(userId: string): Promise<ApiResponse<{ conversationId: string; count: number }[]>> {
+    return apiClient.get<ApiResponse<{ conversationId: string; count: number }[]>>(`/api/messages/unread/${userId}`);
   }
 
   /**
@@ -104,7 +104,7 @@ export class ChatApiClient {
   /**
    * Subscribe to unread message updates (real-time)
    */
-  subscribeToUnreadUpdates(supabase: any, userId: string, callback: (unreadCounts: { rideId: string; count: number }[]) => void) {
+  subscribeToUnreadUpdates(supabase: any, userId: string, callback: (unreadCounts: { conversationId: string; count: number }[]) => void) {
     const channel = supabase
       .channel(`unread-updates:${userId}`)
       .on(

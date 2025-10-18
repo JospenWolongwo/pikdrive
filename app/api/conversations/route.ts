@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createApiSupabaseClient } from "@/lib/supabase/server-client";
+import { createApiSupabaseClient, getUserWithRetry } from "@/lib/supabase/server-client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,20 +15,21 @@ export async function POST(request: NextRequest) {
     // Create a Supabase client using cookie-based authentication
     const supabaseClient = createApiSupabaseClient();
 
-    // Verify user session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabaseClient.auth.getSession();
+    // Verify user authentication with retry
+    const { user, errorType, error: authError } = await getUserWithRetry(supabaseClient);
 
-    if (!session || !session.user) {
+    if (!user) {
+      if (errorType === 'network') {
+        return NextResponse.json(
+          { success: false, error: "Service temporarily unavailable", details: "Network error during authentication" },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
-        { success: false, error: "Unauthorized", details: sessionError?.message },
+        { success: false, error: "Unauthorized", details: authError?.message },
         { status: 401 }
       );
     }
-
-    const user = session.user;
 
     // Verify the user is either the driver or passenger
     if (user.id !== driver_id && user.id !== passenger_id) {

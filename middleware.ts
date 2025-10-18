@@ -26,18 +26,30 @@ export async function middleware(req: NextRequest) {
           return req.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: any) {
-          res.cookies.set({
+          const isProd = process.env.NODE_ENV === 'production';
+          const merged = {
             name,
             value,
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax' as const,
+            secure: isProd,
             ...options,
-          });
+          };
+          res.cookies.set(merged);
         },
         remove(name: string, options: any) {
-          res.cookies.set({
+          const isProd = process.env.NODE_ENV === 'production';
+          const merged = {
             name,
             value: "",
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax' as const,
+            secure: isProd,
             ...options,
-          });
+          };
+          res.cookies.set(merged);
         },
       },
       auth: {

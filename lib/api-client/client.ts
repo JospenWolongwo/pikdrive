@@ -74,63 +74,99 @@ export class ApiClient {
     // Note: Authentication is now handled via cookies (credentials: 'include')
     // No need to manually add authorization headers
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include', // Ensure cookies are included for authentication
-      });
+    // Retry logic for 401 errors (single retry with small delay)
+    const maxRetries = 1;
+    let lastError: Error | null = null;
 
-      // Handle non-JSON responses
-      const contentType = response.headers.get('content-type');
-      const isJson = contentType?.includes('application/json');
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers,
+          credentials: 'include', // Ensure cookies are included for authentication
+        });
 
-      if (!response.ok) {
-        const errorData = isJson ? await response.json() : await response.text();
-        throw new ApiError(
-          response.status,
-          response.statusText,
-          errorData,
+        // Handle non-JSON responses
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType?.includes('application/json');
+
+        if (!response.ok) {
+          const errorData = isJson ? await response.json() : await response.text();
+          const apiError = new ApiError(
+            response.status,
+            response.statusText,
+            errorData,
+            url
+          );
+
+          // For 401 errors, try once more after a short delay
+          if (response.status === 401 && attempt < maxRetries) {
+            console.warn(`🔄 401 error on attempt ${attempt + 1}, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+            lastError = apiError;
+            continue;
+          }
+
+          throw apiError;
+        }
+
+        // Return empty response for 204 No Content
+        if (response.status === 204) {
+          return {} as T;
+        }
+
+        // Parse response based on content type
+        if (isJson) {
+          return await response.json();
+        } else {
+          return (await response.text()) as T;
+        }
+
+      } catch (error) {
+        // Re-throw ApiError instances (unless it's a 401 we're retrying)
+        if (error instanceof ApiError) {
+          if (error.status === 401 && attempt < maxRetries) {
+            lastError = error;
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+            continue;
+          }
+          throw error;
+        }
+
+        // Handle network errors
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          const networkError = new ApiError(
+            0,
+            'Network Error',
+            'Unable to connect to the server. Please check your internet connection.',
+            url
+          );
+          if (attempt < maxRetries) {
+            lastError = networkError;
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+            continue;
+          }
+          throw networkError;
+        }
+
+        // Handle other errors
+        const unknownError = new ApiError(
+          500,
+          'Unknown Error',
+          error instanceof Error ? error.message : 'An unexpected error occurred',
           url
         );
+        if (attempt < maxRetries) {
+          lastError = unknownError;
+          await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+          continue;
+        }
+        throw unknownError;
       }
-
-      // Return empty response for 204 No Content
-      if (response.status === 204) {
-        return {} as T;
-      }
-
-      // Parse response based on content type
-      if (isJson) {
-        return await response.json();
-      } else {
-        return (await response.text()) as T;
-      }
-
-    } catch (error) {
-      // Re-throw ApiError instances
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new ApiError(
-          0,
-          'Network Error',
-          'Unable to connect to the server. Please check your internet connection.',
-          url
-        );
-      }
-
-      // Handle other errors
-      throw new ApiError(
-        500,
-        'Unknown Error',
-        error instanceof Error ? error.message : 'An unexpected error occurred',
-        url
-      );
     }
+
+    // If we get here, all retries failed
+    throw lastError || new ApiError(500, 'Request Failed', 'All retry attempts failed', url);
   }
 
   // Authentication is now handled via cookies - no need for manual auth headers
