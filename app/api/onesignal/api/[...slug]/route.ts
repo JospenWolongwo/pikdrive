@@ -63,6 +63,7 @@ async function handleApiRequest(
     const fullUrl = queryString ? `${apiUrl}?${queryString}` : apiUrl;
 
     console.log(`🔄 Proxying OneSignal API ${method}: ${fullUrl}`);
+    console.log(`🔍 Request headers:`, Object.fromEntries(request.headers.entries()));
 
     // Prepare headers
     const headers = new Headers();
@@ -108,15 +109,34 @@ async function handleApiRequest(
 
     // Make the API call
     const response = await fetch(fullUrl, requestOptions);
+    
+    console.log(`🔍 OneSignal API response status: ${response.status}`);
+    console.log(`🔍 OneSignal API response headers:`, Object.fromEntries(response.headers.entries()));
 
     // Get response content
     const responseText = await response.text();
+    console.log(`🔍 OneSignal API response content (first 500 chars):`, responseText.substring(0, 500));
     
     // Set response headers
     const responseHeaders = new Headers();
     
     // Copy Content-Type from OneSignal's response instead of hardcoding
     const contentType = response.headers.get('content-type') || 'application/json';
+    
+    // For JSONP requests, ensure we return application/javascript even if OneSignal returns an error
+    const isJsonp = searchParams.has('callback');
+    if (isJsonp && !response.ok) {
+      // If JSONP request failed, return error as JSONP callback
+      const errorCallback = searchParams.get('callback') || 'callback';
+      const errorResponse = `${errorCallback}({"error": "OneSignal API error", "status": ${response.status}});`;
+      responseHeaders.set('Content-Type', 'application/javascript');
+      console.log(`🔧 Returning JSONP error response for failed request`);
+      return new NextResponse(errorResponse, {
+        status: 200, // Always return 200 for JSONP
+        headers: responseHeaders,
+      });
+    }
+    
     responseHeaders.set('Content-Type', contentType);
     
     responseHeaders.set('Cache-Control', 'no-cache');
