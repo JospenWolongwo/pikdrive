@@ -75,6 +75,7 @@ export function OneSignalInitializer() {
             await OneSignal.init({
               appId,
               allowLocalhostAsSecureOrigin: true,
+              apiUrl: `${window.location.origin}/api/onesignal/api/`,
               serviceWorkerParam: { scope: '/' },
               serviceWorkerPath: 'OneSignalSDKWorker.js',
               path: '/api/onesignal/sdk/',
