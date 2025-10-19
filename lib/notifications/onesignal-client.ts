@@ -135,7 +135,8 @@ export class OneSignalClient {
 
     try {
       const permission = await this.oneSignal.Notifications.permission;
-      return permission;
+      // Convert OneSignal boolean permission to standard NotificationPermission
+      return permission ? 'granted' : 'denied';
     } catch (error) {
       console.error('Error getting permission:', error);
       return 'default';
