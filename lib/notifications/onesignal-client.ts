@@ -188,6 +188,10 @@ export class OneSignalClient {
       await this.waitForSDKReady();
     }
 
+    if (!this.oneSignal) {
+      throw new Error('OneSignal not initialized');
+    }
+
     try {
       await this.oneSignal.login(userId);
       console.log(`✅ External user ID set: ${userId}`);
@@ -208,6 +212,11 @@ export class OneSignalClient {
         console.error('❌ OneSignal not ready for logout:', e);
         return;
       }
+    }
+
+    if (!this.oneSignal) {
+      console.error('OneSignal not initialized for logout');
+      return;
     }
 
     try {
