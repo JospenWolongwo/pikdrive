@@ -48,10 +48,15 @@ export class OneSignalClient {
       console.log('🔍 window.OneSignalDeferred exists:', !!window.OneSignalDeferred);
       console.log('🔍 window.OneSignal exists:', !!window.OneSignal);
       
-      // Wait for OneSignal to be available
-      await new Promise<void>((resolve) => {
+      // Wait for OneSignal to be available with timeout
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('OneSignal SDK failed to load within 10 seconds'));
+        }, 10000);
+        
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         window.OneSignalDeferred.push(async (OneSignal) => {
+          clearTimeout(timeout);
           console.log('📦 OneSignal SDK loaded, initializing...');
           this.oneSignal = OneSignal;
           await OneSignal.init({

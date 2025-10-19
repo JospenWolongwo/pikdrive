@@ -65,7 +65,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
-        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+        <script src="/OneSignalSDK.page.js" defer onerror="console.error('❌ Failed to load local OneSignal script, trying CDN...'); this.onerror=null; this.src='https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';"></script>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
