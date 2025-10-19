@@ -23,6 +23,9 @@ export function OneSignalScript() {
         await OneSignal.init({
           appId,
           allowLocalhostAsSecureOrigin: true,
+          serviceWorkerParam: { scope: '/' },
+          serviceWorkerPath: 'OneSignalSDKWorker.js',
+          path: '/api/onesignal/sdk/',
           notifyButton: {
             enable: false, // We'll use custom UI
           },
@@ -35,7 +38,7 @@ export function OneSignalScript() {
         });
         console.log('✅ OneSignal initialized via official pattern');
         try {
-          (window as any).__oneSignalReady = true;
+          window.__oneSignalReady = true;
         } catch {}
       } catch (error) {
         console.error('❌ OneSignal initialization failed:', error);

@@ -3,17 +3,12 @@
 
 import type { NotificationType, NotificationData } from '@/types/notification';
 
-declare global {
-  interface Window {
-    OneSignalDeferred?: Array<(OneSignal: any) => void>;
-    OneSignal?: any;
-  }
-}
+// OneSignal types are now defined in types/global.d.ts
 
 export class OneSignalClient {
   private static instance: OneSignalClient;
   private initialized = false;
-  private oneSignal: any = null;
+  private oneSignal: IOneSignal | null = null;
   private sdkReadyPromise: Promise<void> | null = null;
 
   private constructor() {}
@@ -69,10 +64,27 @@ export class OneSignalClient {
     this.sdkReadyPromise = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.sdkReadyPromise = null;
-        reject(new Error('OneSignal SDK failed to become ready within 15 seconds'));
+        
+        // Enhanced error detection for tracking protection
+        const errorContext = {
+          hasDeferred: !!window.OneSignalDeferred,
+          hasOneSignal: !!window.OneSignal,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        };
+        
+        console.error('❌ OneSignal SDK initialization timeout', errorContext);
+        
+        // Detect if likely blocked by tracking protection
+        if (!window.OneSignal && window.OneSignalDeferred) {
+          console.error('🛡️ OneSignal SDK likely blocked by browser tracking protection (Firefox ETP, Brave Shields, etc.)');
+          console.error('ℹ️ Users may need to disable tracking protection for this site to receive push notifications');
+          reject(new Error('OneSignal SDK blocked by tracking protection. Push notifications unavailable.'));
+        } else {
+          reject(new Error('OneSignal SDK failed to become ready within 15 seconds'));
+        }
       }, 15000);
 
-      const markReady = (os: any) => {
+      const markReady = (os: IOneSignal) => {
         clearTimeout(timeout);
         this.oneSignal = os;
         this.initialized = true;
@@ -83,7 +95,7 @@ export class OneSignalClient {
 
       const check = () => {
         const os = (typeof window !== 'undefined') ? window.OneSignal : null;
-        const readyFlag = (typeof window !== 'undefined') ? (window as any).__oneSignalReady === true : false;
+        const readyFlag = (typeof window !== 'undefined') ? window.__oneSignalReady === true : false;
         if (os && typeof os.login === 'function' && os.Notifications && os.User && readyFlag) {
           markReady(os);
         } else {
@@ -94,9 +106,9 @@ export class OneSignalClient {
       // Use deferred queue to run as soon as SDK provides the OneSignal object
       try {
         window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(function(OneSignal: any) {
+        window.OneSignalDeferred.push(function(OneSignal: IOneSignal) {
           // If init already completed, required APIs should exist
-          const readyFlag = (typeof window !== 'undefined') ? (window as any).__oneSignalReady === true : false;
+          const readyFlag = (typeof window !== 'undefined') ? window.__oneSignalReady === true : false;
           if (OneSignal && typeof OneSignal.login === 'function' && OneSignal.Notifications && OneSignal.User && readyFlag) {
             markReady(OneSignal);
           } else {
