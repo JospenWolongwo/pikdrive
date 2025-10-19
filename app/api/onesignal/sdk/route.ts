@@ -43,7 +43,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch file' }, { status: response.status });
     }
 
-    const content = await response.text();
+    let content = await response.text();
+    
+    // Rewrite CDN URLs to use our proxy routes
+    content = content.replace(
+      /https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g,
+      '/api/onesignal/sdk/'
+    );
     
     // Set appropriate headers
     const headers = new Headers();

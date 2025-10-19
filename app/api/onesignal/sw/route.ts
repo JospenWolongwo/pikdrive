@@ -35,7 +35,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch service worker' }, { status: response.status });
     }
 
-    const content = await response.text();
+    let content = await response.text();
+    
+    // Rewrite CDN URLs to use our proxy routes
+    content = content.replace(
+      /https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g,
+      '/api/onesignal/sw/'
+    );
     
     // Set appropriate headers for service worker
     const headers = new Headers();
