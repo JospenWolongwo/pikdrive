@@ -29,6 +29,7 @@ export class OneSignalClient {
 
   /**
    * Initialize OneSignal SDK
+   * Note: OneSignal is now initialized directly in layout.tsx using the official pattern
    */
   async initialize(appId: string): Promise<void> {
     console.log('🚀 OneSignal initialize called with App ID:', appId);
@@ -48,37 +49,27 @@ export class OneSignalClient {
       console.log('🔍 window.OneSignalDeferred exists:', !!window.OneSignalDeferred);
       console.log('🔍 window.OneSignal exists:', !!window.OneSignal);
       
-      // Wait for OneSignal to be available with timeout
+      // Wait for OneSignal to be available (initialized in layout.tsx)
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('OneSignal SDK failed to load within 10 seconds'));
         }, 10000);
         
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async (OneSignal) => {
-          clearTimeout(timeout);
-          console.log('📦 OneSignal SDK loaded, initializing...');
-          this.oneSignal = OneSignal;
-          await OneSignal.init({
-            appId: appId,
-            allowLocalhostAsSecureOrigin: true,
-            notifyButton: {
-              enable: false, // We'll use custom UI
-            },
-            promptOptions: {
-              slidedown: {
-                enabled: false, // Disable automatic prompts
-              },
-            },
-            safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID, // For iOS support
-          });
-          resolve();
-        });
+        const checkOneSignal = () => {
+          if (window.OneSignal) {
+            clearTimeout(timeout);
+            this.oneSignal = window.OneSignal;
+            this.initialized = true;
+            console.log('✅ OneSignal initialized successfully (from layout)');
+            console.log('🔍 OneSignal instance:', this.oneSignal);
+            resolve();
+          } else {
+            setTimeout(checkOneSignal, 100);
+          }
+        };
+        
+        checkOneSignal();
       });
-
-      this.initialized = true;
-      console.log('✅ OneSignal initialized successfully');
-      console.log('🔍 OneSignal instance:', this.oneSignal);
     } catch (error) {
       console.error('❌ Failed to initialize OneSignal:', error);
       throw error;

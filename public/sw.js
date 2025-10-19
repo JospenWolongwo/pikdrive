@@ -2,8 +2,8 @@
 // Provides basic caching and offline functionality without complex workbox setup
 // OneSignal integration: import OneSignal's SW into our existing root-scoped SW
 try {
-  // Import OneSignal Service Worker via local proxy (avoids tracker blocking)
-  self.importScripts('/api/onesignal/sw');
+  // Import OneSignal Service Worker via proxy (avoids tracker blocking)
+  self.importScripts('/api/onesignal/sw?file=OneSignalSDK.sw.js');
 } catch (e) {
   // No-op if it fails; main SW functions still work
 }
