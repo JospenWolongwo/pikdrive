@@ -85,15 +85,33 @@ export function ChatDialog({
       }
       subscribeToRide(rideId);
 
+      // Mark messages as read when dialog opens
+      markAsRead(conversationId, user.id).catch(err => {
+        console.error('Failed to mark messages as read:', err);
+      });
+
       return () => {
         unsubscribeFromRide(rideId);
       };
     }
-  }, [isOpen, user, conversationId, fetchMessages, subscribeToRide, unsubscribeFromRide]);
+  }, [isOpen, user, conversationId, fetchMessages, subscribeToRide, unsubscribeFromRide, markAsRead]);
 
   useEffect(() => {
     scrollToBottom();
   }, [conversationMessages]);
+
+  // Mark messages as read when viewing them (debounced to avoid excessive API calls)
+  useEffect(() => {
+    if (isOpen && user && conversationId && conversationMessages.length > 0) {
+      const timer = setTimeout(() => {
+        markAsRead(conversationId, user.id).catch(err => {
+          console.error('Failed to mark messages as read:', err);
+        });
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, conversationId, user, conversationMessages.length, markAsRead]);
 
   // Clear fetched conversations when conversationId changes
   useEffect(() => {

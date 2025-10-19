@@ -84,6 +84,24 @@ export function useNotificationPrompt(): UseNotificationPromptReturn {
   // Removed auto-show effect - prompt should only show when explicitly triggered
 
   /**
+   * Listen for trigger events from other components
+   */
+  useEffect(() => {
+    const handleTriggerEvent = () => {
+      if (shouldShowPrompt()) {
+        openPrompt();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pikdrive-show-notification-prompt', handleTriggerEvent);
+      return () => {
+        window.removeEventListener('pikdrive-show-notification-prompt', handleTriggerEvent);
+      };
+    }
+  }, [openPrompt, shouldShowPrompt]);
+
+  /**
    * Hide prompt if user subscribes
    */
   useEffect(() => {
@@ -105,22 +123,19 @@ export function useNotificationPrompt(): UseNotificationPromptReturn {
  * Use this in components where you want to show prompt after user actions
  */
 export function useNotificationPromptTrigger() {
-  const { openPrompt, shouldShowPrompt } = useNotificationPrompt();
-
   /**
    * Trigger prompt after user action (e.g., booking, messaging)
+   * Uses custom event to communicate with the main prompt instance
    */
   const triggerPrompt = useCallback(() => {
-    if (shouldShowPrompt()) {
-      // Small delay to let the user action complete
-      setTimeout(() => {
-        openPrompt();
-      }, 1000);
+    if (typeof window !== 'undefined') {
+      // Dispatch custom event that the main prompt instance can listen to
+      window.dispatchEvent(new CustomEvent('pikdrive-show-notification-prompt'));
     }
-  }, [openPrompt, shouldShowPrompt]);
+  }, []);
 
   return {
     triggerPrompt,
-    canTrigger: shouldShowPrompt(),
+    canTrigger: true, // Always allow trigger attempt
   };
 }

@@ -46,7 +46,7 @@ export class ChatApiClient {
    * Mark messages as read for a specific ride
    */
   async markMessagesAsRead(rideId: string, userId: string): Promise<ApiResponse<void>> {
-    return apiClient.put<ApiResponse<void>>(`/api/messages/read/${rideId}`, { userId });
+    return apiClient.post<ApiResponse<void>>(`/api/messages/read/${rideId}`, { userId });
   }
 
   /**
