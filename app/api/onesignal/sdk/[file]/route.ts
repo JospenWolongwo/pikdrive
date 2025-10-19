@@ -14,11 +14,11 @@ export async function GET(_req: NextRequest, { params }: { params: { file: strin
     if (!res.ok) return NextResponse.json({ error: 'Fetch failed' }, { status: res.status });
 
     let content = await res.text();
+    // Also rewrite OneSignal API base URLs inside the loader so JSONP (sync) uses our proxy
     if (file === 'OneSignalSDK.page.js') {
-      content = content.replace(
-        /https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g,
-        '/api/onesignal/sdk/'
-      );
+      content = content
+        .replace(/https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g, '/api/onesignal/sdk/')
+        .replace(/https:\/\/api\.onesignal\.com\//g, '/api/onesignal/api/');
     }
 
     return new NextResponse(content, {
