@@ -104,9 +104,20 @@ async function handleApiRequest(
         headers.set(header, value);
       }
     });
+    
+    // Add required OneSignal headers
+    const origin = request.headers.get('x-forwarded-host')
+      ? `https://${request.headers.get('x-forwarded-host')}`
+      : new URL(request.url).origin;
+    
+    headers.set('Origin', origin);
+    headers.set('Referer', `${origin}/`);
+    headers.set('Host', 'api.onesignal.com');
 
     // Add our proxy identifier
     headers.set('X-OneSignal-Proxy', 'PikDrive-API-Proxy/1.0');
+    
+    console.log(`🔍 Headers being sent to OneSignal:`, Object.fromEntries(headers.entries()));
 
     // Prepare request options
     const requestOptions: RequestInit = {
