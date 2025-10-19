@@ -34,6 +34,9 @@ export function OneSignalScript() {
           safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
         });
         console.log('✅ OneSignal initialized via official pattern');
+        try {
+          (window as any).__oneSignalReady = true;
+        } catch {}
       } catch (error) {
         console.error('❌ OneSignal initialization failed:', error);
       }

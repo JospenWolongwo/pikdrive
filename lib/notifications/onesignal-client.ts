@@ -83,7 +83,8 @@ export class OneSignalClient {
 
       const check = () => {
         const os = (typeof window !== 'undefined') ? window.OneSignal : null;
-        if (os && typeof os.login === 'function' && os.Notifications && os.User) {
+        const readyFlag = (typeof window !== 'undefined') ? (window as any).__oneSignalReady === true : false;
+        if (os && typeof os.login === 'function' && os.Notifications && os.User && readyFlag) {
           markReady(os);
         } else {
           setTimeout(check, 100);
@@ -95,7 +96,8 @@ export class OneSignalClient {
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         window.OneSignalDeferred.push(function(OneSignal: any) {
           // If init already completed, required APIs should exist
-          if (OneSignal && typeof OneSignal.login === 'function' && OneSignal.Notifications && OneSignal.User) {
+          const readyFlag = (typeof window !== 'undefined') ? (window as any).__oneSignalReady === true : false;
+          if (OneSignal && typeof OneSignal.login === 'function' && OneSignal.Notifications && OneSignal.User && readyFlag) {
             markReady(OneSignal);
           } else {
             // Fallback to polling until APIs are available
@@ -186,8 +188,13 @@ export class OneSignalClient {
    * Remove external user ID (on logout)
    */
   async removeExternalUserId(): Promise<void> {
-    if (!this.oneSignal) {
-      return;
+    if (!this.initialized || !this.oneSignal) {
+      try {
+        await this.waitForSDKReady();
+      } catch (e) {
+        console.error('❌ OneSignal not ready for logout:', e);
+        return;
+      }
     }
 
     try {
