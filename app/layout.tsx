@@ -66,24 +66,6 @@ export default function RootLayout({
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         <script src="/api/onesignal/sdk?file=OneSignalSDK.page.js" defer></script>
-        <script>
-          window.OneSignalDeferred = window.OneSignalDeferred || [];
-          OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.init({
-              appId: "144cd70b-0d97-4216-8cff-80d1c903b93d",
-              allowLocalhostAsSecureOrigin: true,
-              notifyButton: {
-                enable: false, // We'll use custom UI
-              },
-              promptOptions: {
-                slidedown: {
-                  enabled: false, // Disable automatic prompts
-                },
-              },
-              safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
-            });
-          });
-        </script>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

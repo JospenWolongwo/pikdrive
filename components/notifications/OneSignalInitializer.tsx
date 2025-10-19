@@ -5,6 +5,7 @@ import { useOneSignal } from '@/hooks/notifications/useOneSignal';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useNotificationPrompt } from '@/hooks/notifications/useNotificationPrompt';
 import { NotificationPrompt } from './NotificationPrompt';
+import { OneSignalScript } from './OneSignalScript';
 
 /**
  * OneSignal Initialization Component
@@ -54,14 +55,17 @@ export function OneSignalInitializer() {
     handleAuthChange();
   }, [user, isInitialized, setUserId, removeUserId]);
 
-  // Render custom notification prompt
+  // Render OneSignal script and custom notification prompt
   return (
-    <NotificationPrompt
-      isOpen={showPrompt}
-      onClose={closePrompt}
-      onEnable={() => {
-        console.log('✅ User enabled notifications via custom prompt');
-      }}
-    />
+    <>
+      <OneSignalScript />
+      <NotificationPrompt
+        isOpen={showPrompt}
+        onClose={closePrompt}
+        onEnable={() => {
+          console.log('✅ User enabled notifications via custom prompt');
+        }}
+      />
+    </>
   );
 }
