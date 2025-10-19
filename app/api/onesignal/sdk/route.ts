@@ -51,6 +51,12 @@ export async function GET(request: NextRequest) {
       '/api/onesignal/sdk/'
     );
     
+    // Rewrite OneSignal API URLs to use our proxy
+    content = content.replace(
+      /https:\/\/api\.onesignal\.com\//g,
+      '/api/onesignal/api/'
+    );
+    
     // Set appropriate headers
     const headers = new Headers();
     headers.set('Content-Type', 'application/javascript');

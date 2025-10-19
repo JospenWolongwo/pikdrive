@@ -21,6 +21,12 @@ export async function GET(_req: NextRequest, { params }: { params: { file: strin
       '/api/onesignal/sw/'
     );
     
+    // Rewrite OneSignal API URLs to use our proxy
+    content = content.replace(
+      /https:\/\/api\.onesignal\.com\//g,
+      '/api/onesignal/api/'
+    );
+    
     return new NextResponse(content, {
       status: 200,
       headers: {

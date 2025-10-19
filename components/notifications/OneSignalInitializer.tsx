@@ -5,7 +5,7 @@ import { useOneSignal } from '@/hooks/notifications/useOneSignal';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useNotificationPrompt } from '@/hooks/notifications/useNotificationPrompt';
 import { NotificationPrompt } from './NotificationPrompt';
-import { OneSignalScript } from './OneSignalScript';
+// OneSignalScript removed - initialization handled directly here
 
 /**
  * OneSignal Initialization Component
@@ -55,17 +55,53 @@ export function OneSignalInitializer() {
     handleAuthChange();
   }, [user, isInitialized, setUserId, removeUserId]);
 
-  // Render OneSignal script and custom notification prompt
+  // Initialize OneSignal directly
+  useEffect(() => {
+    const initOneSignal = async () => {
+      try {
+        const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+        if (!appId) {
+          console.warn('⚠️ NEXT_PUBLIC_ONESIGNAL_APP_ID is not set; OneSignal will not initialize');
+          return;
+        }
+
+        // Wait for OneSignal SDK to be available
+        if (typeof window !== 'undefined' && window.OneSignal) {
+          await window.OneSignal.init({
+            appId,
+            allowLocalhostAsSecureOrigin: true,
+            serviceWorkerParam: { scope: '/' },
+            serviceWorkerPath: 'OneSignalSDKWorker.js',
+            path: '/api/onesignal/sdk/',
+            notifyButton: {
+              enable: false, // We'll use custom UI
+            },
+            promptOptions: {
+              slidedown: {
+                enabled: false, // Disable automatic prompts
+              },
+            },
+            safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
+          });
+          console.log('✅ OneSignal initialized directly');
+          window.__oneSignalReady = true;
+        }
+      } catch (error) {
+        console.error('❌ OneSignal initialization failed:', error);
+      }
+    };
+
+    initOneSignal();
+  }, []);
+
+  // Render custom notification prompt
   return (
-    <>
-      <OneSignalScript />
-      <NotificationPrompt
-        isOpen={showPrompt}
-        onClose={closePrompt}
-        onEnable={() => {
-          console.log('✅ User enabled notifications via custom prompt');
-        }}
-      />
-    </>
+    <NotificationPrompt
+      isOpen={showPrompt}
+      onClose={closePrompt}
+      onEnable={() => {
+        console.log('✅ User enabled notifications via custom prompt');
+      }}
+    />
   );
 }

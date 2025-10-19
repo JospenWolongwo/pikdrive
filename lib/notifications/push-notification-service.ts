@@ -100,12 +100,17 @@ export class PushNotificationService {
         return existingSubscription;
       }
 
+      // Check if VAPID key is available
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        console.warn("⚠️ NEXT_PUBLIC_VAPID_PUBLIC_KEY not set. Push notifications may not work without OneSignal.");
+        throw new Error("VAPID public key not configured. Please use OneSignal for push notifications.");
+      }
+
       // Subscribe to push notifications
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
-        ),
+        applicationServerKey: this.urlBase64ToUint8Array(vapidKey),
       });
 
       // Store subscription via API route (server-side)
@@ -179,6 +184,10 @@ export class PushNotificationService {
 
   // Helper method to convert VAPID key
   private urlBase64ToUint8Array(base64String: string): BufferSource {
+    if (!base64String) {
+      throw new Error("VAPID key is undefined or empty");
+    }
+    
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding)
       .replace(/-/g, "+")

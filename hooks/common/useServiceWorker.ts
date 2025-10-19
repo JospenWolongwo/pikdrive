@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { pushNotificationService } from "@/lib/notifications/push-notification-service";
+import { useOneSignal } from "@/hooks/notifications/useOneSignal";
 
 interface ServiceWorkerState {
   readonly isSupported: boolean;
@@ -21,6 +22,7 @@ export function useServiceWorker() {
   });
 
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const { isInitialized: oneSignalInitialized, requestPermission: oneSignalRequestPermission } = useOneSignal();
 
   // Check if service worker is supported
   useEffect(() => {
@@ -28,60 +30,36 @@ export function useServiceWorker() {
     setState((prev) => ({ ...prev, isSupported }));
   }, []);
 
-  // Register service worker
-  const registerServiceWorker = useCallback(async () => {
+  // Check for existing service worker (OneSignal's)
+  const checkServiceWorker = useCallback(async () => {
     if (!state.isSupported) {
       console.warn("Service Worker not supported");
       return false;
     }
 
     try {
-      console.log("🔧 Registering PikDrive Service Worker...");
-
-      // Register the custom service worker
-      const registration = await navigator.serviceWorker.register(
-        "/sw.js",
-        {
-          scope: "/",
-        }
-      );
-
-      console.log("✅ Service Worker registered successfully:", registration);
-
-      // Check if there's an update available
-      registration.addEventListener("updatefound", () => {
-        const newWorker = registration.installing;
-        if (newWorker) {
-          setState((prev) => ({ ...prev, isUpdating: true }));
-
-          newWorker.addEventListener("statechange", () => {
-            if (
-              newWorker.state === "installed" &&
-              navigator.serviceWorker.controller
-            ) {
-              setUpdateAvailable(true);
-              setState((prev) => ({ ...prev, isUpdating: false }));
-              console.log("🔄 Service Worker update available");
-            }
-          });
-        }
-      });
-
-      // Handle service worker updates
-      registration.addEventListener("controllerchange", () => {
-        console.log("🔄 Service Worker controller changed");
-        window.location.reload();
-      });
-
-      setState((prev) => ({
-        ...prev,
-        isRegistered: true,
-        registration,
-      }));
-
-      return true;
+      console.log("🔧 Checking for OneSignal Service Worker...");
+      
+      // Get existing service worker registration (OneSignal should have registered it)
+      const registration = await navigator.serviceWorker.getRegistration();
+      
+      if (registration) {
+        console.log("✅ OneSignal Service Worker found:", registration);
+        
+        setState((prev) => ({
+          ...prev,
+          isRegistered: true,
+          isInstalled: true,
+          registration,
+        }));
+        
+        return true;
+      } else {
+        console.log("⚠️ No service worker found - OneSignal may not be initialized yet");
+        return false;
+      }
     } catch (error) {
-      console.error("Failed to register Service Worker:", error);
+      console.error("Failed to check service worker:", error);
       return false;
     }
   }, [state.isSupported]);
@@ -111,6 +89,7 @@ export function useServiceWorker() {
         isRegistered: state.isRegistered,
         hasRegistration: !!state.registration,
         userId,
+        oneSignalInitialized,
       });
 
       if (!state.isRegistered || !state.registration) {
@@ -126,19 +105,26 @@ export function useServiceWorker() {
         // Service worker should already be ready if registered
         console.log("🔧 Service worker is ready");
 
-        // Subscribe to push notifications
-        console.log("🔧 Calling pushNotificationService.subscribeToPush...");
-        const subscription = await pushNotificationService.subscribeToPush(
-          userId
-        );
-        console.log("🔧 Subscription result:", subscription);
-        return !!subscription;
+        // Use OneSignal if available, otherwise fall back to custom push service
+        if (oneSignalInitialized) {
+          console.log("🔧 Using OneSignal for push notifications");
+          const permission = await oneSignalRequestPermission();
+          console.log("🔧 OneSignal permission result:", permission);
+          return permission;
+        } else {
+          console.log("🔧 OneSignal not initialized, using custom push service...");
+          const subscription = await pushNotificationService.subscribeToPush(
+            userId
+          );
+          console.log("🔧 Subscription result:", subscription);
+          return !!subscription;
+        }
       } catch (error) {
         console.error("Failed to subscribe to push notifications:", error);
         return false;
       }
     },
-    [state.isRegistered, state.registration]
+    [state.isRegistered, state.registration, oneSignalInitialized, oneSignalRequestPermission]
   );
 
   // Unsubscribe from push notifications
@@ -156,12 +142,12 @@ export function useServiceWorker() {
     []
   );
 
-  // Initialize service worker
+  // Check for OneSignal service worker
   useEffect(() => {
     if (state.isSupported && !state.isRegistered) {
-      registerServiceWorker();
+      checkServiceWorker();
     }
-  }, [state.isSupported, state.isRegistered, registerServiceWorker]);
+  }, [state.isSupported, state.isRegistered, checkServiceWorker]);
 
   // Listen for service worker messages
   useEffect(() => {
@@ -189,7 +175,7 @@ export function useServiceWorker() {
   return {
     ...state,
     updateAvailable,
-    registerServiceWorker,
+    checkServiceWorker,
     installUpdate,
     subscribeToPushNotifications,
     unsubscribeFromPushNotifications,
