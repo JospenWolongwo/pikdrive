@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const file = searchParams.get('file') || 'OneSignalSDK.sw.js';
     
+    console.log('🔍 OneSignal Service Worker request:', { file, url: request.url });
+    
     // Validate file parameter
     const allowedFiles = [
       'OneSignalSDK.sw.js',
@@ -36,6 +38,8 @@ export async function GET(request: NextRequest) {
     }
 
     let content = await response.text();
+    console.log(`✅ Fetched Service Worker file: ${file} (${content.length} bytes)`);
+    console.log(`🔍 SW contains API calls: ${content.includes('api.onesignal.com')}`);
     
     // Rewrite CDN URLs to use our proxy routes
     content = content.replace(

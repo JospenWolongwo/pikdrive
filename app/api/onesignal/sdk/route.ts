@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const file = searchParams.get('file');
     
     console.log('🔍 OneSignal SDK proxy request:', { file, url: request.url });
+    console.log('🔍 Query parameters:', searchParams.toString());
     
     if (!file) {
       console.error('❌ No file parameter provided');
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
 
     let content = await response.text();
     console.log(`✅ Fetched OneSignal file: ${file} (${content.length} bytes)`);
+    console.log(`🔍 File extension: ${file.split('.').pop()}, contains API calls: ${content.includes('api.onesignal.com')}`);
     
     // Rewrite CDN URLs to use our proxy routes
     const originalCdnCount = (content.match(/https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g) || []).length;
