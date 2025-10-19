@@ -27,6 +27,11 @@ export function useNotificationPrompt(): UseNotificationPromptReturn {
    * Check if prompt should be shown
    */
   const shouldShowPrompt = useCallback((): boolean => {
+    // Don't show during SSR
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
     // Don't show if already subscribed
     if (isSubscribed) {
       return false;
@@ -71,7 +76,9 @@ export function useNotificationPrompt(): UseNotificationPromptReturn {
    */
   const closePrompt = useCallback(() => {
     setShowPrompt(false);
-    localStorage.setItem(STORAGE_KEY, Date.now().toString());
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, Date.now().toString());
+    }
   }, []);
 
   // Removed auto-show effect - prompt should only show when explicitly triggered

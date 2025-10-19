@@ -522,9 +522,9 @@ export default function MessagesPage() {
     loadConversations();
   }, [user, loadUserRides, fetchConversations, fetchUnreadCounts, toast]); // Remove conversations from deps to prevent infinite loop
 
-  // Trigger notification prompt when user visits messages page
+  // Trigger notification prompt when user visits messages page (only in browser)
   useEffect(() => {
-    if (user) {
+    if (typeof window !== 'undefined' && user) {
       // Small delay to let the page load
       const timer = setTimeout(() => {
         triggerPrompt();

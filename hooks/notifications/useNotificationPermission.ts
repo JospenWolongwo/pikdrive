@@ -101,9 +101,9 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
     }
   }, [client]);
 
-  // Check permission on mount
+  // Check permission on mount (only in browser)
   useEffect(() => {
-    if (client.isInitialized()) {
+    if (typeof window !== 'undefined' && client.isInitialized()) {
       checkPermission();
     }
   }, [client, checkPermission]);
