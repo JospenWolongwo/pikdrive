@@ -85,18 +85,18 @@ export class ServerOneSignalNotificationService {
   ): Promise<NotificationResponse> {
     const messages = {
       created: {
-        title: 'Booking Created',
-        message: `Your booking for ${rideDetails.from} to ${rideDetails.to} is pending payment.`,
+        title: 'Réservation créée',
+        message: `Votre réservation de ${rideDetails.from} à ${rideDetails.to} est en attente de paiement.`,
         icon: 'Ticket', // Lucide icon
       },
       confirmed: {
-        title: 'Booking Confirmed',
-        message: `Your trip from ${rideDetails.from} to ${rideDetails.to} is confirmed. Have a safe journey!`,
+        title: 'Réservation confirmée',
+        message: `Votre trajet de ${rideDetails.from} à ${rideDetails.to} est confirmé. Bon voyage !`,
         icon: 'TicketCheck', // Lucide icon
       },
       cancelled: {
-        title: 'Booking Cancelled',
-        message: `Your booking for ${rideDetails.from} to ${rideDetails.to} has been cancelled.`,
+        title: 'Réservation annulée',
+        message: `Votre réservation de ${rideDetails.from} à ${rideDetails.to} a été annulée.`,
         icon: 'TicketX', // Lucide icon
       },
     };
@@ -133,23 +133,23 @@ export class ServerOneSignalNotificationService {
 
     const messages = {
       pending: {
-        title: 'Payment Pending',
-        message: `Please complete payment of ${formatAmount(amount)} XAF on your ${provider} phone.`,
+        title: 'Paiement en attente',
+        message: `Veuillez compléter le paiement de ${formatAmount(amount)} XAF sur votre téléphone ${provider}.`,
         icon: 'Clock', // Lucide icon
       },
       processing: {
-        title: 'Payment Processing',
-        message: `Your payment of ${formatAmount(amount)} XAF via ${provider} is being processed...`,
+        title: 'Paiement en cours',
+        message: `Votre paiement de ${formatAmount(amount)} XAF via ${provider} est en cours de traitement...`,
         icon: 'Loader2', // Lucide icon
       },
       completed: {
-        title: 'Payment Successful',
-        message: `${formatAmount(amount)} XAF paid via ${provider}.${metadata?.transactionId ? ` Transaction ID: ${metadata.transactionId}` : ''}`,
+        title: 'Paiement réussi',
+        message: `${formatAmount(amount)} XAF payé via ${provider}.${metadata?.transactionId ? ` Transaction ID: ${metadata.transactionId}` : ''}`,
         icon: 'CheckCircle2', // Lucide icon
       },
       failed: {
-        title: 'Payment Failed',
-        message: `Payment could not be processed. ${metadata?.reason || 'Please try again.'}`,
+        title: 'Paiement échoué',
+        message: `Le paiement n'a pas pu être traité. ${metadata?.reason || 'Veuillez réessayer.'}`,
         icon: 'XCircle', // Lucide icon
       },
     };
@@ -180,18 +180,190 @@ export class ServerOneSignalNotificationService {
     senderId: string,
     senderName: string,
     messagePreview: string,
-    conversationId: string
+    conversationId: string,
+    rideId?: string
   ): Promise<NotificationResponse> {
     return this.sendNotification({
       userId,
-      title: `New message from ${senderName}`,
+      title: `Nouveau message de ${senderName}`,
       message: messagePreview,
       notificationType: 'new_message',
       data: {
         conversationId,
         senderId,
+        rideId, // Include rideId for navigation
         type: 'new_message',
         icon: 'MessageSquare', // Lucide icon
+      },
+    });
+  }
+
+  /**
+   * Send driver notification for ride updates
+   */
+  async sendDriverNotification(
+    driverId: string,
+    type: 'new_booking' | 'booking_cancelled',
+    bookingDetails: {
+      id: string;
+      rideId: string;
+      passengerName: string;
+      from: string;
+      to: string;
+      date: string;
+      seats: number;
+      amount: number;
+    }
+  ): Promise<NotificationResponse> {
+    const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+
+    const messages = {
+      new_booking: {
+        title: '🎉 Nouvelle réservation!',
+        message: `${bookingDetails.passengerName} a réservé votre trajet ${bookingDetails.from} → ${bookingDetails.to}`,
+        icon: 'UserPlus',
+      },
+      booking_cancelled: {
+        title: '⚠️ Réservation annulée',
+        message: `${bookingDetails.passengerName} a annulé sa réservation pour ${bookingDetails.from} → ${bookingDetails.to}`,
+        icon: 'UserMinus',
+      },
+    };
+
+    const { title, message, icon } = messages[type];
+
+    return this.sendNotification({
+      userId: driverId,
+      title,
+      message,
+      notificationType: `driver_${type}`,
+      data: {
+        bookingId: bookingDetails.id,
+        rideId: bookingDetails.rideId,
+        passengerName: bookingDetails.passengerName,
+        from: bookingDetails.from,
+        to: bookingDetails.to,
+        date: bookingDetails.date,
+        seats: bookingDetails.seats,
+        amount: bookingDetails.amount,
+        type: `driver_${type}`,
+        icon,
+      },
+    });
+  }
+
+  /**
+   * Send SMS for booking confirmation (via OneSignal SMS API)
+   */
+  async sendBookingConfirmationSMS(
+    phoneNumber: string,
+    booking: {
+      id: string;
+      from: string;
+      to: string;
+      date: string;
+      amount: number;
+    },
+    activationCode: string
+  ): Promise<NotificationResponse> {
+    const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('fr-FR');
+
+    const message = `✅ Réservation confirmée!
+Trajet: ${booking.from} → ${booking.to}
+Date: ${formatDate(booking.date)}
+Code d'activation: ${activationCode}
+Montant: ${formatAmount(booking.amount)} XAF
+
+Présentez ce code au conducteur.
+Détails: pikdrive.com/bookings/${booking.id}`;
+
+    return this.sendNotification({
+      userId: phoneNumber, // Use phone as user ID for SMS
+      title: 'Réservation PikDrive',
+      message,
+      notificationType: 'booking_confirmation_sms',
+      phoneNumber,
+      sendSMS: true,
+      data: {
+        bookingId: booking.id,
+        activationCode,
+        type: 'booking_confirmation_sms',
+      },
+    });
+  }
+
+  /**
+   * Send SMS for payment failure (via OneSignal SMS API)
+   */
+  async sendPaymentFailureSMS(
+    phoneNumber: string,
+    booking: {
+      id: string;
+      from: string;
+      to: string;
+      amount: number;
+      paymentId: string;
+    },
+    reason: string
+  ): Promise<NotificationResponse> {
+    const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+
+    const message = `❌ Paiement échoué
+Trajet: ${booking.from} → ${booking.to}
+Montant: ${formatAmount(booking.amount)} XAF
+Raison: ${reason}
+
+Réessayer: pikdrive.com/payments/retry/${booking.paymentId}
+Besoin d'aide? Contactez-nous`;
+
+    return this.sendNotification({
+      userId: phoneNumber, // Use phone as user ID for SMS
+      title: 'Paiement PikDrive',
+      message,
+      notificationType: 'payment_failure_sms',
+      phoneNumber,
+      sendSMS: true,
+      data: {
+        bookingId: booking.id,
+        paymentId: booking.paymentId,
+        reason,
+        type: 'payment_failure_sms',
+      },
+    });
+  }
+
+  /**
+   * Send SMS for booking cancellation confirmation
+   */
+  async sendCancellationConfirmationSMS(
+    phoneNumber: string,
+    booking: {
+      id: string;
+      from: string;
+      to: string;
+      amount: number;
+    }
+  ): Promise<NotificationResponse> {
+    const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+
+    const message = `✅ Réservation annulée
+Trajet: ${booking.from} → ${booking.to}
+Montant: ${formatAmount(booking.amount)} XAF
+
+Remboursement en cours...
+Détails: pikdrive.com/bookings/${booking.id}`;
+
+    return this.sendNotification({
+      userId: phoneNumber,
+      title: 'Annulation PikDrive',
+      message,
+      notificationType: 'cancellation_confirmation_sms',
+      phoneNumber,
+      sendSMS: true,
+      data: {
+        bookingId: booking.id,
+        type: 'cancellation_confirmation_sms',
       },
     });
   }

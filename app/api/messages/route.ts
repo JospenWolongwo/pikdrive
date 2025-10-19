@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient, getUserWithRetry } from "@/lib/supabase/server-client";
+import { ServerOneSignalNotificationService } from "@/lib/services/server/onesignal-notification-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -165,6 +166,39 @@ export async function POST(request: NextRequest) {
         avatar_url: senderProfile.avatar_url
       }
     };
+
+    // Send push notification to recipient (non-blocking)
+    try {
+      // Get conversation to find recipient and rideId
+      const { data: conversation } = await supabaseClient
+        .from('conversations')
+        .select('participants, ride_id')
+        .eq('id', finalConversationId)
+        .single();
+
+      if (conversation) {
+        // Get recipient (the other participant)
+        const recipientId = conversation.participants.find(
+          (id: string) => id !== user.id
+        );
+
+        if (recipientId) {
+          const notificationService = new ServerOneSignalNotificationService(supabaseClient);
+          await notificationService.sendMessageNotification(
+            recipientId,
+            user.id,
+            senderProfile.full_name,
+            filteredContent.substring(0, 100), // Preview (first 100 chars)
+            finalConversationId,
+            conversation.ride_id // Pass rideId for navigation
+          );
+          console.log('✅ Push notification sent to recipient:', recipientId);
+        }
+      }
+    } catch (notificationError) {
+      // Don't fail message send if notification fails
+      console.error('❌ Failed to send push notification:', notificationError);
+    }
 
     return NextResponse.json({ success: true, data: messageWithSender });
   } catch (error) {

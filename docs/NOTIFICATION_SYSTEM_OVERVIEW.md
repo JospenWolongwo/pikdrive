@@ -118,32 +118,27 @@ await notifier.sendNotification({
 });
 ```
 
-### **💬 For Message Notifications (Client-side):**
+### **💬 For Message Notifications (Server-side Push):**
 
 ```typescript
-// In React components
-import { MessageNotificationManager } from '@/lib/notifications/message-notification-manager';
+// Messages automatically trigger push notifications via OneSignal
+// No client-side code needed - handled in API route
 
-// Auto-handles all message notifications
-const messageManager = new MessageNotificationManager({
-  supabase,
-  userId: user.id,
-  onMessageClick: (rideId) => router.push(`/messages?ride=${rideId}`)
-});
+// In app/api/messages/route.ts - automatically sends push notifications
+// when messages are sent between driver and passenger
 
-// Start listening for messages
-useEffect(() => {
-  messageManager.start();
-  return () => messageManager.stop();
-}, []);
+// Manual push notifications
+import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
+const notificationService = new ServerOneSignalNotificationService(supabase);
 
-// Manual browser notifications
-import { notificationService } from '@/lib/notifications/notification-service';
-await notificationService.showNotification({
-  title: 'Custom Notification',
-  body: 'This is a custom notification',
-  sound: true
-});
+await notificationService.sendMessageNotification(
+  recipientId,
+  senderId,
+  senderName,
+  messagePreview,
+  conversationId,
+  rideId
+);
 ```
 
 ---
@@ -178,15 +173,15 @@ await notificationService.showNotification({
 - ✅ Booking confirmations
 
 ### **Use Message Notifications For:**
-- ✅ New chat messages
-- ✅ Real-time conversations
-- ✅ Driver-passenger communication
-- ✅ Quick responses
+- ✅ New chat messages (via OneSignal push notifications)
+- ✅ Real-time conversations (server-side push)
+- ✅ Driver-passenger communication (automatic)
+- ✅ Quick responses (instant delivery)
 
 ### **When to Use Both:**
 - ✅ **Critical events** (payment success) → Push + Message
 - ✅ **Urgent messages** → Push + Message
-- ✅ **Regular chat** → Message only
+- ✅ **Regular chat** → Push notification only (automatic)
 
 ---
 

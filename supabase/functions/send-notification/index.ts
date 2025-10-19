@@ -46,8 +46,8 @@ async function sendSMSViaOneSignal(
     body: JSON.stringify({
       app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
       include_phone_numbers: [request.phoneNumber],
-      contents: { en: request.message, fr: request.message },
-      headings: { en: request.title, fr: request.title },
+      contents: { fr: request.message, en: request.message },
+      headings: { fr: request.title, en: request.title },
       data: {
         ...request.data,
         notificationType: request.notificationType || "general",
@@ -100,8 +100,8 @@ async function sendPushViaOneSignal(
     body: JSON.stringify({
       app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
       include_external_user_ids: [request.userId],
-      contents: { en: request.message, fr: request.message },
-      headings: { en: request.title, fr: request.title },
+      contents: { fr: request.message, en: request.message },
+      headings: { fr: request.title, en: request.title },
       data: {
         ...request.data,
         notificationType: request.notificationType || "general",

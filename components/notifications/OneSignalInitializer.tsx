@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useOneSignal } from '@/hooks/notifications/useOneSignal';
 import { useSupabase } from '@/providers/SupabaseProvider';
+import { useNotificationPrompt } from '@/hooks/notifications/useNotificationPrompt';
+import { NotificationPrompt } from './NotificationPrompt';
 
 /**
  * OneSignal Initialization Component
@@ -12,11 +14,13 @@ import { useSupabase } from '@/providers/SupabaseProvider';
  * - Initializes once on app load
  * - Links user ID when authenticated
  * - Unlinks on logout
+ * - Shows custom permission prompt
  * - Follows Uber/DoorDash patterns
  */
 export function OneSignalInitializer() {
   const { initialize, setUserId, removeUserId, isInitialized } = useOneSignal();
   const { user } = useSupabase();
+  const { showPrompt, closePrompt } = useNotificationPrompt();
 
   // Initialize OneSignal once
   useEffect(() => {
@@ -50,6 +54,14 @@ export function OneSignalInitializer() {
     handleAuthChange();
   }, [user, isInitialized, setUserId, removeUserId]);
 
-  // This component doesn't render anything
-  return null;
+  // Render custom notification prompt
+  return (
+    <NotificationPrompt
+      isOpen={showPrompt}
+      onClose={closePrompt}
+      onEnable={() => {
+        console.log('✅ User enabled notifications via custom prompt');
+      }}
+    />
+  );
 }

@@ -10,6 +10,11 @@ export type NotificationType =
   | 'payment_success'
   | 'payment_failed'
   | 'new_message'
+  | 'driver_new_booking'
+  | 'driver_booking_cancelled'
+  | 'booking_confirmation_sms'
+  | 'payment_failure_sms'
+  | 'cancellation_confirmation_sms'
   | 'driver_arriving'
   | 'driver_arrived'
   | 'ride_started'
@@ -61,6 +66,11 @@ export const NOTIFICATION_SOUNDS: Record<NotificationType, string> = {
   payment_success: '/sounds/payment-success.wav',
   payment_failed: '/sounds/payment-failed.wav',
   new_message: '/sounds/new-message.wav',
+  driver_new_booking: '/sounds/booking-confirmed.wav',
+  driver_booking_cancelled: '/sounds/booking-cancelled.wav',
+  booking_confirmation_sms: '/sounds/booking-confirmed.wav', // For push fallback
+  payment_failure_sms: '/sounds/payment-failed.wav', // For push fallback
+  cancellation_confirmation_sms: '/sounds/booking-cancelled.wav', // For push fallback
   driver_arriving: '/sounds/new-message.wav', // Reuse for now
   driver_arrived: '/sounds/booking-confirmed.wav', // Reuse for now
   ride_started: '/sounds/booking-confirmed.wav', // Reuse for now
@@ -78,7 +88,12 @@ export const NOTIFICATION_ACTIONS: Record<NotificationType, (data: NotificationD
   payment_processing: (data) => `/payments/${data.paymentId}`,
   payment_success: (data) => `/receipts/${data.paymentId}`,
   payment_failed: (data) => `/payments/retry/${data.paymentId}`,
-  new_message: (data) => `/messages/${data.conversationId}`,
+  new_message: (data) => `/messages?ride=${data.rideId}`,
+  driver_new_booking: (data) => `/driver/bookings/${data.bookingId}`,
+  driver_booking_cancelled: (data) => `/driver/bookings`,
+  booking_confirmation_sms: (data) => `/bookings/${data.bookingId}`,
+  payment_failure_sms: (data) => `/payments/retry/${data.paymentId}`,
+  cancellation_confirmation_sms: (data) => `/bookings/${data.bookingId}`,
   driver_arriving: (data) => `/bookings/${data.bookingId}`,
   driver_arrived: (data) => `/bookings/${data.bookingId}`,
   ride_started: (data) => `/bookings/${data.bookingId}`,

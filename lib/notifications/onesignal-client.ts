@@ -53,6 +53,12 @@ export class OneSignalClient {
             notifyButton: {
               enable: false, // We'll use custom UI
             },
+            promptOptions: {
+              slidedown: {
+                enabled: false, // Disable automatic prompts
+              },
+            },
+            safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID, // For iOS support
           });
           resolve();
         });

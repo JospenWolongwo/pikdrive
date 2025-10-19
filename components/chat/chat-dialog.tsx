@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
+import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -60,6 +61,8 @@ export function ChatDialog({
     subscribeToRide,
     unsubscribeFromRide,
   } = useChatStore();
+  
+  const { triggerPrompt } = useNotificationPromptTrigger();
   
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -112,6 +115,9 @@ export function ChatDialog({
         ride_id: rideId,
         content: messageContent,
       });
+
+      // Trigger notification prompt after sending message
+      triggerPrompt();
 
       scrollToBottom();
     } catch (error) {
