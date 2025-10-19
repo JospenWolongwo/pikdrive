@@ -13,7 +13,14 @@ export async function GET(_req: NextRequest, { params }: { params: { file: strin
     });
     if (!res.ok) return NextResponse.json({ error: 'Fetch failed' }, { status: res.status });
 
-    const content = await res.text();
+    let content = await res.text();
+    if (file === 'OneSignalSDK.page.js') {
+      content = content.replace(
+        /https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g,
+        '/api/onesignal/sdk/'
+      );
+    }
+
     return new NextResponse(content, {
       status: 200,
       headers: {
