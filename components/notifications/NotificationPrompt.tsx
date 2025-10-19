@@ -20,13 +20,30 @@ interface NotificationPromptProps {
 export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPromptProps) {
   const { requestPermission, isLoading } = useNotificationPermission();
   const [deviceInfo] = useState(() => detectDevice());
+  const [error, setError] = useState<string | null>(null);
 
   const handleEnableNotifications = async () => {
-    const granted = await requestPermission();
-    if (granted) {
-      onEnable();
+    setError(null);
+    
+    try {
+      // Add timeout to prevent stuck state
+      const granted = await Promise.race([
+        requestPermission(),
+        new Promise<boolean>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 10000)
+        )
+      ]);
+      
+      if (granted) {
+        onEnable();
+        onClose(); // Only close on success
+      } else {
+        setError('Permission refusée. Vous pouvez réessayer plus tard.');
+      }
+    } catch (error) {
+      setError('Une erreur s\'est produite. Veuillez réessayer.');
+      console.error('Permission request failed:', error);
     }
-    onClose();
   };
 
   const handleLater = () => {
@@ -97,6 +114,15 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <p className="text-sm text-yellow-800">
                 {supportMessage}
+              </p>
+            </div>
+          )}
+
+          {/* Error message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-800">
+                {error}
               </p>
             </div>
           )}

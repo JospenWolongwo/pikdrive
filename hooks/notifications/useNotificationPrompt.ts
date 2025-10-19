@@ -74,18 +74,7 @@ export function useNotificationPrompt(): UseNotificationPromptReturn {
     localStorage.setItem(STORAGE_KEY, Date.now().toString());
   }, []);
 
-  /**
-   * Auto-show prompt after delay if conditions are met
-   */
-  useEffect(() => {
-    if (shouldShowPrompt()) {
-      const timer = setTimeout(() => {
-        setShowPrompt(true);
-      }, PROMPT_DELAY);
-
-      return () => clearTimeout(timer);
-    }
-  }, [shouldShowPrompt]);
+  // Removed auto-show effect - prompt should only show when explicitly triggered
 
   /**
    * Hide prompt if user subscribes

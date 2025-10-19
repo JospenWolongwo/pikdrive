@@ -32,6 +32,7 @@ import {
   cleanupGlobalMessageNotificationManager,
 } from "@/lib/notifications/message-notification-manager";
 import { ChatDialog } from "@/components/chat/chat-dialog";
+import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -80,6 +81,9 @@ export default function MessagesPage() {
     subscribeToPushNotifications,
     unsubscribeFromPushNotifications,
   } = useServiceWorker();
+
+  // Notification prompt trigger
+  const { triggerPrompt } = useNotificationPromptTrigger();
 
   // Debounced version removed - conversations load only once on mount
 
@@ -517,6 +521,18 @@ export default function MessagesPage() {
 
     loadConversations();
   }, [user, loadUserRides, fetchConversations, fetchUnreadCounts, toast]); // Remove conversations from deps to prevent infinite loop
+
+  // Trigger notification prompt when user visits messages page
+  useEffect(() => {
+    if (user) {
+      // Small delay to let the page load
+      const timer = setTimeout(() => {
+        triggerPrompt();
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, triggerPrompt]);
 
   // Initialize global conversation subscription for real-time updates
   useEffect(() => {

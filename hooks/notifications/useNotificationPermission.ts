@@ -60,6 +60,24 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
     setIsLoading(true);
 
     try {
+      // Wait for OneSignal to be initialized before requesting permission
+      if (!client.isInitialized()) {
+        console.log('⏳ Waiting for OneSignal initialization...');
+        await new Promise<void>((resolve, reject) => {
+          const checkInit = () => {
+            if (client.isInitialized()) {
+              resolve();
+            } else {
+              setTimeout(checkInit, 100);
+            }
+          };
+          checkInit();
+          
+          // Timeout after 5 seconds
+          setTimeout(() => reject(new Error('OneSignal initialization timeout')), 5000);
+        });
+      }
+
       const granted = await client.requestPermission();
       
       if (granted) {
@@ -75,6 +93,8 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
       return granted;
     } catch (error) {
       console.error('Error requesting permission:', error);
+      setPermission('denied');
+      setIsSubscribed(false);
       return false;
     } finally {
       setIsLoading(false);
