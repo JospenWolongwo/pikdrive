@@ -21,6 +21,13 @@ export async function GET(_req: NextRequest, { params }: { params: { file: strin
         .replace(/https:\/\/api\.onesignal\.com\//g, '/api/onesignal/api/');
     }
 
+    // Rewrite for ES6 bundle too, so login/sync use our proxy
+    if (file === 'OneSignalSDK.page.es6.js') {
+      content = content
+        .replace(/https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g, '/api/onesignal/sdk/')
+        .replace(/https:\/\/api\.onesignal\.com\//g, '/api/onesignal/api/');
+    }
+
     return new NextResponse(content, {
       status: 200,
       headers: {
