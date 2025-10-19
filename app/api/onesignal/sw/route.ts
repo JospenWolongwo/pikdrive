@@ -43,10 +43,15 @@ export async function GET(request: NextRequest) {
       '/api/onesignal/sw/'
     );
     
-    // Rewrite OneSignal API URLs to use our proxy
+    // Get request origin for absolute URLs
+    const origin = request.headers.get('x-forwarded-host')
+      ? `https://${request.headers.get('x-forwarded-host')}`
+      : new URL(request.url).origin;
+    
+    // Rewrite OneSignal API URLs to use our proxy with absolute URLs
     content = content.replace(
       /https:\/\/api\.onesignal\.com\//g,
-      '/api/onesignal/api/'
+      `${origin}/api/onesignal/api/`
     );
     
     // Set appropriate headers for service worker

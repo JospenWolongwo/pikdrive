@@ -21,10 +21,15 @@ export async function GET(_req: NextRequest, { params }: { params: { file: strin
       '/api/onesignal/sdk/'
     );
     
-    // Rewrite OneSignal API URLs to use our proxy
+    // Get request origin for absolute URLs
+    const origin = request.headers.get('x-forwarded-host')
+      ? `https://${request.headers.get('x-forwarded-host')}`
+      : new URL(request.url).origin;
+    
+    // Rewrite OneSignal API URLs to use our proxy with absolute URLs
     content = content.replace(
       /https:\/\/api\.onesignal\.com\//g,
-      '/api/onesignal/api/'
+      `${origin}/api/onesignal/api/`
     );
 
     return new NextResponse(content, {
