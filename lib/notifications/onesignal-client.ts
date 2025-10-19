@@ -31,6 +31,8 @@ export class OneSignalClient {
    * Initialize OneSignal SDK
    */
   async initialize(appId: string): Promise<void> {
+    console.log('🚀 OneSignal initialize called with App ID:', appId);
+    
     if (this.initialized) {
       console.log('✅ OneSignal already initialized');
       return;
@@ -42,10 +44,15 @@ export class OneSignalClient {
     }
 
     try {
+      console.log('⏳ Waiting for OneSignal SDK to load...');
+      console.log('🔍 window.OneSignalDeferred exists:', !!window.OneSignalDeferred);
+      console.log('🔍 window.OneSignal exists:', !!window.OneSignal);
+      
       // Wait for OneSignal to be available
       await new Promise<void>((resolve) => {
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         window.OneSignalDeferred.push(async (OneSignal) => {
+          console.log('📦 OneSignal SDK loaded, initializing...');
           this.oneSignal = OneSignal;
           await OneSignal.init({
             appId: appId,
@@ -66,6 +73,7 @@ export class OneSignalClient {
 
       this.initialized = true;
       console.log('✅ OneSignal initialized successfully');
+      console.log('🔍 OneSignal instance:', this.oneSignal);
     } catch (error) {
       console.error('❌ Failed to initialize OneSignal:', error);
       throw error;

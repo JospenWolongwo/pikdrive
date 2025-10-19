@@ -47,6 +47,8 @@ export function useOneSignal(): UseOneSignalReturn {
       return;
     }
 
+    console.log('🔍 Checking OneSignal App ID:', process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID);
+    
     if (!process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID) {
       const error = new Error('OneSignal App ID not configured');
       setError(error);
