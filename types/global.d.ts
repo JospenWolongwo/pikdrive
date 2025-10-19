@@ -10,6 +10,8 @@ declare global {
   interface Window {
     __messageNotificationManager?: any;
     __bookingNotificationManager?: any;
+    OneSignalDeferred?: Array<(OneSignal: any) => void>;
+    OneSignal?: any;
   }
 }
 

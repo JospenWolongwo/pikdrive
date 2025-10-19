@@ -13,7 +13,7 @@ export function OneSignalScript() {
   useEffect(() => {
     // Official OneSignal initialization pattern
     window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
+    window.OneSignalDeferred.push(async function(OneSignal) {
       try {
         await OneSignal.init({
           appId: "144cd70b-0d97-4216-8cff-80d1c903b93d",
