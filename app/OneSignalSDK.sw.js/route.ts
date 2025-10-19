@@ -11,10 +11,18 @@ const ONESIGNAL_CDN_BASE = 'https://cdn.onesignal.com/sdks/web/v16';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    console.log('🔍 OneSignal SW direct request:', { url: request.url, params: searchParams.toString() });
+    const appId = searchParams.get('appId');
+    const sdkVersion = searchParams.get('sdkVersion');
     
-    // Fetch from OneSignal CDN
-    const cdnUrl = `${ONESIGNAL_CDN_BASE}/OneSignalSDK.sw.js`;
+    console.log('🔍 OneSignal SW direct request:', { 
+      url: request.url, 
+      appId, 
+      sdkVersion,
+      params: searchParams.toString() 
+    });
+    
+    // Fetch from OneSignal CDN with query parameters
+    const cdnUrl = `${ONESIGNAL_CDN_BASE}/OneSignalSDK.sw.js?${searchParams.toString()}`;
     const response = await fetch(cdnUrl, {
       headers: {
         'User-Agent': 'PikDrive-OneSignal-Proxy/1.0',
