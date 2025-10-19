@@ -47,12 +47,32 @@ export async function DELETE(
   return handleApiRequest(request, params.slug, 'DELETE');
 }
 
+export async function OPTIONS(
+  request: NextRequest,
+  { params }: { params: { slug: string[] } }
+) {
+  console.log(`🚀 OneSignal API CORS preflight: OPTIONS /api/onesignal/api/${params.slug.join('/')}`);
+  
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-OneSignal-Event, X-OneSignal-Proxy',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+
 async function handleApiRequest(
   request: NextRequest,
   slug: string[],
   method: string
 ) {
   try {
+    // Add defensive logging at the very start
+    console.log(`🚀 OneSignal API proxy handler called: ${method} /api/onesignal/api/${slug.join('/')}`);
+    console.log(`🔍 Request URL: ${request.url}`);
     // Reconstruct the API path
     const apiPath = slug.join('/');
     const apiUrl = `${ONESIGNAL_API_BASE}/${apiPath}`;
@@ -153,6 +173,23 @@ async function handleApiRequest(
 
   } catch (error) {
     console.error(`❌ OneSignal API ${method} proxy error:`, error);
+    
+    // For JSONP requests, return error as callback even on proxy errors
+    const { searchParams } = new URL(request.url);
+    const isJsonp = searchParams.has('callback');
+    
+    if (isJsonp) {
+      const errorCallback = searchParams.get('callback') || 'callback';
+      const errorResponse = `${errorCallback}({"error": "Proxy error", "message": "${error instanceof Error ? error.message : 'Unknown error'}"});`;
+      return new NextResponse(errorResponse, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/javascript',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+    
     return NextResponse.json(
       { 
         error: 'OneSignal API proxy error',
