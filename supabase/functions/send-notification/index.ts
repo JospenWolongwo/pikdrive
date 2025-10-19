@@ -37,11 +37,11 @@ async function sendSMSViaOneSignal(
     throw new Error('Phone number is required for SMS');
   }
 
-  const response = await fetch("https://onesignal.com/api/v1/notifications", {
+  const response = await fetch("https://onesignal.com/api/v2/notifications", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Basic ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
+      Authorization: `Bearer ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
     },
     body: JSON.stringify({
       app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
@@ -91,11 +91,11 @@ async function sendPushViaOneSignal(
   // Use app icon - Lucide icons are rendered on the frontend
   const iconUrl = `${webAppUrl}/icons/icon-192x192.png`;
 
-  const response = await fetch("https://onesignal.com/api/v1/notifications", {
+  const response = await fetch("https://onesignal.com/api/v2/notifications", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Basic ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
+      Authorization: `Bearer ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
     },
     body: JSON.stringify({
       app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,

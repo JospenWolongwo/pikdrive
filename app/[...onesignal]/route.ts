@@ -59,6 +59,12 @@ export async function GET(request: NextRequest, { params }: { params: { onesigna
         '/api/onesignal/sw/'
       );
       
+      // Rewrite API URLs to use our proxy to avoid network timeouts
+      content = content.replace(
+        /https:\/\/api\.onesignal\.com\//g,
+        '/api/onesignal/api/'
+      );
+      
       const headers = new Headers();
       headers.set('Content-Type', 'application/javascript');
       headers.set('Cache-Control', 'public, max-age=86400');

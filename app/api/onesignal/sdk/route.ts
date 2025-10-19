@@ -62,8 +62,13 @@ export async function GET(request: NextRequest) {
     );
     console.log(`🔄 Rewrote ${originalCdnCount} CDN URLs to proxy paths`);
     
-    // Note: We no longer rewrite API URLs - let OneSignal SDK make direct API calls to api.onesignal.com
-    // This allows proper authentication while our proxy handles SDK file loading to bypass tracking protection
+    // Rewrite API URLs to use our proxy to avoid network timeouts
+    const originalApiCount = (content.match(/https:\/\/api\.onesignal\.com\//g) || []).length;
+    content = content.replace(
+      /https:\/\/api\.onesignal\.com\//g,
+      '/api/onesignal/api/'
+    );
+    console.log(`🔄 Rewrote ${originalApiCount} API URLs to proxy paths`);
     
     // Set appropriate headers
     const headers = new Headers();
