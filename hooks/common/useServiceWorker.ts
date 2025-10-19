@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { pushNotificationService } from "@/lib/notifications/push-notification-service";
 import { useOneSignal } from "@/hooks/notifications/useOneSignal";
+import { OneSignalClient } from "@/lib/notifications/onesignal-client";
 
 interface ServiceWorkerState {
   readonly isSupported: boolean;
@@ -22,7 +23,7 @@ export function useServiceWorker() {
   });
 
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const { isInitialized: oneSignalInitialized, requestPermission: oneSignalRequestPermission } = useOneSignal();
+  const { isInitialized: oneSignalInitialized } = useOneSignal();
 
   // Check if service worker is supported
   useEffect(() => {
@@ -108,7 +109,8 @@ export function useServiceWorker() {
         // Use OneSignal if available, otherwise fall back to custom push service
         if (oneSignalInitialized) {
           console.log("🔧 Using OneSignal for push notifications");
-          const permission = await oneSignalRequestPermission();
+          const oneSignalClient = OneSignalClient.getInstance();
+          const permission = await oneSignalClient.requestPermission();
           console.log("🔧 OneSignal permission result:", permission);
           return permission;
         } else {
