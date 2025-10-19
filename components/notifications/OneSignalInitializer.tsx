@@ -55,9 +55,9 @@ export function OneSignalInitializer() {
     handleAuthChange();
   }, [user, isInitialized, setUserId, removeUserId]);
 
-  // Initialize OneSignal directly
+  // Initialize OneSignal using the proper deferred pattern
   useEffect(() => {
-    const initOneSignal = async () => {
+    const initOneSignal = () => {
       try {
         const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
         if (!appId) {
@@ -65,29 +65,39 @@ export function OneSignalInitializer() {
           return;
         }
 
-        // Wait for OneSignal SDK to be available
-        if (typeof window !== 'undefined' && window.OneSignal) {
-          await window.OneSignal.init({
-            appId,
-            allowLocalhostAsSecureOrigin: true,
-            serviceWorkerParam: { scope: '/' },
-            serviceWorkerPath: 'OneSignalSDKWorker.js',
-            path: '/api/onesignal/sdk/',
-            notifyButton: {
-              enable: false, // We'll use custom UI
-            },
-            promptOptions: {
-              slidedown: {
-                enabled: false, // Disable automatic prompts
+        console.log('🔧 Setting up OneSignal deferred initialization...');
+        
+        // Use the proper OneSignal initialization pattern
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            console.log('🔧 OneSignal deferred callback executing...');
+            await OneSignal.init({
+              appId,
+              allowLocalhostAsSecureOrigin: true,
+              serviceWorkerParam: { scope: '/' },
+              serviceWorkerPath: 'OneSignalSDKWorker.js',
+              path: '/api/onesignal/sdk/',
+              notifyButton: {
+                enable: false, // We'll use custom UI
               },
-            },
-            safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
-          });
-          console.log('✅ OneSignal initialized directly');
-          window.__oneSignalReady = true;
-        }
+              promptOptions: {
+                slidedown: {
+                  enabled: false, // Disable automatic prompts
+                },
+              },
+              safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
+            });
+            console.log('✅ OneSignal initialized via deferred pattern');
+            window.__oneSignalReady = true;
+          } catch (error) {
+            console.error('❌ OneSignal deferred initialization failed:', error);
+          }
+        });
+        
+        console.log('✅ OneSignal deferred queue configured');
       } catch (error) {
-        console.error('❌ OneSignal initialization failed:', error);
+        console.error('❌ OneSignal setup failed:', error);
       }
     };
 

@@ -110,16 +110,22 @@ export class OneSignalClient {
       try {
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         window.OneSignalDeferred.push(function(OneSignal: IOneSignal) {
+          console.log('🔧 OneSignal deferred callback in client...');
           // If init already completed, required APIs should exist
           const readyFlag = (typeof window !== 'undefined') ? window.__oneSignalReady === true : false;
+          console.log('🔧 Ready flag in deferred callback:', readyFlag);
           if (OneSignal && typeof OneSignal.login === 'function' && OneSignal.Notifications && OneSignal.User && readyFlag) {
+            console.log('✅ OneSignal ready in deferred callback');
             markReady(OneSignal);
           } else {
+            console.log('⏳ OneSignal not ready in deferred callback, polling...');
             // Fallback to polling until APIs are available
             check();
           }
         });
-      } catch {
+        console.log('✅ OneSignal deferred callback added to queue');
+      } catch (error) {
+        console.error('❌ Failed to add OneSignal deferred callback:', error);
         // Fallback if deferred queue is unavailable
         check();
       }
