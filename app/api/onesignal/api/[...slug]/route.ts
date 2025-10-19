@@ -114,7 +114,11 @@ async function handleApiRequest(
     
     // Set response headers
     const responseHeaders = new Headers();
-    responseHeaders.set('Content-Type', 'application/json');
+    
+    // Copy Content-Type from OneSignal's response instead of hardcoding
+    const contentType = response.headers.get('content-type') || 'application/json';
+    responseHeaders.set('Content-Type', contentType);
+    
     responseHeaders.set('Cache-Control', 'no-cache');
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
