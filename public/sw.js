@@ -3,7 +3,7 @@
 // OneSignal integration: import OneSignal's SW into our existing root-scoped SW
 try {
   // Import OneSignal Service Worker via proxy (avoids tracker blocking)
-  self.importScripts('/api/onesignal/sw?file=OneSignalSDK.sw.js');
+  self.importScripts('/api/onesignal/sw/OneSignalSDK.sw.js');
 } catch (e) {
   // No-op if it fails; main SW functions still work
 }
