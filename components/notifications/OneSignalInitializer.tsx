@@ -77,7 +77,6 @@ export function OneSignalInitializer() {
               allowLocalhostAsSecureOrigin: true,
               serviceWorkerParam: { scope: '/' },
               serviceWorkerPath: 'OneSignalSDKWorker.js',
-              path: '/api/onesignal/sdk/',
               notifyButton: {
                 enable: false, // We'll use custom UI
               },

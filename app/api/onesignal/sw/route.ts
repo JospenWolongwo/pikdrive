@@ -47,17 +47,8 @@ export async function GET(request: NextRequest) {
       '/api/onesignal/sw/'
     );
     
-    // Get request origin for absolute URLs
-    const origin = request.headers.get('x-forwarded-host')
-      ? `https://${request.headers.get('x-forwarded-host')}`
-      : new URL(request.url).origin;
-    
-    // Rewrite OneSignal API URLs to use our proxy with absolute URLs
-    // This is necessary to bypass Firefox Enhanced Tracking Protection
-    content = content.replace(
-      /https:\/\/api\.onesignal\.com\//g,
-      `${origin}/api/onesignal/api/`
-    );
+    // Note: We no longer rewrite API URLs - let OneSignal SDK make direct API calls to api.onesignal.com
+    // This allows proper authentication while our proxy handles SDK file loading to bypass tracking protection
     
     // Set appropriate headers for service worker
     const headers = new Headers();
