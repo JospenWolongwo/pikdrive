@@ -14,6 +14,7 @@ export class OneSignalClient {
   private static instance: OneSignalClient;
   private initialized = false;
   private oneSignal: any = null;
+  private sdkReadyPromise: Promise<void> | null = null;
 
   private constructor() {}
 
@@ -45,35 +46,69 @@ export class OneSignalClient {
     }
 
     try {
-      console.log('⏳ Waiting for OneSignal SDK to load...');
-      console.log('🔍 window.OneSignalDeferred exists:', !!window.OneSignalDeferred);
-      console.log('🔍 window.OneSignal exists:', !!window.OneSignal);
-      
-      // Wait for OneSignal to be available (initialized in layout.tsx)
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('OneSignal SDK failed to load within 10 seconds'));
-        }, 10000);
-        
-        const checkOneSignal = () => {
-          if (window.OneSignal) {
-            clearTimeout(timeout);
-            this.oneSignal = window.OneSignal;
-            this.initialized = true;
-            console.log('✅ OneSignal initialized successfully (from layout)');
-            console.log('🔍 OneSignal instance:', this.oneSignal);
-            resolve();
-          } else {
-            setTimeout(checkOneSignal, 100);
-          }
-        };
-        
-        checkOneSignal();
-      });
+      await this.waitForSDKReady();
     } catch (error) {
       console.error('❌ Failed to initialize OneSignal:', error);
       throw error;
     }
+  }
+
+  private waitForSDKReady(): Promise<void> {
+    if (this.initialized && this.oneSignal) {
+      return Promise.resolve();
+    }
+
+    if (this.sdkReadyPromise) {
+      return this.sdkReadyPromise;
+    }
+
+    console.log('⏳ Waiting for OneSignal SDK to be ready...');
+    console.log('🔍 window.OneSignalDeferred exists:', !!window.OneSignalDeferred);
+    console.log('🔍 window.OneSignal exists:', !!window.OneSignal);
+
+    this.sdkReadyPromise = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.sdkReadyPromise = null;
+        reject(new Error('OneSignal SDK failed to become ready within 15 seconds'));
+      }, 15000);
+
+      const markReady = (os: any) => {
+        clearTimeout(timeout);
+        this.oneSignal = os;
+        this.initialized = true;
+        this.sdkReadyPromise = null;
+        console.log('✅ OneSignal SDK ready');
+        resolve();
+      };
+
+      const check = () => {
+        const os = (typeof window !== 'undefined') ? window.OneSignal : null;
+        if (os && typeof os.login === 'function' && os.Notifications && os.User) {
+          markReady(os);
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+
+      // Use deferred queue to run as soon as SDK provides the OneSignal object
+      try {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(function(OneSignal: any) {
+          // If init already completed, required APIs should exist
+          if (OneSignal && typeof OneSignal.login === 'function' && OneSignal.Notifications && OneSignal.User) {
+            markReady(OneSignal);
+          } else {
+            // Fallback to polling until APIs are available
+            check();
+          }
+        });
+      } catch {
+        // Fallback if deferred queue is unavailable
+        check();
+      }
+    });
+
+    return this.sdkReadyPromise;
   }
 
   /**
@@ -134,9 +169,8 @@ export class OneSignalClient {
    * Set external user ID (link with Supabase auth)
    */
   async setExternalUserId(userId: string): Promise<void> {
-    if (!this.oneSignal) {
-      console.error('OneSignal not initialized');
-      return;
+    if (!this.initialized || !this.oneSignal) {
+      await this.waitForSDKReady();
     }
 
     try {

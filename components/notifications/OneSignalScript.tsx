@@ -15,8 +15,13 @@ export function OneSignalScript() {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function(OneSignal) {
       try {
+        const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+        if (!appId) {
+          console.warn('⚠️ NEXT_PUBLIC_ONESIGNAL_APP_ID is not set; OneSignal will not initialize');
+          return;
+        }
         await OneSignal.init({
-          appId: "144cd70b-0d97-4216-8cff-80d1c903b93d",
+          appId,
           allowLocalhostAsSecureOrigin: true,
           notifyButton: {
             enable: false, // We'll use custom UI
