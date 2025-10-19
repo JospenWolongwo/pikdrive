@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ONESIGNAL_CDN_BASE = 'https://cdn.onesignal.com/sdks/web/v16';
 
-export async function GET(_req: NextRequest, { params }: { params: { file: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { file: string } }) {
   try {
     const file = params.file;
     const allowed = new Set(['OneSignalSDK.page.js', 'OneSignalSDK.page.es6.js']);
