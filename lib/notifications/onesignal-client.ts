@@ -60,6 +60,9 @@ export class OneSignalClient {
     console.log('⏳ Waiting for OneSignal SDK to be ready...');
     console.log('🔍 window.OneSignalDeferred exists:', !!window.OneSignalDeferred);
     console.log('🔍 window.OneSignal exists:', !!window.OneSignal);
+    console.log('🔍 window.__oneSignalReady:', window.__oneSignalReady);
+    console.log('🔍 Script tag in DOM:', !!document.querySelector('script[src*="OneSignalSDK"]'));
+    console.log('🔍 Current URL:', window.location.href);
 
     this.sdkReadyPromise = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {

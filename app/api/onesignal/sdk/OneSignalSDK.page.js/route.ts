@@ -1,41 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * OneSignal SDK Proxy Route
- * Serves OneSignal SDK files as first-party resources to bypass ad blockers
- * 
- * This is the official OneSignal recommendation for ad blocker compatibility
+ * OneSignal SDK Direct File Route
+ * Handles direct file requests like /api/onesignal/sdk/OneSignalSDK.page.js
+ * Serves the file directly without redirect
  */
 
 const ONESIGNAL_CDN_BASE = 'https://cdn.onesignal.com/sdks/web/v16';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const file = searchParams.get('file');
+    const fileName = 'OneSignalSDK.page.js';
     
-    console.log('🔍 OneSignal SDK proxy request:', { file, url: request.url });
+    console.log('🔍 OneSignal SDK direct file request:', { fileName, url: request.url });
     
-    if (!file) {
-      console.error('❌ No file parameter provided');
-      return NextResponse.json({ error: 'File parameter required' }, { status: 400 });
-    }
-
-    // Validate file parameter to prevent path traversal
-    const allowedFiles = [
-      'OneSignalSDK.page.js',
-      'OneSignalSDK.page.es6.js',
-      'OneSignalSDK.sw.js',
-      'OneSignalSDK.updater.sw.js'
-    ];
-
-    if (!allowedFiles.includes(file)) {
-      console.error('❌ Invalid file requested:', file);
-      return NextResponse.json({ error: 'Invalid file' }, { status: 400 });
-    }
-
     // Fetch from OneSignal CDN
-    const cdnUrl = `${ONESIGNAL_CDN_BASE}/${file}`;
+    const cdnUrl = `${ONESIGNAL_CDN_BASE}/${fileName}`;
     console.log('🔄 Fetching from OneSignal CDN:', cdnUrl);
     
     const response = await fetch(cdnUrl, {
@@ -45,12 +25,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error(`❌ Failed to fetch OneSignal file: ${file}`, response.status);
+      console.error(`❌ Failed to fetch OneSignal file: ${fileName}`, response.status);
       return NextResponse.json({ error: 'Failed to fetch file' }, { status: response.status });
     }
 
     let content = await response.text();
-    console.log(`✅ Fetched OneSignal file: ${file} (${content.length} bytes)`);
+    console.log(`✅ Fetched OneSignal file: ${fileName} (${content.length} bytes)`);
     
     // Rewrite CDN URLs to use our proxy routes
     const originalCdnCount = (content.match(/https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g) || []).length;
@@ -74,13 +54,13 @@ export async function GET(request: NextRequest) {
     headers.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
     headers.set('Access-Control-Allow-Origin', '*');
     
-    console.log(`✅ Returning rewritten OneSignal SDK: ${file}`);
+    console.log(`✅ Returning rewritten OneSignal SDK: ${fileName}`);
     return new NextResponse(content, {
       status: 200,
       headers,
     });
   } catch (error) {
-    console.error('❌ OneSignal proxy error:', error);
+    console.error('❌ OneSignal SDK direct file error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
