@@ -126,7 +126,7 @@ export function useServiceWorker() {
         return false;
       }
     },
-    [state.isRegistered, state.registration, oneSignalInitialized, oneSignalRequestPermission]
+    [state.isRegistered, state.registration, oneSignalInitialized]
   );
 
   // Unsubscribe from push notifications
