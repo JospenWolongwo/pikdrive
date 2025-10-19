@@ -40,18 +40,8 @@ export async function GET(request: NextRequest) {
     );
     console.log(`🔄 Rewrote ${originalCdnCount} CDN URLs to proxy paths`);
     
-    // Get request origin for absolute URLs
-    const origin = request.headers.get('x-forwarded-host')
-      ? `https://${request.headers.get('x-forwarded-host')}`
-      : new URL(request.url).origin;
-    
-    // Rewrite OneSignal API URLs to use our proxy with absolute URLs
-    const originalApiCount = (content.match(/https:\/\/api\.onesignal\.com\//g) || []).length;
-    content = content.replace(
-      /https:\/\/api\.onesignal\.com\//g,
-      `${origin}/api/onesignal/api/`
-    );
-    console.log(`🔄 Rewrote ${originalApiCount} API URLs to absolute proxy paths: ${origin}/api/onesignal/api/`);
+    // Note: We no longer rewrite API URLs - let OneSignal SDK make direct API calls
+    // This allows proper authentication while still bypassing tracking protection for SDK loading
     
     // Set appropriate headers
     const headers = new Headers();
