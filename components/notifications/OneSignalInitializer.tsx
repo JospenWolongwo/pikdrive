@@ -19,14 +19,9 @@ import { NotificationPrompt } from './NotificationPrompt';
  * - Follows Uber/DoorDash patterns
  */
 export function OneSignalInitializer() {
-  const { initialize, setUserId, removeUserId, isInitialized } = useOneSignal();
+  const { setUserId, removeUserId, isInitialized } = useOneSignal();
   const { user } = useSupabase();
   const { showPrompt, closePrompt } = useNotificationPrompt();
-
-  // Initialize OneSignal once
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
 
   // Link/unlink user ID based on auth state
   useEffect(() => {

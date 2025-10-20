@@ -1,101 +1,89 @@
-// React hook for OneSignal initialization
-// Professional, clean integration following React best practices
+// React hook for OneSignal management
+// Direct integration with OneSignal SDK following official patterns
 
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { OneSignalClient } from '@/lib/notifications/onesignal-client';
 import { useRouter } from 'next/navigation';
 import { NOTIFICATION_ACTIONS } from '@/types/notification';
 import type { NotificationData, NotificationType } from '@/types/notification';
 
 interface UseOneSignalReturn {
   readonly isInitialized: boolean;
-  readonly isLoading: boolean;
   readonly error: Error | null;
-  readonly initialize: () => Promise<void>;
   readonly setUserId: (userId: string) => Promise<void>;
   readonly removeUserId: () => Promise<void>;
+  readonly getPermission: () => Promise<NotificationPermission>;
+  readonly requestPermission: () => Promise<boolean>;
+  readonly isSubscribed: () => Promise<boolean>;
 }
 
 /**
- * Hook for OneSignal initialization and management
+ * Hook for OneSignal management
+ * Provides reactive state and helper functions for OneSignal operations
  * 
- * @example
- * ```tsx
- * const { initialize, isInitialized } = useOneSignal();
- * 
- * useEffect(() => {
- *   initialize();
- * }, []);
- * ```
+ * Note: OneSignal initialization is handled by OneSignalInitializer component
+ * using the official deferred pattern. This hook only provides reactive state.
  */
 export function useOneSignal(): UseOneSignalReturn {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const router = useRouter();
 
-  const client = OneSignalClient.getInstance();
+  // Monitor OneSignal initialization state
+  useEffect(() => {
+    const checkInitialization = () => {
+      if (window.OneSignal && window.__oneSignalReady) {
+        setIsInitialized(true);
+        setError(null);
+      } else {
+        setIsInitialized(false);
+      }
+    };
 
-  /**
-   * Initialize OneSignal SDK
-   */
-  const initialize = useCallback(async () => {
-    if (client.isInitialized()) {
-      setIsInitialized(true);
-      return;
+    // Check immediately
+    checkInitialization();
+
+    // Set up event listeners for notification clicks
+    if (window.OneSignal) {
+      try {
+        window.OneSignal.Notifications.addEventListener('click', (event: any) => {
+          const data = event.notification.data as NotificationData;
+          const type = data.type;
+          
+          if (type && NOTIFICATION_ACTIONS[type as NotificationType]) {
+            const action = NOTIFICATION_ACTIONS[type as NotificationType](data);
+            router.push(action);
+          }
+        });
+
+        // Set up foreground notification handler
+        window.OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: any) => {
+          console.log('📬 Notification displayed:', event.notification);
+          // You can add custom sound/UI handling here
+        });
+      } catch (error) {
+        console.error('❌ Failed to set up notification listeners:', error);
+      }
     }
 
-    console.log('🔍 Checking OneSignal App ID:', process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID);
-    
-    if (!process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID) {
-      const error = new Error('OneSignal App ID not configured');
-      setError(error);
-      console.error('❌ Missing NEXT_PUBLIC_ONESIGNAL_APP_ID');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await client.initialize(process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID);
-      
-      // Set up notification click handler
-      client.onNotificationClick((event) => {
-        const data = event.notification.data as NotificationData;
-        const type = data.type;
-        
-        if (type && NOTIFICATION_ACTIONS[type as NotificationType]) {
-          const action = NOTIFICATION_ACTIONS[type as NotificationType](data);
-          router.push(action);
-        }
-      });
-
-      // Set up foreground notification handler
-      client.onNotificationDisplayed((event) => {
-        console.log('📬 Notification displayed:', event.notification);
-        // You can add custom sound/UI handling here
-      });
-
-      setIsInitialized(true);
-      console.log('✅ OneSignal hook initialized');
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to initialize OneSignal');
-      setError(error);
-      console.error('❌ OneSignal initialization failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [client, router]);
+    // Poll for initialization status
+    const interval = setInterval(checkInitialization, 1000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   /**
    * Set external user ID (link with Supabase auth)
    */
   const setUserId = useCallback(async (userId: string) => {
+    if (!window.OneSignal) {
+      const error = new Error('OneSignal not initialized');
+      setError(error);
+      throw error;
+    }
+
     try {
-      await client.setExternalUserId(userId);
+      await window.OneSignal.login(userId);
       console.log(`✅ User ID linked: ${userId}`);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to set user ID');
@@ -103,28 +91,88 @@ export function useOneSignal(): UseOneSignalReturn {
       console.error('❌ Failed to set user ID:', error);
       throw error;
     }
-  }, [client]);
+  }, []);
 
   /**
    * Remove external user ID (on logout)
    */
   const removeUserId = useCallback(async () => {
+    if (!window.OneSignal) {
+      console.error('OneSignal not initialized for logout');
+      return;
+    }
+
     try {
-      await client.removeExternalUserId();
+      await window.OneSignal.logout();
       console.log('✅ User ID unlinked');
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to remove user ID');
       setError(error);
       console.error('❌ Failed to remove user ID:', error);
     }
-  }, [client]);
+  }, []);
+
+  /**
+   * Check if user has granted notification permission
+   */
+  const getPermission = useCallback(async (): Promise<NotificationPermission> => {
+    if (!window.OneSignal) {
+      return 'default';
+    }
+
+    try {
+      const permission = await window.OneSignal.Notifications.permission;
+      return permission ? 'granted' : 'denied';
+    } catch (error) {
+      console.error('Error getting permission:', error);
+      return 'default';
+    }
+  }, []);
+
+  /**
+   * Request notification permission from user
+   */
+  const requestPermission = useCallback(async (): Promise<boolean> => {
+    if (!window.OneSignal) {
+      console.error('OneSignal not initialized');
+      return false;
+    }
+
+    try {
+      console.log('📱 Requesting notification permission...');
+      const result = await window.OneSignal.Notifications.requestPermission();
+      console.log(`✅ Permission result: ${result}`);
+      return result;
+    } catch (error) {
+      console.error('❌ Error requesting permission:', error);
+      return false;
+    }
+  }, []);
+
+  /**
+   * Check if user is subscribed to notifications
+   */
+  const isSubscribed = useCallback(async (): Promise<boolean> => {
+    if (!window.OneSignal) {
+      return false;
+    }
+
+    try {
+      const permission = await window.OneSignal.Notifications.permission;
+      return permission === true;
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      return false;
+    }
+  }, []);
 
   return {
     isInitialized,
-    isLoading,
     error,
-    initialize,
     setUserId,
     removeUserId,
+    getPermission,
+    requestPermission,
+    isSubscribed,
   };
 }

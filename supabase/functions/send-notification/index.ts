@@ -8,7 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.5";
 const NEXT_PUBLIC_ONESIGNAL_APP_ID = Deno.env.get("NEXT_PUBLIC_ONESIGNAL_APP_ID")!;
 const NEXT_PUBLIC_ONESIGNAL_API_KEY = Deno.env.get("NEXT_PUBLIC_ONESIGNAL_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface NotificationRequest {
   readonly userId: string;
@@ -249,7 +249,7 @@ serve(async (req) => {
     }
 
     // Log notifications to database
-    const supabase = createClient(SUPABASE_URL, NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     for (const result of results) {
       if (result.id) {
         await logNotification(

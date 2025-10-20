@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { pushNotificationService } from "@/lib/notifications/push-notification-service";
 import { useOneSignal } from "@/hooks/notifications/useOneSignal";
-import { OneSignalClient } from "@/lib/notifications/onesignal-client";
 
 interface ServiceWorkerState {
   readonly isSupported: boolean;
@@ -107,10 +106,9 @@ export function useServiceWorker() {
         console.log("🔧 Service worker is ready");
 
         // Use OneSignal if available, otherwise fall back to custom push service
-        if (oneSignalInitialized) {
+        if (oneSignalInitialized && window.OneSignal) {
           console.log("🔧 Using OneSignal for push notifications");
-          const oneSignalClient = OneSignalClient.getInstance();
-          const permission = await oneSignalClient.requestPermission();
+          const permission = await window.OneSignal.Notifications.requestPermission();
           console.log("🔧 OneSignal permission result:", permission);
           return permission;
         } else {
@@ -144,10 +142,20 @@ export function useServiceWorker() {
     []
   );
 
-  // Check for OneSignal service worker
+  // Check for OneSignal service worker periodically
   useEffect(() => {
-    if (state.isSupported && !state.isRegistered) {
+    if (state.isSupported) {
+      // Check immediately
       checkServiceWorker();
+      
+      // Check every 5 seconds until service worker is found
+      const interval = setInterval(() => {
+        if (!state.isRegistered) {
+          checkServiceWorker();
+        }
+      }, 5000);
+
+      return () => clearInterval(interval);
     }
   }, [state.isSupported, state.isRegistered, checkServiceWorker]);
 

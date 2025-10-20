@@ -4,7 +4,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { OneSignalClient } from '@/lib/notifications/onesignal-client';
 
 interface UseNotificationPermissionReturn {
   readonly permission: NotificationPermission;
@@ -35,22 +34,24 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const client = OneSignalClient.getInstance();
-
   /**
    * Check current permission status
    */
   const checkPermission = useCallback(async () => {
-    try {
-      const currentPermission = await client.getPermission();
-      setPermission(currentPermission);
+    if (!window.OneSignal) {
+      return;
+    }
 
-      const subscribed = await client.isSubscribed();
+    try {
+      const currentPermission = await window.OneSignal.Notifications.permission;
+      setPermission(currentPermission ? 'granted' : 'denied');
+
+      const subscribed = currentPermission === true;
       setIsSubscribed(subscribed);
     } catch (error) {
       console.error('Error checking permission:', error);
     }
-  }, [client]);
+  }, []);
 
   /**
    * Request notification permission from user
@@ -61,11 +62,11 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
 
     try {
       // Wait for OneSignal to be initialized before requesting permission
-      if (!client.isInitialized()) {
+      if (!window.OneSignal || !window.__oneSignalReady) {
         console.log('⏳ Waiting for OneSignal initialization...');
         await new Promise<void>((resolve, reject) => {
           const checkInit = () => {
-            if (client.isInitialized()) {
+            if (window.OneSignal && window.__oneSignalReady) {
               resolve();
             } else {
               setTimeout(checkInit, 100);
@@ -78,7 +79,7 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
         });
       }
 
-      const granted = await client.requestPermission();
+      const granted = await window.OneSignal!.Notifications.requestPermission();
       
       if (granted) {
         setPermission('granted');
@@ -99,14 +100,14 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [client]);
+  }, []);
 
   // Check permission on mount (only in browser)
   useEffect(() => {
-    if (typeof window !== 'undefined' && client.isInitialized()) {
+    if (typeof window !== 'undefined' && window.OneSignal && window.__oneSignalReady) {
       checkPermission();
     }
-  }, [client, checkPermission]);
+  }, [checkPermission]);
 
   return {
     permission,
