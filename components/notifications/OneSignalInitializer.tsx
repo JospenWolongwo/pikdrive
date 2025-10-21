@@ -81,8 +81,8 @@ export function OneSignalInitializer() {
                 },
               },
               safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
-              // Configure API proxy to avoid network timeouts
-              path: '/api/onesignal/api/',
+              // Configure SDK proxy to avoid tracking protection
+              path: '/api/onesignal/sdk/',
             });
             console.log('✅ OneSignal initialized via deferred pattern');
             window.__oneSignalReady = true;

@@ -88,36 +88,48 @@ async function handleApiRequest(
     // Prepare headers
     const headers = new Headers();
     
-    // Copy relevant headers from the original request
-    const relevantHeaders = [
-      'authorization',
-      'content-type',
+    // Get client IP and origin information
+    const clientIP = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     request.headers.get('cf-connecting-ip') ||
+                     '127.0.0.1';
+    
+    const origin = request.headers.get('x-forwarded-host')
+      ? `https://${request.headers.get('x-forwarded-host')}`
+      : new URL(request.url).origin;
+    
+    // Copy all relevant headers from the original request
+    const headersToForward = [
       'accept',
+      'accept-encoding', 
+      'accept-language',
+      'cache-control',
       'user-agent',
-      'origin',
       'referer'
     ];
     
-    relevantHeaders.forEach(header => {
+    headersToForward.forEach(header => {
       const value = request.headers.get(header);
       if (value) {
         headers.set(header, value);
       }
     });
     
-    // Add required OneSignal headers
-    const origin = request.headers.get('x-forwarded-host')
-      ? `https://${request.headers.get('x-forwarded-host')}`
-      : new URL(request.url).origin;
-    
+    // Set OneSignal-specific headers to make request appear browser-originated
     headers.set('Origin', origin);
     headers.set('Referer', `${origin}/`);
     headers.set('Host', 'api.onesignal.com');
-
-    // Add our proxy identifier
-    headers.set('X-OneSignal-Proxy', 'PikDrive-API-Proxy/1.0');
+    headers.set('X-Forwarded-For', clientIP);
+    headers.set('X-Real-IP', clientIP);
+    headers.set('X-Forwarded-Proto', 'https');
+    
+    // Remove any proxy-specific headers that might confuse OneSignal
+    headers.delete('x-onesignal-proxy');
+    headers.delete('x-forwarded-host');
+    headers.delete('x-vercel-*');
     
     console.log(`🔍 Headers being sent to OneSignal:`, Object.fromEntries(headers.entries()));
+    console.log(`🔍 Client IP forwarded: ${clientIP}`);
 
     // Prepare request options
     const requestOptions: RequestInit = {

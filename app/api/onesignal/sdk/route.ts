@@ -62,13 +62,18 @@ export async function GET(request: NextRequest) {
     );
     console.log(`🔄 Rewrote ${originalCdnCount} CDN URLs to proxy paths`);
     
-    // Rewrite API URLs to use our proxy to avoid network timeouts
+    // Get request origin for absolute URLs
+    const origin = request.headers.get('x-forwarded-host')
+      ? `https://${request.headers.get('x-forwarded-host')}`
+      : new URL(request.url).origin;
+    
+    // Rewrite OneSignal API URLs to use our improved proxy
     const originalApiCount = (content.match(/https:\/\/api\.onesignal\.com\//g) || []).length;
     content = content.replace(
       /https:\/\/api\.onesignal\.com\//g,
-      '/api/onesignal/api/'
+      `${origin}/api/onesignal/api/`
     );
-    console.log(`🔄 Rewrote ${originalApiCount} API URLs to proxy paths`);
+    console.log(`🔄 Rewrote ${originalApiCount} API URLs to improved proxy: ${origin}/api/onesignal/api/`);
     
     // Set appropriate headers
     const headers = new Headers();
