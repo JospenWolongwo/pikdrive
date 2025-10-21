@@ -68,8 +68,16 @@ export async function GET(request: NextRequest) {
       '/api/onesignal/styles/'
     );
     
+    // Rewrite source map URLs to handle them gracefully
+    const originalMapCount = (content.match(/OneSignalSDK\.page\.js\.map/g) || []).length;
+    content = content.replace(
+      /OneSignalSDK\.page\.js\.map/g,
+      '/api/onesignal/maps/OneSignalSDK.page.js.map'
+    );
+    
     console.log(`🔄 Rewrote ${originalCdnCount} CDN URLs to proxy paths`);
     console.log(`🔄 Rewrote ${originalCssCount} CSS URLs to styles proxy`);
+    console.log(`🔄 Rewrote ${originalMapCount} source map URLs`);
     
     // Get request origin for absolute URLs
     const origin = request.headers.get('x-forwarded-host')
