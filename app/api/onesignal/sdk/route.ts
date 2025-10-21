@@ -60,7 +60,16 @@ export async function GET(request: NextRequest) {
       /https:\/\/cdn\.onesignal\.com\/sdks\/web\/v16\//g,
       '/api/onesignal/sdk/'
     );
+    
+    // Rewrite OneSignal CSS URLs to use our styles proxy
+    const originalCssCount = (content.match(/https:\/\/onesignal\.com\/sdks\/web\/v16\//g) || []).length;
+    content = content.replace(
+      /https:\/\/onesignal\.com\/sdks\/web\/v16\//g,
+      '/api/onesignal/styles/'
+    );
+    
     console.log(`🔄 Rewrote ${originalCdnCount} CDN URLs to proxy paths`);
+    console.log(`🔄 Rewrote ${originalCssCount} CSS URLs to styles proxy`);
     
     // Get request origin for absolute URLs
     const origin = request.headers.get('x-forwarded-host')

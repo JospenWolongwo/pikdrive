@@ -21,6 +21,12 @@ export async function GET(request: NextRequest, { params }: { params: { file: st
       '/api/onesignal/sdk/'
     );
     
+    // Rewrite OneSignal CSS URLs to use our styles proxy
+    content = content.replace(
+      /https:\/\/onesignal\.com\/sdks\/web\/v16\//g,
+      '/api/onesignal/styles/'
+    );
+    
     // Get request origin for absolute URLs
     const origin = request.headers.get('x-forwarded-host')
       ? `https://${request.headers.get('x-forwarded-host')}`
