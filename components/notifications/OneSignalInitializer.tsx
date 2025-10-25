@@ -93,7 +93,11 @@ export function OneSignalInitializer() {
             window.__oneSignalReady = true;
           } catch (error) {
             console.error('❌ OneSignal deferred initialization failed:', error);
-            console.error('❌ Error details:', error.message, error.stack);
+            if (error instanceof Error) {
+              console.error('❌ Error details:', error.message, error.stack);
+            } else {
+              console.error('❌ Error details:', String(error));
+            }
           }
         });
         
