@@ -128,7 +128,22 @@ export function OneSignalInitializer() {
             console.log('🔍 OneSignal object available:', !!OneSignal);
             console.log('🔍 Service worker path will be: OneSignalSDKWorker.js');
             
-            await OneSignal.init({
+            // CRITICAL: Add timeout wrapper to catch hanging initialization
+            const initWithTimeout = async (OneSignal: any, config: any, timeoutMs = 30000) => {
+              console.log('⏱️ Starting OneSignal initialization with 30s timeout...');
+              
+              return Promise.race([
+                OneSignal.init(config),
+                new Promise((_, reject) => 
+                  setTimeout(() => {
+                    console.error('⏰ OneSignal initialization timed out after 30 seconds');
+                    reject(new Error('OneSignal init timeout - initialization hung'));
+                  }, timeoutMs)
+                )
+              ]);
+            };
+            
+            const initConfig = {
               appId,
               allowLocalhostAsSecureOrigin: true,
               serviceWorkerParam: { scope: '/' },
@@ -144,17 +159,57 @@ export function OneSignalInitializer() {
               safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
               // Configure SDK proxy to avoid tracking protection
               path: '/api/onesignal/sdk/',
+            };
+            
+            console.log('🔧 Calling OneSignal.init() with config:', {
+              appId: initConfig.appId ? 'SET' : 'MISSING',
+              serviceWorkerPath: initConfig.serviceWorkerPath,
+              path: initConfig.path,
+              allowLocalhostAsSecureOrigin: initConfig.allowLocalhostAsSecureOrigin
             });
+            
+            // Quick test: Verify service worker routes are accessible
+            try {
+              console.log('🔍 Testing service worker route accessibility...');
+              const swTestResponse = await fetch('/OneSignalSDKWorker.js', { method: 'HEAD' });
+              console.log('✅ Service worker route accessible:', swTestResponse.status);
+            } catch (swTestError) {
+              console.warn('⚠️ Service worker route test failed:', swTestError);
+            }
+            
+            await initWithTimeout(OneSignal, initConfig);
+            
             console.log('✅ OneSignal initialized successfully with clean database');
             console.log('🔍 Service worker should now be registering...');
             window.__oneSignalReady = true;
+            
+            // Additional verification: Check if service worker actually registered
+            setTimeout(async () => {
+              try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                  console.log('✅ Service worker confirmed registered:', registration);
+                } else {
+                  console.warn('⚠️ Service worker not found after initialization');
+                }
+              } catch (swError) {
+                console.error('❌ Error checking service worker:', swError);
+              }
+            }, 2000);
+            
           } catch (error) {
             console.error('❌ OneSignal initialization failed:', error);
             if (error instanceof Error) {
               console.error('❌ Error details:', error.message);
               
-              // If IndexedDB error persists, provide manual cleanup instructions
-              if (error.message.includes('object store name') || error.message.includes('IndexedDB')) {
+              // Enhanced error diagnostics
+              if (error.message.includes('timeout')) {
+                console.log('🔧 TIMEOUT DIAGNOSTICS:');
+                console.log('1. Check browser DevTools → Network tab for failed requests');
+                console.log('2. Look for OneSignalSDKWorker.js or OneSignalSDK.sw.js errors');
+                console.log('3. Check if service worker registration is blocked by CSP');
+                console.log('4. Verify /api/onesignal/sdk/ routes are accessible');
+              } else if (error.message.includes('object store name') || error.message.includes('IndexedDB')) {
                 console.log('🔧 Manual cleanup required:');
                 console.log('1. Open browser DevTools (F12)');
                 console.log('2. Go to Application tab → Storage → IndexedDB');
