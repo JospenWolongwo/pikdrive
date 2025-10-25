@@ -77,7 +77,7 @@ export function OneSignalInitializer() {
               const dbNames = await indexedDB.databases();
               const oneSignalDb = dbNames.find(db => db.name?.includes('OneSignal'));
               
-              if (oneSignalDb) {
+              if (oneSignalDb && oneSignalDb.name) {
                 console.log('🗑️ Found OneSignal database, clearing to fix corruption...');
                 indexedDB.deleteDatabase(oneSignalDb.name);
                 // Wait a moment for deletion to complete
@@ -119,7 +119,7 @@ export function OneSignalInitializer() {
                   // Clear all OneSignal-related databases
                   const dbNames = await indexedDB.databases();
                   for (const db of dbNames) {
-                    if (db.name?.includes('OneSignal')) {
+                    if (db.name?.includes('OneSignal') && db.name) {
                       indexedDB.deleteDatabase(db.name);
                     }
                   }
