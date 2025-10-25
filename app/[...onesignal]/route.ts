@@ -77,6 +77,12 @@ export async function GET(request: NextRequest, { params }: { params: { onesigna
       });
     }
     
+    // Handle source map requests gracefully (non-critical for production)
+    if (path.endsWith('.map')) {
+      console.log(`ℹ️ Source map requested (non-critical): ${path}`);
+      return new NextResponse(null, { status: 404 });
+    }
+    
     // If we get here, the path is not recognized
     console.error('❌ Unknown OneSignal path:', path);
     return NextResponse.json({ error: 'Not found' }, { status: 404 });

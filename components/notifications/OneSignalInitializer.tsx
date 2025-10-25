@@ -61,12 +61,16 @@ export function OneSignalInitializer() {
         }
 
         console.log('🔧 Setting up OneSignal deferred initialization...');
+        console.log('🔍 OneSignal SDK script should be loaded from: /api/onesignal/sdk/OneSignalSDK.page.js');
         
         // Use the proper OneSignal initialization pattern
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         window.OneSignalDeferred.push(async function(OneSignal) {
           try {
             console.log('🔧 OneSignal deferred callback executing...');
+            console.log('🔍 OneSignal object available:', !!OneSignal);
+            console.log('🔍 Service worker path will be: OneSignalSDKWorker.js');
+            
             await OneSignal.init({
               appId,
               allowLocalhostAsSecureOrigin: true,
@@ -85,13 +89,16 @@ export function OneSignalInitializer() {
               path: '/api/onesignal/sdk/',
             });
             console.log('✅ OneSignal initialized via deferred pattern');
+            console.log('🔍 Service worker should now be registering...');
             window.__oneSignalReady = true;
           } catch (error) {
             console.error('❌ OneSignal deferred initialization failed:', error);
+            console.error('❌ Error details:', error.message, error.stack);
           }
         });
         
         console.log('✅ OneSignal deferred queue configured');
+        console.log('🔍 Waiting for OneSignal SDK to load and execute deferred callbacks...');
       } catch (error) {
         console.error('❌ OneSignal setup failed:', error);
       }
