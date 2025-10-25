@@ -68,9 +68,28 @@ export default function RootLayout({
         <script 
           src="/api/onesignal/sdk/OneSignalSDK.page.js" 
           defer
-          onLoad={() => console.log('✅ OneSignal SDK script loaded successfully')}
-          onError={(e) => console.error('❌ OneSignal SDK script failed to load:', e)}
         ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Track OneSignal SDK loading
+              document.addEventListener('DOMContentLoaded', function() {
+                console.log('🔍 Checking OneSignal SDK script loading...');
+                
+                // Check if script loaded successfully
+                const script = document.querySelector('script[src="/api/onesignal/sdk/OneSignalSDK.page.js"]');
+                if (script) {
+                  script.addEventListener('load', function() {
+                    console.log('✅ OneSignal SDK script loaded successfully');
+                  });
+                  script.addEventListener('error', function(e) {
+                    console.error('❌ OneSignal SDK script failed to load:', e);
+                  });
+                }
+              });
+            `,
+          }}
+        />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
