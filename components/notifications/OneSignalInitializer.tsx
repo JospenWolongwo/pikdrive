@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useOneSignal } from '@/hooks/notifications/useOneSignal';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useNotificationPrompt } from '@/hooks/notifications/useNotificationPrompt';
@@ -22,6 +22,57 @@ export function OneSignalInitializer() {
   const { setUserId, removeUserId, isInitialized } = useOneSignal();
   const { user } = useSupabase();
   const { showPrompt, closePrompt } = useNotificationPrompt();
+  
+  // State to track IndexedDB cleanup completion
+  const [dbCleanupComplete, setDbCleanupComplete] = useState(false);
+
+  // PHASE 1: Clear corrupted OneSignal IndexedDB databases BEFORE initialization
+  useEffect(() => {
+    const cleanupOneSignalDatabases = async () => {
+      try {
+        console.log('🧹 PHASE 1: Cleaning up OneSignal IndexedDB databases...');
+        
+        // Check if indexedDB.databases() is supported
+        if (!('databases' in indexedDB)) {
+          console.log('ℹ️ IndexedDB.databases() not supported, skipping cleanup');
+          setDbCleanupComplete(true);
+          return;
+        }
+
+        const dbNames = await indexedDB.databases();
+        const oneSignalDbs = dbNames.filter(db => db.name?.includes('OneSignal'));
+        
+        if (oneSignalDbs.length === 0) {
+          console.log('✅ No OneSignal databases found, proceeding with initialization');
+          setDbCleanupComplete(true);
+          return;
+        }
+
+        console.log(`🗑️ Found ${oneSignalDbs.length} OneSignal database(s), clearing...`);
+        
+        // Delete all OneSignal databases
+        for (const db of oneSignalDbs) {
+          if (db.name) {
+            console.log(`🗑️ Deleting database: ${db.name}`);
+            indexedDB.deleteDatabase(db.name);
+          }
+        }
+        
+        // Wait for deletions to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        console.log('✅ OneSignal databases cleared successfully');
+        setDbCleanupComplete(true);
+        
+      } catch (error) {
+        console.error('❌ IndexedDB cleanup failed:', error);
+        console.log('ℹ️ Proceeding with initialization anyway...');
+        setDbCleanupComplete(true);
+      }
+    };
+
+    cleanupOneSignalDatabases();
+  }, []);
 
   // Link/unlink user ID based on auth state
   useEffect(() => {
@@ -50,8 +101,14 @@ export function OneSignalInitializer() {
     handleAuthChange();
   }, [user, isInitialized, setUserId, removeUserId]);
 
-  // Initialize OneSignal using the proper deferred pattern
+  // PHASE 2: Initialize OneSignal ONLY after IndexedDB cleanup is complete
   useEffect(() => {
+    // Don't initialize until cleanup is complete
+    if (!dbCleanupComplete) {
+      console.log('⏳ Waiting for IndexedDB cleanup to complete...');
+      return;
+    }
+
     const initOneSignal = () => {
       try {
         const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
@@ -60,7 +117,7 @@ export function OneSignalInitializer() {
           return;
         }
 
-        console.log('🔧 Setting up OneSignal deferred initialization...');
+        console.log('🔧 PHASE 2: Setting up OneSignal deferred initialization...');
         console.log('🔍 OneSignal SDK script should be loaded from: /api/onesignal/sdk/OneSignalSDK.page.js');
         
         // Use the proper OneSignal initialization pattern
@@ -70,22 +127,6 @@ export function OneSignalInitializer() {
             console.log('🔧 OneSignal deferred callback executing...');
             console.log('🔍 OneSignal object available:', !!OneSignal);
             console.log('🔍 Service worker path will be: OneSignalSDKWorker.js');
-            
-            // CRITICAL: Clear corrupted OneSignal IndexedDB before initialization
-            try {
-              console.log('🧹 Checking for corrupted OneSignal IndexedDB...');
-              const dbNames = await indexedDB.databases();
-              const oneSignalDb = dbNames.find(db => db.name?.includes('OneSignal'));
-              
-              if (oneSignalDb && oneSignalDb.name) {
-                console.log('🗑️ Found OneSignal database, clearing to fix corruption...');
-                indexedDB.deleteDatabase(oneSignalDb.name);
-                // Wait a moment for deletion to complete
-                await new Promise(resolve => setTimeout(resolve, 100));
-              }
-            } catch (dbError) {
-              console.log('ℹ️ IndexedDB cleanup skipped (not supported in this browser)');
-            }
             
             await OneSignal.init({
               appId,
@@ -104,45 +145,21 @@ export function OneSignalInitializer() {
               // Configure SDK proxy to avoid tracking protection
               path: '/api/onesignal/sdk/',
             });
-            console.log('✅ OneSignal initialized via deferred pattern');
+            console.log('✅ OneSignal initialized successfully with clean database');
             console.log('🔍 Service worker should now be registering...');
             window.__oneSignalReady = true;
           } catch (error) {
-            console.error('❌ OneSignal deferred initialization failed:', error);
+            console.error('❌ OneSignal initialization failed:', error);
             if (error instanceof Error) {
-              console.error('❌ Error details:', error.message, error.stack);
+              console.error('❌ Error details:', error.message);
               
-              // CRITICAL: If IndexedDB error, try clearing and retrying once
+              // If IndexedDB error persists, provide manual cleanup instructions
               if (error.message.includes('object store name') || error.message.includes('IndexedDB')) {
-                console.log('🔄 IndexedDB error detected, attempting cleanup and retry...');
-                try {
-                  // Clear all OneSignal-related databases
-                  const dbNames = await indexedDB.databases();
-                  for (const db of dbNames) {
-                    if (db.name?.includes('OneSignal') && db.name) {
-                      indexedDB.deleteDatabase(db.name);
-                    }
-                  }
-                  
-                  // Wait and retry initialization
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  
-                  await OneSignal.init({
-                    appId,
-                    allowLocalhostAsSecureOrigin: true,
-                    serviceWorkerParam: { scope: '/' },
-                    serviceWorkerPath: 'OneSignalSDKWorker.js',
-                    notifyButton: { enable: false },
-                    promptOptions: { slidedown: { enabled: false } },
-                    safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
-                    path: '/api/onesignal/sdk/',
-                  });
-                  
-                  console.log('✅ OneSignal initialized after IndexedDB cleanup');
-                  window.__oneSignalReady = true;
-                } catch (retryError) {
-                  console.error('❌ OneSignal retry failed:', retryError);
-                }
+                console.log('🔧 Manual cleanup required:');
+                console.log('1. Open browser DevTools (F12)');
+                console.log('2. Go to Application tab → Storage → IndexedDB');
+                console.log('3. Delete all databases containing "OneSignal"');
+                console.log('4. Refresh the page');
               }
             } else {
               console.error('❌ Error details:', String(error));
@@ -158,7 +175,7 @@ export function OneSignalInitializer() {
     };
 
     initOneSignal();
-  }, []);
+  }, [dbCleanupComplete]); // Only run when cleanup is complete
 
   // Render custom notification prompt
   return (
