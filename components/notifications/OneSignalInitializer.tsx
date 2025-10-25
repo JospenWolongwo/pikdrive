@@ -132,15 +132,29 @@ export function OneSignalInitializer() {
             const initWithTimeout = async (OneSignal: any, config: any, timeoutMs = 30000) => {
               console.log('⏱️ Starting OneSignal initialization with 30s timeout...');
               
-              return Promise.race([
-                OneSignal.init(config),
-                new Promise((_, reject) => 
-                  setTimeout(() => {
-                    console.error('⏰ OneSignal initialization timed out after 30 seconds');
-                    reject(new Error('OneSignal init timeout - initialization hung'));
-                  }, timeoutMs)
-                )
-              ]);
+              let timeoutId: NodeJS.Timeout;
+              
+              const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = setTimeout(() => {
+                  console.error('⏰ OneSignal initialization timed out after 30 seconds');
+                  reject(new Error('OneSignal init timeout - initialization hung'));
+                }, timeoutMs);
+              });
+              
+              try {
+                const result = await Promise.race([
+                  OneSignal.init(config),
+                  timeoutPromise
+                ]);
+                
+                // Clear timeout if init succeeds
+                clearTimeout(timeoutId);
+                return result;
+              } catch (error) {
+                // Clear timeout on error too
+                clearTimeout(timeoutId);
+                throw error;
+              }
             };
             
             const initConfig = {
@@ -177,25 +191,58 @@ export function OneSignalInitializer() {
               console.warn('⚠️ Service worker route test failed:', swTestError);
             }
             
+            // Check for existing service workers that might conflict
+            try {
+              console.log('🔍 Checking for existing service workers...');
+              const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+              if (existingRegistrations.length > 0) {
+                console.log(`⚠️ Found ${existingRegistrations.length} existing service worker(s):`, existingRegistrations);
+                console.log('ℹ️ OneSignal will merge with existing service workers');
+              } else {
+                console.log('✅ No existing service workers found - clean slate');
+              }
+            } catch (swCheckError) {
+              console.warn('⚠️ Error checking existing service workers:', swCheckError);
+            }
+            
             await initWithTimeout(OneSignal, initConfig);
             
             console.log('✅ OneSignal initialized successfully with clean database');
             console.log('🔍 Service worker should now be registering...');
             window.__oneSignalReady = true;
             
-            // Additional verification: Check if service worker actually registered
+            // CRITICAL: Verify service worker registration and add fallback
             setTimeout(async () => {
               try {
+                console.log('🔍 Verifying service worker registration...');
                 const registration = await navigator.serviceWorker.getRegistration();
+                
                 if (registration) {
                   console.log('✅ Service worker confirmed registered:', registration);
+                  console.log('✅ OneSignal setup complete - notifications ready!');
                 } else {
-                  console.warn('⚠️ Service worker not found after initialization');
+                  console.warn('⚠️ Service worker not found after OneSignal init');
+                  console.log('🔧 Attempting manual service worker registration...');
+                  
+                  try {
+                    // Manual fallback registration
+                    const manualRegistration = await navigator.serviceWorker.register('/OneSignalSDKWorker.js', {
+                      scope: '/'
+                    });
+                    console.log('✅ Manual service worker registration successful:', manualRegistration);
+                  } catch (manualError) {
+                    console.error('❌ Manual service worker registration failed:', manualError);
+                    console.log('🔧 DIAGNOSTIC STEPS:');
+                    console.log('1. Check browser DevTools → Application → Service Workers');
+                    console.log('2. Verify /OneSignalSDKWorker.js is accessible');
+                    console.log('3. Check for CSP (Content Security Policy) blocking service workers');
+                    console.log('4. Ensure HTTPS is enabled (required for service workers)');
+                  }
                 }
               } catch (swError) {
                 console.error('❌ Error checking service worker:', swError);
               }
-            }, 2000);
+            }, 3000); // Increased delay to give OneSignal more time
             
           } catch (error) {
             console.error('❌ OneSignal initialization failed:', error);
