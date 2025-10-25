@@ -71,6 +71,22 @@ export function OneSignalInitializer() {
             console.log('🔍 OneSignal object available:', !!OneSignal);
             console.log('🔍 Service worker path will be: OneSignalSDKWorker.js');
             
+            // CRITICAL: Clear corrupted OneSignal IndexedDB before initialization
+            try {
+              console.log('🧹 Checking for corrupted OneSignal IndexedDB...');
+              const dbNames = await indexedDB.databases();
+              const oneSignalDb = dbNames.find(db => db.name?.includes('OneSignal'));
+              
+              if (oneSignalDb) {
+                console.log('🗑️ Found OneSignal database, clearing to fix corruption...');
+                indexedDB.deleteDatabase(oneSignalDb.name);
+                // Wait a moment for deletion to complete
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
+            } catch (dbError) {
+              console.log('ℹ️ IndexedDB cleanup skipped (not supported in this browser)');
+            }
+            
             await OneSignal.init({
               appId,
               allowLocalhostAsSecureOrigin: true,
@@ -95,6 +111,39 @@ export function OneSignalInitializer() {
             console.error('❌ OneSignal deferred initialization failed:', error);
             if (error instanceof Error) {
               console.error('❌ Error details:', error.message, error.stack);
+              
+              // CRITICAL: If IndexedDB error, try clearing and retrying once
+              if (error.message.includes('object store name') || error.message.includes('IndexedDB')) {
+                console.log('🔄 IndexedDB error detected, attempting cleanup and retry...');
+                try {
+                  // Clear all OneSignal-related databases
+                  const dbNames = await indexedDB.databases();
+                  for (const db of dbNames) {
+                    if (db.name?.includes('OneSignal')) {
+                      indexedDB.deleteDatabase(db.name);
+                    }
+                  }
+                  
+                  // Wait and retry initialization
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  
+                  await OneSignal.init({
+                    appId,
+                    allowLocalhostAsSecureOrigin: true,
+                    serviceWorkerParam: { scope: '/' },
+                    serviceWorkerPath: 'OneSignalSDKWorker.js',
+                    notifyButton: { enable: false },
+                    promptOptions: { slidedown: { enabled: false } },
+                    safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
+                    path: '/api/onesignal/sdk/',
+                  });
+                  
+                  console.log('✅ OneSignal initialized after IndexedDB cleanup');
+                  window.__oneSignalReady = true;
+                } catch (retryError) {
+                  console.error('❌ OneSignal retry failed:', retryError);
+                }
+              }
             } else {
               console.error('❌ Error details:', String(error));
             }

@@ -13,6 +13,20 @@ export async function GET(request: NextRequest, { params }: { params: { onesigna
     const { searchParams } = new URL(request.url);
     const path = params.onesignal.join('/');
     
+    // CRITICAL: Exclude common root files from OneSignal catch-all
+    const excludedPaths = [
+      'robots.txt',
+      'sitemap.xml', 
+      'favicon.ico',
+      'manifest.json',
+      'site.webmanifest'
+    ];
+    
+    if (excludedPaths.includes(path)) {
+      console.log(`ℹ️ Excluding ${path} from OneSignal catch-all route`);
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    
     console.log('🔍 OneSignal dynamic route request:', { 
       url: request.url, 
       path,
