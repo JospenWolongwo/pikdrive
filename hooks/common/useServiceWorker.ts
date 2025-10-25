@@ -108,9 +108,42 @@ export function useServiceWorker() {
         // Use OneSignal if available, otherwise fall back to custom push service
         if (oneSignalInitialized && window.OneSignal) {
           console.log("🔧 Using OneSignal for push notifications");
-          const permission = await window.OneSignal.Notifications.requestPermission();
-          console.log("🔧 OneSignal permission result:", permission);
-          return permission;
+          // Use native browser API to avoid "Permission blocked" errors
+          if (!("Notification" in window)) {
+            console.warn("This browser does not support notifications");
+            return false;
+          }
+
+          // Check current permission
+          if (Notification.permission === "granted") {
+            console.log('✅ Notification permission already granted');
+            return true;
+          }
+
+          if (Notification.permission === "denied") {
+            console.log('❌ Notification permission was previously denied');
+            return false;
+          }
+
+          console.log('📱 Requesting notification permission via native API...');
+          const permission = await Notification.requestPermission();
+          const granted = permission === "granted";
+          
+          if (granted) {
+            console.log('✅ Notification permission granted via native API');
+            
+            // Sync with OneSignal after native permission is granted
+            try {
+              await window.OneSignal.Notifications.requestPermission();
+              console.log('✅ OneSignal permission sync successful');
+            } catch (oneSignalError) {
+              console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
+            }
+          } else {
+            console.log('❌ Notification permission denied via native API');
+          }
+
+          return granted;
         } else {
           console.log("🔧 OneSignal not initialized, using custom push service...");
           const subscription = await pushNotificationService.subscribeToPush(

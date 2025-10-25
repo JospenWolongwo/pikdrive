@@ -131,6 +131,7 @@ export function useOneSignal(): UseOneSignalReturn {
 
   /**
    * Request notification permission from user
+   * Uses native browser API to avoid "Permission blocked" errors
    */
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!window.OneSignal) {
@@ -139,10 +140,42 @@ export function useOneSignal(): UseOneSignalReturn {
     }
 
     try {
-      console.log('📱 Requesting notification permission...');
-      const result = await window.OneSignal.Notifications.requestPermission();
-      console.log(`✅ Permission result: ${result}`);
-      return result;
+      // Use native browser API to avoid "Permission blocked" errors
+      if (!("Notification" in window)) {
+        console.warn("This browser does not support notifications");
+        return false;
+      }
+
+      // Check current permission
+      if (Notification.permission === "granted") {
+        console.log('✅ Notification permission already granted');
+        return true;
+      }
+
+      if (Notification.permission === "denied") {
+        console.log('❌ Notification permission was previously denied');
+        return false;
+      }
+
+      console.log('📱 Requesting notification permission via native API...');
+      const permission = await Notification.requestPermission();
+      const granted = permission === "granted";
+      
+      if (granted) {
+        console.log('✅ Notification permission granted via native API');
+        
+        // Sync with OneSignal after native permission is granted
+        try {
+          await window.OneSignal.Notifications.requestPermission();
+          console.log('✅ OneSignal permission sync successful');
+        } catch (oneSignalError) {
+          console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
+        }
+      } else {
+        console.log('❌ Notification permission denied via native API');
+      }
+
+      return granted;
     } catch (error) {
       console.error('❌ Error requesting permission:', error);
       return false;

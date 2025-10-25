@@ -56,12 +56,13 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
   /**
    * Request notification permission from user
    * Best practice: Only call this in response to user action
+   * Uses native browser API to avoid "Permission blocked" errors
    */
   const requestPermission = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
 
     try {
-      // Check if OneSignal is ready before requesting permission
+      // Check if OneSignal is ready
       if (!window.OneSignal || !window.__oneSignalReady) {
         console.log('⏳ OneSignal not ready yet, permission request will fail');
         setPermission('denied');
@@ -69,16 +70,52 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
         return false;
       }
 
-      const granted = await window.OneSignal!.Notifications.requestPermission();
+      // Use native browser API instead of OneSignal's method to avoid "Permission blocked"
+      if (!("Notification" in window)) {
+        console.warn("This browser does not support notifications");
+        setPermission('denied');
+        setIsSubscribed(false);
+        return false;
+      }
+
+      // Check current permission
+      if (Notification.permission === "granted") {
+        setPermission('granted');
+        setIsSubscribed(true);
+        console.log('✅ Notification permission already granted');
+        return true;
+      }
+
+      if (Notification.permission === "denied") {
+        setPermission('denied');
+        setIsSubscribed(false);
+        console.log('❌ Notification permission was previously denied');
+        return false;
+      }
+
+      // Request permission using native API (this will show browser popup)
+      console.log('🔔 Requesting notification permission via native API...');
+      const permission = await Notification.requestPermission();
+      const granted = permission === "granted";
       
       if (granted) {
         setPermission('granted');
         setIsSubscribed(true);
-        console.log('✅ Notification permission granted');
+        console.log('✅ Notification permission granted via native API');
+        
+        // Sync with OneSignal after native permission is granted
+        try {
+          console.log('🔄 Syncing permission with OneSignal...');
+          await window.OneSignal.Notifications.requestPermission();
+          console.log('✅ OneSignal permission sync successful');
+        } catch (oneSignalError) {
+          console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
+          // Native permission still works even if OneSignal sync fails
+        }
       } else {
         setPermission('denied');
         setIsSubscribed(false);
-        console.log('❌ Notification permission denied');
+        console.log('❌ Notification permission denied via native API');
       }
 
       return granted;
