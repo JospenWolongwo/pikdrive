@@ -132,7 +132,7 @@ export function OneSignalInitializer() {
             const initWithTimeout = async (OneSignal: any, config: any, timeoutMs = 30000) => {
               console.log('⏱️ Starting OneSignal initialization with 30s timeout...');
               
-              let timeoutId: NodeJS.Timeout;
+              let timeoutId: NodeJS.Timeout | undefined;
               
               const timeoutPromise = new Promise((_, reject) => {
                 timeoutId = setTimeout(() => {
@@ -148,11 +148,15 @@ export function OneSignalInitializer() {
                 ]);
                 
                 // Clear timeout if init succeeds
-                clearTimeout(timeoutId);
+                if (timeoutId) {
+                  clearTimeout(timeoutId);
+                }
                 return result;
               } catch (error) {
                 // Clear timeout on error too
-                clearTimeout(timeoutId);
+                if (timeoutId) {
+                  clearTimeout(timeoutId);
+                }
                 throw error;
               }
             };
