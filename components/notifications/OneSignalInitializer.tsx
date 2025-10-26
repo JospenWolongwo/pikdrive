@@ -84,25 +84,6 @@ export function OneSignalInitializer() {
         try {
           await setUserId(user.id);
           console.log('✅ OneSignal user linked:', user.id);
-          
-          // CRITICAL FIX: Force re-register push subscription with new external user ID
-          // This ensures future notifications use the correct external user ID
-          try {
-            if (window.OneSignal) {
-              // Get current subscription
-              const subscription = await window.OneSignal.Notifications.subscription();
-              
-              if (subscription) {
-                console.log('🔄 Re-registering subscription with external user ID...');
-                // Force a re-subscription to ensure the external user ID is properly linked
-                await window.OneSignal.Notifications.requestPermission();
-                console.log('✅ Subscription re-registered with external user ID');
-              }
-            }
-          } catch (reSubscribeError) {
-            console.warn('⚠️ Could not re-register subscription (non-critical):', reSubscribeError);
-            // Don't fail the whole flow if re-subscription fails
-          }
         } catch (error) {
           console.error('❌ Failed to link OneSignal user:', error);
         }
