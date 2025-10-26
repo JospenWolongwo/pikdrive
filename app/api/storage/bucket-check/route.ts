@@ -6,8 +6,8 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
 }
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ Missing NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY environment variable');
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
 }
 
 // Use service role key for admin operations with explicit error logging
@@ -16,7 +16,7 @@ let supabaseAdmin: ReturnType<typeof createClient>;
 // Initialize with more robust error handling
 try {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error(`❌ Invalid Supabase credentials: URL=${!!supabaseUrl}, Key=${!!supabaseServiceKey}`);
@@ -37,7 +37,7 @@ try {
   // Create a fallback client that will properly report errors
   supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGc.invalid-placeholder-key',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGc.invalid-placeholder-key',
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }

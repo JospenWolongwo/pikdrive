@@ -129,8 +129,7 @@ export default function AdminDriversPage() {
   // Create an admin client that bypasses RLS for admin operations
   const createAdminClient = useCallback(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const supabaseServiceKey =
-      process.env.NEXT_PUBLIC_NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     console.log("🔍 Admin client setup check:", {
       hasUrl: !!supabaseUrl,

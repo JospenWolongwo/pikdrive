@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     // Initialize Supabase inside the handler
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!, // Server-only env var
       {
         auth: {
           persistSession: false
