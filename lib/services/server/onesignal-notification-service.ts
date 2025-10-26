@@ -41,6 +41,7 @@ export class ServerOneSignalNotificationService {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${serviceRoleKey}`,
+          'apikey': serviceRoleKey, // Required by Supabase Edge Functions
         },
         body: JSON.stringify(request),
       });

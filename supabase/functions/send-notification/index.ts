@@ -177,20 +177,14 @@ serve(async (req) => {
   }
 
   try {
-    // Validate request
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Parse request body
+    // Parse request body first to validate
     const notificationRequest: NotificationRequest = await req.json();
+    
+    console.log("📤 Received notification request:", {
+      userId: notificationRequest.userId,
+      title: notificationRequest.title,
+      type: notificationRequest.notificationType,
+    });
 
     // Validate required fields
     if (
