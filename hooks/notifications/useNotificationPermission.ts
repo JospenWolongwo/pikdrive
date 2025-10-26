@@ -62,15 +62,8 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
     setIsLoading(true);
 
     try {
-      // Check if OneSignal is ready
-      if (!window.OneSignal || !window.__oneSignalReady) {
-        console.log('⏳ OneSignal not ready yet, permission request will fail');
-        setPermission('denied');
-        setIsSubscribed(false);
-        return false;
-      }
-
-      // Use native browser API instead of OneSignal's method to avoid "Permission blocked"
+      // CRITICAL: Use native browser API FIRST to avoid "Permission blocked"
+      // Don't wait for OneSignal to be ready - we can request permission independently
       if (!("Notification" in window)) {
         console.warn("This browser does not support notifications");
         setPermission('denied');
@@ -103,14 +96,18 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
         setIsSubscribed(true);
         console.log('✅ Notification permission granted via native API');
         
-        // Sync with OneSignal after native permission is granted
-        try {
-          console.log('🔄 Syncing permission with OneSignal...');
-          await window.OneSignal.Notifications.requestPermission();
-          console.log('✅ OneSignal permission sync successful');
-        } catch (oneSignalError) {
-          console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
-          // Native permission still works even if OneSignal sync fails
+        // Sync with OneSignal after native permission is granted (if OneSignal is available)
+        if (window.OneSignal && window.__oneSignalReady) {
+          try {
+            console.log('🔄 Syncing permission with OneSignal...');
+            await window.OneSignal.Notifications.requestPermission();
+            console.log('✅ OneSignal permission sync successful');
+          } catch (oneSignalError) {
+            console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
+            // Native permission still works even if OneSignal sync fails
+          }
+        } else {
+          console.log('ℹ️ OneSignal not ready yet, but native permission granted');
         }
       } else {
         setPermission('denied');
