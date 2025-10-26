@@ -21,6 +21,9 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
   const { requestPermission, isLoading } = useNotificationPermission();
   const [deviceInfo] = useState(() => detectDevice());
   const [error, setError] = useState<string | null>(null);
+  
+  // Check if permission was denied - show instructions instead
+  const isPermissionDenied = typeof window !== 'undefined' && Notification.permission === 'denied';
 
   const handleEnableNotifications = async () => {
     setError(null);
@@ -59,7 +62,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold text-[#28C496]">
-              🔔 Activez les notifications
+              {isPermissionDenied ? '🔒 Notifications bloquées' : '🔔 Activez les notifications'}
             </DialogTitle>
             <Button
               variant="ghost"
@@ -71,12 +74,30 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
             </Button>
           </div>
           <DialogDescription className="text-base">
-            Ne manquez jamais les mises à jour importantes de vos trajets
+            {isPermissionDenied 
+              ? 'Réactivez les notifications dans les paramètres de votre navigateur'
+              : 'Ne manquez jamais les mises à jour importantes de vos trajets'
+            }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Benefits */}
+          {/* Show instructions when permission is denied */}
+          {isPermissionDenied && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-blue-800 mb-2">
+                📍 Comment réactiver les notifications :
+              </p>
+              <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                <li>Cliquez sur l'icône 🔒 dans la barre d'adresse</li>
+                <li>Choisissez "Notifications"</li>
+                <li>Changez de "Bloquer" à "Autoriser"</li>
+                <li>Actualisez la page</li>
+              </ol>
+            </div>
+          )}
+          {/* Benefits - Only show if permission is not denied */}
+          {!isPermissionDenied && (
           <div className="space-y-3">
             <div className="flex items-start space-x-3">
               <MessageSquare className="h-5 w-5 text-[#28C496] mt-0.5 flex-shrink-0" />
@@ -108,6 +129,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
               </div>
             </div>
           </div>
+          )}
 
           {/* Device compatibility message */}
           {!canEnable && (
@@ -124,25 +146,44 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
               <p className="text-sm text-red-800">
                 {error}
               </p>
+              {Notification.permission === 'denied' && (
+                <p className="text-xs text-red-700 mt-2">
+                  💡 Pour réactiver les notifications :<br />
+                  Cliquez sur 🔒 dans la barre d'adresse → Notifications → Autoriser
+                </p>
+              )}
             </div>
           )}
 
           {/* Action buttons */}
           <div className="flex space-x-3 pt-2">
-            <Button
-              onClick={handleLater}
-              variant="outline"
-              className="flex-1"
-            >
-              Plus tard
-            </Button>
-            <Button
-              onClick={handleEnableNotifications}
-              disabled={!canEnable || isLoading}
-              className="flex-1 bg-[#28C496] hover:bg-[#22a085]"
-            >
-              {isLoading ? 'Activation...' : 'Activer les notifications'}
-            </Button>
+            {isPermissionDenied ? (
+              // Show help button when permission is denied
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="flex-1"
+              >
+                Compris
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={handleLater}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Plus tard
+                </Button>
+                <Button
+                  onClick={handleEnableNotifications}
+                  disabled={!canEnable || isLoading}
+                  className="flex-1 bg-[#28C496] hover:bg-[#22a085]"
+                >
+                  {isLoading ? 'Activation...' : 'Activer les notifications'}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Privacy note */}
