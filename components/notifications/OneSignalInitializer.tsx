@@ -74,16 +74,35 @@ export function OneSignalInitializer() {
     cleanupOneSignalDatabases();
   }, []);
 
-  // Link/unlink user ID based on auth state
+  // Link/unlink user ID based on auth state and ensure linking happens immediately
   useEffect(() => {
     if (!isInitialized) return;
 
     const handleAuthChange = async () => {
       if (user?.id) {
-        // User logged in - link OneSignal external user ID
+        // User logged in - link OneSignal external user ID IMMEDIATELY
         try {
           await setUserId(user.id);
           console.log('✅ OneSignal user linked:', user.id);
+          
+          // CRITICAL FIX: Force re-register push subscription with new external user ID
+          // This ensures future notifications use the correct external user ID
+          try {
+            if (window.OneSignal) {
+              // Get current subscription
+              const subscription = await window.OneSignal.Notifications.subscription();
+              
+              if (subscription) {
+                console.log('🔄 Re-registering subscription with external user ID...');
+                // Force a re-subscription to ensure the external user ID is properly linked
+                await window.OneSignal.Notifications.requestPermission();
+                console.log('✅ Subscription re-registered with external user ID');
+              }
+            }
+          } catch (reSubscribeError) {
+            console.warn('⚠️ Could not re-register subscription (non-critical):', reSubscribeError);
+            // Don't fail the whole flow if re-subscription fails
+          }
         } catch (error) {
           console.error('❌ Failed to link OneSignal user:', error);
         }
@@ -127,6 +146,19 @@ export function OneSignalInitializer() {
             console.log('🔧 OneSignal deferred callback executing...');
             console.log('🔍 OneSignal object available:', !!OneSignal);
             console.log('🔍 Service worker path will be: OneSignalSDKWorker.js');
+            
+            // CRITICAL FIX: Get current user and link external user ID BEFORE initialization
+            // This prevents race condition where subscription happens before user ID is set
+            const currentUserId = user?.id;
+            if (currentUserId) {
+              console.log('🔗 Linking user ID BEFORE initialization:', currentUserId);
+              try {
+                await OneSignal.login(currentUserId);
+                console.log('✅ User ID linked before initialization');
+              } catch (linkError) {
+                console.warn('⚠️ Could not link user ID before init (will retry):', linkError);
+              }
+            }
             
             // CRITICAL: Add timeout wrapper to catch hanging initialization
             const initWithTimeout = async (OneSignal: any, config: any, timeoutMs = 30000) => {
@@ -281,7 +313,7 @@ export function OneSignalInitializer() {
     };
 
     initOneSignal();
-  }, [dbCleanupComplete]); // Only run when cleanup is complete
+  }, [dbCleanupComplete, user?.id]); // Include user ID to ensure proper linking
 
   // Render custom notification prompt
   return (
