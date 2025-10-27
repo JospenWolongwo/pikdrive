@@ -407,9 +407,15 @@ export const useChatStore = create<ChatState>()(
       subscribeToRide: (rideId: string) => {
         const { channels } = get();
         
-        if (channels.has(rideId)) return; // Already subscribed
+        if (channels.has(rideId)) {
+          console.log('⏭️ Already subscribed to ride:', rideId);
+          return; // Already subscribed
+        }
 
+        console.log('🔧 Setting up subscription for ride:', rideId);
         const channel = chatApiClient.subscribeToMessages(supabase, rideId, (message) => {
+          console.log('🔔 subscribeToRide received message for ride:', rideId, 'conversation:', message.conversation_id, 'content:', message.content);
+          
           // Add new message to local state and update conversation
           set((state) => {
             const conversationId = message.conversation_id;
