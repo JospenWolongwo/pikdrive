@@ -525,20 +525,29 @@ export const useChatStore = create<ChatState>()(
               schema: 'public',
               table: 'messages',
             },
-            async (payload) => {
+            (payload) => {
               const message = payload.new;
               
-              // Find affected conversation
-              const { data: conversation } = await supabase
-                .from('conversations')
-                .select('id, participants')
-                .eq('id', message.conversation_id)
-                .single();
-              
-              if (!conversation || !conversation.participants.includes(userId)) return;
-              
-              // Update conversation in store
+              // Update conversation in store immediately (no async database call)
               set((state) => {
+                // Check if conversation exists in local state
+                const conversationExists = state.conversations.some(
+                  conv => conv.id === message.conversation_id
+                );
+                
+                if (!conversationExists) {
+                  console.log('Conversation not in local state:', message.conversation_id);
+                  return state; // Return unchanged state
+                }
+                
+                // Find the conversation in local state
+                const conversation = state.conversations.find(
+                  conv => conv.id === message.conversation_id
+                );
+                
+                if (!conversation) return state;
+                
+                // Update conversation with new message data
                 const updatedConversations = state.conversations.map(conv => {
                   if (conv.id === message.conversation_id) {
                     const newUnreadCount = message.sender_id !== userId 

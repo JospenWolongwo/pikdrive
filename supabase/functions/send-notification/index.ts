@@ -105,8 +105,7 @@ async function sendPushViaOneSignal(
     ios_badgeType: "Increase",
     ios_badgeCount: 1,
     ios_sound: sound,
-    // Android specific
-    android_channel_id: "pikdrive_notifications",
+    // Android specific (removed android_channel_id - optional and not configured)
     android_sound: sound.replace('.wav', ''),
     small_icon: "ic_notification",
     large_icon: iconUrl,
@@ -126,11 +125,11 @@ async function sendPushViaOneSignal(
     message: request.message.substring(0, 50),
   });
 
-  const response = await fetch("https://onesignal.com/api/v2/notifications", {
+  const response = await fetch("https://onesignal.com/api/v1/notifications", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
+      Authorization: `Basic ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
     },
     body: JSON.stringify(requestBody),
   });
