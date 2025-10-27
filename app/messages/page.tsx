@@ -50,8 +50,8 @@ export default function MessagesPage() {
     fetchConversations,
     fetchUnreadCounts,
     markAsRead,
-    subscribeToRide,
-    unsubscribeFromRide,
+    subscribeToAllConversations,
+    unsubscribeFromAllConversations,
   } = useChatStore();
   const { toast } = useToast();
   const { userRides, userRidesLoading, userRidesError, loadUserRides } = useUserRides();
@@ -533,25 +533,21 @@ export default function MessagesPage() {
     }
   }, [user, triggerPrompt]);
 
-  // Subscribe to each conversation individually for real-time updates
+  // Subscribe to all conversations for real-time updates
   useEffect(() => {
-    if (!user || conversations.length === 0) return;
+    if (!user) return;
     
-    console.log('📡 Subscribing to', conversations.length, 'conversations for real-time updates');
+    console.log('📡 Subscribing to all conversations for real-time updates');
     
-    // Subscribe to each conversation
-    conversations.forEach(conv => {
-      subscribeToRide(conv.rideId);
-    });
+    // Subscribe to all conversations with a single global subscription
+    subscribeToAllConversations(user.id);
     
     return () => {
-      // Cleanup subscriptions
-      console.log('🧹 Cleaning up subscriptions for', conversations.length, 'conversations');
-      conversations.forEach(conv => {
-        unsubscribeFromRide(conv.rideId);
-      });
+      // Cleanup global subscription
+      console.log('🧹 Cleaning up global conversation subscription');
+      unsubscribeFromAllConversations();
     };
-  }, [user, conversations, subscribeToRide, unsubscribeFromRide]);
+  }, [user, subscribeToAllConversations, unsubscribeFromAllConversations]);
 
   // Note: Unread counts and conversation updates are now handled by the chatStore automatically
 
