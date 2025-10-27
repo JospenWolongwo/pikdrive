@@ -548,6 +548,11 @@ export default function MessagesPage() {
 
   // Note: Unread counts and conversation updates are now handled by the chatStore automatically
 
+  // Debug: Log when conversations change
+  useEffect(() => {
+    console.log('📋 Conversations updated in UI:', conversations.length, conversations.map(c => c.lastMessage));
+  }, [conversations]);
+
   // Memoized conversation filtering to prevent unnecessary re-computations
   const filteredConversations = useMemo(() => {
     if (!searchQuery.trim()) {

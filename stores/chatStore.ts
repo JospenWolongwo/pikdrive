@@ -516,6 +516,8 @@ export const useChatStore = create<ChatState>()(
         
         if (globalChannel) return; // Already subscribed
         
+        console.log('🔧 Setting up subscribeToAllConversations for user:', userId);
+        
         const channel = supabase
           .channel(`user-conversations:${userId}`)
           .on(
@@ -528,6 +530,8 @@ export const useChatStore = create<ChatState>()(
             (payload) => {
               const message = payload.new;
               
+              console.log('🔔 subscribeToAllConversations received message:', message);
+              
               // Update conversation in store immediately (no async database call)
               set((state) => {
                 // Check if conversation exists in local state
@@ -536,7 +540,7 @@ export const useChatStore = create<ChatState>()(
                 );
                 
                 if (!conversationExists) {
-                  console.log('Conversation not in local state:', message.conversation_id);
+                  console.log('⚠️ Conversation not in local state:', message.conversation_id);
                   return state; // Return unchanged state
                 }
                 
@@ -546,6 +550,8 @@ export const useChatStore = create<ChatState>()(
                 );
                 
                 if (!conversation) return state;
+                
+                console.log('✅ Found conversation, updating with message:', message.content);
                 
                 // Update conversation with new message data
                 const updatedConversations = state.conversations.map(conv => {
@@ -579,9 +585,18 @@ export const useChatStore = create<ChatState>()(
               });
             }
           )
-          .subscribe();
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('❌ Subscription error:', err);
+            }
+            console.log('📡 Subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+              console.log('✅ Successfully subscribed to all conversations');
+            }
+          });
         
         set({ globalChannel: channel });
+        console.log('✅ subscribeToAllConversations setup complete');
       },
 
       unsubscribeFromAllConversations: () => {
