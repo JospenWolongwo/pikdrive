@@ -195,14 +195,13 @@ export class ServerPaymentOrchestrationService {
         // Legacy notification service (keep for compatibility)
         (async () => {
           console.log('🔔 [ORCHESTRATION] Calling legacy notification service');
-          return this.notificationService.notifyPaymentCompleted(payment);
-        })
-          .then(() => {
+          try {
+            await this.notificationService.notifyPaymentCompleted(payment);
             console.log('✅ Legacy payment notifications sent successfully for payment:', payment.id);
-          })
-          .catch(err => {
+          } catch (err) {
             console.error('❌ Legacy notification error (non-critical):', err);
-          }),
+          }
+        })(),
       ]).then(results => {
         console.log('✅ [ORCHESTRATION] All notification tasks completed:', {
           receiptCreated: results[0] !== null,
