@@ -252,17 +252,35 @@ serve(async (req) => {
     // Send SMS if requested and phone number provided
     if (notificationRequest.sendSMS && notificationRequest.phoneNumber) {
       try {
+        console.log('📤 [EDGE] Attempting to send SMS:', {
+          phoneNumber: notificationRequest.phoneNumber,
+          title: notificationRequest.title,
+          messagePreview: notificationRequest.message.substring(0, 50)
+        });
         const smsResponse = await sendSMSViaOneSignal(notificationRequest);
         results.push({
           type: 'sms',
           id: smsResponse.id,
           recipients: smsResponse.recipients
         });
-        console.log("✅ SMS sent:", smsResponse);
+        console.log("✅ [EDGE] SMS sent successfully:", {
+          id: smsResponse.id,
+          recipients: smsResponse.recipients,
+          phoneNumber: notificationRequest.phoneNumber
+        });
       } catch (error) {
-        console.error("❌ SMS failed:", error);
+        console.error("❌ [EDGE] SMS send failed:", {
+          error: error.message,
+          phoneNumber: notificationRequest.phoneNumber,
+          stack: error.stack
+        });
         results.push({ type: 'sms', error: error.message });
       }
+    } else {
+      console.log('ℹ️ [EDGE] SMS not requested or phone number not provided:', {
+        sendSMS: notificationRequest.sendSMS,
+        phoneNumber: notificationRequest.phoneNumber
+      });
     }
 
     // Log notifications to database

@@ -137,6 +137,14 @@ export class ServerPaymentOrchestrationService {
 
       const actualCode = updatedBooking?.verification_code || verificationCode;
 
+      console.log('🔔 [ORCHESTRATION] Booking details fetched:', {
+        bookingId: booking.id,
+        userId: booking.user.id,
+        driverId: booking.ride.driver.id,
+        verificationCode: actualCode,
+        passengerPhone: booking.user.phone
+      });
+
       // Run independent operations in parallel
       await Promise.all([
         // Create receipt (with error handling for duplicates)
@@ -146,7 +154,9 @@ export class ServerPaymentOrchestrationService {
         }),
 
         // Send SMS to passenger with verification code (critical info)
-        this.oneSignalService.sendBookingConfirmationSMS(
+        (async () => {
+          console.log('🔔 [ORCHESTRATION] Sending SMS to passenger:', booking.user.phone);
+          return this.oneSignalService.sendBookingConfirmationSMS(
           booking.user.phone,
           {
             id: booking.id,
@@ -155,13 +165,16 @@ export class ServerPaymentOrchestrationService {
             date: booking.ride.departure_time,
             amount: payment.amount,
           },
-          actualCode
-        ).catch(err => {
+            actualCode
+          );
+        })().catch(err => {
           console.error('❌ SMS notification error (non-critical):', err);
         }),
 
         // Send push notification to driver (ride update)
-        this.oneSignalService.sendDriverNotification(
+        (async () => {
+          console.log('🔔 [ORCHESTRATION] Sending push to driver:', booking.ride.driver.id);
+          return this.oneSignalService.sendDriverNotification(
           booking.ride.driver.id,
           'new_booking',
           {
@@ -174,21 +187,34 @@ export class ServerPaymentOrchestrationService {
             seats: booking.seats,
             amount: payment.amount,
           }
-        ).catch(err => {
+        );
+        })().catch(err => {
           console.error('❌ Driver notification error (non-critical):', err);
         }),
 
         // Legacy notification service (keep for compatibility)
-        this.notificationService.notifyPaymentCompleted(payment)
+        (async () => {
+          console.log('🔔 [ORCHESTRATION] Calling legacy notification service');
+          return this.notificationService.notifyPaymentCompleted(payment);
+        })
           .then(() => {
             console.log('✅ Legacy payment notifications sent successfully for payment:', payment.id);
           })
           .catch(err => {
             console.error('❌ Legacy notification error (non-critical):', err);
           }),
-      ]);
+      ]).then(results => {
+        console.log('✅ [ORCHESTRATION] All notification tasks completed:', {
+          receiptCreated: results[0] !== null,
+          smsSent: results[1]?.success !== false,
+          driverNotification: results[2]?.success !== false,
+          legacyNotification: results[3]?.success !== false
+        });
+      }).catch(err => {
+        console.error('❌ [ORCHESTRATION] Error in notification tasks:', err);
+      });
 
-      console.log('✅ Completed payment workflow finished with smart notifications');
+      console.log('✅ [ORCHESTRATION] Completed payment workflow finished with smart notifications');
     } catch (error) {
       console.error('Error in completed payment workflow:', error);
       throw error;

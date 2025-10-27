@@ -65,6 +65,12 @@ export class ServerPaymentNotificationService {
       const passengerName = passenger?.full_name || passenger?.phone || 'Passager';
       const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
+      console.log('🔔 [NOTIFICATIONS] Passenger details:', {
+        id: passenger?.id,
+        phone: passenger?.phone,
+        name: passengerName
+      });
+
       // Ensure verification code exists before sending notifications
       let verificationCode = booking.verification_code;
       
@@ -89,6 +95,7 @@ export class ServerPaymentNotificationService {
 
       // Send both push notifications and SMS via OneSignal (non-blocking)
       console.log('📤 Sending notifications via OneSignal (Push + SMS)...');
+      console.log('🔔 [NOTIFICATIONS] About to send passenger SMS notification');
       const notificationPromises = Promise.all([
         // Passenger notification - Push + SMS for booking confirmation with verification code
         this.oneSignalService.sendNotification({
@@ -117,7 +124,9 @@ export class ServerPaymentNotificationService {
         
         // Driver notification - Push only (no SMS for drivers)
         // IMPORTANT: This notification goes to the DRIVER, not the passenger
-        this.oneSignalService.sendNotification({
+        (() => {
+          console.log('🔔 [NOTIFICATIONS] About to send driver push notification');
+          return this.oneSignalService.sendNotification({
           userId: ride.driver_id, // ✅ Correctly targets the driver
           title: '💰 Nouvelle Réservation Payée!',
           message: `${passengerName} a payé ${formatAmount(payment.amount)} XAF pour ${ride.from_city} → ${ride.to_city}. ${booking.seats} place${booking.seats > 1 ? 's' : ''}. Code de vérification: ${verificationCode}`,
@@ -145,14 +154,23 @@ export class ServerPaymentNotificationService {
             toCity: ride.to_city,
             departureTime: ride.departure_time,
           },
-        }),
+        });
+        })(),
       ]).then(results => {
-        console.log('✅ Payment completion notifications sent successfully:', {
+        console.log('✅ [NOTIFICATIONS] Payment completion notifications sent:', {
           paymentId: payment.id,
-          results: results.map(r => ({ success: r.success, notificationId: r.notificationId }))
+          passengerNotification: results[0],
+          driverNotification: results[1],
+          results: results.map((r, index) => ({ 
+            index,
+            success: r.success, 
+            notificationId: r.notificationId,
+            error: r.error 
+          }))
         });
       }).catch(err => {
-        console.error('❌ Push notification error:', err);
+        console.error('❌ [NOTIFICATIONS] Push notification error:', err);
+        console.error('❌ [NOTIFICATIONS] Error stack:', err.stack);
         throw err;
       });
 

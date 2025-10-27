@@ -22,20 +22,24 @@ export class ServerOneSignalNotificationService {
    */
   async sendNotification(request: NotificationRequest): Promise<NotificationResponse> {
     try {
-      console.log('📤 Sending notification via Edge Function:', {
+      console.log('🔔 [ONESIGNAL] Calling Edge Function:', {
+        url: this.edgeFunctionUrl,
         userId: request.userId,
+        sendSMS: request.sendSMS,
+        phoneNumber: request.phoneNumber,
         title: request.title,
-        type: request.notificationType,
+        messagePreview: request.message.substring(0, 50)
       });
 
       // Get service role key for authentication (server-only, never exposed to client)
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       if (!serviceRoleKey) {
+        console.error('❌ [ONESIGNAL] SUPABASE_SERVICE_ROLE_KEY not configured');
         throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
       }
 
       // Call Edge Function
-      console.log('🌐 Calling OneSignal Edge Function:', this.edgeFunctionUrl);
+      console.log('📤 [ONESIGNAL] Sending notification via Edge Function');
       const response = await fetch(this.edgeFunctionUrl, {
         method: 'POST',
         headers: {
@@ -46,10 +50,11 @@ export class ServerOneSignalNotificationService {
         body: JSON.stringify(request),
       });
 
-      console.log('📡 OneSignal Edge Function response status:', response.status);
+      console.log('📡 [ONESIGNAL] Edge Function response status:', response.status);
 
       if (!response.ok) {
         const error = await response.json();
+        console.error('❌ [ONESIGNAL] Edge Function error response:', error);
         throw new Error(error.error || 'Failed to send notification');
       }
 
@@ -60,10 +65,12 @@ export class ServerOneSignalNotificationService {
       const notificationId = pushNotification.id;
       const recipients = pushNotification.recipients;
 
-      console.log('✅ Notification sent successfully:', {
+      console.log('✅ [ONESIGNAL] Edge Function response:', {
+        success: true,
         notificationId,
         recipients,
-        fullResponse: result,
+        smsEnabled: request.sendSMS,
+        phoneNumber: request.phoneNumber
       });
 
       return {
@@ -72,7 +79,15 @@ export class ServerOneSignalNotificationService {
         recipients,
       };
     } catch (error) {
-      console.error('❌ Error sending notification:', error);
+      console.error('❌ [ONESIGNAL] Detailed error:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        request: {
+          userId: request.userId,
+          sendSMS: request.sendSMS,
+          phoneNumber: request.phoneNumber
+        }
+      });
       
       return {
         success: false,

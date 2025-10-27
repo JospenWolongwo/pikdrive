@@ -150,11 +150,13 @@ export async function POST(request: NextRequest) {
             newStatus,
           });
           
+          console.log('🔔 [CHECK-STATUS] Triggering orchestration service for status change');
           await orchestrationService.handlePaymentStatusChange(payment, newStatus, {
             transaction_id: momoStatus.financialTransactionId,
             provider_response: momoStatus,
           });
           
+          console.log('🔔 [CHECK-STATUS] Orchestration completed, notifications should be sent');
           console.log('✅ [CHECK-STATUS] Payment status updated successfully');
         } else {
           console.log('ℹ️ [CHECK-STATUS] Status unchanged, no update needed');
