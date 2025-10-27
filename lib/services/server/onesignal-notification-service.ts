@@ -55,15 +55,21 @@ export class ServerOneSignalNotificationService {
 
       const result = await response.json();
 
+      // Extract notification data from Edge Function response
+      const pushNotification = result.pushNotification || {};
+      const notificationId = pushNotification.id;
+      const recipients = pushNotification.recipients;
+
       console.log('✅ Notification sent successfully:', {
-        notificationId: result.notificationId,
-        recipients: result.recipients,
+        notificationId,
+        recipients,
+        fullResponse: result,
       });
 
       return {
         success: true,
-        notificationId: result.notificationId,
-        recipients: result.recipients,
+        notificationId,
+        recipients,
       };
     } catch (error) {
       console.error('❌ Error sending notification:', error);
