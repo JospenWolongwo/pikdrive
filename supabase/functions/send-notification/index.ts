@@ -91,47 +91,71 @@ async function sendPushViaOneSignal(
   // Use app icon - Lucide icons are rendered on the frontend
   const iconUrl = `${webAppUrl}/icons/icon-192x192.png`;
 
+  const requestBody = {
+    app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
+    include_external_user_ids: [request.userId],
+    contents: { fr: request.message, en: request.message },
+    headings: { fr: request.title, en: request.title },
+    data: {
+      ...request.data,
+      notificationType: request.notificationType || "general",
+      timestamp: Date.now(),
+    },
+    // iOS specific
+    ios_badgeType: "Increase",
+    ios_badgeCount: 1,
+    ios_sound: sound,
+    // Android specific
+    android_channel_id: "pikdrive_notifications",
+    android_sound: sound.replace('.wav', ''),
+    small_icon: "ic_notification",
+    large_icon: iconUrl,
+    // Web specific
+    web_push_topic: request.notificationType || "general",
+    chrome_web_icon: iconUrl,
+    chrome_web_badge: `${webAppUrl}/icons/badge-72x72.png`,
+    // Delivery
+    priority: 10,
+    ttl: 86400, // 24 hours
+  };
+
+  console.log("📤 Sending to OneSignal API:", {
+    app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
+    external_user_ids: [request.userId],
+    title: request.title,
+    message: request.message.substring(0, 50),
+  });
+
   const response = await fetch("https://onesignal.com/api/v2/notifications", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${NEXT_PUBLIC_ONESIGNAL_API_KEY}`,
     },
-    body: JSON.stringify({
-      app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
-      include_external_user_ids: [request.userId],
-      contents: { fr: request.message, en: request.message },
-      headings: { fr: request.title, en: request.title },
-      data: {
-        ...request.data,
-        notificationType: request.notificationType || "general",
-        timestamp: Date.now(),
-      },
-      // iOS specific
-      ios_badgeType: "Increase",
-      ios_badgeCount: 1,
-      ios_sound: sound,
-      // Android specific
-      android_channel_id: "pikdrive_notifications",
-      android_sound: sound.replace('.wav', ''),
-      small_icon: "ic_notification",
-      large_icon: iconUrl,
-      // Web specific
-      web_push_topic: request.notificationType || "general",
-      chrome_web_icon: iconUrl,
-      chrome_web_badge: `${webAppUrl}/icons/badge-72x72.png`,
-      // Delivery
-      priority: 10,
-      ttl: 86400, // 24 hours
-    }),
+    body: JSON.stringify(requestBody),
   });
 
+  console.log("📡 OneSignal API response status:", response.status);
+  console.log("📡 OneSignal API response headers:", Object.fromEntries(response.headers.entries()));
+
+  const responseText = await response.text();
+  console.log("📡 OneSignal API response (first 500 chars):", responseText.substring(0, 500));
+
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`OneSignal API error: ${JSON.stringify(error)}`);
+    try {
+      const error = JSON.parse(responseText);
+      throw new Error(`OneSignal API error: ${JSON.stringify(error)}`);
+    } catch (e) {
+      throw new Error(`OneSignal API returned HTML error: ${responseText.substring(0, 200)}`);
+    }
   }
 
-  return await response.json();
+  try {
+    return JSON.parse(responseText);
+  } catch (e) {
+    console.error("❌ Failed to parse OneSignal response:", e);
+    throw new Error(`OneSignal returned invalid JSON: ${responseText.substring(0, 200)}`);
+  }
 }
 
 /**
