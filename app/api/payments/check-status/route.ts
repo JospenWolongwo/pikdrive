@@ -118,7 +118,11 @@ export async function POST(request: NextRequest) {
           collectionUserId: process.env.MOMO_COLLECTION_USER_ID!,
         });
 
-        const momoStatus = await mtnService.getPaymentStatus(transactionId);
+        // Get phone number from payment for sandbox testing
+        const momoStatus = await mtnService.getPaymentStatus(
+          transactionId,
+          payment.phone_number // Pass phone number for sandbox test number detection
+        );
         console.log('📊 [CHECK-STATUS] MTN MOMO Status:', {
           status: momoStatus.status,
           financialTransactionId: momoStatus.financialTransactionId,
@@ -129,13 +133,14 @@ export async function POST(request: NextRequest) {
         const statusMapping: Record<string, any> = {
           'SUCCESSFUL': 'completed',
           'FAILED': 'failed',
-          'PENDING': 'processing',
+          'PENDING': 'pending',  // In sandbox, PENDING test number stays pending (for timeout testing)
         };
         
         newStatus = statusMapping[momoStatus.status] || 'pending';
         console.log('🔄 [CHECK-STATUS] Status mapping:', { 
-          momoStatus: momoStatus.status, 
-          ourStatus: newStatus 
+          mtmStatus: momoStatus.status, 
+          ourStatus: newStatus,
+          testNumber: payment.phone_number
         });
 
         // Update payment if status changed

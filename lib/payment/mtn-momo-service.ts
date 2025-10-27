@@ -107,6 +107,7 @@ export class MTNMomoService {
 
   // Sandbox test numbers and their behaviors
   private readonly SANDBOX_TEST_NUMBERS = {
+    "237670000000": { status: "SUCCESSFUL", reason: null }, // Main test number
     "237677777777": { status: "SUCCESSFUL", reason: null },
     "237666666666": { status: "FAILED", reason: "APPROVAL_REJECTED" },
     "237655555555": { status: "FAILED", reason: "INTERNAL_PROCESSING_ERROR" },
@@ -138,15 +139,25 @@ export class MTNMomoService {
       const transactionId = this.generateUUID();
       const requestId = this.generateUUID();
 
-      // For sandbox testing
+      // For sandbox testing - check if it's a known test number
       if (this.config.targetEnvironment === "sandbox") {
-        console.log(" 🏖️ Using sandbox environment");
-        if (request.phoneNumber === "237670000000") {
+        console.log(" 🏖️ Using sandbox environment with phone:", request.phoneNumber);
+        
+        // Check if this is one of our defined sandbox test numbers
+        if (this.isSandboxTestNumber(request.phoneNumber)) {
+          console.log(" ✅ Sandbox test number detected:", request.phoneNumber);
           return {
             transactionId,
             requestId,
           };
         }
+        
+        // For any other sandbox number, default to successful flow
+        console.log(" ⚠️ Unknown sandbox number, defaulting to successful flow");
+        return {
+          transactionId,
+          requestId,
+        };
       }
 
       const collectionRequest: CollectionRequest = {
@@ -183,7 +194,10 @@ export class MTNMomoService {
     }
   }
 
-  async getPaymentStatus(transactionId: string): Promise<{
+  async getPaymentStatus(
+    transactionId: string,
+    phoneNumber?: string
+  ): Promise<{
     status: "SUCCESSFUL" | "FAILED" | "PENDING";
     reason?: string;
     financialTransactionId?: string;
@@ -191,14 +205,25 @@ export class MTNMomoService {
     try {
       if (this.config.targetEnvironment === "sandbox") {
         console.log(
-          " 🏖️ Using sandbox environment with test number:",
-          transactionId
+          " 🏖️ Using sandbox environment, transactionId:",
+          transactionId,
+          "phone:",
+          phoneNumber
         );
 
-        // For sandbox testing, return successful status
-        console.log(
-          " ⚠️ Not a sandbox test number, defaulting to successful flow"
-        );
+        // If we have a phone number and it's a test number, use its status
+        if (phoneNumber && this.isSandboxTestNumber(phoneNumber)) {
+          const testResponse = this.getSandboxTestResponse(phoneNumber);
+          console.log(" ✅ Sandbox test response for", phoneNumber, ":", testResponse);
+          return {
+            status: testResponse.status,
+            reason: testResponse.reason || undefined,
+            financialTransactionId: this.generateUUID(),
+          };
+        }
+
+        // Default to successful for any other sandbox request
+        console.log(" ⚠️ Defaulting to successful status in sandbox");
         return {
           status: "SUCCESSFUL",
           reason: undefined,

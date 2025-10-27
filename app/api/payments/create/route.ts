@@ -133,23 +133,10 @@ export async function POST(request: NextRequest) {
         .single();
       console.log('🔍 Verification query result:', verifyPayment);
 
-      // Send payment processing notification (professional MTN MoMo style)
-      try {
-        await notificationService.sendPaymentNotification(
-          user.id,
-          payment.id,
-          'processing',
-          amount,
-          {
-            provider: provider,
-            transactionId: transactionId,
-          }
-        );
-        console.log('✅ Payment notification sent');
-      } catch (notifError) {
-        // Don't fail payment if notification fails
-        console.error('❌ Failed to send payment notification:', notifError);
-      }
+      // ❌ REMOVED: Immediate "processing" notification
+      // Notifications will be sent ONLY after payment completes via polling
+      // This prevents sending premature "en cours de traitement" notifications
+      // The payment status checker will handle notifications on completion
     }
 
     // Return consistent response
