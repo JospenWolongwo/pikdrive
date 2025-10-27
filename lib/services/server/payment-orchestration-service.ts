@@ -240,62 +240,99 @@ export class ServerPaymentOrchestrationService {
           // Don't throw - receipt creation failure shouldn't block the workflow
         }),
 
-        // Send SMS to passenger with verification code (critical info)
+        // Send single push notification to passenger with verification code
         (async () => {
-          console.log('🔔 [ORCHESTRATION] Sending SMS to passenger:', booking.user.phone);
-          return this.oneSignalService.sendBookingConfirmationSMS(
-          booking.user.id, // Pass actual user ID first
-          {
-            id: booking.id,
-            from: booking.ride.from_city,
-            to: booking.ride.to_city,
-            date: booking.ride.departure_time,
-            amount: payment.amount,
-          },
-            actualCode,
-            booking.user.phone // Pass phone number last for SMS delivery
-          );
+          console.log('🔔 [ORCHESTRATION] Sending push notification to passenger:', booking.user.id);
+          const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+          const formatDate = (dateStr: string) => {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('fr-FR', { 
+              day: '2-digit', 
+              month: 'short', 
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          };
+          
+          const message = `Votre réservation pour ${booking.ride.from_city} → ${booking.ride.to_city} est confirmée.\n` +
+            `Code de vérification: ${actualCode}\n` +
+            `Montant: ${formatAmount(payment.amount)} XAF • Date: ${formatDate(booking.ride.departure_time)}\n` +
+            `Places: ${booking.seats} • ${booking.user.full_name}\n\n` +
+            `📱 Note: Présentez ce code au conducteur à l'embarquement.`;
+          
+          return this.oneSignalService.sendNotification({
+            userId: booking.user.id,
+            title: '✅ Paiement Confirmé!',
+            message: message,
+            notificationType: 'payment_success',
+            imageUrl: 'https://pikdrive.com/icons/icon-192x192.png',
+            data: {
+              bookingId: booking.id,
+              rideId: booking.ride.id,
+              paymentId: payment.id,
+              type: 'payment_completed',
+              icon: 'CheckCircle2',
+              verificationCode: actualCode,
+              action: 'view_booking',
+              deepLink: `pikdrive.com/bookings/${booking.id}`,
+              priority: 'high'
+            },
+          });
         })().catch(err => {
-          console.error('❌ SMS notification error (non-critical):', err);
+          console.error('❌ Passenger notification error (non-critical):', err);
         }),
 
-        // Send push notification to driver (ride update)
+        // Send single push notification to driver (WITHOUT verification code for security)
         (async () => {
-          console.log('🔔 [ORCHESTRATION] Sending push to driver:', booking.ride.driver.id);
-          return this.oneSignalService.sendDriverNotification(
-          booking.ride.driver.id,
-          'new_booking',
-          {
-            id: booking.id,
-            rideId: booking.ride.id,
-            passengerName: booking.user.full_name,
-            from: booking.ride.from_city,
-            to: booking.ride.to_city,
-            date: booking.ride.departure_time,
-            seats: booking.seats,
-            amount: payment.amount,
-          }
-        );
+          console.log('🔔 [ORCHESTRATION] Sending push notification to driver:', booking.ride.driver.id);
+          const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
+          const formatDate = (dateStr: string) => {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('fr-FR', { 
+              day: '2-digit', 
+              month: 'short', 
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          };
+          
+          const message = `${booking.user.full_name} a payé ${formatAmount(payment.amount)} XAF pour votre trajet ${booking.ride.from_city} → ${booking.ride.to_city}.\n` +
+            `Places: ${booking.seats} • Date: ${formatDate(booking.ride.departure_time)}\n\n` +
+            `🔒 Note: Demandez le code de vérification au passager à l'embarquement.`;
+          
+          return this.oneSignalService.sendNotification({
+            userId: booking.ride.driver.id,
+            title: '💰 Nouvelle Réservation Payée!',
+            message: message,
+            notificationType: 'driver_new_booking',
+            imageUrl: 'https://pikdrive.com/icons/icon-192x192.png',
+            data: {
+              bookingId: booking.id,
+              rideId: booking.ride.id,
+              paymentId: payment.id,
+              passengerName: booking.user.full_name,
+              amount: payment.amount,
+              seats: booking.seats,
+              fromCity: booking.ride.from_city,
+              toCity: booking.ride.to_city,
+              departureTime: booking.ride.departure_time,
+              type: 'driver_booking_paid',
+              action: 'view_driver_booking',
+              deepLink: `pikdrive.com/driver/bookings/${booking.id}`,
+              priority: 'high'
+              // NOTE: verificationCode intentionally NOT included for security
+            },
+          });
         })().catch(err => {
           console.error('❌ Driver notification error (non-critical):', err);
         }),
-
-        // Legacy notification service (keep for compatibility)
-        (async () => {
-          console.log('🔔 [ORCHESTRATION] Calling legacy notification service');
-          try {
-            await this.notificationService.notifyPaymentCompleted(payment);
-            console.log('✅ Legacy payment notifications sent successfully for payment:', payment.id);
-          } catch (err) {
-            console.error('❌ Legacy notification error (non-critical):', err);
-          }
-        })(),
       ]).then(results => {
         console.log('✅ [ORCHESTRATION] All notification tasks completed:', {
           receiptCreated: results[0] !== null,
-          smsSent: results[1]?.success !== false,
-          driverNotification: results[2]?.success !== false,
-          legacyNotification: results[3] !== undefined // Legacy returns void
+          passengerNotification: results[1]?.success !== false,
+          driverNotification: results[2]?.success !== false
         });
       }).catch(err => {
         console.error('❌ [ORCHESTRATION] Error in notification tasks:', err);
