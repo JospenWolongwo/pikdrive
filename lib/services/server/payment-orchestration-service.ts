@@ -129,7 +129,7 @@ export class ServerPaymentOrchestrationService {
           bookingId: payment.booking_id
         });
         
-        // Try fallback: Fetch booking without relations
+        // Try fallback: Fetch booking without relations and manually fetch related data
         const { data: simpleBooking, error: simpleError } = await this.supabase
           .from('bookings')
           .select('id, ride_id, user_id, seats, status')
@@ -141,9 +141,68 @@ export class ServerPaymentOrchestrationService {
           error: simpleError
         });
         
-        return;
+        if (!simpleBooking) {
+          return;
+        }
+        
+        // If we got a simple booking, fetch related data manually
+        const { data: rideData } = await this.supabase
+          .from('rides')
+          .select('id, from_city, to_city, departure_time, driver_id')
+          .eq('id', simpleBooking.ride_id)
+          .single();
+          
+        if (!rideData) {
+          console.error('❌ [ORCHESTRATION] Ride not found:', simpleBooking.ride_id);
+          return;
+        }
+        
+        const { data: driverData } = await this.supabase
+          .from('profiles')
+          .select('id, full_name, phone')
+          .eq('id', rideData.driver_id)
+          .single();
+          
+        if (!driverData) {
+          console.error('❌ [ORCHESTRATION] Driver not found:', rideData.driver_id);
+          return;
+        }
+        
+        const { data: userData } = await this.supabase
+          .from('profiles')
+          .select('id, full_name, phone')
+          .eq('id', simpleBooking.user_id)
+          .single();
+          
+        if (!userData) {
+          console.error('❌ [ORCHESTRATION] User not found:', simpleBooking.user_id);
+          return;
+        }
+        
+        // Create a merged booking object with all needed data
+        const mergedBooking = {
+          ...simpleBooking,
+          ride: {
+            ...rideData,
+            driver: driverData
+          },
+          user: userData
+        };
+        
+        console.log('✅ [ORCHESTRATION] Using fallback booking with manually fetched relations');
+        return this.processNotificationFlow(mergedBooking, payment);
       }
 
+      // Continue with notification logic using the fetched booking
+      return this.processNotificationFlow(booking, payment);
+    } catch (error) {
+      console.error('Error in completed payment workflow:', error);
+      throw error;
+    }
+  }
+
+  private async processNotificationFlow(booking: any, payment: Payment): Promise<void> {
+    try {
       // Generate verification code using database function
       const { data: verificationCodeData, error: codeError } = await this.supabase.rpc(
         'generate_booking_verification_code',
