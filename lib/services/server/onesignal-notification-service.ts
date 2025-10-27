@@ -278,7 +278,7 @@ export class ServerOneSignalNotificationService {
    * Send SMS for booking confirmation (via OneSignal SMS API)
    */
   async sendBookingConfirmationSMS(
-    phoneNumber: string,
+    userId: string,
     booking: {
       id: string;
       from: string;
@@ -286,7 +286,8 @@ export class ServerOneSignalNotificationService {
       date: string;
       amount: number;
     },
-    activationCode: string
+    activationCode: string,
+    phoneNumber: string
   ): Promise<NotificationResponse> {
     const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('fr-FR');
@@ -301,11 +302,11 @@ Présentez ce code au conducteur.
 Détails: pikdrive.com/bookings/${booking.id}`;
 
     return this.sendNotification({
-      userId: phoneNumber, // Use phone as user ID for SMS
+      userId: userId, // Use actual user ID for OneSignal lookup
       title: 'Réservation PikDrive',
       message,
       notificationType: 'booking_confirmation_sms',
-      phoneNumber,
+      phoneNumber, // Phone number for SMS delivery
       sendSMS: true,
       data: {
         bookingId: booking.id,

@@ -244,7 +244,7 @@ export class ServerPaymentOrchestrationService {
         (async () => {
           console.log('🔔 [ORCHESTRATION] Sending SMS to passenger:', booking.user.phone);
           return this.oneSignalService.sendBookingConfirmationSMS(
-          booking.user.phone,
+          booking.user.id, // Pass actual user ID first
           {
             id: booking.id,
             from: booking.ride.from_city,
@@ -252,7 +252,8 @@ export class ServerPaymentOrchestrationService {
             date: booking.ride.departure_time,
             amount: payment.amount,
           },
-            actualCode
+            actualCode,
+            booking.user.phone // Pass phone number last for SMS delivery
           );
         })().catch(err => {
           console.error('❌ SMS notification error (non-critical):', err);
