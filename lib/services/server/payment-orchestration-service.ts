@@ -207,7 +207,7 @@ export class ServerPaymentOrchestrationService {
           receiptCreated: results[0] !== null,
           smsSent: results[1]?.success !== false,
           driverNotification: results[2]?.success !== false,
-          legacyNotification: results[3]?.success !== false
+          legacyNotification: results[3] !== undefined // Legacy returns void
         });
       }).catch(err => {
         console.error('❌ [ORCHESTRATION] Error in notification tasks:', err);
