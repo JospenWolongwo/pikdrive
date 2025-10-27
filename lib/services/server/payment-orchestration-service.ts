@@ -116,8 +116,26 @@ export class ServerPaymentOrchestrationService {
         return;
       }
 
-      // Generate activation code for passenger
-      const activationCode = this.generateActivationCode();
+      // Generate verification code using database function
+      const { data: verificationCodeData, error: codeError } = await this.supabase.rpc(
+        'generate_booking_verification_code',
+        { booking_id: payment.booking_id }
+      );
+
+      if (codeError) {
+        console.error('❌ Error generating verification code:', codeError);
+      }
+
+      const verificationCode = verificationCodeData || 'ERROR';
+
+      // Fetch the booking again to get the actual verification code from database
+      const { data: updatedBooking } = await this.supabase
+        .from('bookings')
+        .select('verification_code, code_expiry')
+        .eq('id', payment.booking_id)
+        .single();
+
+      const actualCode = updatedBooking?.verification_code || verificationCode;
 
       // Run independent operations in parallel
       await Promise.all([
@@ -127,7 +145,7 @@ export class ServerPaymentOrchestrationService {
           // Don't throw - receipt creation failure shouldn't block the workflow
         }),
 
-        // Send SMS to passenger (critical info)
+        // Send SMS to passenger with verification code (critical info)
         this.oneSignalService.sendBookingConfirmationSMS(
           booking.user.phone,
           {
@@ -137,7 +155,7 @@ export class ServerPaymentOrchestrationService {
             date: booking.ride.departure_time,
             amount: payment.amount,
           },
-          activationCode
+          actualCode
         ).catch(err => {
           console.error('❌ SMS notification error (non-critical):', err);
         }),

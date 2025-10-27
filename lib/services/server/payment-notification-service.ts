@@ -65,14 +65,36 @@ export class ServerPaymentNotificationService {
       const passengerName = passenger?.full_name || passenger?.phone || 'Passager';
       const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
+      // Ensure verification code exists before sending notifications
+      let verificationCode = booking.verification_code;
+      
+      // If no verification code exists, generate one
+      if (!verificationCode) {
+        console.log('⚠️ No verification code found, generating one...');
+        const { data: newCode } = await this.supabase.rpc(
+          'generate_booking_verification_code',
+          { booking_id: payment.booking_id }
+        );
+        verificationCode = newCode || 'GENERATED';
+        
+        // Fetch the updated booking
+        const { data: updatedBooking } = await this.supabase
+          .from('bookings')
+          .select('verification_code')
+          .eq('id', payment.booking_id)
+          .single();
+        
+        verificationCode = updatedBooking?.verification_code || verificationCode;
+      }
+
       // Send both push notifications and SMS via OneSignal (non-blocking)
       console.log('📤 Sending notifications via OneSignal (Push + SMS)...');
       const notificationPromises = Promise.all([
-        // Passenger notification - Push + SMS for booking confirmation
+        // Passenger notification - Push + SMS for booking confirmation with verification code
         this.oneSignalService.sendNotification({
           userId: booking.user_id,
           title: '✅ Paiement Confirmé!',
-          message: `Votre paiement de ${formatAmount(payment.amount)} XAF est confirmé pour ${ride.from_city} → ${ride.to_city}. Code de vérification: ${booking.verification_code}`,
+          message: `Votre paiement de ${formatAmount(payment.amount)} XAF est confirmé pour ${ride.from_city} → ${ride.to_city}. Code de vérification: ${verificationCode}`,
           notificationType: 'payment_success',
           imageUrl: '/icons/payment-success.svg',
           phoneNumber: passenger?.phone, // For SMS
@@ -83,7 +105,7 @@ export class ServerPaymentNotificationService {
             rideId: ride.id,
             type: 'payment_completed',
             icon: 'CheckCircle2',
-            verificationCode: booking.verification_code,
+            verificationCode: verificationCode,
             amount: payment.amount,
             fromCity: ride.from_city,
             toCity: ride.to_city,
@@ -94,10 +116,11 @@ export class ServerPaymentNotificationService {
         }),
         
         // Driver notification - Push only (no SMS for drivers)
+        // IMPORTANT: This notification goes to the DRIVER, not the passenger
         this.oneSignalService.sendNotification({
-          userId: ride.driver_id,
-          title: '💰 Paiement Reçu!',
-          message: `${passengerName} a payé ${formatAmount(payment.amount)} XAF pour ${ride.from_city} → ${ride.to_city}. ${booking.seats} place${booking.seats > 1 ? 's' : ''}. Code: ${booking.verification_code}`,
+          userId: ride.driver_id, // ✅ Correctly targets the driver
+          title: '💰 Nouvelle Réservation Payée!',
+          message: `${passengerName} a payé ${formatAmount(payment.amount)} XAF pour ${ride.from_city} → ${ride.to_city}. ${booking.seats} place${booking.seats > 1 ? 's' : ''}. Code de vérification: ${verificationCode}`,
           notificationType: 'payment_success',
           imageUrl: '/icons/payment-received.svg',
           sendSMS: false, // No SMS for drivers - push only
@@ -113,7 +136,7 @@ export class ServerPaymentNotificationService {
             passengerPhone: passenger?.phone,
             passengerAvatar: passenger?.avatar_url,
             seats: booking.seats,
-            verificationCode: booking.verification_code,
+            verificationCode: verificationCode,
             amount: payment.amount,
             provider: payment.provider,
             transactionId: payment.transaction_id,

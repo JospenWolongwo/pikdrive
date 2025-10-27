@@ -172,8 +172,8 @@ export function BookingModal({
       setBookingId(booking.id);
       setStep(2);
 
-      // Run notifications in background (don't await)
-      showNotificationsInBackground(booking, ride, user);
+      // NOTE: Notifications removed here - they will be sent AFTER payment completes
+      // This prevents sending driver notification before payment is confirmed
     } catch (error) {
       console.error("Booking creation failed:", error);
       toast.error(
@@ -182,39 +182,10 @@ export function BookingModal({
     }
   };
 
-  // Background notification function (non-blocking)
-  // NOTE: Removed immediate sound notifications - only send notifications after successful payment
-  const showNotificationsInBackground = async (booking: any, ride: any, user: any) => {
-    try {
-      // Only send push notification to driver about new booking (no sound notification)
-      // Sound notifications will only be sent after successful payment
-      try {
-        await fetch("/api/notifications/booking", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            notificationData: JSON.stringify({
-              type: "new_booking",
-              userId: ride.driver_id,
-              title: "🚗 Nouvelle Reservation !",
-              body: `Nouvelle demande de reservation pour ${ride.from_city} → ${ride.to_city}`,
-              data: {
-                bookingId: booking.id,
-                rideId: ride.id,
-                passengerId: user.id,
-                type: "new_booking",
-              },
-            }),
-          }),
-        });
-        console.log("✅ Push notification sent to driver about new booking");
-      } catch (error) {
-        console.warn("⚠️ Failed to send push notification to driver:", error);
-      }
-    } catch (error) {
-      console.warn("⚠️ Background notification error:", error);
-    }
-  };
+  // NOTE: This notification function is now DISABLED
+  // Driver notifications will ONLY be sent AFTER payment completes
+  // This prevents confusion and ensures driver only gets notified of confirmed (paid) bookings
+  // The notification will be sent from the payment orchestration service after successful payment
 
   // Background driver payment notification function (non-blocking)
   const showDriverPaymentNotificationInBackground = async () => {
