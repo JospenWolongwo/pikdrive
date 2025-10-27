@@ -90,7 +90,7 @@ export class ServerPaymentOrchestrationService {
       });
 
       // Get booking and ride details for notifications
-      const { data: booking } = await this.supabase
+      const { data: booking, error: bookingError } = await this.supabase
         .from('bookings')
         .select(`
           *,
@@ -111,8 +111,36 @@ export class ServerPaymentOrchestrationService {
         .eq('id', payment.booking_id)
         .single();
 
+      if (bookingError) {
+        console.error('❌ [ORCHESTRATION] Booking query failed:', {
+          error: bookingError,
+          code: bookingError.code,
+          message: bookingError.message,
+          details: bookingError.details,
+          hint: bookingError.hint,
+          paymentId: payment.id,
+          bookingId: payment.booking_id
+        });
+      }
+
       if (!booking) {
-        console.error('❌ Booking not found for payment:', payment.id);
+        console.error('❌ [ORCHESTRATION] Booking not found:', {
+          paymentId: payment.id,
+          bookingId: payment.booking_id
+        });
+        
+        // Try fallback: Fetch booking without relations
+        const { data: simpleBooking, error: simpleError } = await this.supabase
+          .from('bookings')
+          .select('id, ride_id, user_id, seats, status')
+          .eq('id', payment.booking_id)
+          .single();
+          
+        console.error('❌ [ORCHESTRATION] Fallback query result:', {
+          hasBooking: !!simpleBooking,
+          error: simpleError
+        });
+        
         return;
       }
 
