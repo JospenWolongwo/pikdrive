@@ -39,12 +39,12 @@ export async function GET(request: NextRequest) {
     const upcoming = searchParams.get("upcoming") === "true";
     const past = searchParams.get("past") === "true";
 
-    // Get all rides for the driver first
+    // Get all rides for the driver first (newest first)
     let ridesQuery = supabase
       .from("rides")
       .select("id")
       .eq("driver_id", userId)
-      .order("departure_time", { ascending: true });
+      .order("created_at", { ascending: false }); // Newest first
 
     // Only apply time filters if specifically requested
     // If no filter is specified, return ALL rides (both upcoming and past)
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       .from("rides")
       .select("*")
       .in("id", rideIds)
-      .order("departure_time", { ascending: true });
+      .order("created_at", { ascending: false }); // Newest first
 
     if (fullRidesError) {
       console.error("Error fetching rides:", fullRidesError);

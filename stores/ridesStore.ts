@@ -320,6 +320,7 @@ export const useRidesStore = create<RidesState>()(
 
       addDriverRide: (ride: RideWithDetails) => {
         set((state) => ({
+          // Add to the beginning (newest first)
           driverRides: [ride, ...state.driverRides],
           lastDriverRidesFetch: Date.now(), // Mark as fresh
         }));

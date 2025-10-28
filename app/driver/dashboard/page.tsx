@@ -84,8 +84,8 @@ export default function DriverDashboard() {
   // Load rides on mount and when user changes
   useEffect(() => {
     const initialLoad = async () => {
-      // Force refresh to get latest data
-      await loadRides(true);
+      // Only load if data is not already available (smart caching)
+      await loadRides(false); // Use cache if fresh, only fetch if needed
       router.replace("/driver/dashboard");
     };
 
