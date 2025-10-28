@@ -24,30 +24,52 @@ export class ServerBookingService {
 
   /**
    * Create or update a booking (upsert)
+   * Uses atomic seat reservation to prevent race conditions
    */
   async createBooking(params: CreateBookingRequest & { user_id: string }): Promise<Booking> {
     try {
-      // Use upsert to handle the unique constraint gracefully
-      // This will either insert a new booking or update existing one
-      const { data: booking, error: upsertError } = await this.supabase
+      // Use atomic seat reservation function to prevent race conditions
+      // This locks the ride row and checks availability before creating booking
+      const { data: reservationResult, error: reservationError } = await this.supabase
+        .rpc('reserve_ride_seats', {
+          p_ride_id: params.ride_id,
+          p_user_id: params.user_id,
+          p_seats: params.seats
+        });
+
+      if (reservationError) {
+        console.error('❌ Atomic seat reservation error:', reservationError);
+        throw new Error(`Failed to reserve seats: ${reservationError.message}`);
+      }
+
+      const result = reservationResult?.[0];
+      
+      if (!result?.success) {
+        const errorMsg = result?.error_message || 'Failed to reserve seats';
+        console.error('❌ Seat reservation failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      if (!result.booking_id) {
+        throw new Error('Booking created but no ID returned');
+      }
+
+      console.log('✅ Seats reserved atomically:', {
+        bookingId: result.booking_id,
+        rideId: params.ride_id,
+        seats: params.seats
+      });
+
+      // Fetch the created booking
+      const { data: booking, error: fetchError } = await this.supabase
         .from('bookings')
-        .upsert({
-          ride_id: params.ride_id,
-          user_id: params.user_id,
-          seats: params.seats,
-          status: 'pending',
-          payment_status: 'pending',
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'ride_id,user_id', // Handle the unique constraint
-          ignoreDuplicates: false
-        })
-        .select()
+        .select('*')
+        .eq('id', result.booking_id)
         .single();
 
-      if (upsertError) {
-        console.error('ServerBookingService.createBooking upsert error:', upsertError);
-        throw new Error(`Failed to create/update booking: ${upsertError.message}`);
+      if (fetchError) {
+        console.error('❌ Error fetching created booking:', fetchError);
+        throw new Error(`Failed to fetch created booking: ${fetchError.message}`);
       }
 
       return booking;

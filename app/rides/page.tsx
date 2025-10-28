@@ -89,7 +89,15 @@ export default function RidesPage() {
   const { unreadCounts: unreadCountsArray, subscribeToRide, conversations } = useChatStore();
   const { toast } = useToast();
   const router = useRouter();
-  const { allRides, allRidesLoading, allRidesError, allRidesPagination, searchRides } = useRidesStore();
+  const { 
+    allRides, 
+    allRidesLoading, 
+    allRidesError, 
+    allRidesPagination, 
+    searchRides, 
+    subscribeToRideUpdates, 
+    unsubscribeFromRideUpdates 
+  } = useRidesStore();
   const { fetchUserBookings } = useBookingStore();
   const loading = allRidesLoading;
   const [isNavigating, setIsNavigating] = useState(false);
@@ -197,6 +205,17 @@ export default function RidesPage() {
   useEffect(() => {
     loadRides();
   }, []); // Run once on mount
+  
+  // Subscribe to real-time ride updates for seat availability
+  useEffect(() => {
+    if (supabase && allRides.length > 0) {
+      subscribeToRideUpdates(supabase);
+      
+      return () => {
+        unsubscribeFromRideUpdates();
+      };
+    }
+  }, [supabase, allRides.length, subscribeToRideUpdates, unsubscribeFromRideUpdates]);
 
   useEffect(() => {
     loadRides();

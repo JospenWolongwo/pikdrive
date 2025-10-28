@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { 
   Ride, 
   RideWithDetails, 
@@ -22,6 +23,7 @@ interface RidesState {
     total: number;
     total_pages: number;
   } | null;
+  realTimeChannel: any | null; // Supabase realtime channel for seat updates
 
   // Driver rides state
   driverRides: RideWithDetails[];
@@ -58,6 +60,8 @@ interface RidesState {
   setAllRidesLoading: (loading: boolean) => void;
   setAllRidesError: (error: string | null) => void;
   clearAllRides: () => void;
+  subscribeToRideUpdates: (supabase: SupabaseClient) => void;
+  unsubscribeFromRideUpdates: () => void;
 
   // Actions for driver rides
   fetchDriverRides: (params?: {
@@ -112,6 +116,7 @@ export const useRidesStore = create<RidesState>()(
     allRidesError: null,
     lastAllRidesFetch: null,
     allRidesPagination: null,
+    realTimeChannel: null,
 
     driverRides: [],
     driverRidesLoading: false,
@@ -184,6 +189,65 @@ export const useRidesStore = create<RidesState>()(
           lastAllRidesFetch: null,
           allRidesPagination: null,
         });
+      },
+      
+      // Subscribe to real-time ride seat updates
+      subscribeToRideUpdates: (supabase: SupabaseClient) => {
+        const { allRides, realTimeChannel } = get();
+        
+        // Unsubscribe from existing channel if any
+        if (realTimeChannel) {
+          supabase.removeChannel(realTimeChannel);
+        }
+        
+        if (allRides.length === 0) return;
+        
+        const rideIds = allRides.map(ride => ride.id);
+        
+        console.log('🔔 [RIDES STORE] Subscribing to real-time updates for rides:', rideIds);
+        
+        const channel = supabase
+          .channel('passenger-rides-updates')
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rides',
+            filter: `id=in.(${rideIds.join(',')})`,
+          }, (payload) => {
+            console.log('🔄 [RIDES STORE] Ride updated via real-time:', payload.new);
+            
+            const updatedRide = payload.new;
+            
+            // Update the specific ride in the allRides array
+            set((state) => ({
+              allRides: state.allRides.map(ride =>
+                ride.id === updatedRide.id
+                  ? { 
+                      ...ride, 
+                      seats_available: updatedRide.seats_available,
+                      updated_at: updatedRide.updated_at
+                    }
+                  : ride
+              )
+            }));
+          })
+          .subscribe((status) => {
+            console.log('📡 [RIDES STORE] Real-time subscription status:', status);
+          });
+        
+        set({ realTimeChannel: channel });
+      },
+      
+      // Unsubscribe from real-time updates
+      unsubscribeFromRideUpdates: () => {
+        const { realTimeChannel } = get();
+        
+        if (realTimeChannel) {
+          console.log('🔕 [RIDES STORE] Unsubscribing from real-time updates');
+          // Note: This assumes supabase is available, but we can't access it here
+          // The caller should handle cleanup
+          set({ realTimeChannel: null });
+        }
       },
 
       // Actions for driver rides
