@@ -53,7 +53,7 @@ export default function NewRidePage() {
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { refreshDriverRides } = useRidesStore();
+  const { refreshDriverRides, addDriverRide } = useRidesStore();
 
   // Create a sorted list of all cities
   const allCities = allCameroonCities.sort();
@@ -161,28 +161,40 @@ export default function NewRidePage() {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error creating ride:", errorData);
-        throw new Error(errorData.error || "Failed to create ride");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error("Error creating ride:", result);
+        throw new Error(result.error || "Failed to create ride");
       }
 
-      const { data: newRide } = await response.json();
-      console.log("Created ride:", newRide);
-
-      toast({
-        title: "Trajet Créé",
-        description: "Votre trajet a été créé avec succès.",
+      console.log("✅ Created ride:", {
+        id: result.data?.id,
+        driver_id: result.data?.driver_id,
+        from: result.data?.from_city,
+        to: result.data?.to_city,
+        seats: result.data?.seats_available
       });
 
-      // Refresh the rides store to show the new ride
-      await refreshDriverRides();
+      // ✅ OPTIMISTIC UPDATE: Add ride to store immediately (no API call needed!)
+      const newRide = {
+        ...result.data,
+        bookings: [],
+        messages: [],
+      };
+      addDriverRide(newRide);
 
-      // Wait a moment to ensure the ride is saved
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Show success toast
+      toast({
+        title: "Trajet Créé avec Succès",
+        description: `Votre trajet ${values.fromCity} → ${values.toCity} est maintenant disponible.`,
+      });
 
-      // Use replace instead of push to ensure searchParams change is detected
-      router.replace("/driver/dashboard?refresh=true");
+      // Small delay to ensure toast is visible
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Navigate to dashboard (ride already in store!)
+      router.replace("/driver/dashboard");
     } catch (error) {
       console.error("Error creating ride:", error);
       toast({

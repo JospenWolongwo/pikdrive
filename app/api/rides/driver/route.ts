@@ -74,66 +74,76 @@ export async function GET(request: NextRequest) {
 
     const rideIds = rides.map((r: { id: string }) => r.id);
 
-    // Get full ride details with bookings and messages
+    // Fetch rides without embedded resources to avoid PostgREST relationship errors
     const { data: fullRides, error: fullRidesError } = await supabase
       .from("rides")
-      .select(`
-        *,
-        bookings(
-          id,
-          user_id,
-          seats,
-          status,
-          payment_status,
-          code_verified,
-          created_at,
-          updated_at
-        ),
-        messages(
-          id,
-          sender_id,
-          content,
-          created_at
-        )
-      `)
+      .select("*")
       .in("id", rideIds)
       .order("departure_time", { ascending: true });
 
     if (fullRidesError) {
-      console.error("Error fetching full ride details:", fullRidesError);
+      console.error("Error fetching rides:", fullRidesError);
       return NextResponse.json(
-        { error: "Failed to fetch ride details" },
+        { error: "Failed to fetch rides" },
         { status: 500 }
       );
     }
 
-    // Fetch user profiles for bookings separately to avoid relationship issues
-    const ridesWithProfiles = await Promise.all(
-      (fullRides || []).map(async (ride) => {
-        if (ride.bookings && ride.bookings.length > 0) {
-          const userIds = ride.bookings.map((booking: any) => booking.user_id);
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url")
-            .in("id", userIds);
+    // Fetch bookings separately
+    const { data: bookings } = await supabase
+      .from("bookings")
+      .select("id, ride_id, user_id, seats, status, payment_status, code_verified, created_at, updated_at")
+      .in("ride_id", rideIds)
+      .order("created_at", { ascending: false });
 
-          const bookingsWithProfiles = ride.bookings.map((booking: any) => ({
-            ...booking,
-            user: profiles?.find(profile => profile.id === booking.user_id) || null
-          }));
+    // Fetch messages separately
+    const { data: messages } = await supabase
+      .from("messages")
+      .select("id, ride_id, sender_id, content, created_at")
+      .in("ride_id", rideIds)
+      .order("created_at", { ascending: false });
 
-          return {
-            ...ride,
-            bookings: bookingsWithProfiles
-          };
-        }
-        return ride;
-      })
-    );
+    // Fetch user profiles for bookings
+    const userIds = [...new Set(bookings?.map((b: any) => b.user_id) || [])];
+    let userProfiles: { [key: string]: { id: string; full_name: string; avatar_url?: string } } = {};
+
+    if (userIds.length > 0) {
+      const { data: users } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+
+      if (users) {
+        userProfiles = Object.fromEntries(users.map((u: any) => [u.id, u]));
+      }
+    }
+
+    // Merge data manually
+    const ridesWithDetails = (fullRides || []).map((ride: any) => {
+      const rideBookings = bookings?.filter((b: any) => b.ride_id === ride.id) || [];
+      const rideMessages = messages?.filter((m: any) => m.ride_id === ride.id) || [];
+
+      return {
+        ...ride,
+        bookings: rideBookings.map((booking: any) => ({
+          ...booking,
+          user: userProfiles[booking.user_id] || { 
+            id: booking.user_id,
+            full_name: "Unknown User", 
+            avatar_url: null 
+          }
+        })),
+        messages: rideMessages
+      };
+    });
+
+    console.log('✅ [DRIVER RIDES API] Returning rides:', {
+      count: ridesWithDetails.length
+    });
 
     return NextResponse.json({
       success: true,
-      data: ridesWithProfiles || [],
+      data: ridesWithDetails,
     });
   } catch (error) {
     console.error("Error in driver rides GET:", error);

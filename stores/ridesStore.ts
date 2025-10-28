@@ -74,6 +74,7 @@ interface RidesState {
   setDriverRidesLoading: (loading: boolean) => void;
   setDriverRidesError: (error: string | null) => void;
   clearDriverRides: () => void;
+  addDriverRide: (ride: RideWithDetails) => void;
 
   // Actions for current ride
   fetchRideById: (rideId: string) => Promise<void>;
@@ -314,6 +315,19 @@ export const useRidesStore = create<RidesState>()(
           driverRides: [],
           driverRidesError: null,
           lastDriverRidesFetch: null,
+        });
+      },
+
+      addDriverRide: (ride: RideWithDetails) => {
+        set((state) => ({
+          driverRides: [ride, ...state.driverRides],
+          lastDriverRidesFetch: Date.now(), // Mark as fresh
+        }));
+        console.log('✅ [RIDES STORE] Added driver ride optimistically:', {
+          id: ride.id,
+          from: ride.from_city,
+          to: ride.to_city,
+          seats: ride.seats_available
         });
       },
 

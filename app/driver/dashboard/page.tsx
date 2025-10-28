@@ -84,8 +84,9 @@ export default function DriverDashboard() {
   // Load rides on mount and when user changes
   useEffect(() => {
     const initialLoad = async () => {
-      await loadRides();
-      router.replace("/driver/dashboard"); // Clear any refresh params
+      // Force refresh to get latest data
+      await loadRides(true);
+      router.replace("/driver/dashboard");
     };
 
     if (user) initialLoad();
