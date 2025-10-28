@@ -232,13 +232,9 @@ export function BookingModal({
         setStatusMessage("Payment completed successfully!");
         setIsPolling(false);
 
-        // Close modal immediately and redirect to booking details
+        // Close modal immediately and redirect to bookings page
         onClose();
-        if (bookingId) {
-          router.replace(`/bookings/${bookingId}`);
-        } else {
-          router.replace("/bookings");
-        }
+        router.replace("/bookings");
         
         if (onBookingComplete) {
           onBookingComplete();
@@ -433,13 +429,9 @@ export function BookingModal({
                   bookingId={bookingId} // ✅ Pass bookingId for resilient fallback queries
                   onPaymentComplete={async (status) => {
                     if (status === "completed") {
-                      // Close modal immediately and redirect to booking details
+                      // Close modal immediately and redirect to bookings page
                       onClose();
-                      if (bookingId) {
-                        router.replace(`/bookings/${bookingId}`);
-                      } else {
-                        router.replace("/bookings");
-                      }
+                      router.replace("/bookings");
                       
                       if (onBookingComplete) {
                         onBookingComplete();
