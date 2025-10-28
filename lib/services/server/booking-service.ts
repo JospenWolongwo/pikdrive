@@ -25,17 +25,29 @@ export class ServerBookingService {
   /**
    * Create or update a booking (upsert)
    * Uses atomic seat reservation to prevent race conditions
+   * Supports both creating new bookings and updating existing ones
    */
   async createBooking(params: CreateBookingRequest & { user_id: string }): Promise<Booking> {
     try {
-      // Use atomic seat reservation function to prevent race conditions
-      // This locks the ride row and checks availability before creating booking
-      const { data: reservationResult, error: reservationError } = await this.supabase
-        .rpc('reserve_ride_seats', {
+      // First, check if user already has a booking for this ride
+      const { data: existingBooking } = await this.supabase
+        .from('bookings')
+        .select('id, seats, status')
+        .eq('ride_id', params.ride_id)
+        .eq('user_id', params.user_id)
+        .not('status', 'in', '(cancelled,completed)')
+        .maybeSingle();
+
+      // Use atomic seat reservation function
+      const { data: reservationResult, error: reservationError } = await this.supabase.rpc(
+        'reserve_ride_seats',
+        {
           p_ride_id: params.ride_id,
           p_user_id: params.user_id,
-          p_seats: params.seats
-        });
+          p_seats: params.seats,
+          p_booking_id: existingBooking?.id || null // Pass booking ID if updating, null if creating
+        }
+      );
 
       if (reservationError) {
         console.error('❌ Atomic seat reservation error:', reservationError);
@@ -54,13 +66,15 @@ export class ServerBookingService {
         throw new Error('Booking created but no ID returned');
       }
 
-      console.log('✅ Seats reserved atomically:', {
+      console.log(`✅ Seats ${existingBooking ? 'updated' : 'reserved'} atomically:`, {
         bookingId: result.booking_id,
         rideId: params.ride_id,
-        seats: params.seats
+        seats: params.seats,
+        oldSeats: existingBooking?.seats,
+        mode: existingBooking ? 'UPDATE' : 'CREATE'
       });
 
-      // Fetch the created booking
+      // Fetch the created/updated booking
       const { data: booking, error: fetchError } = await this.supabase
         .from('bookings')
         .select('*')
@@ -68,8 +82,8 @@ export class ServerBookingService {
         .single();
 
       if (fetchError) {
-        console.error('❌ Error fetching created booking:', fetchError);
-        throw new Error(`Failed to fetch created booking: ${fetchError.message}`);
+        console.error('❌ Error fetching booking:', fetchError);
+        throw new Error(`Failed to fetch booking: ${fetchError.message}`);
       }
 
       return booking;
