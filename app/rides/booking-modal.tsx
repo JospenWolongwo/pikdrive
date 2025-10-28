@@ -232,18 +232,17 @@ export function BookingModal({
         setStatusMessage("Payment completed successfully!");
         setIsPolling(false);
 
-        // Show success message briefly before redirecting
-        setTimeout(() => {
-          setStep(3);
-          if (onBookingComplete) {
-            onBookingComplete();
-          }
-          // Close modal and redirect after showing success message
-          setTimeout(() => {
-            onClose();
-            router.replace("/bookings");
-          }, 1500);
-        }, 2000);
+        // Close modal immediately and redirect to booking details
+        onClose();
+        if (bookingId) {
+          router.replace(`/bookings/${bookingId}`);
+        } else {
+          router.replace("/bookings");
+        }
+        
+        if (onBookingComplete) {
+          onBookingComplete();
+        }
       } else if (data.status === "FAILED") {
         setPaymentStatus("FAILED");
         setStatusMessage(data.message || "Payment failed. Please try again.");
@@ -434,17 +433,17 @@ export function BookingModal({
                   bookingId={bookingId} // ✅ Pass bookingId for resilient fallback queries
                   onPaymentComplete={async (status) => {
                     if (status === "completed") {
-                      // Move to success step immediately
-                      setStep(3);
+                      // Close modal immediately and redirect to booking details
+                      onClose();
+                      if (bookingId) {
+                        router.replace(`/bookings/${bookingId}`);
+                      } else {
+                        router.replace("/bookings");
+                      }
+                      
                       if (onBookingComplete) {
                         onBookingComplete();
                       }
-                      
-                      // Close modal and redirect after showing success message
-                      setTimeout(() => {
-                        onClose();
-                        router.replace("/bookings");
-                      }, 1500);
 
                       // Show success notification to driver in background
                       showDriverPaymentNotificationInBackground();
