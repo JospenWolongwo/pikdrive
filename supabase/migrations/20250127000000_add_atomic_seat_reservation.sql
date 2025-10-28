@@ -134,7 +134,8 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant execute permission (updated signature includes optional booking_id parameter)
+-- Grant execute permission for both old and new signatures
+GRANT EXECUTE ON FUNCTION reserve_ride_seats(UUID, UUID, INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION reserve_ride_seats(UUID, UUID, INTEGER, UUID) TO authenticated;
 
 -- Add comment

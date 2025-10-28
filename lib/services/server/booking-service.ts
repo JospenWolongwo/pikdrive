@@ -39,14 +39,21 @@ export class ServerBookingService {
         .maybeSingle();
 
       // Use atomic seat reservation function
+      // Pass booking_id if updating, omit parameter if creating (NULL default)
+      const rpcParams: any = {
+        p_ride_id: params.ride_id,
+        p_user_id: params.user_id,
+        p_seats: params.seats
+      };
+      
+      // Only add booking_id if we're updating (not creating)
+      if (existingBooking) {
+        rpcParams.p_booking_id = existingBooking.id;
+      }
+      
       const { data: reservationResult, error: reservationError } = await this.supabase.rpc(
         'reserve_ride_seats',
-        {
-          p_ride_id: params.ride_id,
-          p_user_id: params.user_id,
-          p_seats: params.seats,
-          p_booking_id: existingBooking?.id || null // Pass booking ID if updating, null if creating
-        }
+        rpcParams
       );
 
       if (reservationError) {
