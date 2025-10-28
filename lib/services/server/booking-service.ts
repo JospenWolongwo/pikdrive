@@ -38,23 +38,40 @@ export class ServerBookingService {
         .not('status', 'in', '(cancelled,completed)')
         .maybeSingle();
 
-      // Use atomic seat reservation function
-      // Pass booking_id if updating, omit parameter if creating (NULL default)
-      const rpcParams: any = {
-        p_ride_id: params.ride_id,
-        p_user_id: params.user_id,
-        p_seats: params.seats
-      };
+      // Use atomic seat reservation function with overloaded signatures
+      // Call the 4-parameter version if updating, 3-parameter version if creating
+      let reservationResult, reservationError;
       
-      // Only add booking_id if we're updating (not creating)
       if (existingBooking) {
-        rpcParams.p_booking_id = existingBooking.id;
+        // UPDATE MODE: Call 4-parameter function
+        console.log('🔍 [BOOKING SERVICE] Updating booking:', {
+          bookingId: existingBooking.id,
+          oldSeats: existingBooking.seats,
+          newSeats: params.seats
+        });
+        
+        ({ data: reservationResult, error: reservationError } = await this.supabase.rpc(
+          'reserve_ride_seats',
+          {
+            p_ride_id: params.ride_id,
+            p_user_id: params.user_id,
+            p_seats: params.seats,
+            p_booking_id: existingBooking.id
+          }
+        ));
+      } else {
+        // CREATE MODE: Call 3-parameter function
+        console.log('🔍 [BOOKING SERVICE] Creating new booking');
+        
+        ({ data: reservationResult, error: reservationError } = await this.supabase.rpc(
+          'reserve_ride_seats',
+          {
+            p_ride_id: params.ride_id,
+            p_user_id: params.user_id,
+            p_seats: params.seats
+          }
+        ));
       }
-      
-      const { data: reservationResult, error: reservationError } = await this.supabase.rpc(
-        'reserve_ride_seats',
-        rpcParams
-      );
 
       if (reservationError) {
         console.error('❌ Atomic seat reservation error:', reservationError);
