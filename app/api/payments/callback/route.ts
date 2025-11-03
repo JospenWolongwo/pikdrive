@@ -1,12 +1,14 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { PaymentService } from '@/lib/payment/payment-service';
+import { NextRequest, NextResponse } from 'next/server';
+import { createApiSupabaseClient } from '@/lib/supabase/server-client';
+import { ServerPaymentService } from '@/lib/services/server/payment-service';
+import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
+import { mapMtnMomoStatus, mapOrangeMoneyStatus } from '@/lib/payment/status-mapper';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const paymentService = new PaymentService(supabase);
+    const supabase = createApiSupabaseClient();
+    const paymentService = new ServerPaymentService(supabase);
+    const orchestrationService = new ServerPaymentOrchestrationService(supabase);
 
     // Get callback data
     const callbackData = await request.json();
@@ -17,18 +19,18 @@ export async function POST(request: Request) {
     
     console.log(`📥 Received ${provider.toUpperCase()} callback:`, callbackData);
 
-    let referenceId, status, reason, financialTransactionId;
+    let referenceId, providerStatus, reason, financialTransactionId;
 
     if (provider === 'orange') {
       // Extract Orange Money callback data
       referenceId = callbackData.externalId || callbackData.transactionId;
-      status = callbackData.status === 'SUCCESSFUL' ? 'SUCCESSFUL' : 'FAILED';
+      providerStatus = callbackData.status;
       reason = callbackData.message || callbackData.failureReason;
       financialTransactionId = callbackData.transactionId;
     } else {
       // Extract MTN MOMO callback data
       referenceId = callbackData.referenceId;
-      status = callbackData.status;
+      providerStatus = callbackData.status;
       reason = callbackData.reason;
       financialTransactionId = callbackData.financialTransactionId;
     }
@@ -42,32 +44,52 @@ export async function POST(request: Request) {
     }
 
     // Get existing payment
-    const payment = await paymentService.getPaymentByTransactionId(referenceId);
+    let payment = await paymentService.getPaymentByTransactionId(referenceId);
+    
+    // If not found by transaction ID, try to find by payment ID
+    if (!payment && referenceId) {
+      try {
+        const { data } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("id", referenceId)
+          .single();
+        if (data) payment = data as any;
+      } catch (e) {
+        console.log("Payment not found by ID:", referenceId);
+      }
+    }
+    
     if (!payment) {
       console.error('❌ Payment not found:', referenceId);
+      // Return 200 to acknowledge receipt (prevents provider from retrying)
       return NextResponse.json(
-        { error: 'Payment not found' },
-        { status: 404 }
+        { message: 'Callback received, payment not found' },
+        { status: 200 }
       );
     }
 
-    // Handle callback
-    await paymentService.handlePaymentCallback(
-      provider,
-      {
-        status,
-        reason,
-        transactionId: referenceId,
-        financialTransactionId
-      }
-    );
+    // Map provider status to our payment status
+    const mappedStatus = provider === 'orange' 
+      ? mapOrangeMoneyStatus(providerStatus)
+      : mapMtnMomoStatus(providerStatus);
+
+    // Update payment status via orchestration service
+    await orchestrationService.handlePaymentStatusChange(payment, mappedStatus, {
+      transaction_id: financialTransactionId || referenceId,
+      provider_response: callbackData,
+      error_message: reason || undefined,
+    });
+
+    console.log(`✅ ${provider.toUpperCase()} callback processed successfully`);
 
     return NextResponse.json({ status: 'success' });
   } catch (error) {
     console.error('❌ Error processing payment callback:', error);
+    // Return 200 to prevent provider retries on our errors
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { message: 'Callback received' },
+      { status: 200 }
     );
   }
 }

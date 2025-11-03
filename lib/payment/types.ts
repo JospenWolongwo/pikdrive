@@ -1,6 +1,11 @@
+// Re-export standard payment types from main types file
+import type { PaymentTransactionStatus } from '@/types';
+export type { PaymentTransactionStatus };
+
 export type PaymentProviderType = 'mtn' | 'orange';
 
-export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
+// Legacy alias - use PaymentTransactionStatus instead
+export type PaymentStatus = PaymentTransactionStatus;
 
 export interface PaymentRequest {
   bookingId: string;

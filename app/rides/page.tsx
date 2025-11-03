@@ -95,6 +95,8 @@ export default function RidesPage() {
     allRidesError, 
     allRidesPagination, 
     searchRides, 
+    fetchAllRides,
+    lastAllRidesFetch,
     subscribeToRideUpdates, 
     unsubscribeFromRideUpdates 
   } = useRidesStore();
@@ -158,16 +160,27 @@ export default function RidesPage() {
         const activeMaxPrice = filters?.maxPrice ?? maxPrice;
         const activeMinSeats = filters?.minSeats ?? minSeats;
 
-        // Use Zustand store to search rides (automatically filters out past rides)
-        await searchRides({
-          from_city: activeFromCity && activeFromCity !== "any" ? activeFromCity : undefined,
-          to_city: activeToCity && activeToCity !== "any" ? activeToCity : undefined,
-          min_price: activeMinPrice,
-          max_price: activeMaxPrice,
-          min_seats: activeMinSeats,
-          page: currentPage,
-          limit: itemsPerPage,
-        });
+        const hasFilters = Boolean(
+          (activeFromCity && activeFromCity !== "any") ||
+          (activeToCity && activeToCity !== "any") ||
+          activeMinPrice !== 0 ||
+          activeMaxPrice !== 20000 ||
+          activeMinSeats !== 1
+        );
+
+        if (hasFilters) {
+          await searchRides({
+            from_city: activeFromCity && activeFromCity !== "any" ? activeFromCity : undefined,
+            to_city: activeToCity && activeToCity !== "any" ? activeToCity : undefined,
+            min_price: activeMinPrice,
+            max_price: activeMaxPrice,
+            min_seats: activeMinSeats,
+            page: currentPage,
+            limit: itemsPerPage,
+          });
+        } else {
+          await fetchAllRides({ page: currentPage, limit: itemsPerPage, upcoming: true });
+        }
 
         // Update pagination from store response
         if (allRidesPagination) {
@@ -191,6 +204,7 @@ export default function RidesPage() {
     },
     [
       searchRides,
+      fetchAllRides,
       fromCity,
       toCity,
       minPrice,
@@ -203,7 +217,11 @@ export default function RidesPage() {
 
   // Load rides on component mount
   useEffect(() => {
-    loadRides();
+    const fresh = lastAllRidesFetch && Date.now() - lastAllRidesFetch < 5 * 60 * 1000;
+    if (!fresh || allRides.length === 0) {
+      loadRides();
+    }
+    // else: keep cached list, avoid refetch on navigation
   }, []); // Run once on mount
   
   // Subscribe to real-time ride updates for seat availability
@@ -613,7 +631,10 @@ export default function RidesPage() {
           </div>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {allRides.map((ride, index) => (
+            {([...allRides]
+              .sort((a, b) =>
+                new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime()
+              )).map((ride, index) => (
               <motion.div
                 key={ride.id}
                 initial={{ opacity: 0, y: 30, scale: 0.95 }}

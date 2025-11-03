@@ -1,22 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { PaymentService } from '@/lib/payment/payment-service';
+import { ServerPaymentService } from '@/lib/services/server/payment-service';
+import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
+import { mapOrangeMoneyStatus } from '@/lib/payment/status-mapper';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
 export async function POST(request: Request) {
   try {
-    // Initialize Supabase inside the handler
+    // Initialize Supabase inside the handler (service role key for edge runtime)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!, // Server-only env var
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         auth: {
           persistSession: false
         }
       }
     );
+
+    const paymentService = new ServerPaymentService(supabase);
+    const orchestrationService = new ServerPaymentOrchestrationService(supabase);
 
     // Get callback data first
     const callbackData = await request.json();
@@ -39,44 +44,43 @@ export async function POST(request: Request) {
       );
     }
 
-    // Debug: Try to find payment directly
-    const { data: payment, error: fetchError } = await supabase
-      .from('payments')
-      .select('*')
-      .eq('id', externalId)
+    // Find payment by transaction ID or ID
+    let payment = await paymentService.getPaymentByTransactionId(externalId || transactionId);
+    
+    // If not found, try by ID
+    if (!payment && externalId) {
+      try {
+        const { data } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("id", externalId)
       .single();
-
-    console.log('🔍 Direct payment lookup result:', { payment, error: fetchError });
-
-    if (fetchError) {
-      console.error('❌ Database error:', fetchError);
-      return NextResponse.json(
-        { error: 'Database error' },
-        { status: 500 }
-      );
+        if (data) payment = data as any;
+      } catch (e) {
+        console.log("Payment not found by ID:", externalId);
+      }
     }
 
     if (!payment) {
       console.error('❌ Payment not found:', { externalId, transactionId });
+      // Return 200 to acknowledge receipt (prevents retries)
       return NextResponse.json(
-        { error: 'Payment not found' },
-        { status: 404 }
+        { message: 'Callback received, payment not found' },
+        { status: 200 }
       );
     }
 
-    // Use PaymentService with direct client
-    const paymentService = new PaymentService(supabase);
+    // Map Orange Money status to our payment status
+    const mappedStatus = mapOrangeMoneyStatus(status);
 
-    // Handle callback
-    await paymentService.handlePaymentCallback(
-      'orange',
-      {
-        status,
-        reason: failureReason || message,
-        transactionId,
-        externalId
-      }
-    );
+    // Update payment status via orchestration service
+    await orchestrationService.handlePaymentStatusChange(payment, mappedStatus, {
+      transaction_id: transactionId,
+      provider_response: callbackData,
+      error_message: failureReason || message,
+    });
+
+    console.log('✅ Orange Money callback processed successfully');
 
     return NextResponse.json({ 
       status: 'success',
@@ -84,9 +88,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('❌ Error processing Orange Money callback:', error);
+    // Return 200 to prevent retries on our errors
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { message: 'Callback received' },
+      { status: 200 }
     );
   }
 }

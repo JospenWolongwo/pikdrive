@@ -1,229 +1,144 @@
-import { PaymentResponse, PaymentStatus } from './types';
+/**
+ * Orange Money Service - Main Orchestrator
+ * Coordinates payin, payout, and verification operations
+ */
+
+import type {
+  PaymentApiRequest,
+  PaymentServiceResponse,
+  CheckPaymentServiceResponse,
+  PayoutRequest,
+} from "@/types/payment-ext";
+import { OrangeTokenService } from "./orange/token-service";
+import { OrangePayinService } from "./orange/payin-service";
+import { OrangePayoutService } from "./orange/payout-service";
+import { OrangeVerificationService } from "./orange/verification-service";
 
 interface OrangeMoneyConfig {
   merchantId: string;
   merchantKey: string;
-  environment: 'sandbox' | 'production';
+  environment: "sandbox" | "production";
   notificationUrl: string;
   returnUrl: string;
-}
-
-interface PaymentRequest {
-  amount: string;
-  currency: string;
-  externalId: string;
-  customerPhoneNumber: string;
-  description: string;
+  consumerUser?: string;
+  consumerSecret?: string;
+  apiUsername?: string;
+  apiPassword?: string;
+  pinCode?: string;
+  merchantNumber?: string;
+  tokenUrl?: string;
+  baseUrl?: string;
 }
 
 export class OrangeMoneyService {
-  private baseUrl: string;
-  private config: OrangeMoneyConfig;
-  private tokenCache: { token: string; expires: Date } | null = null;
+  private readonly tokenService: OrangeTokenService;
+  private readonly payinService: OrangePayinService;
+  private readonly payoutService: OrangePayoutService;
+  private readonly verificationService: OrangeVerificationService;
 
   constructor(config: OrangeMoneyConfig) {
-    this.config = config;
-    // Orange Money API base URLs
-    this.baseUrl = config.environment === 'production'
-      ? 'https://api.orange.com/orange-money-webpay/cm/v1'
-      : 'https://api.orange-sonatel.com/orange-money-webpay/cm/v1';
+    const tokenUrl =
+      config.tokenUrl ||
+      (config.environment === "production"
+        ? "https://api.orange.cm/oauth/"
+        : process.env.DIRECT_OM_TOKEN_URL ||
+          "https://api.orange-sonatel.com/oauth/");
+
+    const baseUrl =
+      config.baseUrl ||
+      (config.environment === "production"
+        ? "https://api.orange.cm/"
+        : process.env.DIRECT_OM_BASE_URL ||
+          "https://api.orange-sonatel.com/");
+
+    const consumerUser =
+      config.consumerUser ||
+      process.env.DIRECT_OM_CONSUMER_USER ||
+      config.merchantId;
+
+    const consumerSecret =
+      config.consumerSecret ||
+      process.env.DIRECT_OM_CONSUMER_SECRET ||
+      config.merchantKey;
+
+    const apiUsername =
+      config.apiUsername || process.env.DIRECT_OM_API_USERNAME || "";
+
+    const apiPassword =
+      config.apiPassword || process.env.DIRECT_OM_API_PASSWORD || "";
+
+    const pinCode = config.pinCode || process.env.DIRECT_OM_PIN_CODE || "";
+
+    const merchantNumber =
+      config.merchantNumber ||
+      process.env.DIRECT_OM_MERCHAND_NUMBER ||
+      config.merchantId;
+
+    const notificationUrl =
+      process.env.DIRECT_OM_CALLBACK_URL || config.notificationUrl;
+
+    this.tokenService = new OrangeTokenService({
+      tokenUrl,
+      consumerUser,
+      consumerSecret,
+    });
+
+    this.payinService = new OrangePayinService({
+      baseUrl,
+      tokenService: this.tokenService,
+      apiUsername,
+      apiPassword,
+      pinCode,
+      merchantNumber,
+      notificationUrl,
+    });
+
+    this.payoutService = new OrangePayoutService({
+      baseUrl,
+      tokenService: this.tokenService,
+      apiUsername,
+      apiPassword,
+      pinCode,
+      merchantNumber,
+    });
+
+    this.verificationService = new OrangeVerificationService({
+      baseUrl,
+      tokenService: this.tokenService,
+      apiUsername,
+      apiPassword,
+    });
+  }
+
+  async payin(
+    request: PaymentApiRequest
+  ): Promise<{ statusCode: number; response: PaymentServiceResponse }> {
+    return this.payinService.payin(request);
+  }
+
+  async payout(
+    request: PayoutRequest
+  ): Promise<{ statusCode: number; response: PaymentServiceResponse }> {
+    return this.payoutService.payout(request);
+  }
+
+  async checkPayment(
+    payToken: string
+  ): Promise<{ statusCode: number; response: CheckPaymentServiceResponse }> {
+    return this.verificationService.checkPayment(payToken);
   }
 
   /**
-   * Generate a unique reference for the transaction
+   * Verify webhook signature
    */
-  private generateReference(): string {
-    return `PKD-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-  }
-
-  /**
-   * Calculate signature for request authentication
-   */
-  private async calculateSignature(data: string): Promise<string> {
-    return await generateHmac(this.config.merchantKey, data);
-  }
-
-  /**
-   * Get authentication token for API requests
-   */
-  private async getAuthToken(): Promise<string> {
-    if (this.tokenCache && this.tokenCache.expires > new Date()) {
-      return this.tokenCache.token;
-    }
-
-    const authUrl = `${this.baseUrl}/token`;
-
-    try {
-      const response = await fetch(authUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          grant_type: 'client_credentials',
-          merchant_id: this.config.merchantId,
-          merchant_key: this.config.merchantKey,
-        }).toString(),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🔴 Auth response:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText,
-        });
-        throw new Error(`Failed to get auth token: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const expiresIn = data.expires_in || 3600; // Default to 1 hour if not specified
-      
-      this.tokenCache = {
-        token: data.access_token,
-        expires: new Date(Date.now() + (expiresIn * 1000)),
-      };
-
-      return this.tokenCache.token;
-    } catch (error) {
-      console.error('🔴 Failed to get auth token:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Initiate a payment request
-   */
-  async initiatePayment(request: {
-    amount: number;
-    phoneNumber: string;
-    description: string;
-    externalId?: string;
-  }): Promise<PaymentResponse> {
-    try {
-      const token = await this.getAuthToken();
-      const reference = request.externalId || this.generateReference();
-
-      const paymentData = {
-        amount: request.amount.toString(),
-        currency: 'XAF',
-        externalId: reference,
-        customerPhoneNumber: request.phoneNumber,
-        description: request.description,
-        notificationUrl: this.config.notificationUrl,
-        returnUrl: this.config.returnUrl,
-        metadata: {
-          reference,
-          phoneNumber: request.phoneNumber
-        }
-      };
-
-      const signature = await this.calculateSignature(JSON.stringify(paymentData));
-
-      const response = await fetch(`${this.baseUrl}/payments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Signature': signature
-        },
-        body: JSON.stringify(paymentData)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🔴 Payment initiation failed:', {
-          status: response.status,
-          error: errorText
-        });
-        return {
-          success: false,
-          status: 'failed' as PaymentStatus,
-          message: 'Payment initiation failed',
-          error: errorText
-        };
-      }
-
-      const data = await response.json();
-      return {
-        success: true,
-        status: 'processing' as PaymentStatus,
-        transactionId: data.paymentId,
-        message: 'Payment initiated successfully'
-      };
-    } catch (error) {
-      console.error('🔴 Payment error:', error);
-      return {
-        success: false,
-        status: 'failed' as PaymentStatus,
-        message: 'Payment processing error',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  }
-
-  /**
-   * Check the status of a payment
-   */
-  async checkPaymentStatus(transactionId: string): Promise<PaymentResponse> {
-    try {
-      const token = await this.getAuthToken();
-      
-      const response = await fetch(`${this.baseUrl}/payments/${transactionId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Merchant-Id': this.config.merchantId,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('🔴 Orange Money status check failed:', data);
-        return {
-          success: false,
-          status: 'failed' as PaymentStatus,
-          message: 'Failed to check payment status',
-          error: data.message || 'Unknown error occurred',
-        };
-      }
-
-      // Map Orange Money status to our PaymentStatus
-      const statusMap: Record<string, PaymentStatus> = {
-        'PENDING': 'pending',
-        'PROCESSING': 'processing',
-        'SUCCESSFUL': 'completed',
-        'FAILED': 'failed',
-        'CANCELLED': 'failed',
-      };
-
-      const status = statusMap[data.status] || 'pending';
-      const success = status === 'completed';
-
-      console.log(`🟡 Orange Money payment status: ${status}`, data);
-      
-      return {
-        success,
-        transactionId,
-        status,
-        message: data.message || `Payment ${status}`,
-      };
-    } catch (error) {
-      console.error('🔴 Orange Money service error:', error);
-      return {
-        success: false,
-        status: 'failed' as PaymentStatus,
-        message: 'Error checking payment status',
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-      };
-    }
-  }
-
-  /**
-   * Verify webhook signature from Orange Money
-   */
-  async verifyWebhookSignature(payload: string, signature: string): Promise<boolean> {
-    const calculatedSignature = await generateHmac(this.config.merchantKey, payload);
+  async verifyWebhookSignature(
+    payload: string,
+    signature: string
+  ): Promise<boolean> {
+    const calculatedSignature = await generateHmac(
+      process.env.ORANGE_MONEY_MERCHANT_KEY || "",
+      payload
+    );
     return calculatedSignature === signature;
   }
 }
@@ -234,15 +149,15 @@ async function generateHmac(key: string, message: string): Promise<string> {
   const messageData = encoder.encode(message);
 
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
+    { name: "HMAC", hash: "SHA-256" },
     false,
-    ['sign']
+    ["sign"]
   );
 
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
   return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }

@@ -10,7 +10,11 @@ import PWAPrompts from "@/components/pwa/PWAPrompts";
 import { Analytics } from "@vercel/analytics/react";
 import { OneSignalInitializer } from "@/components/notifications/OneSignalInitializer";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: "swap",
+  adjustFontFallback: true,
+});
 
 export const viewport: Viewport = {
   themeColor: "#28C496",

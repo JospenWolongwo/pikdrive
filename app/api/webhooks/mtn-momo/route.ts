@@ -1,7 +1,8 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { PaymentService } from '@/lib/payment/payment-service';
+import { NextRequest, NextResponse } from 'next/server';
+import { createApiSupabaseClient } from '@/lib/supabase/server-client';
+import { ServerPaymentService } from '@/lib/services/server/payment-service';
+import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
+import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
 import crypto from 'crypto';
 
 // Verify MTN MOMO webhook signature
@@ -18,10 +19,11 @@ function verifySignature(payload: string, signature: string): boolean {
   );
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const paymentService = new PaymentService(supabase);
+    const supabase = createApiSupabaseClient();
+    const paymentService = new ServerPaymentService(supabase);
+    const orchestrationService = new ServerPaymentOrchestrationService(supabase);
 
     // Get signature from headers
     const signature = request.headers.get('x-signature');
@@ -58,37 +60,44 @@ export async function POST(request: Request) {
     }
 
     // Get existing payment
-    const payment = await paymentService.getPaymentByTransactionId(transactionId);
+    let payment = await paymentService.getPaymentByTransactionId(transactionId);
+    
+    // If not found, try by ID
+    if (!payment && transactionId) {
+      try {
+        const { data } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("id", transactionId)
+          .single();
+        if (data) payment = data as any;
+      } catch (e) {
+        console.log("Payment not found by ID:", transactionId);
+      }
+    }
+    
     if (!payment) {
       console.error('❌ Payment not found:', transactionId);
+      // Return 200 to acknowledge receipt (prevents retries)
       return NextResponse.json(
-        { error: 'Payment not found' },
-        { status: 404 }
+        { message: 'Callback received, payment not found' },
+        { status: 200 }
       );
     }
 
-    // Update payment status based on webhook type
+    // Determine status and map to internal status
+    let mappedStatus;
+    let metadata: any = {};
+
     switch (webhookData.type) {
       case 'payment.success':
-        await paymentService.handlePaymentCallback(
-          'mtn',
-          {
-            status: 'SUCCESSFUL',
-            financialTransactionId: webhookData.data.financialTransactionId,
-            transactionId
-          }
-        );
+        mappedStatus = mapMtnMomoStatus('SUCCESSFUL');
+        metadata.transaction_id = webhookData.data.financialTransactionId;
         break;
 
       case 'payment.failed':
-        await paymentService.handlePaymentCallback(
-          'mtn',
-          {
-            status: 'FAILED',
-            reason: webhookData.data.reason,
-            transactionId
-          }
-        );
+        mappedStatus = mapMtnMomoStatus('FAILED');
+        metadata.error_message = webhookData.data.reason;
         break;
 
       default:
@@ -99,12 +108,21 @@ export async function POST(request: Request) {
         );
     }
 
+    // Update payment status via orchestration service
+    await orchestrationService.handlePaymentStatusChange(payment, mappedStatus, {
+      ...metadata,
+      provider_response: webhookData,
+    });
+
+    console.log('✅ Webhook processed successfully');
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ Webhook error:', error);
+    // Return 200 to prevent retries on our errors
     return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
+      { message: 'Webhook received' },
+      { status: 200 }
     );
   }
 }

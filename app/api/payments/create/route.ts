@@ -3,7 +3,6 @@ import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { ServerPaymentService } from '@/lib/services/server/payment-service';
 import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
 import { OrangeMoneyService } from '@/lib/payment/orange-money-service';
-import { MockOrangeMoneyService } from '@/lib/payment/mock-orange-money-service';
 import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
 import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
 
@@ -76,6 +75,10 @@ export async function POST(request: NextRequest) {
         collectionUserId: process.env.MOMO_COLLECTION_USER_ID!,
       });
 
+      // Use the callback URL from service config (matches MTN Developer Portal)
+      // The service config uses DIRECT_MOMO_CALLBACK_URL or ${MOMO_CALLBACK_HOST}/api/callbacks/momo
+      const callbackUrl = process.env.DIRECT_MOMO_CALLBACK_URL || `${process.env.MOMO_CALLBACK_HOST}/api/callbacks/momo`;
+
       const momoResponse = await mtnService.requestToPay({
         amount,
         currency: 'XAF',
@@ -83,7 +86,7 @@ export async function POST(request: NextRequest) {
         externalId: payment.id,
         payerMessage: `Payment for booking ${bookingId}`,
         payeeNote: 'PikDrive booking payment',
-        callbackUrl: `${process.env.MOMO_CALLBACK_HOST}/api/payments/callback`,
+        callbackUrl: callbackUrl,
       });
 
       transactionId = momoResponse.transactionId;
@@ -97,19 +100,24 @@ export async function POST(request: NextRequest) {
         returnUrl: process.env.ORANGE_MONEY_RETURN_URL || `${process.env.NEXT_PUBLIC_APP_URL}/payments/status`,
       };
 
-      const orangeService = !orangeConfig.merchantId || process.env.USE_MOCK_ORANGE_MONEY === 'true'
-        ? new MockOrangeMoneyService(orangeConfig)
-        : new OrangeMoneyService(orangeConfig);
+      const orangeService = new OrangeMoneyService(orangeConfig);
 
-      const orangeResponse = await orangeService.initiatePayment({
-        amount,
+      // Use payin method with PaymentApiRequest format
+      const orangeResult = await orangeService.payin({
         phoneNumber: formattedPhone,
-        description: `PikDrive Ride Payment - ${bookingId}`,
-        externalId: payment.id,
+        amount,
+        reason: `PikDrive Ride Payment - ${bookingId}`,
       });
 
-      transactionId = orangeResponse.transactionId;
-      console.log('🟠 Orange Money response:', { transactionId, orangeResponse });
+      // Check if payment was initiated successfully
+      if (orangeResult.statusCode !== 200 || !orangeResult.response.success || !orangeResult.response.verificationToken) {
+        throw new Error(
+          orangeResult.response.message || "Failed to initiate Orange Money payment"
+        );
+      }
+
+      transactionId = orangeResult.response.verificationToken;
+      console.log('🟠 Orange Money response:', { transactionId, orangeResult });
     } else {
       return NextResponse.json(
         { success: false, error: `Unsupported payment provider: ${provider}` },

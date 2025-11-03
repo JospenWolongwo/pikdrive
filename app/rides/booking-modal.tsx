@@ -21,9 +21,10 @@ import {
 } from "lucide-react";
 import { PaymentMethodSelector } from "@/components/payment/payment-method-selector";
 import { PhoneNumberInput } from "@/components/payment/phone-number-input";
-import { PaymentService } from "@/lib/payment/payment-service";
-import { PaymentStatus as PaymentServiceStatus, PaymentProviderType } from "@/lib/payment/types";
+import { PaymentProviderType } from "@/lib/payment/types";
+import { getAvailableProviders } from "@/lib/payment/provider-config";
 import type { PaymentStatus } from "@/types/booking";
+import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/types";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -66,7 +67,6 @@ export function BookingModal({
     useState<PaymentProviderType>();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isPhoneValid, setIsPhoneValid] = useState(false);
-  const [paymentService] = useState(() => new PaymentService(supabase));
   const [bookingId, setBookingId] = useState<string>();
   const [existingBooking, setExistingBooking] = useState<any>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<
@@ -97,7 +97,16 @@ export function BookingModal({
   }
 
   const totalPrice = seats * ride.price;
-  const providers = paymentService.getAvailableProviders();
+  const providers = getAvailableProviders().map(p => ({
+    name: p.name,
+    logo: p.logo,
+    displayName: p.displayName,
+    description: p.description,
+    processingTime: p.processingTime,
+    minimumAmount: p.minimumAmount,
+    maximumAmount: p.maximumAmount,
+    processingFee: p.processingFee,
+  }));
 
   // Reset modal state when it closes
   useEffect(() => {
@@ -216,45 +225,6 @@ export function BookingModal({
     }
   };
 
-  const checkPaymentStatus = async (transactionId: string) => {
-    if (!selectedProvider) return;
-
-    try {
-      const response = await fetch(
-        `/api/payments/status?transactionId=${transactionId}&provider=${selectedProvider}`
-      );
-      if (!response.ok) throw new Error("Failed to check payment status");
-
-      const data = await response.json();
-
-      if (data.status === "SUCCESSFUL") {
-        setPaymentStatus("SUCCESSFUL");
-        setStatusMessage("Payment completed successfully!");
-        setIsPolling(false);
-
-        // Close modal immediately and redirect to bookings page
-        onClose();
-        router.replace("/bookings");
-        
-        if (onBookingComplete) {
-          onBookingComplete();
-        }
-      } else if (data.status === "FAILED") {
-        setPaymentStatus("FAILED");
-        setStatusMessage(data.message || "Payment failed. Please try again.");
-        setIsPolling(false);
-      } else {
-        setPaymentStatus("PENDING");
-        setStatusMessage("Waiting for payment approval...");
-        setTimeout(() => checkPaymentStatus(transactionId), 5000);
-      }
-    } catch (error) {
-      console.error("Error checking payment status:", error);
-      setStatusMessage("Error checking payment status");
-      setIsPolling(false);
-    }
-  };
-
   const handlePayment = async () => {
     if (!selectedProvider || !isPhoneValid || !bookingId) {
       toast.error(
@@ -298,7 +268,7 @@ export function BookingModal({
     }
   };
 
-  const handlePaymentComplete = async (status: PaymentServiceStatus) => {
+  const handlePaymentComplete = async (status: PaymentTransactionStatus) => {
     if (status === "completed") {
       setStep(3);
       if (onBookingComplete) {

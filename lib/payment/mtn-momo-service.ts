@@ -1,3 +1,18 @@
+/**
+ * MTN MOMO Service - Main Orchestrator
+ * Coordinates payin, payout, and verification operations
+ */
+
+import type {
+  PaymentApiRequest,
+  PaymentServiceResponse,
+  CheckPaymentServiceResponse,
+  PayoutRequest,
+} from "@/types/payment-ext";
+import { MTNTokenService } from "./mtn/token-service";
+import { MTNPayinService } from "./mtn/payin-service";
+import { MTNPayoutService } from "./mtn/payout-service";
+import { MTNVerificationService } from "./mtn/verification-service";
 import { TextEncoder } from "util";
 
 interface MomoConfig {
@@ -7,261 +22,131 @@ interface MomoConfig {
   callbackHost: string;
   collectionPrimaryKey: string;
   collectionUserId: string;
-}
-
-interface CollectionRequest {
-  amount: string;
-  currency: string;
-  externalId: string;
-  payer: {
-    partyIdType: "MSISDN";
-    partyId: string;
-  };
-  payerMessage: string;
-  payeeNote: string;
+  disbursementApiUser?: string;
+  disbursementApiKey?: string;
+  disbursementSubscriptionKey?: string;
 }
 
 export class MTNMomoService {
-  private baseUrl: string;
-  private config: MomoConfig;
-  private tokenCache: { token: string; expires: Date } | null = null;
+  private readonly baseUrl: string;
+  private readonly tokenService: MTNTokenService;
+  private readonly payinService: MTNPayinService;
+  private readonly payoutService: MTNPayoutService;
+  private readonly verificationService: MTNVerificationService;
 
   constructor(config: MomoConfig) {
-    this.config = config;
-    this.baseUrl = "https://sandbox.momodeveloper.mtn.com";
-  }
+    this.baseUrl =
+      config.targetEnvironment === "production"
+        ? "https://api.mtn.cm"
+        : "https://sandbox.momodeveloper.mtn.com";
 
-  private async makeRequest(
-    path: string,
-    options: {
-      method?: string;
-      headers?: Record<string, string>;
-      body?: any;
-    }
-  ) {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method: options.method || "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      ...(options.body && { body: JSON.stringify(options.body) }),
+    const callbackUrl =
+      process.env.DIRECT_MOMO_CALLBACK_URL ||
+      `${config.callbackHost}/api/callbacks/momo`;
+
+    const payoutCallbackUrl =
+      process.env.DIRECT_MOMO_PAYOUT_CALLBACK_URL ||
+      `${config.callbackHost}/api/callbacks/momo-payout`;
+
+    this.tokenService = new MTNTokenService({
+      baseUrl: this.baseUrl,
+      subscriptionKey: config.subscriptionKey,
+      collectionUserId: config.collectionUserId,
+      collectionApiKey: config.apiKey,
+      disbursementApiUser: config.disbursementApiUser,
+      disbursementApiKey: config.disbursementApiKey,
+      disbursementSubscriptionKey: config.disbursementSubscriptionKey,
     });
 
-    const contentType = response.headers.get("content-type");
-    const isJson = contentType?.includes("application/json");
+    this.payinService = new MTNPayinService({
+      baseUrl: this.baseUrl,
+      subscriptionKey: config.subscriptionKey,
+      callbackUrl,
+      tokenService: this.tokenService,
+      targetEnvironment: config.targetEnvironment,
+    });
 
-    if (!response.ok) {
-      const errorText = isJson ? await response.json() : await response.text();
+    this.payoutService = new MTNPayoutService({
+      baseUrl: this.baseUrl,
+      subscriptionKey: config.subscriptionKey,
+      disbursementSubscriptionKey: config.disbursementSubscriptionKey,
+      callbackUrl: payoutCallbackUrl,
+      tokenService: this.tokenService,
+    });
+
+    this.verificationService = new MTNVerificationService({
+      baseUrl: this.baseUrl,
+      subscriptionKey: config.subscriptionKey,
+      tokenService: this.tokenService,
+    });
+  }
+
+  async payin(
+    request: PaymentApiRequest,
+    callbackUrlOverride?: string
+  ): Promise<{ statusCode: number; response: PaymentServiceResponse }> {
+    return this.payinService.payin(request, callbackUrlOverride);
+  }
+
+  async payout(
+    request: PayoutRequest
+  ): Promise<{ statusCode: number; response: PaymentServiceResponse }> {
+    return this.payoutService.payout(request);
+  }
+
+  async checkPayment(
+    payToken: string
+  ): Promise<{ statusCode: number; response: CheckPaymentServiceResponse }> {
+    return this.verificationService.checkPayment(payToken);
+  }
+
+  /**
+   * Request to pay - wrapper method for payment creation route
+   * Maps route handler parameters to payin() method call
+   */
+  async requestToPay(params: {
+    readonly amount: number;
+    readonly currency: string;
+    readonly phoneNumber: string;
+    readonly externalId: string;
+    readonly payerMessage: string;
+    readonly payeeNote: string;
+    readonly callbackUrl: string;
+  }): Promise<{ transactionId: string }> {
+    // Map parameters to PaymentApiRequest format
+    // Use payerMessage as reason since it's more descriptive
+    const payinRequest: PaymentApiRequest = {
+      phoneNumber: params.phoneNumber,
+      amount: params.amount,
+      reason: params.payerMessage,
+    };
+
+    // Call the payin service with callbackUrl override
+    // The callbackUrl should match what's configured in MTN Developer Portal
+    const result = await this.payin(payinRequest, params.callbackUrl);
+
+    // Check if payment was initiated successfully
+    if (result.statusCode !== 200 || !result.response.success || !result.response.verificationToken) {
       throw new Error(
-        `Request failed: ${response.status} - ${
-          typeof errorText === "string" ? errorText : JSON.stringify(errorText)
-        }`
+        result.response.message || "Failed to initiate payment"
       );
     }
 
-    return isJson ? response.json() : response.text();
+    // Return transactionId from verificationToken
+    return {
+      transactionId: result.response.verificationToken,
+    };
   }
 
-  private async getAuthToken(): Promise<string> {
-    try {
-      // Check if we have a valid cached token
-      if (this.tokenCache && this.tokenCache.expires > new Date()) {
-        return this.tokenCache.token;
-      }
-
-      const auth = Buffer.from(
-        `${this.config.collectionUserId}:${this.config.apiKey}`
-      ).toString("base64");
-
-      const data = await this.makeRequest("/collection/token/", {
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Ocp-Apim-Subscription-Key": this.config.subscriptionKey,
-          "X-Target-Environment": this.config.targetEnvironment,
-        },
-      });
-
-      // Cache the token with expiry (typically 1 hour)
-      this.tokenCache = {
-        token: data.access_token,
-        expires: new Date(Date.now() + 3600000), // 1 hour from now
-      };
-
-      return data.access_token;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  private generateUUID(): string {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-      /[xy]/g,
-      function (c) {
-        const r = (Math.random() * 16) | 0;
-        const v = c === "x" ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-      }
-    );
-  }
-
-  // Sandbox test numbers and their behaviors
-  private readonly SANDBOX_TEST_NUMBERS = {
-    "237670000000": { status: "SUCCESSFUL", reason: null }, // Main test number
-    "237677777777": { status: "SUCCESSFUL", reason: null },
-    "237666666666": { status: "FAILED", reason: "APPROVAL_REJECTED" },
-    "237655555555": { status: "FAILED", reason: "INTERNAL_PROCESSING_ERROR" },
-    "237644444444": { status: "FAILED", reason: "INSUFFICIENT_FUNDS" },
-    "237633333333": { status: "PENDING", reason: "TIMEOUT" },
-  } as const;
-
-  private isSandboxTestNumber(phoneNumber: string): boolean {
-    return Object.keys(this.SANDBOX_TEST_NUMBERS).includes(phoneNumber);
-  }
-
-  private getSandboxTestResponse(phoneNumber: string) {
-    return this.SANDBOX_TEST_NUMBERS[
-      phoneNumber as keyof typeof this.SANDBOX_TEST_NUMBERS
-    ];
-  }
-
-  async requestToPay(request: {
-    amount: number;
-    currency: string;
-    phoneNumber: string;
-    externalId: string;
-    payerMessage: string;
-    payeeNote: string;
-    callbackUrl: string;
-  }): Promise<{ transactionId: string; requestId: string }> {
-    try {
-      const token = await this.getAuthToken();
-      const transactionId = this.generateUUID();
-      const requestId = this.generateUUID();
-
-      // For sandbox testing - check if it's a known test number
-      if (this.config.targetEnvironment === "sandbox") {
-        console.log(" 🏖️ Using sandbox environment with phone:", request.phoneNumber);
-        
-        // Check if this is one of our defined sandbox test numbers
-        if (this.isSandboxTestNumber(request.phoneNumber)) {
-          console.log(" ✅ Sandbox test number detected:", request.phoneNumber);
-          return {
-            transactionId,
-            requestId,
-          };
-        }
-        
-        // For any other sandbox number, default to successful flow
-        console.log(" ⚠️ Unknown sandbox number, defaulting to successful flow");
-        return {
-          transactionId,
-          requestId,
-        };
-      }
-
-      const collectionRequest: CollectionRequest = {
-        amount: request.amount.toString(),
-        currency: request.currency,
-        externalId: request.externalId,
-        payer: {
-          partyIdType: "MSISDN",
-          partyId: request.phoneNumber,
-        },
-        payerMessage: request.payerMessage,
-        payeeNote: request.payeeNote,
-      };
-
-      await this.makeRequest("/collection/v1_0/requesttopay", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Reference-Id": transactionId,
-          "X-Target-Environment": this.config.targetEnvironment,
-          "Ocp-Apim-Subscription-Key": this.config.subscriptionKey,
-          "X-Callback-Url": request.callbackUrl,
-        },
-        body: collectionRequest,
-      });
-
-      return {
-        transactionId,
-        requestId,
-      };
-    } catch (error) {
-      console.error(" ❌ Error requesting payment:", error);
-      throw error;
-    }
-  }
-
-  async getPaymentStatus(
-    transactionId: string,
-    phoneNumber?: string
-  ): Promise<{
-    status: "SUCCESSFUL" | "FAILED" | "PENDING";
-    reason?: string;
-    financialTransactionId?: string;
-  }> {
-    try {
-      if (this.config.targetEnvironment === "sandbox") {
-        console.log(
-          " 🏖️ Using sandbox environment, transactionId:",
-          transactionId,
-          "phone:",
-          phoneNumber
-        );
-
-        // If we have a phone number and it's a test number, use its status
-        if (phoneNumber && this.isSandboxTestNumber(phoneNumber)) {
-          const testResponse = this.getSandboxTestResponse(phoneNumber);
-          console.log(" ✅ Sandbox test response for", phoneNumber, ":", testResponse);
-          return {
-            status: testResponse.status,
-            reason: testResponse.reason || undefined,
-            financialTransactionId: this.generateUUID(),
-          };
-        }
-
-        // Default to successful for any other sandbox request
-        console.log(" ⚠️ Defaulting to successful status in sandbox");
-        return {
-          status: "SUCCESSFUL",
-          reason: undefined,
-          financialTransactionId: this.generateUUID(),
-        };
-      }
-
-      const token = await this.getAuthToken();
-      const response = await this.makeRequest(
-        `/collection/v1_0/requesttopay/${transactionId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Target-Environment": this.config.targetEnvironment,
-            "Ocp-Apim-Subscription-Key": this.config.subscriptionKey,
-          },
-        }
-      );
-
-      return {
-        status: response.status,
-        reason: response.reason,
-        financialTransactionId: response.financialTransactionId,
-      };
-    } catch (error) {
-      console.error("Error checking payment status:", error);
-      throw error;
-    }
-  }
-
-  // Validate webhook signature
+  /**
+   * Validate webhook signature
+   */
   async validateWebhookSignature(
     signature: string,
     body: string
   ): Promise<boolean> {
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(this.config.collectionPrimaryKey);
+    const keyData = encoder.encode(process.env.DIRECT_MOMO_COLLECTION_PRIMARY_KEY || "");
     const messageData = encoder.encode(body);
 
     const cryptoKey = await crypto.subtle.importKey(

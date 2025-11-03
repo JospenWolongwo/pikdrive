@@ -3,6 +3,7 @@ import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { ServerPaymentService } from '@/lib/services/server/payment-service';
 import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
 import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
+import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
 
 export async function POST(request: NextRequest) {
   try {
@@ -118,29 +119,32 @@ export async function POST(request: NextRequest) {
           collectionUserId: process.env.MOMO_COLLECTION_USER_ID!,
         });
 
-        // Get phone number from payment for sandbox testing
-        const momoStatus = await mtnService.getPaymentStatus(
-          transactionId,
-          payment.phone_number // Pass phone number for sandbox test number detection
-        );
+        // Use checkPayment with transaction_id (which is the xReferenceId/payToken)
+        const checkResult = await mtnService.checkPayment(transactionId);
+        
+        if (!checkResult.response.success) {
+          console.error('❌ [CHECK-STATUS] Failed to check payment status:', checkResult.response.message);
+          throw new Error(checkResult.response.message);
+        }
+
+        // Extract status from the checkPayment response
+        const transactionStatus = checkResult.response.transactionStatus;
+        const statusString = transactionStatus === 'SUCCESS' ? 'SUCCESSFUL' 
+          : transactionStatus === 'PENDING' ? 'PENDING'
+          : transactionStatus === 'FAILED' ? 'FAILED'
+          : 'UNKNOWN';
+
         console.log('📊 [CHECK-STATUS] MTN MOMO Status:', {
-          status: momoStatus.status,
-          financialTransactionId: momoStatus.financialTransactionId,
-          reason: momoStatus.reason,
+          status: statusString,
+          transactionStatus,
+          apiResponse: checkResult.response.apiResponse,
         });
 
-        // Map MTN status to our payment status
-        const statusMapping: Record<string, any> = {
-          'SUCCESSFUL': 'completed',
-          'FAILED': 'failed',
-          'PENDING': 'pending',  // In sandbox, PENDING test number stays pending (for timeout testing)
-        };
-        
-        newStatus = statusMapping[momoStatus.status] || 'pending';
+        // Map MTN status to our payment status using enum-based mapper
+        newStatus = mapMtnMomoStatus(statusString);
         console.log('🔄 [CHECK-STATUS] Status mapping:', { 
-          mtmStatus: momoStatus.status, 
+          mtmStatus: statusString, 
           ourStatus: newStatus,
-          testNumber: payment.phone_number
         });
 
         // Update payment if status changed
@@ -152,8 +156,8 @@ export async function POST(request: NextRequest) {
           
           console.log('🔔 [CHECK-STATUS] Triggering orchestration service for status change');
           await orchestrationService.handlePaymentStatusChange(payment, newStatus, {
-            transaction_id: momoStatus.financialTransactionId,
-            provider_response: momoStatus,
+            transaction_id: transactionId,
+            provider_response: checkResult.response.apiResponse,
           });
           
           console.log('🔔 [CHECK-STATUS] Orchestration completed, notifications should be sent');

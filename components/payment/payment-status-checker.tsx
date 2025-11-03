@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { PaymentService } from '@/lib/payment/payment-service';
 import { PaymentStatus } from '@/lib/payment/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface PaymentStatusCheckerProps {
   transactionId: string;
@@ -27,20 +25,18 @@ export function PaymentStatusChecker({
   const [isPolling, setIsPolling] = useState(true);
   const [message, setMessage] = useState('Waiting for payment approval...');
   const [lastUpdated, setLastUpdated] = useState(Date.now()); // Add timestamp for forcing re-renders
-  const supabase = createClientComponentClient();
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    const paymentService = new PaymentService(supabase);
 
     const checkStatus = async () => {
       if (!isPolling) return;
 
       if (!transactionId) {
         console.error('❌ Missing transaction ID for payment status check');
-        setStatus(prev => 'failed');
-        setMessage(prev => 'Invalid payment reference');
-        setIsPolling(prev => false);
+        setStatus('failed');
+        setMessage('Invalid payment reference');
+        setIsPolling(false);
         setLastUpdated(Date.now());
         onPaymentComplete?.('failed');
         return;
@@ -83,27 +79,27 @@ export function PaymentStatusChecker({
         });
         
         // Use functional updates to ensure state consistency
-        setStatus(prev => paymentStatus !== prev ? paymentStatus : prev);
+        setStatus((prev: PaymentStatus) => paymentStatus !== prev ? paymentStatus : prev);
         setLastUpdated(Date.now());
         
         if (paymentStatus === 'completed') {
-          setIsPolling(prev => false);
-          setMessage(prev => 'Payment completed successfully!');
+          setIsPolling(false);
+          setMessage('Payment completed successfully!');
           toast.success(paymentMessage || 'Payment completed successfully!');
           onPaymentComplete?.(paymentStatus);
           return;
         }
 
         if (paymentStatus === 'failed') {
-          setIsPolling(prev => false);
-          setMessage(prev => paymentMessage || 'Payment failed');
+          setIsPolling(false);
+          setMessage(paymentMessage || 'Payment failed');
           toast.error(paymentMessage || 'Payment failed');
           onPaymentComplete?.(paymentStatus);
           return;
         }
 
         if (paymentStatus === 'processing') {
-          setMessage(prev => 'Processing payment...');
+          setMessage('Processing payment...');
         }
 
         // Continue polling if still pending or processing
@@ -112,8 +108,8 @@ export function PaymentStatusChecker({
             setAttempts(prev => prev + 1);
             timeoutId = setTimeout(checkStatus, pollingInterval);
           } else {
-            setIsPolling(prev => false);
-            setMessage(prev => 'Payment verification timed out');
+            setIsPolling(false);
+            setMessage('Payment verification timed out');
             toast.error('Payment verification timed out. Please contact support.');
             onPaymentComplete?.('failed');
           }
@@ -134,33 +130,6 @@ export function PaymentStatusChecker({
           return;
         }
         
-        // Use direct Supabase call as fallback if API endpoint fails
-        try {
-          console.log('🔄 Trying direct payment status check as fallback...');
-          const fallbackResult = await paymentService.checkPaymentStatus(transactionId, provider);
-          
-          if (fallbackResult.success) {
-            console.log('✅ Fallback payment check succeeded:', fallbackResult);
-            setStatus(prev => fallbackResult.status);
-            setMessage(prev => fallbackResult.message || 'Payment status updated');
-            setLastUpdated(Date.now());
-            
-            if (fallbackResult.status === 'completed' || fallbackResult.status === 'failed') {
-              setIsPolling(prev => false);
-              onPaymentComplete?.(fallbackResult.status);
-            } else {
-              // Continue polling
-              if (attempts < maxAttempts) {
-                setAttempts(prev => prev + 1);
-                timeoutId = setTimeout(checkStatus, pollingInterval);
-              }
-            }
-            return;
-          }
-        } catch (fallbackError) {
-          console.error('❌ Fallback payment check also failed:', fallbackError);
-        }
-        
         // Handle complete failure
         if (attempts < maxAttempts - 1) {
           // Keep trying for a while, with increasing delays
@@ -169,8 +138,8 @@ export function PaymentStatusChecker({
           setAttempts(prev => prev + 1);
           timeoutId = setTimeout(checkStatus, backoffTime);
         } else {
-          setIsPolling(prev => false);
-          setMessage(prev => 'Failed to verify payment status');
+          setIsPolling(false);
+          setMessage('Failed to verify payment status');
           setLastUpdated(Date.now());
           toast.error('Failed to verify payment status. Please contact support.');
           onPaymentComplete?.('failed');
@@ -185,7 +154,7 @@ export function PaymentStatusChecker({
       setIsPolling(false);
       clearTimeout(timeoutId);
     };
-  }, [transactionId, provider, maxAttempts, pollingInterval, onPaymentComplete, supabase, isPolling, attempts, status]);
+  }, [transactionId, provider, bookingId, maxAttempts, pollingInterval, onPaymentComplete, isPolling, attempts, status]);
 
   return (
     <div className="flex flex-col items-center justify-center p-4 space-y-2">
