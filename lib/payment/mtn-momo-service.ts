@@ -78,6 +78,7 @@ export class MTNMomoService {
       baseUrl: this.baseUrl,
       subscriptionKey: config.subscriptionKey,
       tokenService: this.tokenService,
+      targetEnvironment: config.targetEnvironment,
     });
   }
 

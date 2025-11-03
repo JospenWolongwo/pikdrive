@@ -11,6 +11,7 @@ interface VerificationConfig {
   baseUrl: string;
   subscriptionKey: string;
   tokenService: MTNTokenService;
+  targetEnvironment: "sandbox" | "production";
 }
 
 export class MTNVerificationService {
@@ -57,7 +58,7 @@ export class MTNVerificationService {
         {
           method: "GET",
           headers: {
-            "X-Target-Environment": "mtncameroon",
+            "X-Target-Environment": this.config.targetEnvironment === "production" ? "mtncameroon" : "sandbox",
             "Ocp-Apim-Subscription-Key": this.config.subscriptionKey,
             Authorization: `Bearer ${token}`,
           },
@@ -87,15 +88,42 @@ export class MTNVerificationService {
         };
       }
 
+      // Improve error logging to get better error messages
+      let errorMessage = "Unknown status";
+      let errorResponse: any = null;
+      try {
+        const errorBody = await response.json();
+        errorResponse = errorBody;
+        errorMessage = errorBody?.message || errorBody?.code || JSON.stringify(errorBody);
+        console.error("❌ MTN Verification API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorBody,
+          xReferenceId,
+          targetEnvironment: this.config.targetEnvironment,
+        });
+      } catch {
+        const errorText = await response.text();
+        errorResponse = errorText;
+        errorMessage = errorText || `HTTP ${response.status}`;
+        console.error("❌ MTN Verification API error (non-JSON):", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          xReferenceId,
+          targetEnvironment: this.config.targetEnvironment,
+        });
+      }
+
       return {
-        statusCode: 400,
+        statusCode: response.status,
         response: {
           success: false,
-          message: "Unknown status",
-          status: 400,
+          message: errorMessage,
+          status: response.status,
           transactionStatus: ENUM_CHECK_PAYMENT_TRANSACTION_STATUS.UNKNOWN,
           transactionAmount: null,
-          apiResponse: await response.text(),
+          apiResponse: errorResponse,
         },
       };
     } catch (error: any) {
