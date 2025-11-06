@@ -108,7 +108,7 @@ export class ServerPaymentOrchestrationService {
         // Try fallback: Fetch booking without relations and manually fetch related data
         const { data: simpleBooking, error: simpleError } = await this.supabase
           .from('bookings')
-          .select('id, ride_id, user_id, seats, status')
+          .select('id, ride_id, user_id, seats, status, verification_code, created_at')
           .eq('id', payment.booking_id)
           .single();
           
