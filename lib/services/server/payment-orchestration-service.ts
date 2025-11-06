@@ -89,42 +89,18 @@ export class ServerPaymentOrchestrationService {
         status: 'pending_verification',
       });
 
-      // Get booking and ride details for notifications
-      const { data: booking, error: bookingError } = await this.supabase
+      // Get booking with explicit columns (avoids PostgREST relationship cache issues)
+      let { data: bookingData, error: bookingError } = await this.supabase
         .from('bookings')
-        .select(`
-          *,
-          ride:ride_id (
-            *,
-            driver:driver_id (
-              id,
-              full_name,
-              phone
-            )
-          ),
-          user:user_id (
-            id,
-            full_name,
-            phone
-          )
-        `)
+        .select('id, ride_id, user_id, seats, status, verification_code, created_at')
         .eq('id', payment.booking_id)
         .single();
 
-      if (bookingError) {
+      if (bookingError || !bookingData) {
         console.error('❌ [ORCHESTRATION] Booking query failed:', {
           error: bookingError,
-          code: bookingError.code,
-          message: bookingError.message,
-          details: bookingError.details,
-          hint: bookingError.hint,
-          paymentId: payment.id,
-          bookingId: payment.booking_id
-        });
-      }
-
-      if (!booking) {
-        console.error('❌ [ORCHESTRATION] Booking not found:', {
+          code: bookingError?.code,
+          message: bookingError?.message,
           paymentId: payment.id,
           bookingId: payment.booking_id
         });
@@ -136,65 +112,81 @@ export class ServerPaymentOrchestrationService {
           .eq('id', payment.booking_id)
           .single();
           
-        console.error('❌ [ORCHESTRATION] Fallback query result:', {
-          hasBooking: !!simpleBooking,
-          error: simpleError
-        });
-        
         if (!simpleBooking) {
+          console.error('❌ [ORCHESTRATION] Booking not found in fallback:', {
+            paymentId: payment.id,
+            bookingId: payment.booking_id,
+            error: simpleError
+          });
           return;
         }
         
-        // If we got a simple booking, fetch related data manually
-        const { data: rideData } = await this.supabase
-          .from('rides')
-          .select('id, from_city, to_city, departure_time, driver_id')
-          .eq('id', simpleBooking.ride_id)
-          .single();
-          
-        if (!rideData) {
-          console.error('❌ [ORCHESTRATION] Ride not found:', simpleBooking.ride_id);
-          return;
-        }
-        
-        const { data: driverData } = await this.supabase
-          .from('profiles')
-          .select('id, full_name, phone')
-          .eq('id', rideData.driver_id)
-          .single();
-          
-        if (!driverData) {
-          console.error('❌ [ORCHESTRATION] Driver not found:', rideData.driver_id);
-          return;
-        }
-        
-        const { data: userData } = await this.supabase
-          .from('profiles')
-          .select('id, full_name, phone')
-          .eq('id', simpleBooking.user_id)
-          .single();
-          
-        if (!userData) {
-          console.error('❌ [ORCHESTRATION] User not found:', simpleBooking.user_id);
-          return;
-        }
-        
-        // Create a merged booking object with all needed data
-        const mergedBooking = {
-          ...simpleBooking,
-          ride: {
-            ...rideData,
-            driver: driverData
-          },
-          user: userData
-        };
-        
-        console.log('✅ [ORCHESTRATION] Using fallback booking with manually fetched relations');
-        return this.processNotificationFlow(mergedBooking, payment);
+        // Use fallback booking data
+        bookingData = simpleBooking;
       }
 
-      // Continue with notification logic using the fetched booking
-      return this.processNotificationFlow(booking, payment);
+      // Fetch related data in parallel (more efficient than nested queries)
+      const [rideResult, userResult] = await Promise.all([
+        this.supabase
+          .from('rides')
+          .select('id, from_city, to_city, departure_time, driver_id')
+          .eq('id', bookingData.ride_id)
+          .single(),
+        this.supabase
+          .from('profiles')
+          .select('id, full_name, phone')
+          .eq('id', bookingData.user_id)
+          .single()
+      ]);
+
+      const { data: rideData, error: rideError } = rideResult;
+      const { data: userData, error: userError } = userResult;
+
+      if (rideError || !rideData) {
+        console.error('❌ [ORCHESTRATION] Ride not found:', {
+          rideId: bookingData.ride_id,
+          error: rideError
+        });
+        return;
+      }
+
+      if (userError || !userData) {
+        console.error('❌ [ORCHESTRATION] User not found:', {
+          userId: bookingData.user_id,
+          error: userError
+        });
+        return;
+      }
+
+      // Fetch driver data
+      const { data: driverData, error: driverError } = await this.supabase
+        .from('profiles')
+        .select('id, full_name, phone')
+        .eq('id', rideData.driver_id)
+        .single();
+
+      if (driverError || !driverData) {
+        console.error('❌ [ORCHESTRATION] Driver not found:', {
+          driverId: rideData.driver_id,
+          error: driverError
+        });
+        return;
+      }
+
+      // Create merged booking object in expected format
+      const mergedBooking = {
+        ...bookingData,
+        ride: {
+          ...rideData,
+          driver: driverData
+        },
+        user: userData
+      };
+
+      console.log('✅ [ORCHESTRATION] Booking and related data fetched successfully');
+
+      // Continue with notification logic using the merged booking
+      return this.processNotificationFlow(mergedBooking, payment);
     } catch (error) {
       console.error('Error in completed payment workflow:', error);
       throw error;
@@ -356,37 +348,47 @@ export class ServerPaymentOrchestrationService {
         status: 'cancelled',
       });
 
-      // Get booking details for SMS notification
-      const { data: booking } = await this.supabase
+      // Get booking details for SMS notification (using explicit queries to avoid cache issues)
+      const { data: bookingData } = await this.supabase
         .from('bookings')
-        .select(`
-          *,
-          ride:ride_id (
-            from_city,
-            to_city
-          ),
-          user:user_id (
-            phone
-          )
-        `)
+        .select('id, ride_id, user_id')
         .eq('id', payment.booking_id)
         .single();
 
-      if (booking) {
-        // Send SMS to passenger (with retry link)
-        this.oneSignalService.sendPaymentFailureSMS(
-          booking.user.phone,
-          {
-            id: booking.id,
-            from: booking.ride.from_city,
-            to: booking.ride.to_city,
-            amount: payment.amount,
-            paymentId: payment.id,
-          },
-          reason || 'Paiement non autorisé'
-        ).catch(err => {
-          console.error('❌ SMS failure notification error (non-critical):', err);
-        });
+      if (bookingData) {
+        // Fetch ride and user data in parallel
+        const [rideResult, userResult] = await Promise.all([
+          this.supabase
+            .from('rides')
+            .select('from_city, to_city')
+            .eq('id', bookingData.ride_id)
+            .single(),
+          this.supabase
+            .from('profiles')
+            .select('phone')
+            .eq('id', bookingData.user_id)
+            .single()
+        ]);
+
+        const { data: rideData } = rideResult;
+        const { data: userData } = userResult;
+
+        if (rideData && userData) {
+          // Send SMS to passenger (with retry link)
+          this.oneSignalService.sendPaymentFailureSMS(
+            userData.phone,
+            {
+              id: bookingData.id,
+              from: rideData.from_city,
+              to: rideData.to_city,
+              amount: payment.amount,
+              paymentId: payment.id,
+            },
+            reason || 'Paiement non autorisé'
+          ).catch(err => {
+            console.error('❌ SMS failure notification error (non-critical):', err);
+          });
+        }
       }
 
       // Legacy notification service (keep for compatibility)
@@ -409,27 +411,54 @@ export class ServerPaymentOrchestrationService {
       const payment = await this.paymentService.getPaymentById(paymentId);
       if (!payment) return null;
 
-      // Get related data
-      const { data: booking } = await this.supabase
+      // Get booking with explicit columns (avoids PostgREST relationship cache issues)
+      const { data: bookingData } = await this.supabase
         .from('bookings')
-        .select(`
-          *,
-          ride:ride_id (
-            *,
-            driver:driver_id (
-              id,
-              full_name,
-              avatar_url
-            )
-          ),
-          user:user_id (
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('id', payment.booking_id)
         .single();
+
+      if (!bookingData) {
+        return { ...payment, booking: null };
+      }
+
+      // Fetch related data in parallel
+      const [rideResult, userResult] = await Promise.all([
+        this.supabase
+          .from('rides')
+          .select('*')
+          .eq('id', bookingData.ride_id)
+          .single(),
+        this.supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', bookingData.user_id)
+          .single()
+      ]);
+
+      const { data: rideData } = rideResult;
+      const { data: userData } = userResult;
+
+      if (!rideData) {
+        return { ...payment, booking: bookingData };
+      }
+
+      // Fetch driver data
+      const { data: driverData } = await this.supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .eq('id', rideData.driver_id)
+        .single();
+
+      // Create merged booking object
+      const booking = {
+        ...bookingData,
+        ride: {
+          ...rideData,
+          driver: driverData || null
+        },
+        user: userData || null
+      };
 
       return {
         ...payment,

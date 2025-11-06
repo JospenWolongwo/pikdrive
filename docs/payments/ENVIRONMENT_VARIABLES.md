@@ -70,6 +70,21 @@ ORANGE_MONEY_RETURN_URL=http://localhost:3000/payments/status
 
 # Optional: Mock Orange for development without credentials
 USE_MOCK_ORANGE_MONEY=false
+
+# ============================================
+# PAYMENT FEES & COMMISSION (Configurable)
+# ============================================
+# Transaction Fee: Percentage of payment amount (e.g., 1.5% = 1.5)
+# Default: 0% (no fee initially to keep costs low)
+TRANSACTION_FEE_RATE=0
+
+# Transaction Fee: Fixed amount in XAF (e.g., 50 XAF)
+# Default: 0 XAF (no fixed fee initially)
+TRANSACTION_FEE_FIXED=0
+
+# Commission: Percentage of payment amount (e.g., 5% = 5)
+# Default: 0% (no commission initially to keep costs low)
+COMMISSION_RATE=0
 ```
 
 ### ✅ Next Steps
