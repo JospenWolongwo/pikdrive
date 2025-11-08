@@ -25,7 +25,7 @@ export class ServerReceiptService {
       // Check if receipt already exists
       const existing = await this.getReceiptByPaymentId(paymentId);
       if (existing) {
-        console.log('✅ Receipt already exists for payment:', paymentId);
+        console.log('[RECEIPT] Receipt already exists for payment:', paymentId);
         return existing;
       }
 
@@ -37,7 +37,7 @@ export class ServerReceiptService {
           .single();
 
         if (!rpcError && receipt) {
-          console.log('✅ Receipt created via RPC:', receipt);
+          console.log('[RECEIPT] Receipt created via RPC:', receipt);
           return receipt;
         }
 
@@ -68,7 +68,7 @@ export class ServerReceiptService {
         if (error) {
           // If it's a duplicate key error, try to fetch the existing receipt
           if (error.code === '23505' && error.message.includes('payment_receipts_payment_id_key')) {
-            console.log('🔄 Duplicate receipt detected, fetching existing receipt for payment:', paymentId);
+            console.log('[RECEIPT] Duplicate receipt detected, fetching existing receipt for payment:', paymentId);
             const existingReceipt = await this.getReceiptByPaymentId(paymentId);
             if (existingReceipt) {
               return existingReceipt;
@@ -77,12 +77,12 @@ export class ServerReceiptService {
           throw new Error(`Failed to create receipt: ${error.message}`);
         }
 
-        console.log('✅ Receipt created manually:', receipt);
+        console.log('[RECEIPT] Receipt created manually:', receipt);
         return receipt;
       } catch (insertError) {
         // If insert fails due to duplicate, try to fetch existing receipt
         if (insertError instanceof Error && insertError.message.includes('duplicate key')) {
-          console.log('🔄 Duplicate receipt detected during insert, fetching existing receipt for payment:', paymentId);
+          console.log('[RECEIPT] Duplicate receipt detected during insert, fetching existing receipt for payment:', paymentId);
           const existingReceipt = await this.getReceiptByPaymentId(paymentId);
           if (existingReceipt) {
             return existingReceipt;

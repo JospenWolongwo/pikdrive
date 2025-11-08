@@ -14,7 +14,7 @@ export class ServerOneSignalNotificationService {
   constructor(private supabase: SupabaseClient) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     this.edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-notification`;
-    console.log('🔧 OneSignal Edge Function URL configured:', this.edgeFunctionUrl);
+    console.log('[ONESIGNAL] Edge Function URL configured:', this.edgeFunctionUrl);
   }
 
   /**
@@ -22,7 +22,7 @@ export class ServerOneSignalNotificationService {
    */
   async sendNotification(request: NotificationRequest): Promise<NotificationResponse> {
     try {
-      console.log('🔔 [ONESIGNAL] Calling Edge Function:', {
+      console.log('[ONESIGNAL] Calling Edge Function:', {
         url: this.edgeFunctionUrl,
         userId: request.userId,
         sendSMS: request.sendSMS,
@@ -34,12 +34,12 @@ export class ServerOneSignalNotificationService {
       // Get service role key for authentication (server-only, never exposed to client)
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       if (!serviceRoleKey) {
-        console.error('❌ [ONESIGNAL] SUPABASE_SERVICE_ROLE_KEY not configured');
+        console.error('[ONESIGNAL] SUPABASE_SERVICE_ROLE_KEY not configured');
         throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
       }
 
       // Call Edge Function
-      console.log('📤 [ONESIGNAL] Sending notification via Edge Function');
+      console.log('[ONESIGNAL] Sending notification via Edge Function');
       const response = await fetch(this.edgeFunctionUrl, {
         method: 'POST',
         headers: {
@@ -50,11 +50,11 @@ export class ServerOneSignalNotificationService {
         body: JSON.stringify(request),
       });
 
-      console.log('📡 [ONESIGNAL] Edge Function response status:', response.status);
+      console.log('[ONESIGNAL] Edge Function response status:', response.status);
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('❌ [ONESIGNAL] Edge Function error response:', error);
+        console.error('[ONESIGNAL] Edge Function error response:', error);
         throw new Error(error.error || 'Failed to send notification');
       }
 
@@ -65,7 +65,7 @@ export class ServerOneSignalNotificationService {
       const notificationId = pushNotification.id;
       const recipients = pushNotification.recipients;
 
-      console.log('✅ [ONESIGNAL] Edge Function response:', {
+      console.log('[ONESIGNAL] Edge Function response:', {
         success: true,
         notificationId,
         recipients,
@@ -79,7 +79,7 @@ export class ServerOneSignalNotificationService {
         recipients,
       };
     } catch (error) {
-      console.error('❌ [ONESIGNAL] Detailed error:', {
+      console.error('[ONESIGNAL] Detailed error:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
         request: {
@@ -241,12 +241,12 @@ export class ServerOneSignalNotificationService {
 
     const messages = {
       new_booking: {
-        title: '🎉 Nouvelle réservation!',
+        title: 'Nouvelle réservation!',
         message: `${bookingDetails.passengerName} a réservé votre trajet ${bookingDetails.from} → ${bookingDetails.to}`,
         icon: 'UserPlus',
       },
       booking_cancelled: {
-        title: '⚠️ Réservation annulée',
+        title: 'Réservation annulée',
         message: `${bookingDetails.passengerName} a annulé sa réservation pour ${bookingDetails.from} → ${bookingDetails.to}`,
         icon: 'UserMinus',
       },
@@ -292,7 +292,7 @@ export class ServerOneSignalNotificationService {
     const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('fr-FR');
 
-    const message = `✅ Réservation confirmée!
+    const message = `Réservation confirmée!
 Trajet: ${booking.from} → ${booking.to}
 Date: ${formatDate(booking.date)}
 Code d'activation: ${activationCode}
@@ -332,7 +332,7 @@ Détails: pikdrive.com/bookings/${booking.id}`;
   ): Promise<NotificationResponse> {
     const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
-    const message = `❌ Paiement échoué
+    const message = `Paiement échoué
 Trajet: ${booking.from} → ${booking.to}
 Montant: ${formatAmount(booking.amount)} XAF
 Raison: ${reason}
@@ -370,7 +370,7 @@ Besoin d'aide? Contactez-nous`;
   ): Promise<NotificationResponse> {
     const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
-    const message = `✅ Réservation annulée
+    const message = `Réservation annulée
 Trajet: ${booking.from} → ${booking.to}
 Montant: ${formatAmount(booking.amount)} XAF
 

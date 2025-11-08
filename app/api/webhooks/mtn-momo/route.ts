@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Get signature from headers
     const signature = request.headers.get('x-signature');
     if (!signature) {
-      console.error('❌ No signature provided');
+      console.error('[WEBHOOK] No signature provided');
       return NextResponse.json(
         { error: 'Missing signature' },
         { status: 401 }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Get and verify payload
     const payload = await request.text();
     if (!verifySignature(payload, signature)) {
-      console.error('❌ Invalid signature');
+      console.error('[WEBHOOK] Invalid signature');
       return NextResponse.json(
         { error: 'Invalid signature' },
         { status: 401 }
@@ -47,12 +47,12 @@ export async function POST(request: NextRequest) {
 
     // Parse webhook data
     const webhookData = JSON.parse(payload);
-    console.log('📥 Received webhook:', webhookData);
+    console.log('[WEBHOOK] Received webhook:', webhookData);
 
     // Get transaction ID from reference
     const transactionId = request.headers.get('x-reference');
     if (!transactionId) {
-      console.error('❌ No transaction ID provided');
+      console.error('[WEBHOOK] No transaction ID provided');
       return NextResponse.json(
         { error: 'Missing transaction ID' },
         { status: 400 }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (!payment) {
-      console.error('❌ Payment not found:', transactionId);
+      console.error('[WEBHOOK] Payment not found:', transactionId);
       // Return 200 to acknowledge receipt (prevents retries)
       return NextResponse.json(
         { message: 'Callback received, payment not found' },
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.warn('⚠️ Unknown webhook type:', webhookData.type);
+        console.warn('[WEBHOOK] Unknown webhook type:', webhookData.type);
         return NextResponse.json(
           { error: 'Unknown webhook type' },
           { status: 400 }
@@ -114,11 +114,11 @@ export async function POST(request: NextRequest) {
       provider_response: webhookData,
     });
 
-    console.log('✅ Webhook processed successfully');
+    console.log('[WEBHOOK] Webhook processed successfully');
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('❌ Webhook error:', error);
+    console.error('[WEBHOOK] Webhook error:', error);
     // Return 200 to prevent retries on our errors
     return NextResponse.json(
       { message: 'Webhook received' },

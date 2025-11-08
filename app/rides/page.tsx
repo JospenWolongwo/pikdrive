@@ -308,7 +308,7 @@ export default function RidesPage() {
     try {
       manager.start();
     } catch (error) {
-      console.error("❌ Failed to start BookingNotificationManager:", error);
+      console.error("[RIDES] Failed to start BookingNotificationManager:", error);
     }
 
     return () => {

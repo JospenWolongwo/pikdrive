@@ -12,49 +12,49 @@ export function getNotificationTitle(
 ): string {
   switch (type) {
     case 'booking_confirmed':
-      return '🎉 Booking Confirmed!';
+      return 'Booking Confirmed!';
     
     case 'booking_cancelled':
-      return '❌ Booking Cancelled';
+      return 'Booking Cancelled';
     
     case 'booking_updated':
-      return '📝 Booking Updated';
+      return 'Booking Updated';
     
     case 'payment_pending':
-      return '⏳ Payment Pending';
+      return 'Payment Pending';
     
     case 'payment_processing':
-      return '🔄 Processing Payment';
+      return 'Processing Payment';
     
     case 'payment_success':
-      return '✅ Payment Successful';
+      return 'Payment Successful';
     
     case 'payment_failed':
-      return '❌ Payment Failed';
+      return 'Payment Failed';
     
     case 'new_message':
-      return '💬 New Message';
+      return 'New Message';
     
     case 'driver_arriving':
-      return '🚗 Driver Arriving';
+      return 'Driver Arriving';
     
     case 'driver_arrived':
-      return '📍 Driver Arrived';
+      return 'Driver Arrived';
     
     case 'ride_started':
-      return '🚀 Ride Started';
+      return 'Ride Started';
     
     case 'ride_completed':
-      return '🏁 Ride Completed';
+      return 'Ride Completed';
     
     case 'ride_cancelled':
-      return '🚫 Ride Cancelled';
+      return 'Ride Cancelled';
     
     case 'announcement':
-      return '📢 Important Announcement';
+      return 'Important Announcement';
     
     default:
-      return '🔔 PikDrive Notification';
+      return 'PikDrive Notification';
   }
 }
 
@@ -67,7 +67,7 @@ export function getNotificationMessage(
 ): string {
   switch (type) {
     case 'booking_confirmed':
-      return `Your booking from ${data?.origin || 'your location'} to ${data?.destination || 'destination'} has been confirmed! 🎉`;
+      return `Your booking from ${data?.origin || 'your location'} to ${data?.destination || 'destination'} has been confirmed!`;
     
     case 'booking_cancelled':
       return `Your booking from ${data?.origin || 'your location'} to ${data?.destination || 'destination'} has been cancelled.`;
@@ -126,16 +126,16 @@ export function getMoMoPaymentMessage(
   
   switch (status) {
     case 'processing':
-      return `🔄 ${providerName} MoMo: Processing payment of ${amount} XAF. Please wait...`;
+      return `${providerName} MoMo: Processing payment of ${amount} XAF. Please wait...`;
     
     case 'completed':
-      return `✅ ${providerName} MoMo: Payment of ${amount} XAF successful! Txn ID: ${transactionId?.slice(-8) || 'N/A'}`;
+      return `${providerName} MoMo: Payment of ${amount} XAF successful! Txn ID: ${transactionId?.slice(-8) || 'N/A'}`;
     
     case 'failed':
-      return `❌ ${providerName} MoMo: Payment of ${amount} XAF failed. Please try again.`;
+      return `${providerName} MoMo: Payment of ${amount} XAF failed. Please try again.`;
     
     default:
-      return `📱 ${providerName} MoMo: Payment notification`;
+      return `${providerName} MoMo: Payment notification`;
   }
 }
 
@@ -148,21 +148,21 @@ export function getRideStatusMessage(
 ): string {
   switch (status) {
     case 'driver_assigned':
-      return `🚗 Your driver ${data?.driverName || 'has been assigned'}. They'll contact you soon.`;
+      return `Your driver ${data?.driverName || 'has been assigned'}. They'll contact you soon.`;
     
     case 'driver_arriving':
-      return `📍 Your driver is arriving at your pickup location. Please be ready!`;
+      return `Your driver is arriving at your pickup location. Please be ready!`;
     
     case 'driver_arrived':
-      return `🎯 Your driver has arrived! Please meet them at the pickup point.`;
+      return `Your driver has arrived! Please meet them at the pickup point.`;
     
     case 'ride_started':
-      return `🚀 Your ride has started! Enjoy your journey to ${data?.destination || 'your destination'}.`;
+      return `Your ride has started! Enjoy your journey to ${data?.destination || 'your destination'}.`;
     
     case 'ride_completed':
-      return `🏁 Ride completed! Thank you for choosing PikDrive. How was your experience?`;
+      return `Ride completed! Thank you for choosing PikDrive. How was your experience?`;
     
     default:
-      return '🚗 Ride status update from PikDrive.';
+      return 'Ride status update from PikDrive.';
   }
 }

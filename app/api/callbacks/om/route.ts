@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const orchestrationService = new ServerPaymentOrchestrationService(supabase);
 
     const callback = await request.json();
-    console.log("📥 Orange Money Callback received:", callback);
+    console.log("[CALLBACK] Orange Money Callback received:", callback);
 
     // Extract transaction details from Orange Money callback
     // OM callbacks can vary in structure, so we handle multiple formats
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const txnmessage = callback.txnmessage || callback.message;
 
     if (!orderId && !txid) {
-      console.error("❌ No orderId or txid in Orange Money callback");
+      console.error("[CALLBACK] No orderId or txid in Orange Money callback");
       return NextResponse.json(
         { error: "Missing orderId or txid" },
         { status: 400 }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!payment) {
-      console.error("❌ Payment not found for orderId:", referenceId);
+      console.error("[CALLBACK] Payment not found for orderId:", referenceId);
       // Return 200 to acknowledge receipt
       return NextResponse.json(
         { message: "Callback received, payment not found" },
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       error_message: txnmessage || undefined,
     });
 
-    console.log("✅ Orange Money callback processed:", {
+    console.log("[CALLBACK] Orange Money callback processed:", {
       orderId: referenceId,
       status: mappedStatus,
       txid,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: "Callback received" }, { status: 200 });
   } catch (error) {
-    console.error("❌ Error processing Orange Money callback:", error);
+    console.error("[CALLBACK] Error processing Orange Money callback:", error);
     return NextResponse.json(
       { message: "Callback received" },
       { status: 200 }

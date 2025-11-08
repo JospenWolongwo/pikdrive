@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     // Get callback data first
     const callbackData = await request.json();
-    console.log('🟡 Orange Money callback received:', callbackData);
+    console.log('[CALLBACK] Orange Money callback received:', callbackData);
 
     // Extract key information
     const {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     } = callbackData;
 
     if (!externalId && !transactionId) {
-      console.error('❌ No payment reference in callback');
+      console.error('[CALLBACK] No payment reference in callback');
       return NextResponse.json(
         { error: 'Missing payment reference' },
         { status: 400 }
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     }
 
     if (!payment) {
-      console.error('❌ Payment not found:', { externalId, transactionId });
+      console.error('[CALLBACK] Payment not found:', { externalId, transactionId });
       // Return 200 to acknowledge receipt (prevents retries)
       return NextResponse.json(
         { message: 'Callback received, payment not found' },
@@ -80,14 +80,14 @@ export async function POST(request: Request) {
       error_message: failureReason || message,
     });
 
-    console.log('✅ Orange Money callback processed successfully');
+    console.log('[CALLBACK] Orange Money callback processed successfully');
 
     return NextResponse.json({ 
       status: 'success',
       message: 'Payment callback processed successfully'
     });
   } catch (error) {
-    console.error('❌ Error processing Orange Money callback:', error);
+    console.error('[CALLBACK] Error processing Orange Money callback:', error);
     // Return 200 to prevent retries on our errors
     return NextResponse.json(
       { message: 'Callback received' },

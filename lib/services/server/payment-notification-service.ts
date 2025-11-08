@@ -22,7 +22,7 @@ export class ServerPaymentNotificationService {
    */
   async notifyPaymentCompleted(payment: Payment): Promise<void> {
     try {
-      console.log('🚀 Starting payment completion notifications for payment:', payment.id);
+      console.log('[NOTIFICATIONS] Starting payment completion notifications for payment:', payment.id);
       // Get booking with comprehensive details
       const { data: booking } = await this.supabase
         .from('bookings')
@@ -65,7 +65,7 @@ export class ServerPaymentNotificationService {
       const passengerName = passenger?.full_name || passenger?.phone || 'Passager';
       const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
-      console.log('🔔 [NOTIFICATIONS] Passenger details:', {
+      console.log('[NOTIFICATIONS] Passenger details:', {
         id: passenger?.id,
         phone: passenger?.phone,
         name: passengerName
@@ -76,7 +76,7 @@ export class ServerPaymentNotificationService {
       
       // If no verification code exists, generate one
       if (!verificationCode) {
-        console.log('⚠️ No verification code found, generating one...');
+        console.log('[NOTIFICATIONS] No verification code found, generating one...');
         const { data: newCode } = await this.supabase.rpc(
           'generate_booking_verification_code',
           { booking_id: payment.booking_id }
@@ -94,13 +94,13 @@ export class ServerPaymentNotificationService {
       }
 
       // Send both push notifications and SMS via OneSignal (non-blocking)
-      console.log('📤 Sending notifications via OneSignal (Push + SMS)...');
-      console.log('🔔 [NOTIFICATIONS] About to send passenger SMS notification');
+      console.log('[NOTIFICATIONS] Sending notifications via OneSignal (Push + SMS)...');
+      console.log('[NOTIFICATIONS] About to send passenger SMS notification');
       const notificationPromises = Promise.all([
         // Passenger notification - Push + SMS for booking confirmation with verification code
         this.oneSignalService.sendNotification({
           userId: booking.user_id,
-          title: '✅ Paiement Confirmé!',
+          title: 'Paiement Confirmé!',
           message: `Votre paiement de ${formatAmount(payment.amount)} XAF est confirmé pour ${ride.from_city} → ${ride.to_city}. Code de vérification: ${verificationCode}`,
           notificationType: 'payment_success',
           imageUrl: '/icons/payment-success.svg',
@@ -125,10 +125,10 @@ export class ServerPaymentNotificationService {
         // Driver notification - Push only (no SMS for drivers)
         // IMPORTANT: This notification goes to the DRIVER, not the passenger
         (() => {
-          console.log('🔔 [NOTIFICATIONS] About to send driver push notification');
+          console.log('[NOTIFICATIONS] About to send driver push notification');
           return this.oneSignalService.sendNotification({
-          userId: ride.driver_id, // ✅ Correctly targets the driver
-          title: '💰 Nouvelle Réservation Payée!',
+          userId: ride.driver_id, // Correctly targets the driver
+          title: 'Nouvelle Réservation Payée!',
           message: `${passengerName} a payé ${formatAmount(payment.amount)} XAF pour ${ride.from_city} → ${ride.to_city}. ${booking.seats} place${booking.seats > 1 ? 's' : ''}. Code de vérification: ${verificationCode}`,
           notificationType: 'payment_success',
           imageUrl: '/icons/payment-received.svg',
@@ -157,7 +157,7 @@ export class ServerPaymentNotificationService {
         });
         })(),
       ]).then(results => {
-        console.log('✅ [NOTIFICATIONS] Payment completion notifications sent:', {
+        console.log('[NOTIFICATIONS] Payment completion notifications sent:', {
           paymentId: payment.id,
           passengerNotification: results[0],
           driverNotification: results[1],
@@ -169,12 +169,12 @@ export class ServerPaymentNotificationService {
           }))
         });
       }).catch(err => {
-        console.error('❌ [NOTIFICATIONS] Push notification error:', err);
-        console.error('❌ [NOTIFICATIONS] Error stack:', err.stack);
+        console.error('[NOTIFICATIONS] Push notification error:', err);
+        console.error('[NOTIFICATIONS] Error stack:', err.stack);
         throw err;
       });
 
-      console.log('✅ Payment completion notifications initiated with enriched details');
+      console.log('[NOTIFICATIONS] Payment completion notifications initiated with enriched details');
     } catch (error) {
       console.error('ServerPaymentNotificationService.notifyPaymentCompleted error:', error);
       // Don't throw - notifications are non-critical
@@ -209,7 +209,7 @@ export class ServerPaymentNotificationService {
       // Send failure notification to passenger
       await this.oneSignalService.sendNotification({
         userId: booking.user_id,
-        title: '❌ Paiement Échoué',
+        title: 'Paiement Échoué',
         message: `Votre paiement de ${formatAmount(payment.amount)} XAF pour ${ride.from_city} → ${ride.to_city} a échoué. ${reason || 'Veuillez réessayer.'}`,
         notificationType: 'payment_failed',
         imageUrl: '/icons/payment-failed.svg',
@@ -228,7 +228,7 @@ export class ServerPaymentNotificationService {
         },
       });
 
-      console.log('✅ Payment failure notification sent via OneSignal');
+      console.log('[NOTIFICATIONS] Payment failure notification sent via OneSignal');
     } catch (error) {
       console.error('ServerPaymentNotificationService.notifyPaymentFailed error:', error);
       // Don't throw - notifications are non-critical
@@ -257,7 +257,7 @@ export class ServerPaymentNotificationService {
           notificationData: JSON.stringify({
             type: 'payment_completed',
             userId,
-            title: '🎉 Paiement Confirmé !',
+            title: 'Paiement Confirmé !',
             body: `Votre réservation pour ${ride.from_city} → ${ride.to_city} est confirmée. Le chauffeur va bientôt vérifier votre code.`,
             data: {
               bookingId: payment.booking_id,
@@ -291,7 +291,7 @@ export class ServerPaymentNotificationService {
           notificationData: JSON.stringify({
             type: 'payment_completed_driver',
             userId: driverId,
-            title: '💳 Paiement Reçu !',
+            title: 'Paiement Reçu !',
             body: `Un passager a complété le paiement pour ${ride.from_city} → ${ride.to_city}. Vérifiez le code de réservation.`,
             data: {
               bookingId: payment.booking_id,

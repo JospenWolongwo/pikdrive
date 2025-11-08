@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const url = new URL(request.url);
     const provider = url.pathname.includes('orange') ? 'orange' : 'mtn';
     
-    console.log(`📥 Received ${provider.toUpperCase()} callback:`, callbackData);
+    console.log(`[CALLBACK] Received ${provider.toUpperCase()} callback:`, callbackData);
 
     let referenceId, providerStatus, reason, financialTransactionId;
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!referenceId) {
-      console.error('❌ No reference ID in callback');
+      console.error('[CALLBACK] No reference ID in callback');
       return NextResponse.json(
         { error: 'Missing reference ID' },
         { status: 400 }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (!payment) {
-      console.error('❌ Payment not found:', referenceId);
+      console.error('[CALLBACK] Payment not found:', referenceId);
       // Return 200 to acknowledge receipt (prevents provider from retrying)
       return NextResponse.json(
         { message: 'Callback received, payment not found' },
@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
       error_message: reason || undefined,
     });
 
-    console.log(`✅ ${provider.toUpperCase()} callback processed successfully`);
+    console.log(`[CALLBACK] ${provider.toUpperCase()} callback processed successfully`);
 
     return NextResponse.json({ status: 'success' });
   } catch (error) {
-    console.error('❌ Error processing payment callback:', error);
+    console.error('[CALLBACK] Error processing payment callback:', error);
     // Return 200 to prevent provider retries on our errors
     return NextResponse.json(
       { message: 'Callback received' },

@@ -143,7 +143,7 @@ export default function ProfilePage() {
           filter: `id=eq.${user.id}`,
         },
         (payload: any) => {
-          console.log("🔄 Profile updated in real-time:", payload);
+          console.log("[PROFILE] Profile updated in real-time:", payload);
           // Update local state with new data
           if (payload.new) {
             setProfileData((prev) => ({ ...prev, ...payload.new }));
@@ -191,7 +191,7 @@ export default function ProfilePage() {
         .single();
 
       if (profileError) {
-        console.error("❌ Error loading profile:", profileError);
+        console.error("[PROFILE] Error loading profile:", profileError);
         // Don't clear existing data on error, just show error toast
         toast({
           variant: "destructive",
@@ -202,7 +202,7 @@ export default function ProfilePage() {
       }
 
       if (profile) {
-        console.log("✅ Profile loaded successfully:", profile);
+        console.log("[PROFILE] Profile loaded successfully:", profile);
         setProfileData(profile);
         setFormData({
           fullName: profile.full_name || "",
@@ -212,7 +212,7 @@ export default function ProfilePage() {
 
         // Load driver documents if user is a driver
         if (profile.is_driver_applicant) {
-          console.log("🔍 Loading driver documents for user:", user.id);
+          console.log("[PROFILE] Loading driver documents for user:", user.id);
           const { data: documents, error: docError } = await supabase
             .from("driver_documents")
             .select("*")
@@ -220,20 +220,20 @@ export default function ProfilePage() {
             .maybeSingle();
 
           if (docError) {
-            console.error("❌ Error loading driver documents:", docError);
+            console.error("[PROFILE] Error loading driver documents:", docError);
           } else if (documents) {
-            console.log("✅ Driver documents loaded:", documents);
+            console.log("[PROFILE] Driver documents loaded:", documents);
             setDriverDocuments(documents);
           } else {
-            console.log("⚠️ No driver documents found for user");
+            console.log("[PROFILE] No driver documents found for user");
             setDriverDocuments(null);
           }
         }
       } else {
-        console.warn("⚠️ No profile data returned");
+        console.warn("[PROFILE] No profile data returned");
       }
     } catch (error) {
-      console.error("❌ Unexpected error loading profile:", error);
+      console.error("[PROFILE] Unexpected error loading profile:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -463,10 +463,10 @@ export default function ProfilePage() {
       const currentImages = driverDocuments?.vehicle_images || [];
       const updatedVehicleImages = [...currentImages, ...uploadedUrls];
 
-      console.log("🔄 Updating vehicle images for driver:", user.id);
-      console.log("📸 Current images:", currentImages);
-      console.log("📸 New images:", uploadedUrls);
-      console.log("📸 Updated images:", updatedVehicleImages);
+      console.log("[PROFILE] Updating vehicle images for driver:", user.id);
+      console.log("[PROFILE] Current images:", currentImages);
+      console.log("[PROFILE] New images:", uploadedUrls);
+      console.log("[PROFILE] Updated images:", updatedVehicleImages);
 
       // Check if driver document exists
       const { data: existingDoc, error: checkError } = await supabase
@@ -476,14 +476,14 @@ export default function ProfilePage() {
         .maybeSingle();
 
       if (checkError) {
-        console.error("❌ Error checking driver document:", checkError);
+        console.error("[PROFILE] Error checking driver document:", checkError);
         throw checkError;
       }
 
       let updateError;
       if (existingDoc) {
         // Update existing record
-        console.log("✅ Driver document exists, updating...");
+        console.log("[PROFILE] Driver document exists, updating...");
         const { error } = await supabase
           .from("driver_documents")
           .update({
@@ -494,7 +494,7 @@ export default function ProfilePage() {
         updateError = error;
       } else {
         // Insert new record
-        console.log("✅ Driver document does not exist, inserting...");
+        console.log("[PROFILE] Driver document does not exist, inserting...");
         const { error } = await supabase.from("driver_documents").insert({
           driver_id: user.id,
           vehicle_images: updatedVehicleImages,
