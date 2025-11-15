@@ -204,8 +204,64 @@ export async function POST(request: Request) {
               amount: feeCalculation.driverEarnings,
               driverPhone: driverProfile.phone,
             });
+
+            // Create payout record in database
+            const { error: payoutRecordError } = await supabase
+              .from('payouts')
+              .insert({
+                driver_id: user.id,
+                booking_id: bookingId,
+                payment_id: payment.id,
+                amount: feeCalculation.driverEarnings,
+                original_amount: payment.amount,
+                transaction_fee: feeCalculation.transactionFee,
+                commission: feeCalculation.commission,
+                currency: payment.currency || 'XAF',
+                provider: payment.provider || 'mtn',
+                phone_number: driverProfile.phone,
+                transaction_id: payoutResult.response.verificationToken,
+                status: 'processing',
+                reason: `PikDrive Ride Payment - Booking ${bookingId}`,
+                metadata: {
+                  apiResponse: payoutResult.response.apiResponse,
+                  payoutInitiatedAt: new Date().toISOString(),
+                },
+              });
+
+            if (payoutRecordError) {
+              console.error('❌ [PAYOUT] Error creating payout record:', payoutRecordError);
+              // Don't fail verification if record creation fails
+            } else {
+              console.log('✅ [PAYOUT] Payout record created successfully');
+            }
           } else {
             console.error('❌ [PAYOUT] Driver payout failed:', payoutResult.response.message);
+            
+            // Create payout record with failed status
+            const { error: payoutRecordError } = await supabase
+              .from('payouts')
+              .insert({
+                driver_id: user.id,
+                booking_id: bookingId,
+                payment_id: payment.id,
+                amount: feeCalculation.driverEarnings,
+                original_amount: payment.amount,
+                transaction_fee: feeCalculation.transactionFee,
+                commission: feeCalculation.commission,
+                currency: payment.currency || 'XAF',
+                provider: payment.provider || 'mtn',
+                phone_number: driverProfile.phone,
+                status: 'failed',
+                reason: `PikDrive Ride Payment - Booking ${bookingId}`,
+                metadata: {
+                  error: payoutResult.response.message,
+                  payoutFailedAt: new Date().toISOString(),
+                },
+              });
+
+            if (payoutRecordError) {
+              console.error('❌ [PAYOUT] Error creating failed payout record:', payoutRecordError);
+            }
           }
         } else {
           console.warn('⚠️ [PAYOUT] Driver phone number not found, skipping payout');

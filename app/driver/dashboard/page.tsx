@@ -21,6 +21,7 @@ import { DashboardHeader } from "@/components/driver/dashboard/dashboard-header"
 import { CancellationNotifications } from "@/components/driver/dashboard/cancellation-notifications";
 import { SearchAndFilters } from "@/components/driver/dashboard/search-and-filters";
 import { RidesTab } from "@/components/driver/dashboard/rides-tab";
+import { PaymentStatistics } from "@/components/driver/dashboard/payment-statistics";
 
 // Custom hooks - using centralized rides store
 import { useRidesStoreData } from "@/hooks/rides";
@@ -261,12 +262,15 @@ export default function DriverDashboard() {
           value={activeTab}
           onValueChange={setActiveTab}
         >
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upcoming" className="text-sm sm:text-base">
               Trajets à venir
             </TabsTrigger>
             <TabsTrigger value="past" className="text-sm sm:text-base">
               Trajets passés
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="text-sm sm:text-base">
+              Paiements
             </TabsTrigger>
           </TabsList>
 
@@ -298,6 +302,10 @@ export default function DriverDashboard() {
               isPastRide={true}
               searchQuery={searchQuery}
             />
+          </TabsContent>
+
+          <TabsContent value="payments" className="space-y-6">
+            <PaymentStatistics />
           </TabsContent>
         </Tabs>
       </Suspense>

@@ -88,6 +88,49 @@ export async function POST(request: Request) {
       error_message: reason || undefined,
     });
 
+    // Update payout record status
+    // Find payout by transaction_id (verificationToken) or booking_id from payment
+    const transactionId = financialTransactionId || externalId;
+    const { data: payouts, error: payoutQueryError } = await supabase
+      .from('payouts')
+      .select('id, transaction_id, booking_id, metadata')
+      .or(`transaction_id.eq.${transactionId},payment_id.eq.${payment.id}`)
+      .limit(1);
+
+    if (!payoutQueryError && payouts && payouts.length > 0) {
+      const payout = payouts[0];
+      // Map payment status to payout status
+      let payoutStatus = 'processing';
+      if (mappedStatus === 'completed') {
+        payoutStatus = 'completed';
+      } else if (mappedStatus === 'failed') {
+        payoutStatus = 'failed';
+      }
+
+      const { error: payoutUpdateError } = await supabase
+        .from('payouts')
+        .update({
+          status: payoutStatus,
+          transaction_id: transactionId, // Update with actual transaction ID from callback
+          metadata: {
+            ...(payout.metadata || {}),
+            callbackReceivedAt: new Date().toISOString(),
+            callbackStatus: status,
+            financialTransactionId: financialTransactionId,
+            providerResponse: callback,
+          },
+        })
+        .eq('id', payout.id);
+
+      if (payoutUpdateError) {
+        console.error('❌ Error updating payout status:', payoutUpdateError);
+      } else {
+        console.log('✅ Payout status updated:', { payoutId: payout.id, status: payoutStatus });
+      }
+    } else {
+      console.log('⚠️ Payout record not found for transaction:', transactionId);
+    }
+
     console.log('✅ MTN payout callback processed successfully');
 
     return NextResponse.json({ message: "Payout callback received" }, { status: 200 });
