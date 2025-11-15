@@ -68,7 +68,9 @@ export class MTNPayoutService {
       }
 
       // Parse balance as number (comes as string from API)
-      const availableBalance = Number(balanceResult.availableBalance) || parseFloat(balanceResult.availableBalance);
+      const availableBalance = typeof balanceResult.availableBalance === 'string' 
+        ? parseFloat(balanceResult.availableBalance) 
+        : balanceResult.availableBalance;
 
       if (availableBalance < payoutAmount) {
         console.error("❌ [PAYOUT-SERVICE] Insufficient balance:", {
@@ -138,7 +140,9 @@ export class MTNPayoutService {
    * Check account balance
    */
   private async checkBalance(token: string): Promise<{
-    availableBalance: number;
+    availableBalance: number | string;
+    currency?: string;
+    accountStatus?: string;
   } | null> {
     const balanceUrl = `${this.config.baseUrl}/disbursement/v1_0/account/balance`;
     const subscriptionKey = this.config.disbursementSubscriptionKey || this.config.subscriptionKey;
