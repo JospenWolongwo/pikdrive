@@ -6,6 +6,10 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/ui";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import { ChatDialog } from "@/components/chat/chat-dialog";
 import { CodeVerificationForm } from "@/components/driver/code-verification-form";
 import { PaymentStatusChecker } from "@/components/payment/payment-status-checker";
@@ -42,7 +46,7 @@ export default function DriverDashboard() {
   // State
   const [selectedChat, setSelectedChat] = useState<{
     ride: RideWithDetails;
-    user: { id: string; full_name: string; avatar_url?: string };
+    user: { id: string; full_name: string | null; avatar_url?: string };
     conversationId: string;
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -127,7 +131,7 @@ export default function DriverDashboard() {
 
   const handleOpenChat = (
     ride: RideWithDetails,
-    user: { id: string; full_name: string; avatar_url?: string }
+    user: { id: string; full_name: string | null; avatar_url?: string }
   ) => {
     // Find the conversation for this ride and user
     const conversation = conversations.find(conv => 
@@ -316,7 +320,7 @@ export default function DriverDashboard() {
         <PaymentStatusChecker
           transactionId={checkingPayment.transactionId}
           provider={checkingPayment.provider}
-          bookingId={checkingPayment.bookingId} // ✅ Pass bookingId for resilient fallback queries
+          bookingId={checkingPayment.bookingId} // Pass bookingId for resilient fallback queries
           onPaymentComplete={(status) => {
             if (status === "completed") {
               setCheckingPayment(null);
@@ -326,16 +330,27 @@ export default function DriverDashboard() {
         />
       )}
 
-      {/* Code Verification Form */}
-      {verifyingBooking && (
-        <CodeVerificationForm
-          bookingId={verifyingBooking}
-          onSuccess={() => {
+      {/* Code Verification Form Dialog */}
+      <Dialog
+        open={!!verifyingBooking}
+        onOpenChange={(open) => {
+          if (!open) {
             setVerifyingBooking(null);
-            loadRides();
-          }}
-        />
-      )}
+          }
+        }}
+      >
+        <DialogContent>
+          {verifyingBooking && (
+            <CodeVerificationForm
+              bookingId={verifyingBooking}
+              onSuccess={() => {
+                setVerifyingBooking(null);
+                loadRides();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

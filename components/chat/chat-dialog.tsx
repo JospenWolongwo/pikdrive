@@ -37,7 +37,7 @@ interface ChatDialogProps {
   rideId: string;
   conversationId: string;
   otherUserId: string;
-  otherUserName: string;
+  otherUserName: string | null;
   otherUserAvatar?: string;
 }
 
@@ -173,10 +173,10 @@ export function ChatDialog({
             <Avatar>
               <AvatarImage src={otherUserAvatar} />
               <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-medium">
-                {otherUserName.charAt(0).toUpperCase()}
+                {(otherUserName || "Utilisateur").charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <DialogTitle>{otherUserName}</DialogTitle>
+            <DialogTitle>{otherUserName || "Utilisateur"}</DialogTitle>
           </div>
         </DialogHeader>
 

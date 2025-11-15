@@ -166,6 +166,7 @@ export function useRidesData() {
             ...ride,
             bookings: rideBookings.map((booking: any) => ({
               ...booking,
+              created_at: booking.created_at, // Explicitly preserve created_at for sorting
               user: userProfiles[booking.user_id] || {
                 full_name: "Unknown User",
                 avatar_url: null,

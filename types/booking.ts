@@ -77,6 +77,7 @@ export interface DashboardBooking {
   readonly code_verified?: boolean;
   readonly transaction_id?: string;
   readonly payment_provider?: string;
+  readonly created_at?: string;
   readonly user: {
     readonly id: string;
     readonly full_name: string;

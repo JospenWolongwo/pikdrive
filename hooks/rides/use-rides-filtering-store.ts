@@ -37,12 +37,38 @@ export function useRidesFilteringStore({
       });
     }
 
-    // Sort rides
+    // Sort rides by most recent booking's created_at timestamp (newest first)
     filtered.sort((a, b) => {
-      const timeA = new Date(a.departure_time).getTime();
-      const timeB = new Date(b.departure_time).getTime();
+      // Get the most recent booking for each ride
+      const getMostRecentBookingTime = (ride: RideWithDetails): number => {
+        if (!ride.bookings || ride.bookings.length === 0) {
+          return Number.MIN_SAFE_INTEGER; // Rides with no bookings go to the end
+        }
+        
+        // Find the most recent booking by created_at
+        const bookingTimes = ride.bookings
+          .map(booking => {
+            const created_at = (booking as any).created_at;
+            if (!created_at) return Number.MIN_SAFE_INTEGER;
+            const time = new Date(created_at).getTime();
+            return isNaN(time) ? Number.MIN_SAFE_INTEGER : time;
+          })
+          .filter(time => time !== Number.MIN_SAFE_INTEGER);
+        
+        if (bookingTimes.length === 0) {
+          return Number.MIN_SAFE_INTEGER;
+        }
+        
+        // Return the most recent (highest) timestamp
+        return Math.max(...bookingTimes);
+      };
       
-      return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      const timeA = getMostRecentBookingTime(a);
+      const timeB = getMostRecentBookingTime(b);
+      
+      // Always sort descending (newest booking first), regardless of sortOrder
+      // The sortOrder is for departure_time, but we want booking recency
+      return timeB - timeA;
     });
 
     return filtered;

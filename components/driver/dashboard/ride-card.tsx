@@ -10,6 +10,9 @@ import {
   Check,
   Edit,
   Trash2,
+  AlertTriangle,
+  CreditCard,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -172,8 +175,9 @@ export function RideCard({
 
                 {/* Show warning if ride cannot be deleted */}
                 {!canDeleteRide() && (
-                  <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                    ⚠️ {ride.bookings.length} réserv.
+                  <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {ride.bookings.length} réserv.
                   </div>
                 )}
 
@@ -199,8 +203,12 @@ export function RideCard({
                         <AlertDialogDescription>
                           Cette action est irréversible et supprimera
                           définitivement ce trajet.
-                          {!canDeleteRide() &&
-                            ` ⚠️ Ce trajet a ${ride.bookings.length} réservation(s) et ne peut pas être supprimé.`}
+                          {!canDeleteRide() && (
+                            <span className="flex items-center gap-1 mt-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              Ce trajet a {ride.bookings.length} réservation(s) et ne peut pas être supprimé.
+                            </span>
+                          )}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -249,9 +257,9 @@ export function RideCard({
                   return (
                     <Badge
                       variant="outline"
-                      className="bg-green-50 text-green-700 border-green-200 text-xs"
+                      className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200 text-xs"
                     >
-                      💰 {paidBookings.length} payé(s)
+                      <CreditCard className="h-3 w-3" /> {paidBookings.length} payé(s)
                     </Badge>
                   );
                 }
@@ -261,11 +269,27 @@ export function RideCard({
 
             {/* Bookings list - mobile-first design */}
             <div className="space-y-3">
-              {ride.bookings
-                .filter((booking) =>
+              {(() => {
+                const filteredBookings = ride.bookings.filter((booking) =>
                   isPastRide ? booking.status === "confirmed" : true
-                )
-                .map((booking: DashboardBooking) => (
+                );
+                
+                // Create a copy before sorting to avoid mutating the original array
+                const sortedBookings = [...filteredBookings].sort((a, b) => {
+                  // Sort by created_at descending (newest first)
+                  // Handle missing or invalid dates by putting them at the end
+                  const getTime = (dateStr: string | undefined): number => {
+                    if (!dateStr) return Number.MIN_SAFE_INTEGER; // Put missing dates at the end
+                    const time = new Date(dateStr).getTime();
+                    return isNaN(time) ? Number.MIN_SAFE_INTEGER : time; // Handle invalid dates
+                  };
+                  
+                  const timeA = getTime(a.created_at);
+                  const timeB = getTime(b.created_at);
+                  return timeB - timeA; // Descending order (newest first)
+                });
+                
+                return sortedBookings.map((booking: DashboardBooking) => (
                   <div
                     key={booking.id}
                     className={`p-4 rounded-lg border bg-muted/50 ${
@@ -316,9 +340,7 @@ export function RideCard({
                                 <span className="text-green-700 hidden sm:inline">
                                   Vérifié
                                 </span>
-                                <span className="text-green-700 sm:hidden">
-                                  ✓
-                                </span>
+                                <Check className="h-3 w-3 text-green-500 sm:hidden" />
                               </Badge>
                             )}
                           </div>
@@ -337,11 +359,19 @@ export function RideCard({
                                     ? "default"
                                     : "secondary"
                                 }
-                                className="text-xs px-2 py-1"
+                                className="flex items-center gap-1 text-xs px-2 py-1"
                               >
-                                {booking.payment_status === "completed"
-                                  ? "💳 Payé"
-                                  : "⏳ En attente"}
+                                {booking.payment_status === "completed" ? (
+                                  <>
+                                    <CreditCard className="h-3 w-3" />
+                                    Payé
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="h-3 w-3" />
+                                    En attente
+                                  </>
+                                )}
                               </Badge>
                             )}
                           </div>
@@ -409,7 +439,8 @@ export function RideCard({
                       )}
                     </div>
                   </div>
-                ))}
+                ));
+              })()}
             </div>
           </div>
         )}
