@@ -147,10 +147,9 @@ export class MTNPayoutService {
     const balanceUrl = `${this.config.baseUrl}/disbursement/v1_0/account/balance`;
     const subscriptionKey = this.config.disbursementSubscriptionKey || this.config.subscriptionKey;
 
-    // MTN API requirement: Balance endpoint ALWAYS requires "mtncameroon"
-    // This is true even when using sandbox base URL (MTN API quirk)
-    // Transfer endpoint uses conditional logic, but balance endpoint does not
-    const balanceTargetEnv = "mtncameroon";
+    // Target environment must match the configured environment
+    // Sandbox: use "sandbox", Production: use "mtncameroon"
+    const balanceTargetEnv = this.config.targetEnvironment === "production" ? "mtncameroon" : "sandbox";
     
     console.log("💰 [BALANCE] Checking disbursement account balance:", {
       url: balanceUrl,
@@ -161,7 +160,7 @@ export class MTNPayoutService {
       hasDisbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
       targetEnvironment: balanceTargetEnv,
       configTargetEnvironment: this.config.targetEnvironment,
-      note: "Balance endpoint always uses 'mtncameroon' (MTN API requirement)",
+      note: "Using conditional target environment based on config",
     });
 
     try {
