@@ -16,6 +16,7 @@ interface PayoutConfig {
   disbursementSubscriptionKey?: string;
   callbackUrl: string;
   tokenService: MTNTokenService;
+  targetEnvironment: "sandbox" | "production";
 }
 
 export class MTNPayoutService {
@@ -109,6 +110,7 @@ export class MTNPayoutService {
     const balanceUrl = `${this.config.baseUrl}/disbursement/v1_0/account/balance`;
     const subscriptionKey = this.config.disbursementSubscriptionKey || this.config.subscriptionKey;
 
+    const targetEnv = this.config.targetEnvironment === "production" ? "mtncameroon" : "sandbox";
     console.log("💰 [BALANCE] Checking disbursement account balance:", {
       url: balanceUrl,
       baseUrl: this.config.baseUrl,
@@ -116,14 +118,15 @@ export class MTNPayoutService {
       tokenPrefix: token ? `${token.substring(0, 10)}...` : null,
       hasSubscriptionKey: !!subscriptionKey,
       hasDisbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
-      targetEnvironment: "mtncameroon",
+      targetEnvironment: targetEnv,
+      configTargetEnvironment: this.config.targetEnvironment,
     });
 
     try {
       const response = await fetch(balanceUrl, {
         method: "GET",
         headers: {
-          "X-Target-Environment": "mtncameroon",
+          "X-Target-Environment": targetEnv,
           "Ocp-Apim-Subscription-Key": subscriptionKey,
           Authorization: `Bearer ${token}`,
         },
@@ -165,7 +168,8 @@ export class MTNPayoutService {
         requestDetails: {
           method: "GET",
           baseUrl: this.config.baseUrl,
-          targetEnvironment: "mtncameroon",
+          targetEnvironment: targetEnv,
+          configTargetEnvironment: this.config.targetEnvironment,
           hasToken: !!token,
         },
       });
@@ -218,13 +222,14 @@ export class MTNPayoutService {
     };
 
     try {
+      const targetEnv = this.config.targetEnvironment === "production" ? "mtncameroon" : "sandbox";
       const response = await fetch(
         `${this.config.baseUrl}/disbursement/v1_0/transfer`,
         {
           method: "POST",
           headers: {
             "X-Reference-Id": xReferenceId,
-            "X-Target-Environment": "mtncameroon",
+            "X-Target-Environment": targetEnv,
             "Ocp-Apim-Subscription-Key":
               this.config.disbursementSubscriptionKey || this.config.subscriptionKey,
             "x-callback-url": this.config.callbackUrl,

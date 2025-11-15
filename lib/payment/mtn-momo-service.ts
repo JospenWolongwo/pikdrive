@@ -84,6 +84,7 @@ export class MTNMomoService {
       disbursementSubscriptionKey: config.disbursementSubscriptionKey,
       callbackUrl: payoutCallbackUrl,
       tokenService: this.tokenService,
+      targetEnvironment: config.targetEnvironment,
     });
 
     this.verificationService = new MTNVerificationService({
