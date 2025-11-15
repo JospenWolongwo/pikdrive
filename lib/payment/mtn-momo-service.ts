@@ -48,6 +48,14 @@ export class MTNMomoService {
       process.env.DIRECT_MOMO_PAYOUT_CALLBACK_URL ||
       `${config.callbackHost}/api/callbacks/momo-payout`;
 
+    console.log("🔗 [MTN-SERVICE] Payout callback URL constructed:", {
+      callbackHost: config.callbackHost,
+      hasDirectMomoPayoutCallbackUrl: !!process.env.DIRECT_MOMO_PAYOUT_CALLBACK_URL,
+      DIRECT_MOMO_PAYOUT_CALLBACK_URL: process.env.DIRECT_MOMO_PAYOUT_CALLBACK_URL || 'not set',
+      finalPayoutCallbackUrl: payoutCallbackUrl,
+      note: "This URL will be sent to MTN in transfer request headers",
+    });
+
     console.log("🔧 [MTN-SERVICE] Initializing MTNTokenService with config:", {
       baseUrl: this.baseUrl,
       hasSubscriptionKey: !!config.subscriptionKey,

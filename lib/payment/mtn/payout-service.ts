@@ -291,6 +291,15 @@ export class MTNPayoutService {
 
     try {
       const targetEnv = this.config.targetEnvironment === "production" ? "mtncameroon" : "sandbox";
+      
+      // Log the callback URL being sent to MTN
+      console.log("📞 [TRANSFER] Sending callback URL to MTN:", {
+        callbackUrl: this.config.callbackUrl,
+        callbackUrlLength: this.config.callbackUrl?.length,
+        targetEnvironment: targetEnv,
+        note: "This is the URL MTN will use to send callback notifications",
+      });
+      
       const response = await fetch(
         `${this.config.baseUrl}/disbursement/v1_0/transfer`,
         {
