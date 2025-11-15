@@ -47,10 +47,7 @@ export class MTNPayoutService {
       console.log("✅ [PAYOUT-SERVICE] Token received, proceeding with balance check");
 
       const balanceResult = await this.checkBalance(token);
-      if (!balanceResult) {
-        throw new Error("Unable to check balance");
-      }
-
+      
       // Sandbox amount override: Always use 2 EUR in sandbox to preserve balance for testing
       // Production uses actual calculated amount
       const originalAmount = request.amount;
@@ -67,35 +64,52 @@ export class MTNPayoutService {
         });
       }
 
-      // Parse balance as number (comes as string from API)
-      const availableBalance = typeof balanceResult.availableBalance === 'string' 
-        ? parseFloat(balanceResult.availableBalance) 
-        : balanceResult.availableBalance;
+      // Handle balance check failure
+      if (!balanceResult) {
+        if (this.config.targetEnvironment === "sandbox") {
+          // In sandbox, balance check is optional since we use fixed 2 EUR amount
+          console.warn("⚠️ [PAYOUT-SERVICE] Balance check failed in sandbox, proceeding without it:", {
+            reason: "Balance endpoint may not be available or accessible in sandbox",
+            payoutAmount,
+            currency,
+            note: "Skipping balance check and proceeding with payout (sandbox only)",
+          });
+        } else {
+          // In production, balance check is required
+          throw new Error("Unable to check balance");
+        }
+      } else {
+        // Balance check succeeded, verify sufficient balance
+        // Parse balance as number (comes as string from API)
+        const availableBalance = typeof balanceResult.availableBalance === 'string' 
+          ? parseFloat(balanceResult.availableBalance) 
+          : balanceResult.availableBalance;
 
-      if (availableBalance < payoutAmount) {
-        console.error("❌ [PAYOUT-SERVICE] Insufficient balance:", {
+        if (availableBalance < payoutAmount) {
+          console.error("❌ [PAYOUT-SERVICE] Insufficient balance:", {
+            availableBalance,
+            requestedAmount: payoutAmount,
+            currency,
+            originalAmount: this.config.targetEnvironment === "sandbox" ? originalAmount : undefined,
+          });
+          return {
+            statusCode: 400,
+            response: {
+              success: false,
+              message: "Insufficient balance",
+              verificationToken: null,
+              apiResponse: { availableBalance, currency: balanceResult.currency },
+            },
+          };
+        }
+
+        console.log("✅ [PAYOUT-SERVICE] Balance check passed:", {
           availableBalance,
-          requestedAmount: payoutAmount,
+          payoutAmount,
           currency,
-          originalAmount: this.config.targetEnvironment === "sandbox" ? originalAmount : undefined,
+          remainingBalance: availableBalance - payoutAmount,
         });
-        return {
-          statusCode: 400,
-          response: {
-            success: false,
-            message: "Insufficient balance",
-            verificationToken: null,
-            apiResponse: { availableBalance, currency: balanceResult.currency },
-          },
-        };
       }
-
-      console.log("✅ [PAYOUT-SERVICE] Balance check passed:", {
-        availableBalance,
-        payoutAmount,
-        currency,
-        remainingBalance: availableBalance - payoutAmount,
-      });
 
       const xReferenceId = uuidv4();
       const externalId = xReferenceId;
