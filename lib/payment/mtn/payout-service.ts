@@ -51,17 +51,49 @@ export class MTNPayoutService {
         throw new Error("Unable to check balance");
       }
 
-      if (balanceResult.availableBalance < request.amount) {
+      // Sandbox amount override: Always use 2 EUR in sandbox to preserve balance for testing
+      // Production uses actual calculated amount
+      const originalAmount = request.amount;
+      const payoutAmount = this.config.targetEnvironment === "sandbox" ? 2 : originalAmount;
+      const currency = this.config.targetEnvironment === "sandbox" ? "EUR" : "XAF";
+
+      if (this.config.targetEnvironment === "sandbox") {
+        console.log("🧪 [PAYOUT-SERVICE] Sandbox amount override active:", {
+          originalAmount,
+          originalCurrency: request.currency,
+          overrideAmount: payoutAmount,
+          overrideCurrency: currency,
+          note: "Using 2 EUR in sandbox to preserve balance for testing",
+        });
+      }
+
+      // Parse balance as number (comes as string from API)
+      const availableBalance = Number(balanceResult.availableBalance) || parseFloat(balanceResult.availableBalance);
+
+      if (availableBalance < payoutAmount) {
+        console.error("❌ [PAYOUT-SERVICE] Insufficient balance:", {
+          availableBalance,
+          requestedAmount: payoutAmount,
+          currency,
+          originalAmount: this.config.targetEnvironment === "sandbox" ? originalAmount : undefined,
+        });
         return {
           statusCode: 400,
           response: {
             success: false,
             message: "Insufficient balance",
             verificationToken: null,
-            apiResponse: { availableBalance: balanceResult.availableBalance },
+            apiResponse: { availableBalance, currency: balanceResult.currency },
           },
         };
       }
+
+      console.log("✅ [PAYOUT-SERVICE] Balance check passed:", {
+        availableBalance,
+        payoutAmount,
+        currency,
+        remainingBalance: availableBalance - payoutAmount,
+      });
 
       const xReferenceId = uuidv4();
       const externalId = xReferenceId;
@@ -70,9 +102,10 @@ export class MTNPayoutService {
         token,
         xReferenceId,
         externalId,
-        request.amount,
+        payoutAmount,
         request.phoneNumber,
-        request.reason
+        request.reason,
+        currency
       );
 
       if (!depositResult) {
@@ -138,6 +171,10 @@ export class MTNPayoutService {
           availableBalance: balanceData.availableBalance,
           currency: balanceData.currency,
           accountStatus: balanceData.accountStatus,
+          targetEnvironment: this.config.targetEnvironment,
+          note: this.config.targetEnvironment === "sandbox" 
+            ? "Sandbox uses EUR. Payouts will be overridden to 2 EUR for testing."
+            : "Production uses XAF. Payouts use actual calculated amounts.",
         });
         return balanceData;
       }
@@ -203,15 +240,24 @@ export class MTNPayoutService {
     externalId: string,
     amount: number,
     phoneNumber: string,
-    reason: string
+    reason: string,
+    currency: string
   ) {
     const phoneWithCountryCode = phoneNumber.startsWith("237")
       ? phoneNumber
       : `237${phoneNumber}`;
 
+    console.log("💸 [TRANSFER] Processing disbursement transfer:", {
+      amount,
+      currency,
+      phoneNumber: phoneWithCountryCode,
+      xReferenceId,
+      targetEnvironment: this.config.targetEnvironment,
+    });
+
     const data = {
       amount: amount.toString(),
-      currency: "XAF",
+      currency: currency,
       externalId: externalId,
       payee: {
         partyIdType: "MSISDN",
