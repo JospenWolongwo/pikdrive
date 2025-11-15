@@ -60,9 +60,16 @@ export class PayoutOrchestratorService {
     statusCode: number;
     response: PaymentServiceResponse;
   }> {
+    console.log("🎯 [ORCHESTRATOR] Payout request received:", {
+      phoneNumber: request.phoneNumber,
+      amount: request.amount,
+      currency: request.currency,
+    });
+
     const phone = removeCallingCode(request.phoneNumber);
 
     if (!phone) {
+      console.error("❌ [ORCHESTRATOR] Invalid phone number");
       return {
         statusCode: 400,
         response: {
@@ -76,11 +83,13 @@ export class PayoutOrchestratorService {
 
     // Check if Orange Money number
     if (isOrangePhoneNumber(request.phoneNumber)) {
+      console.log("🍊 [ORCHESTRATOR] Routing to Orange Money service");
       return await this.omService.payout(request);
     }
 
     // Check if MTN number
     if (isMTNPhoneNumber(request.phoneNumber)) {
+      console.log("📱 [ORCHESTRATOR] Routing to MTN MOMO service");
       return await this.momoService.payout(request);
     }
 

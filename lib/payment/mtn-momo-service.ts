@@ -48,6 +48,18 @@ export class MTNMomoService {
       process.env.DIRECT_MOMO_PAYOUT_CALLBACK_URL ||
       `${config.callbackHost}/api/callbacks/momo-payout`;
 
+    console.log("🔧 [MTN-SERVICE] Initializing MTNTokenService with config:", {
+      baseUrl: this.baseUrl,
+      hasSubscriptionKey: !!config.subscriptionKey,
+      hasCollectionUserId: !!config.collectionUserId,
+      hasCollectionApiKey: !!config.apiKey,
+      hasDisbursementApiUser: !!config.disbursementApiUser,
+      hasDisbursementApiKey: !!config.disbursementApiKey,
+      hasDisbursementSubscriptionKey: !!config.disbursementSubscriptionKey,
+      disbursementApiUser: config.disbursementApiUser ? `${config.disbursementApiUser.substring(0, 4)}...` : 'undefined',
+      disbursementApiKey: config.disbursementApiKey ? `${config.disbursementApiKey.substring(0, 4)}...` : 'undefined',
+    });
+
     this.tokenService = new MTNTokenService({
       baseUrl: this.baseUrl,
       subscriptionKey: config.subscriptionKey,

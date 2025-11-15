@@ -28,10 +28,22 @@ export class MTNPayoutService {
     request: PayoutRequest
   ): Promise<{ statusCode: number; response: PaymentServiceResponse }> {
     try {
+      console.log("💰 [PAYOUT-SERVICE] Initiating payout:", {
+        phoneNumber: request.phoneNumber,
+        amount: request.amount,
+        currency: request.currency,
+        reason: request.reason,
+      });
+      
+      console.log("🔐 [PAYOUT-SERVICE] Requesting disbursement token...");
       const token = await this.config.tokenService.getDisbursementToken();
+      
       if (!token) {
-        throw new Error("Unable to generate payout token");
+        console.error("❌ [PAYOUT-SERVICE] Token generation returned null - check token service logs above for details");
+        throw new Error("Unable to generate payout token - check server logs for credential or API errors");
       }
+      
+      console.log("✅ [PAYOUT-SERVICE] Token received, proceeding with balance check");
 
       const balanceResult = await this.checkBalance(token);
       if (!balanceResult) {

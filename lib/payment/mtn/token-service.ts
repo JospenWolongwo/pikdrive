@@ -72,6 +72,8 @@ export class MTNTokenService {
    * Generate disbursement (payout) token
    */
   async getDisbursementToken(): Promise<string | null> {
+    console.log("🔐 [TOKEN] getDisbursementToken() called");
+    
     // Enhanced credential validation with detailed logging
     const missingCredentials: string[] = [];
     if (!this.config.disbursementApiUser) {
@@ -84,21 +86,23 @@ export class MTNTokenService {
     if (missingCredentials.length > 0) {
       console.error("❌ [TOKEN] Disbursement credentials not configured:", {
         missing: missingCredentials,
+        config: {
+          disbursementApiUser: this.config.disbursementApiUser ? `${this.config.disbursementApiUser.substring(0, 4)}...` : null,
+          disbursementApiKey: this.config.disbursementApiKey ? `${this.config.disbursementApiKey.substring(0, 4)}...` : null,
+          disbursementSubscriptionKey: this.config.disbursementSubscriptionKey ? `${this.config.disbursementSubscriptionKey.substring(0, 4)}...` : null,
+          subscriptionKey: this.config.subscriptionKey ? `${this.config.subscriptionKey.substring(0, 4)}...` : null,
+        },
         available: {
           disbursementApiUser: !!this.config.disbursementApiUser,
           disbursementApiKey: !!this.config.disbursementApiKey,
           disbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
           subscriptionKey: !!this.config.subscriptionKey,
         },
-        envVars: {
-          DIRECT_MOMO_API_USER_DISBURSMENT: !!process.env.DIRECT_MOMO_API_USER_DISBURSMENT,
-          MOMO_DISBURSEMENT_API_USER: !!process.env.MOMO_DISBURSEMENT_API_USER,
-          DIRECT_MOMO_API_KEY_DISBURSMENT: !!process.env.DIRECT_MOMO_API_KEY_DISBURSMENT,
-          MOMO_DISBURSEMENT_API_KEY: !!process.env.MOMO_DISBURSEMENT_API_KEY,
-        },
       });
       return null;
     }
+    
+    console.log("✅ [TOKEN] Credentials check passed, proceeding with token generation");
 
     // Check cache
     if (
