@@ -158,8 +158,18 @@ export async function POST(request: Request) {
               }).format(amt);
             };
 
-            const rideInfo = payout.booking?.ride 
-              ? `${payout.booking.ride.from_city} → ${payout.booking.ride.to_city}`
+            // Handle booking as array or single object
+            const booking = Array.isArray(payout.booking) 
+              ? payout.booking[0] 
+              : payout.booking;
+            
+            // Handle ride as array or single object
+            const ride = booking?.ride 
+              ? (Array.isArray(booking.ride) ? booking.ride[0] : booking.ride)
+              : null;
+            
+            const rideInfo = ride 
+              ? `${ride.from_city} → ${ride.to_city}`
               : 'votre trajet';
 
             const message = `Votre paiement de ${formatAmount(parseFloat(payout.amount.toString()))} a été transféré avec succès sur votre compte mobile.\n\n` +
@@ -176,7 +186,11 @@ export async function POST(request: Request) {
               data: {
                 payoutId: payout.id,
                 bookingId: payout.booking_id,
-                rideId: payout.booking?.ride?.id,
+                rideId: (() => {
+                  const booking = Array.isArray(payout.booking) ? payout.booking[0] : payout.booking;
+                  const ride = booking?.ride ? (Array.isArray(booking.ride) ? booking.ride[0] : booking.ride) : null;
+                  return ride?.id;
+                })(),
                 amount: payout.amount,
                 currency: payout.currency,
                 transactionId: transactionId,
