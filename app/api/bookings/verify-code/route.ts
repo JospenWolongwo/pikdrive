@@ -95,15 +95,6 @@ export async function POST(request: Request) {
       });
     }
 
-    // Check if payout already processed (prevent duplicate payouts)
-    const { data: existingPayout } = await supabase
-      .from('payments')
-      .select('id, status')
-      .eq('booking_id', bookingId)
-      .eq('provider', 'mtn') // Assuming MTN for now, can be made dynamic
-      .eq('status', 'completed')
-      .single();
-
     // Fetch payment to get amount
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
@@ -113,6 +104,26 @@ export async function POST(request: Request) {
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
+
+    // Check if payout already processed (prevent duplicate payouts)
+    // Check by payment_id if payment exists, otherwise by booking_id
+    let existingPayout = null;
+    if (payment) {
+      const { data: payoutByPayment } = await supabase
+        .from('payouts')
+        .select('id, status')
+        .eq('payment_id', payment.id)
+        .maybeSingle();
+      existingPayout = payoutByPayment;
+    } else {
+      // Fallback: check by booking_id if payment not found
+      const { data: payoutByBooking } = await supabase
+        .from('payouts')
+        .select('id, status')
+        .eq('booking_id', bookingId)
+        .maybeSingle();
+      existingPayout = payoutByBooking;
+    }
 
     if (paymentError || !payment) {
       console.error('Error fetching payment:', paymentError);
