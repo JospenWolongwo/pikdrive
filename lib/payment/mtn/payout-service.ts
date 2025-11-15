@@ -106,26 +106,86 @@ export class MTNPayoutService {
   private async checkBalance(token: string): Promise<{
     availableBalance: number;
   } | null> {
+    const balanceUrl = `${this.config.baseUrl}/disbursement/v1_0/account/balance`;
+    const subscriptionKey = this.config.disbursementSubscriptionKey || this.config.subscriptionKey;
+
+    console.log("💰 [BALANCE] Checking disbursement account balance:", {
+      url: balanceUrl,
+      baseUrl: this.config.baseUrl,
+      hasToken: !!token,
+      tokenPrefix: token ? `${token.substring(0, 10)}...` : null,
+      hasSubscriptionKey: !!subscriptionKey,
+      hasDisbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
+      targetEnvironment: "mtncameroon",
+    });
+
     try {
-      const response = await fetch(
-        `${this.config.baseUrl}/disbursement/v1_0/account/balance`,
-        {
-          method: "GET",
-          headers: {
-            "X-Target-Environment": "mtncameroon",
-            "Ocp-Apim-Subscription-Key":
-              this.config.disbursementSubscriptionKey || this.config.subscriptionKey,
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(balanceUrl, {
+        method: "GET",
+        headers: {
+          "X-Target-Environment": "mtncameroon",
+          "Ocp-Apim-Subscription-Key": subscriptionKey,
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.status === 200) {
-        return await response.json();
+        const balanceData = await response.json();
+        console.log("✅ [BALANCE] Balance check successful:", {
+          availableBalance: balanceData.availableBalance,
+          currency: balanceData.currency,
+          accountStatus: balanceData.accountStatus,
+        });
+        return balanceData;
       }
+
+      // Enhanced error logging for non-200 responses
+      let errorBody: any = null;
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          errorBody = await response.json();
+        } else {
+          errorBody = await response.text();
+        }
+      } catch (parseError) {
+        console.warn("⚠️ [BALANCE] Could not parse error response body:", parseError);
+      }
+
+      console.error("❌ [BALANCE] Failed to check balance:", {
+        status: response.status,
+        statusText: response.statusText,
+        url: balanceUrl,
+        headers: {
+          contentType: response.headers.get("content-type"),
+          subscriptionKeyUsed: !!subscriptionKey,
+          hasDisbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
+        },
+        errorBody: errorBody,
+        requestDetails: {
+          method: "GET",
+          baseUrl: this.config.baseUrl,
+          targetEnvironment: "mtncameroon",
+          hasToken: !!token,
+        },
+      });
+
       return null;
     } catch (error) {
-      console.error("Error checking balance:", error);
+      console.error("❌ [BALANCE] Exception checking balance:", {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        } : error,
+        url: balanceUrl,
+        baseUrl: this.config.baseUrl,
+        hasCredentials: {
+          token: !!token,
+          subscriptionKey: !!subscriptionKey,
+          disbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
+        },
+      });
       return null;
     }
   }
