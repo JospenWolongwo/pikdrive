@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { ServerPaymentService } from '@/lib/services/server/payment-service';
 import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
+import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
 import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
     
     const paymentService = new ServerPaymentService(supabase);
     const orchestrationService = new ServerPaymentOrchestrationService(supabase);
+    const notificationService = new ServerOneSignalNotificationService(supabase);
 
     // Get the signature from headers
     const signature = request.headers.get('x-mtn-signature');
@@ -89,11 +91,28 @@ export async function POST(request: Request) {
     });
 
     // Update payout record status
-    // Find payout by transaction_id (verificationToken) or booking_id from payment
+    // Find payout by transaction_id (verificationToken) or payment_id from payment
     const transactionId = financialTransactionId || externalId;
     const { data: payouts, error: payoutQueryError } = await supabase
       .from('payouts')
-      .select('id, transaction_id, booking_id, metadata')
+      .select(`
+        id,
+        driver_id,
+        booking_id,
+        payment_id,
+        amount,
+        currency,
+        transaction_id,
+        metadata,
+        booking:bookings(
+          id,
+          ride:rides(
+            id,
+            from_city,
+            to_city
+          )
+        )
+      `)
       .or(`transaction_id.eq.${transactionId},payment_id.eq.${payment.id}`)
       .limit(1);
 
@@ -126,6 +145,93 @@ export async function POST(request: Request) {
         console.error('❌ Error updating payout status:', payoutUpdateError);
       } else {
         console.log('✅ Payout status updated:', { payoutId: payout.id, status: payoutStatus });
+
+        // Send driver notification based on payout status
+        if (payoutStatus === 'completed' && payout.driver_id) {
+          try {
+            const formatAmount = (amt: number) => {
+              return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: payout.currency || 'XAF',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(amt);
+            };
+
+            const rideInfo = payout.booking?.ride 
+              ? `${payout.booking.ride.from_city} → ${payout.booking.ride.to_city}`
+              : 'votre trajet';
+
+            const message = `Votre paiement de ${formatAmount(parseFloat(payout.amount.toString()))} a été transféré avec succès sur votre compte mobile.\n\n` +
+              `Trajet: ${rideInfo}\n` +
+              `Transaction: ${transactionId?.slice(0, 8)}...`;
+
+            await notificationService.sendNotification({
+              userId: payout.driver_id,
+              title: '💰 Paiement Reçu!',
+              message: message,
+              notificationType: 'payout_completed',
+              imageUrl: '/icons/payment-received.svg',
+              sendSMS: false,
+              data: {
+                payoutId: payout.id,
+                bookingId: payout.booking_id,
+                rideId: payout.booking?.ride?.id,
+                amount: payout.amount,
+                currency: payout.currency,
+                transactionId: transactionId,
+                type: 'payout_completed',
+                action: 'view_payments',
+                deepLink: '/driver/dashboard?tab=payments',
+                priority: 'high',
+              },
+            });
+
+            console.log('✅ Driver payout success notification sent:', { driverId: payout.driver_id, amount: payout.amount });
+          } catch (notificationError) {
+            console.error('❌ Error sending payout success notification:', notificationError);
+            // Don't fail the callback if notification fails
+          }
+        } else if (payoutStatus === 'failed' && payout.driver_id) {
+          try {
+            const formatAmount = (amt: number) => {
+              return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: payout.currency || 'XAF',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(amt);
+            };
+
+            const errorReason = reason || 'Raison inconnue';
+
+            await notificationService.sendNotification({
+              userId: payout.driver_id,
+              title: '⚠️ Échec du Paiement',
+              message: `Le transfert de ${formatAmount(parseFloat(payout.amount.toString()))} XAF a échoué.\n\nRaison: ${errorReason}\n\nVeuillez contacter le support si le problème persiste.`,
+              notificationType: 'payout_failed',
+              imageUrl: '/icons/payment-failed.svg',
+              sendSMS: false,
+              data: {
+                payoutId: payout.id,
+                bookingId: payout.booking_id,
+                amount: payout.amount,
+                currency: payout.currency,
+                transactionId: transactionId,
+                errorReason: errorReason,
+                type: 'payout_failed',
+                action: 'contact_support',
+                deepLink: '/driver/dashboard?tab=payments',
+                priority: 'high',
+              },
+            });
+
+            console.log('✅ Driver payout failure notification sent:', { driverId: payout.driver_id, amount: payout.amount });
+          } catch (notificationError) {
+            console.error('❌ Error sending payout failure notification:', notificationError);
+            // Don't fail the callback if notification fails
+          }
+        }
       }
     } else {
       console.log('⚠️ Payout record not found for transaction:', transactionId);
