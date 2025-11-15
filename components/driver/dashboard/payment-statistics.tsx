@@ -162,13 +162,15 @@ export function PaymentStatistics() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" value={statusFilter} onValueChange={(v) => setStatusFilter(v as PayoutStatus | "all")}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">Tous</TabsTrigger>
-              <TabsTrigger value="pending">En attente</TabsTrigger>
-              <TabsTrigger value="processing">En cours</TabsTrigger>
-              <TabsTrigger value="completed">Terminés</TabsTrigger>
-              <TabsTrigger value="failed">Échoués</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto mb-4 -mx-4 px-4">
+              <TabsList className="mb-0 inline-flex min-w-full sm:min-w-0">
+                <TabsTrigger value="all" className="whitespace-nowrap">Tous</TabsTrigger>
+                <TabsTrigger value="pending" className="whitespace-nowrap">En attente</TabsTrigger>
+                <TabsTrigger value="processing" className="whitespace-nowrap">En cours</TabsTrigger>
+                <TabsTrigger value="completed" className="whitespace-nowrap">Terminés</TabsTrigger>
+                <TabsTrigger value="failed" className="whitespace-nowrap">Échoués</TabsTrigger>
+              </TabsList>
+            </div>
 
             {payouts.length === 0 ? (
               <div className="text-center py-12">
