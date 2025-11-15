@@ -31,7 +31,6 @@ export interface PayoutRequest {
   readonly reason: string;
   readonly customerName?: string;
   readonly currency: string;
-  readonly partnerId?: string;
   readonly userId?: string;
 }
 

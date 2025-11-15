@@ -657,7 +657,7 @@ export default function ProfilePage() {
   }
 
   // Show error state if no profile data and not loading
-  if (!profileData || !profileData.full_name) {
+  if (!profileData || !profileData.phone) {
     return (
       <div className="container max-w-6xl mx-auto px-4 py-8">
         <div className="text-center space-y-6">

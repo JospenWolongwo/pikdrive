@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { phoneNumber, amount, reason, currency = "XAF", customerName, partnerId, userId } = body;
+    const { phoneNumber, amount, reason, currency = "XAF", customerName, userId } = body;
 
     if (!phoneNumber || !amount) {
       return NextResponse.json(
@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
       reason: reason || "Payout",
       currency,
       customerName,
-      partnerId,
       userId: userId || session.user.id,
     };
 
@@ -88,6 +87,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 
 

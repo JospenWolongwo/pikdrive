@@ -93,7 +93,6 @@ export interface PayoutRequest {
   reason: string;
   customerName?: string;
   currency: string;
-  partnerId?: string;
   userId?: string;
 }
 
