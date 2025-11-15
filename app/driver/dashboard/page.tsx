@@ -343,9 +343,10 @@ export default function DriverDashboard() {
           {verifyingBooking && (
             <CodeVerificationForm
               bookingId={verifyingBooking}
-              onSuccess={() => {
+              onSuccess={async () => {
                 setVerifyingBooking(null);
-                loadRides();
+                // Refresh rides data immediately to update UI (disable verify button)
+                await loadRides(true); // Force refresh to get latest booking data
               }}
             />
           )}

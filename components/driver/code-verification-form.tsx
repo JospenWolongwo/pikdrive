@@ -56,6 +56,7 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ 
           bookingId, 
           verificationCode: state.code 

@@ -70,11 +70,14 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
         try {
           const { data, error } = await supabase
             .from('bookings')
-            .select('verification_code, code_expiry')
+            .select('verification_code, code_expiry, code_verified')
             .eq('id', bookingId)
             .single();
             
-          if (data?.verification_code) {
+          // If code is verified, don't show the code anymore
+          if (data?.code_verified) {
+            verificationCode = null;
+          } else if (data?.verification_code) {
             verificationCode = data.verification_code;
           }
         } catch (error) {
@@ -155,11 +158,28 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
           id: string; 
           verification_code?: string;
           code_expiry?: string;
+          code_verified?: boolean;
           [key: string]: any; 
         }; 
         old: any; 
       }) => {
         console.log('🔄 Booking updated via subscription:', payload);
+        
+        // Check if code_verified changed to true
+        if (payload.new && 
+            payload.new.code_verified === true &&
+            payload.old?.code_verified !== true) {
+          console.log('✅ Code verified! Updating state...');
+          // Update state to show verified status
+          setState(prev => ({
+            ...prev,
+            code: '', // Clear code when verified
+            loading: false,
+            error: null,
+            lastUpdated: Date.now()
+          }));
+          return;
+        }
         
         // Check if verification code has been updated
         if (payload.new && 

@@ -126,7 +126,7 @@ export function useRidesData() {
           supabase
             .from("bookings")
             .select(
-              "id, ride_id, user_id, seats, status, payment_status, created_at, updated_at"
+              "id, ride_id, user_id, seats, status, payment_status, code_verified, created_at, updated_at"
             )
             .or(rideIds.map((id: string) => `ride_id.eq.${id}`).join(","))
             .order("created_at", { ascending: false }),
@@ -273,6 +273,16 @@ export function useRidesData() {
             payload.old.status === "pending_verification"
           ) {
             console.log("✅ Booking confirmed:", payload.new.id);
+          }
+
+          // Check if code_verified changed from false to true
+          if (
+            payload.new.code_verified === true &&
+            payload.old.code_verified !== true
+          ) {
+            console.log("✅ Code verified for booking:", payload.new.id);
+            // Refresh rides data immediately to update UI (disable verify button)
+            loadRides();
           }
         }
       )

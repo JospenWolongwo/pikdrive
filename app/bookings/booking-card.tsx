@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import { VerificationCodeDisplay } from "@/components/bookings/verification-code-display";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,12 +40,41 @@ export function BookingCard({ booking }: BookingCardProps) {
     payment?.payment_time && payment?.metadata?.financialTransactionId;
   const [showVerification, setShowVerification] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [codeVerified, setCodeVerified] = useState(booking.code_verified || false);
   const { supabase } = useSupabase();
   const { toast } = useToast();
 
+  // Set up real-time subscription for code_verified changes
+  useEffect(() => {
+    const subscription = supabase
+      .channel(`booking-verification-${booking.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${booking.id}`,
+        },
+        (payload: any) => {
+          if (payload.new?.code_verified === true && payload.old?.code_verified !== true) {
+            setCodeVerified(true);
+            // Hide verification section when verified
+            setShowVerification(false);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [booking.id, supabase]);
+
   // Determine if we should show verification code
-  // Show for pending_verification status (new) as well as confirmed status bookings
+  // Hide if code is already verified
   const shouldShowVerification =
+    !codeVerified &&
     (booking.status === "pending_verification" ||
       booking.status === "confirmed") &&
     booking.payment_status === "completed";

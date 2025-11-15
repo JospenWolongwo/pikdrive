@@ -1,19 +1,17 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { FeeCalculator } from '@/lib/payment/fee-calculator';
 import { PayoutOrchestratorService } from '@/lib/payment/payout-orchestrator.service';
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createApiSupabaseClient();
     
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', details: userError?.message },
         { status: 401 }
       );
     }
