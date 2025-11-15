@@ -72,11 +72,31 @@ export class MTNTokenService {
    * Generate disbursement (payout) token
    */
   async getDisbursementToken(): Promise<string | null> {
-    if (
-      !this.config.disbursementApiUser ||
-      !this.config.disbursementApiKey
-    ) {
-      console.error("Disbursement credentials not configured");
+    // Enhanced credential validation with detailed logging
+    const missingCredentials: string[] = [];
+    if (!this.config.disbursementApiUser) {
+      missingCredentials.push("disbursementApiUser");
+    }
+    if (!this.config.disbursementApiKey) {
+      missingCredentials.push("disbursementApiKey");
+    }
+    
+    if (missingCredentials.length > 0) {
+      console.error("❌ [TOKEN] Disbursement credentials not configured:", {
+        missing: missingCredentials,
+        available: {
+          disbursementApiUser: !!this.config.disbursementApiUser,
+          disbursementApiKey: !!this.config.disbursementApiKey,
+          disbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
+          subscriptionKey: !!this.config.subscriptionKey,
+        },
+        envVars: {
+          DIRECT_MOMO_API_USER_DISBURSMENT: !!process.env.DIRECT_MOMO_API_USER_DISBURSMENT,
+          MOMO_DISBURSEMENT_API_USER: !!process.env.MOMO_DISBURSEMENT_API_USER,
+          DIRECT_MOMO_API_KEY_DISBURSMENT: !!process.env.DIRECT_MOMO_API_KEY_DISBURSMENT,
+          MOMO_DISBURSEMENT_API_KEY: !!process.env.MOMO_DISBURSEMENT_API_KEY,
+        },
+      });
       return null;
     }
 
@@ -93,11 +113,22 @@ export class MTNTokenService {
         `${this.config.disbursementApiUser}:${this.config.disbursementApiKey}`
       ).toString("base64");
 
-      const response = await fetch(`${this.config.baseUrl}/disbursement/token/`, {
+      const tokenUrl = `${this.config.baseUrl}/disbursement/token/`;
+      const subscriptionKey = this.config.disbursementSubscriptionKey || this.config.subscriptionKey;
+
+      console.log("🔐 [TOKEN] Attempting to generate disbursement token:", {
+        url: tokenUrl,
+        baseUrl: this.config.baseUrl,
+        hasSubscriptionKey: !!subscriptionKey,
+        hasDisbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
+        hasApiUser: !!this.config.disbursementApiUser,
+        hasApiKey: !!this.config.disbursementApiKey,
+      });
+
+      const response = await fetch(tokenUrl, {
         method: "POST",
         headers: {
-          "Ocp-Apim-Subscription-Key":
-            this.config.disbursementSubscriptionKey || this.config.subscriptionKey,
+          "Ocp-Apim-Subscription-Key": subscriptionKey,
           Authorization: `Basic ${base64Encoded}`,
         },
       });
@@ -111,12 +142,55 @@ export class MTNTokenService {
           expires_at: expiresAt,
         };
 
+        console.log("✅ [TOKEN] Disbursement token generated successfully");
         return data.access_token;
       }
 
+      // Enhanced error logging for non-200 responses
+      let errorBody: any = null;
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          errorBody = await response.json();
+        } else {
+          errorBody = await response.text();
+        }
+      } catch (parseError) {
+        console.warn("⚠️ [TOKEN] Could not parse error response body:", parseError);
+      }
+
+      console.error("❌ [TOKEN] Failed to generate disbursement token:", {
+        status: response.status,
+        statusText: response.statusText,
+        url: tokenUrl,
+        headers: {
+          contentType: response.headers.get("content-type"),
+          subscriptionKeyUsed: !!subscriptionKey,
+        },
+        errorBody: errorBody,
+        requestDetails: {
+          method: "POST",
+          baseUrl: this.config.baseUrl,
+          hasDisbursementSubscriptionKey: !!this.config.disbursementSubscriptionKey,
+        },
+      });
+
       return null;
     } catch (error) {
-      console.error("Error generating disbursement token:", error);
+      console.error("❌ [TOKEN] Exception generating disbursement token:", {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        } : error,
+        url: `${this.config.baseUrl}/disbursement/token/`,
+        baseUrl: this.config.baseUrl,
+        hasCredentials: {
+          apiUser: !!this.config.disbursementApiUser,
+          apiKey: !!this.config.disbursementApiKey,
+          subscriptionKey: !!(this.config.disbursementSubscriptionKey || this.config.subscriptionKey),
+        },
+      });
       return null;
     }
   }
