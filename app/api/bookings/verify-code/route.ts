@@ -171,11 +171,12 @@ export async function POST(request: Request) {
           });
 
           // Initialize payout orchestrator
+          const targetEnvironment = (process.env.MOMO_TARGET_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production';
           const orchestrator = new PayoutOrchestratorService(
             {
               subscriptionKey: process.env.DIRECT_MOMO_APIM_SUBSCRIPTION_KEY || process.env.MOMO_SUBSCRIPTION_KEY || '',
               apiKey: process.env.DIRECT_MOMO_API_KEY || process.env.MOMO_API_KEY || '',
-              targetEnvironment: (process.env.MOMO_TARGET_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production',
+              targetEnvironment,
               callbackHost: process.env.MOMO_CALLBACK_HOST || process.env.NEXT_PUBLIC_APP_URL || '',
               collectionPrimaryKey: process.env.DIRECT_MOMO_COLLECTION_PRIMARY_KEY || process.env.MOMO_COLLECTION_PRIMARY_KEY || '',
               collectionUserId: process.env.DIRECT_MOMO_COLLECTION_USER_ID || process.env.MOMO_COLLECTION_USER_ID || '',
@@ -200,9 +201,23 @@ export async function POST(request: Request) {
             }
           );
 
+          // Sandbox MTN test number override (for testing MTN payouts in sandbox)
+          // This allows testing MTN payout flow even when driver has Orange number
+          let payoutPhoneNumber = driverProfile.phone;
+          const sandboxTestPhone = process.env.SANDBOX_MTN_TEST_PHONE;
+          
+          if (targetEnvironment === 'sandbox' && sandboxTestPhone) {
+            payoutPhoneNumber = sandboxTestPhone;
+            console.log('🧪 [PAYOUT] Sandbox MTN test number override active:', {
+              originalPhone: driverProfile.phone,
+              testPhone: sandboxTestPhone,
+              note: 'Using test MTN number for sandbox payout testing',
+            });
+          }
+
           // Initiate payout
           payoutResult = await orchestrator.payout({
-            phoneNumber: driverProfile.phone,
+            phoneNumber: payoutPhoneNumber,
             amount: feeCalculation.driverEarnings,
             reason: `PikDrive Ride Payment - Booking ${bookingId}`,
             currency: payment.currency || 'XAF',
