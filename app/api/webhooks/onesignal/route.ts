@@ -1,51 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiSupabaseClient } from '@/lib/supabase/server-client';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
-    const body = await request.json();
+    // Initialize Supabase with service role for webhook processing
+    // This bypasses RLS policies that require service_role for inserts
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          persistSession: false,
+        },
+      }
+    );
+
+    // Get raw body text for debugging
+    const rawBody = await request.text();
+    console.log('📡 OneSignal webhook raw body:', rawBody);
+
+    // Parse JSON body
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('❌ Failed to parse webhook body as JSON:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid JSON payload' },
+        { status: 400 }
+      );
+    }
+
+    // Extract webhook data with multiple fallback patterns
+    // OneSignal webhook formats can vary by event type
+    const eventType =
+      body.type ||
+      body.event ||
+      body.event_type ||
+      body.eventType ||
+      'unknown';
+
+    const notificationId =
+      body.notification?.id ||
+      body.notificationId ||
+      body.notification_id ||
+      body.notification?.notification_id ||
+      null;
+
+    const userId =
+      body.notification?.external_user_id ||
+      body.userId ||
+      body.user_id ||
+      body.external_user_id ||
+      body.notification?.userId ||
+      body.notification?.user_id ||
+      null;
 
     console.log('📡 OneSignal webhook received:', {
-      type: body.type,
-      notificationId: body.notification?.id,
-      userId: body.notification?.external_user_id,
+      eventType,
+      notificationId,
+      userId,
+      bodyKeys: Object.keys(body),
     });
 
     // Log webhook event for analytics
-    const { error } = await supabase
-      .from('onesignal_webhook_logs')
-      .insert({
-        event_type: body.type,
-        notification_id: body.notification?.id,
-        user_id: body.notification?.external_user_id,
-        data: body,
-        created_at: new Date().toISOString(),
-      });
+    // Use default event_type if none found to satisfy NOT NULL constraint
+    const { error } = await supabase.from('onesignal_webhook_logs').insert({
+      event_type: eventType || 'unknown',
+      notification_id: notificationId || null,
+      user_id: userId || null,
+      data: body,
+      created_at: new Date().toISOString(),
+    });
 
     if (error) {
       console.error('❌ Webhook logging error:', error);
-      // Don't fail the request if logging fails
+      // Don't fail the request if logging fails, but log the error
+    } else {
+      console.log('✅ Webhook logged successfully');
     }
 
     // Handle different event types
-    switch (body.type) {
+    switch (eventType) {
       case 'notification_sent':
-        console.log('📤 Notification sent successfully:', body.notification?.id);
+      case 'notification.sent':
+        console.log('📤 Notification sent successfully:', notificationId);
         break;
       case 'notification_clicked':
-        console.log('👆 Notification clicked by user:', body.notification?.id);
+      case 'notification.clicked':
+        console.log('👆 Notification clicked by user:', notificationId);
         // Optional: Track user engagement metrics
         break;
       case 'notification_failed':
-        console.log('❌ Notification failed to send:', body.notification?.id);
+      case 'notification.failed':
+        console.log('❌ Notification failed to send:', notificationId);
         // Optional: Alert monitoring system or retry logic
         break;
       case 'notification_dismissed':
-        console.log('🚫 Notification dismissed by user:', body.notification?.id);
+      case 'notification.dismissed':
+        console.log('🚫 Notification dismissed by user:', notificationId);
         break;
       default:
-        console.log('📋 Unknown webhook event type:', body.type);
+        console.log('📋 Unknown webhook event type:', eventType);
     }
 
     return NextResponse.json({ success: true });
