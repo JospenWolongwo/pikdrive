@@ -27,6 +27,31 @@ export async function GET(request: NextRequest, { params }: { params: { onesigna
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
     
+    // Exclude static asset patterns (icons, images, etc.)
+    // These should be handled by Next.js static file serving
+    const staticAssetPatterns = [
+      /^icon-.*\.png$/i,           // icon-192x192.png, icon-512x512.png, etc.
+      /^badge-.*\.png$/i,          // badge-72x72.png, etc.
+      /^.*\.(jpg|jpeg|png|gif|svg|webp|ico)$/i,  // Any image file
+      /^.*\.(css|js|woff|woff2|ttf|eot)$/i,      // Static assets
+    ];
+    
+    const isStaticAsset = staticAssetPatterns.some(pattern => pattern.test(path));
+    
+    if (isStaticAsset) {
+      // Check if it's an icon file missing the /icons/ prefix
+      const iconMatch = path.match(/^(icon-.*\.png)$/i);
+      if (iconMatch) {
+        const iconName = iconMatch[1];
+        console.log(`ℹ️ Static asset requested (icon): ${path} - redirecting to /icons/${iconName}`);
+        // Redirect to the correct path in /icons/ folder
+        return NextResponse.redirect(new URL(`/icons/${iconName}`, request.url), 301);
+      }
+      
+      console.log(`ℹ️ Excluding static asset ${path} from OneSignal catch-all route`);
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    
     console.log('🔍 OneSignal dynamic route request:', { 
       url: request.url, 
       path,
