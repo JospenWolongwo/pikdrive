@@ -264,7 +264,7 @@ export async function POST(request: Request) {
             console.error('❌ [PAYOUT] Driver payout failed:', payoutResult.response.message);
             
             // Create payout record with failed status
-            const { error: payoutRecordError } = await supabase
+            const { data: failedPayout, error: payoutRecordError } = await supabase
               .from('payouts')
               .insert({
                 driver_id: user.id,
@@ -283,10 +283,22 @@ export async function POST(request: Request) {
                   error: payoutResult.response.message,
                   payoutFailedAt: new Date().toISOString(),
                 },
-              });
+              })
+              .select()
+              .single();
 
             if (payoutRecordError) {
               console.error('❌ [PAYOUT] Error creating failed payout record:', payoutRecordError);
+            } else if (failedPayout) {
+              // Send notification for initial failure (with deduplication)
+              const { sendPayoutNotificationIfNeeded } = await import('@/lib/payment/payout-notification-helper');
+              await sendPayoutNotificationIfNeeded(
+                supabase,
+                failedPayout,
+                'failed',
+                payoutResult.response.message || 'Échec de l\'initiation du paiement',
+                'initial'
+              );
             }
           }
         } else {

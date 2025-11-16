@@ -330,6 +330,96 @@ export class MTNPayoutService {
       return null;
     }
   }
+
+  /**
+   * Check transfer (disbursement) transaction status
+   * Uses MTN API: GET /disbursement/v1_0/transfer/{referenceId}
+   */
+  async checkTransferStatus(referenceId: string): Promise<{
+    status: string;
+    amount?: string;
+    currency?: string;
+    financialTransactionId?: string;
+    reason?: string;
+  } | null> {
+    try {
+      const token = await this.config.tokenService.getDisbursementToken();
+      if (!token) {
+        console.error("❌ [STATUS] Unable to generate token for transfer status check");
+        return null;
+      }
+
+      const targetEnv = this.config.targetEnvironment === "production" ? "mtncameroon" : "sandbox";
+      const statusUrl = `${this.config.baseUrl}/disbursement/v1_0/transfer/${referenceId}`;
+      const subscriptionKey = this.config.disbursementSubscriptionKey || this.config.subscriptionKey;
+
+      console.log("🔍 [STATUS] Checking transfer transaction status:", {
+        referenceId,
+        url: statusUrl,
+        targetEnvironment: targetEnv,
+      });
+
+      const response = await fetch(statusUrl, {
+        method: "GET",
+        headers: {
+          "X-Target-Environment": targetEnv,
+          "Ocp-Apim-Subscription-Key": subscriptionKey,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 200) {
+        const statusData = await response.json();
+        console.log("✅ [STATUS] Transfer transaction status retrieved:", {
+          referenceId,
+          status: statusData.status,
+          amount: statusData.amount,
+          currency: statusData.currency,
+          financialTransactionId: statusData.financialTransactionId,
+          reason: statusData.reason,
+        });
+        return {
+          status: statusData.status || "UNKNOWN",
+          amount: statusData.amount,
+          currency: statusData.currency,
+          financialTransactionId: statusData.financialTransactionId,
+          reason: statusData.reason,
+        };
+      }
+
+      // Enhanced error logging for non-200 responses
+      let errorBody: any = null;
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          errorBody = await response.json();
+        } else {
+          errorBody = await response.text();
+        }
+      } catch (parseError) {
+        console.warn("⚠️ [STATUS] Could not parse error response body:", parseError);
+      }
+
+      console.error("❌ [STATUS] Failed to get transfer transaction status:", {
+        status: response.status,
+        statusText: response.statusText,
+        referenceId,
+        errorBody,
+      });
+
+      return null;
+    } catch (error) {
+      console.error("❌ [STATUS] Exception checking transfer transaction status:", {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        } : error,
+        referenceId,
+      });
+      return null;
+    }
+  }
 }
 
 

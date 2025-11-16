@@ -122,6 +122,18 @@ export class MTNMomoService {
     return this.verificationService.checkPayment(payToken);
   }
 
+  async checkPayoutStatus(
+    referenceId: string
+  ): Promise<{
+    status: string;
+    amount?: string;
+    currency?: string;
+    financialTransactionId?: string;
+    reason?: string;
+  } | null> {
+    return this.payoutService.checkTransferStatus(referenceId);
+  }
+
   /**
    * Request to pay - wrapper method for payment creation route
    * Maps route handler parameters to payin() method call
