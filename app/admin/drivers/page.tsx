@@ -49,7 +49,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { format, formatDistanceToNow } from "date-fns";
 import DriverDetail from "./driver-detail";
-import { updateDriverStatus as updateDriverStatusUtil } from "@/lib/driver-application-utils";
 
 interface DriverApplication {
   id: string;
@@ -126,47 +125,16 @@ export default function AdminDriversPage() {
     }
   }, [supabase, router]);
 
-  // Create an admin client that bypasses RLS for admin operations
-  const createAdminClient = useCallback(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    console.log("🔍 Admin client setup check:", {
-      hasUrl: !!supabaseUrl,
-      hasServiceKey: !!supabaseServiceKey,
-      serviceKeyPreview: supabaseServiceKey
-        ? `${supabaseServiceKey.substring(0, 20)}...`
-        : "undefined",
-    });
-
-    // If we have a service role key, create an admin client
-    if (supabaseServiceKey) {
-      console.log("🔑 Creating admin client with service role...");
-      const { createClient } = require("@supabase/supabase-js");
-      return createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      });
-    }
-
-    // Fallback to regular client
-    console.log("⚠️ No service role key available, using regular client...");
-    return supabase;
-  }, [supabase]);
 
   const loadApplications = useCallback(async () => {
     try {
       console.log("🔄 Loading driver applications from database...");
       setLoading(true);
 
-      // Try to use admin client to bypass RLS restrictions
-      const adminClient = createAdminClient();
-
-      // NEW APPROACH: Load profiles with driver applications and their documents
+      // Load profiles with driver applications and their documents
+      // Using regular client - RLS allows admins to view driver applicants
       console.log("🔍 Querying profiles table for driver applicants...");
-      const { data: driverProfiles, error: profilesError } = await adminClient
+      const { data: driverProfiles, error: profilesError } = await supabase
         .from("profiles")
         .select(
           `
@@ -229,7 +197,7 @@ export default function AdminDriversPage() {
         driverApplications = await Promise.all(
           driverProfiles.map(async (profile: any) => {
             // Try to load documents for this driver
-            const { data: documents } = await adminClient
+            const { data: documents } = await supabase
               .from("driver_documents")
               .select("*")
               .eq("driver_id", profile.id)
@@ -290,7 +258,7 @@ export default function AdminDriversPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, createAdminClient]);
+  }, [supabase]);
 
   useEffect(() => {
     checkAdminAccess();
@@ -301,18 +269,19 @@ export default function AdminDriversPage() {
     try {
       console.log(`🔄 Updating driver ${driverId} status to ${status}`);
 
-      // Create admin client for elevated permissions
-      const adminClient = createAdminClient();
+      // Call the API route for driver status update
+      const response = await fetch(`/api/admin/drivers/${driverId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
 
-      // Use the utility function for consistent status updates
-      const result = await updateDriverStatusUtil(
-        adminClient,
-        driverId,
-        status as "approved" | "rejected" | "inactive"
-      );
+      const data = await response.json();
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to update driver status");
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update driver status");
       }
 
       // Update local state
