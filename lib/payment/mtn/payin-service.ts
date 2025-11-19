@@ -34,10 +34,25 @@ export class MTNPayinService {
       const phoneWithCountryCode = request.phoneNumber;
       const reasonUpdated = removeAllSpecialCaracter(request.reason);
 
+      console.log("💳 [PAYIN] Requesting collection token for payment...");
       const token = await this.config.tokenService.getCollectionToken();
       if (!token) {
-        throw new Error("Unable to generate payin token");
+        const errorMsg = "Unable to generate payin token - MTN authentication failed. Check server logs for details on credential or API errors.";
+        console.error("❌ [PAYIN] Token generation failed:", {
+          error: errorMsg,
+          note: "Review token service logs above for specific MTN API error details",
+          checkThese: [
+            "MOMO_SUBSCRIPTION_KEY is valid",
+            "MOMO_COLLECTION_USER_ID is valid",
+            "MOMO_API_KEY is valid",
+            "MTN API is accessible from your server",
+            "Credentials are correct for your target environment (sandbox/production)",
+          ],
+        });
+        throw new Error(errorMsg);
       }
+      
+      console.log("✅ [PAYIN] Collection token obtained successfully");
 
       const xReferenceId = uuidv4();
       const externalId = xReferenceId;

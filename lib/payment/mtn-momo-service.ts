@@ -40,6 +40,33 @@ export class MTNMomoService {
         ? "https://api.mtn.cm"
         : "https://sandbox.momodeveloper.mtn.com";
 
+    // Validate required collection (payin) credentials
+    const missingCollectionCredentials: string[] = [];
+    if (!config.subscriptionKey) missingCollectionCredentials.push("subscriptionKey");
+    if (!config.collectionUserId) missingCollectionCredentials.push("collectionUserId");
+    if (!config.apiKey) missingCollectionCredentials.push("apiKey (collectionApiKey)");
+    if (!config.callbackHost) missingCollectionCredentials.push("callbackHost");
+    if (!config.collectionPrimaryKey) missingCollectionCredentials.push("collectionPrimaryKey");
+
+    if (missingCollectionCredentials.length > 0) {
+      const errorMsg = `❌ [MTN-SERVICE] Missing required MTN MoMo collection credentials: ${missingCollectionCredentials.join(", ")}`;
+      console.error(errorMsg, {
+        required: [
+          "MOMO_SUBSCRIPTION_KEY",
+          "MOMO_COLLECTION_USER_ID",
+          "MOMO_API_KEY",
+          "MOMO_CALLBACK_HOST",
+          "MOMO_COLLECTION_PRIMARY_KEY",
+        ],
+        missing: missingCollectionCredentials,
+        targetEnvironment: config.targetEnvironment,
+        note: "Check your environment variables. Payin operations will fail without these credentials.",
+      });
+      // Don't throw - allow construction but log prominently so operations will fail with detailed errors
+    } else {
+      console.log("✅ [MTN-SERVICE] All required collection credentials present");
+    }
+
     const callbackUrl =
       process.env.DIRECT_MOMO_CALLBACK_URL ||
       `${config.callbackHost}/api/callbacks/momo`;
