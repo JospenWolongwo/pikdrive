@@ -408,7 +408,7 @@ export function RideCard({
                             )}
 
                           {/* Code verification button */}
-                          {!booking.code_verified &&
+                          {(booking.code_verified === false || booking.code_verified === null || booking.code_verified === undefined) &&
                             (booking.status === "pending_verification" ||
                               booking.status === "confirmed") && (
                               <Button

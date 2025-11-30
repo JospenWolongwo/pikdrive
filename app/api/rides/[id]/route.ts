@@ -25,6 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const rideId = params.id;
 
+    // Fetch ride with driver profile and bookings (without nested user profiles)
     const { data: ride, error: rideError } = await supabase
       .from("rides")
       .select(`
@@ -36,8 +37,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           seats,
           status,
           payment_status,
-          created_at,
-          user:profiles(id, full_name, avatar_url)
+          code_verified,
+          created_at
         )
       `)
       .eq("id", rideId)
@@ -55,6 +56,35 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         { error: "Failed to fetch ride" },
         { status: 500 }
       );
+    }
+
+    // Fetch user profiles separately if there are bookings
+    if (ride.bookings && ride.bookings.length > 0) {
+      const userIds = [...new Set(ride.bookings.map((b: any) => b.user_id))];
+      
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+
+      if (profilesError) {
+        console.error("Error fetching user profiles:", profilesError);
+        // Continue without profiles rather than failing completely
+      } else {
+        // Merge profiles with bookings
+        const profilesMap = new Map(
+          (profiles || []).map((p: any) => [p.id, p])
+        );
+
+        ride.bookings = ride.bookings.map((booking: any) => ({
+          ...booking,
+          user: profilesMap.get(booking.user_id) || {
+            id: booking.user_id,
+            full_name: "Utilisateur inconnu",
+            avatar_url: null,
+          },
+        }));
+      }
     }
 
     return NextResponse.json({
