@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient, getUserWithRetry } from "@/lib/supabase/server-client";
 import { ServerOneSignalNotificationService } from "@/lib/services/server/onesignal-notification-service";
 
+// Force dynamic rendering since this route uses cookies() via createApiSupabaseClient()
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { conversation_id, ride_id, content } = await request.json();

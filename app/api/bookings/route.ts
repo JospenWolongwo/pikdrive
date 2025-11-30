@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { ServerBookingService } from '@/lib/services/server/booking-service';
 
+// Force dynamic rendering since this route uses cookies() via createApiSupabaseClient()
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Create a Supabase client using cookie-based authentication

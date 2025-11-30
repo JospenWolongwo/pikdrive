@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server-client";
 import { updateDriverStatus } from "@/lib/driver-application-utils";
 
+// Force dynamic rendering since this route uses cookies() via createApiSupabaseClient()
+export const dynamic = 'force-dynamic';
+
 /**
  * API route to update driver status (approve/reject/inactive)
  * Requires admin authentication and uses service role key for the actual update
