@@ -84,11 +84,60 @@ export function useNotificationPrompt(): UseNotificationPromptReturn {
   // Removed auto-show effect - prompt should only show when explicitly triggered
 
   /**
+   * Check if prompt should be shown (with optional priority bypass)
+   * Priority events (like payment completion) can bypass the 24h cooldown
+   */
+  const shouldShowPromptWithPriority = useCallback((priority: boolean = false): boolean => {
+    // Don't show during SSR
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    // Don't show if already subscribed
+    if (isSubscribed) {
+      return false;
+    }
+
+    // Don't show if permanently denied
+    if (permission === 'denied') {
+      return false;
+    }
+
+    // Don't show if device doesn't support web push
+    if (!deviceInfo.supportsWebPush) {
+      return false;
+    }
+
+    // If priority is true, bypass the 24h cooldown for critical events
+    if (priority) {
+      return true;
+    }
+
+    // Check 24h cooldown for non-priority events
+    const lastSeen = localStorage.getItem(STORAGE_KEY);
+    if (lastSeen) {
+      const lastSeenTime = parseInt(lastSeen, 10);
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      
+      if (now - lastSeenTime < twentyFourHours) {
+        return false;
+      }
+    }
+
+    return true;
+  }, [isSubscribed, permission, deviceInfo.supportsWebPush]);
+
+  /**
    * Listen for trigger events from other components
+   * Supports both regular and priority triggers
    */
   useEffect(() => {
-    const handleTriggerEvent = () => {
-      if (shouldShowPrompt()) {
+    const handleTriggerEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ priority?: boolean }>;
+      const isPriority = customEvent.detail?.priority === true;
+      
+      if (shouldShowPromptWithPriority(isPriority)) {
         openPrompt();
       }
     };
@@ -99,7 +148,7 @@ export function useNotificationPrompt(): UseNotificationPromptReturn {
         window.removeEventListener('pikdrive-show-notification-prompt', handleTriggerEvent);
       };
     }
-  }, [openPrompt, shouldShowPrompt]);
+  }, [openPrompt, shouldShowPromptWithPriority]);
 
   /**
    * Hide prompt if user subscribes
@@ -126,11 +175,14 @@ export function useNotificationPromptTrigger() {
   /**
    * Trigger prompt after user action (e.g., booking, messaging)
    * Uses custom event to communicate with the main prompt instance
+   * @param priority - If true, bypasses 24h cooldown for critical events (e.g., payment completion)
    */
-  const triggerPrompt = useCallback(() => {
+  const triggerPrompt = useCallback((priority: boolean = false) => {
     if (typeof window !== 'undefined') {
       // Dispatch custom event that the main prompt instance can listen to
-      window.dispatchEvent(new CustomEvent('pikdrive-show-notification-prompt'));
+      window.dispatchEvent(new CustomEvent('pikdrive-show-notification-prompt', {
+        detail: { priority }
+      }));
     }
   }, []);
 

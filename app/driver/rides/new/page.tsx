@@ -10,6 +10,14 @@ import { useRidesStore } from "@/stores";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -28,7 +36,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { allCameroonCities } from "@/app/data/cities";
 
@@ -53,7 +61,11 @@ export default function NewRidePage() {
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [createdRide, setCreatedRide] = useState<{ fromCity: string; toCity: string } | null>(null);
   const { refreshDriverRides, addDriverRide } = useRidesStore();
+  const { triggerPrompt } = useNotificationPromptTrigger();
 
   // Create a sorted list of all cities
   const allCities = allCameroonCities.sort();
@@ -184,17 +196,19 @@ export default function NewRidePage() {
       };
       addDriverRide(newRide);
 
-      // Show success toast
-      toast({
-        title: "Trajet Créé avec Succès",
-        description: `Votre trajet ${values.fromCity} → ${values.toCity} est maintenant disponible.`,
+      // Store ride info for success dialog
+      setCreatedRide({
+        fromCity: values.fromCity,
+        toCity: values.toCity,
       });
 
-      // Small delay to ensure toast is visible
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Show success dialog
+      setShowSuccessDialog(true);
 
-      // Navigate to dashboard (ride already in store!)
-      router.replace("/driver/dashboard");
+      // Trigger notification prompt after ride creation
+      // This is a critical moment - driver is actively using the platform
+      // Use priority=true to bypass 24h cooldown for critical ride creation events
+      triggerPrompt(true);
     } catch (error) {
       console.error("Error creating ride:", error);
       toast({
@@ -208,8 +222,60 @@ export default function NewRidePage() {
     }
   }
 
+  const handleGoToDashboard = async () => {
+    setIsRedirecting(true);
+    setShowSuccessDialog(false);
+    
+    // Small delay to show loading state
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
+    // Navigate to dashboard
+    router.replace("/driver/dashboard");
+  };
+
   return (
-    <div className="container py-10">
+    <>
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={(open) => !open && handleGoToDashboard()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              </div>
+              <DialogTitle className="text-2xl">Trajet Créé avec Succès !</DialogTitle>
+              <DialogDescription className="text-base">
+                {createdRide && (
+                  <>
+                    Votre trajet <strong>{createdRide.fromCity} → {createdRide.toCity}</strong> est maintenant disponible.
+                    <br />
+                    <br />
+                    Les passagers peuvent maintenant réserver des places sur ce trajet.
+                  </>
+                )}
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              onClick={handleGoToDashboard}
+              disabled={isRedirecting}
+              className="w-full"
+            >
+              {isRedirecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirection...
+                </>
+              ) : (
+                "Aller au Tableau de Bord"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="container py-10">
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Créer un Nouveau Trajet</h1>

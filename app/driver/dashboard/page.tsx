@@ -30,6 +30,7 @@ import {
   initializeGlobalBookingNotificationManager,
   cleanupGlobalBookingNotificationManager,
 } from "@/lib/notifications/booking-notification-manager";
+import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 
 // Types
 import type {
@@ -42,6 +43,7 @@ export default function DriverDashboard() {
   const { user, supabase } = useSupabase();
   const { subscribeToRide, conversations } = useChatStore();
   const { toast } = useToast();
+  const { triggerPrompt } = useNotificationPromptTrigger();
 
 
   // State
@@ -92,10 +94,15 @@ export default function DriverDashboard() {
       // Only load if data is not already available (smart caching)
       await loadRides(false); // Use cache if fresh, only fetch if needed
       router.replace("/driver/dashboard");
+      
+      // Trigger notification prompt after dashboard loads
+      // Use priority=false to respect 24h cooldown (not as critical as ride creation)
+      // This catches drivers who haven't created rides yet
+      triggerPrompt(false);
     };
 
     if (user) initialLoad();
-  }, [user, loadRides, router]);
+  }, [user, loadRides, router, triggerPrompt]);
 
   // Set up global booking notification manager for drivers
   useEffect(() => {

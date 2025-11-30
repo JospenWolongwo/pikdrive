@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { getGlobalBookingNotificationManager } from "@/lib/notifications/booking-notification-manager";
 import { useBookingStore } from "@/stores";
 import type { RideWithDriver } from "@/types";
+import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -59,6 +60,7 @@ export function BookingModal({
     userBookingsLoading,
     fetchUserBookings
   } = useBookingStore();
+  const { triggerPrompt } = useNotificationPromptTrigger();
   
   const [step, setStep] = useState(1);
   const [seats, setSeats] = useState(1);
@@ -180,6 +182,11 @@ export function BookingModal({
       // Move to step 2 IMMEDIATELY - don't wait for notifications
       setBookingId(booking.id);
       setStep(2);
+
+      // Trigger notification prompt after booking creation
+      // This is a critical moment - user is committed to booking
+      // Use priority=true to bypass 24h cooldown for critical booking events
+      triggerPrompt(true);
 
       // NOTE: Notifications removed here - they will be sent AFTER payment completes
       // This prevents sending driver notification before payment is confirmed
@@ -399,6 +406,11 @@ export function BookingModal({
                   bookingId={bookingId} // ✅ Pass bookingId for resilient fallback queries
                   onPaymentComplete={async (status) => {
                     if (status === "completed") {
+                      // Trigger notification prompt after payment completion
+                      // This is the highest value moment - user just completed transaction
+                      // Use priority=true to bypass 24h cooldown for critical payment events
+                      triggerPrompt(true);
+
                       // Close modal immediately and redirect to bookings page
                       onClose();
                       router.replace("/bookings");
