@@ -12,9 +12,12 @@ import {
 import { formatDate } from "@/lib/utils";
 import { VerificationCodeDisplay } from "@/components/bookings/verification-code-display";
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, X, MessageCircle } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
+import { useChatStore } from "@/stores/chatStore";
+import { ChatDialog } from "@/components/chat/chat-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import type { BookingWithPayments } from '@/types';
+import type { RideWithDriver } from '@/types/ride';
 
 
 interface BookingCardProps {
@@ -41,8 +45,14 @@ export function BookingCard({ booking }: BookingCardProps) {
   const [showVerification, setShowVerification] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [codeVerified, setCodeVerified] = useState(booking.code_verified || false);
-  const { supabase } = useSupabase();
+  const [selectedChatRide, setSelectedChatRide] = useState<{
+    ride: RideWithDriver;
+    conversationId: string;
+  } | null>(null);
+  const { supabase, user } = useSupabase();
   const { toast } = useToast();
+  const router = useRouter();
+  const { conversations } = useChatStore();
 
   // Set up real-time subscription for code_verified changes
   useEffect(() => {
@@ -124,6 +134,48 @@ export function BookingCard({ booking }: BookingCardProps) {
       });
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  // Handle opening chat with driver
+  const handleOpenChat = async () => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Veuillez vous connecter pour contacter le conducteur.",
+        variant: "destructive",
+      });
+      router.replace("/auth?redirect=/bookings");
+      return;
+    }
+
+    if (!booking.ride.driver_id) {
+      toast({
+        title: "Erreur",
+        description: "Informations du chauffeur non disponibles.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Find the conversation for this ride and driver
+    const conversation = conversations.find(
+      (conv) =>
+        conv.rideId === booking.ride.id &&
+        conv.otherUserId === booking.ride.driver_id
+    );
+
+    if (conversation) {
+      setSelectedChatRide({
+        ride: booking.ride as RideWithDriver,
+        conversationId: conversation.id,
+      });
+    } else {
+      // If no conversation exists, use the rideId as a fallback and let the ChatDialog handle creation
+      setSelectedChatRide({
+        ride: booking.ride as RideWithDriver,
+        conversationId: booking.ride.id,
+      });
     }
   };
 
@@ -219,6 +271,18 @@ export function BookingCard({ booking }: BookingCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
+        {booking.ride.driver_id && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenChat}
+            className="flex items-center gap-2"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Contacter
+          </Button>
+        )}
+
         {canCancel && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -268,6 +332,18 @@ export function BookingCard({ booking }: BookingCardProps) {
           </Button>
         )}
       </CardFooter>
+
+      {selectedChatRide && (
+        <ChatDialog
+          isOpen={!!selectedChatRide}
+          onClose={() => setSelectedChatRide(null)}
+          rideId={selectedChatRide.ride.id}
+          conversationId={selectedChatRide.conversationId}
+          otherUserId={selectedChatRide.ride.driver_id}
+          otherUserName={selectedChatRide.ride.driver?.full_name || "Chauffeur"}
+          otherUserAvatar={selectedChatRide.ride.driver?.avatar_url}
+        />
+      )}
     </Card>
   );
 }

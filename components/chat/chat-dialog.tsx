@@ -55,6 +55,7 @@ export function ChatDialog({
     messages,
     messagesLoading,
     messagesError,
+    conversations,
     fetchMessages,
     sendMessage,
     markAsRead,
@@ -68,9 +69,23 @@ export function ChatDialog({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fetchedConversationsRef = useRef<Set<string>>(new Set());
   
-  const conversationMessages = messages[conversationId] || [];
-  const isLoading = messagesLoading[conversationId] || false;
-  const error = messagesError[conversationId] || null;
+  // Track the actual conversationId (may differ from prop if conversation was just created)
+  const [actualConversationId, setActualConversationId] = useState(conversationId);
+  
+  // Update actualConversationId when prop changes (e.g., dialog reopened with different conversation)
+  useEffect(() => {
+    setActualConversationId(conversationId);
+  }, [conversationId]);
+  
+  // Detect if this is a new conversation (actualConversationId === rideId means no conversation exists yet)
+  const isNewConversation = actualConversationId === rideId || !conversations.find(c => c.id === actualConversationId);
+  
+  const conversationMessages = messages[actualConversationId] || [];
+  const isLoading = messagesLoading[actualConversationId] || false;
+  const error = messagesError[actualConversationId] || null;
+  
+  // For new conversations, don't show error - empty state is expected
+  const shouldShowError = error && !isNewConversation;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -78,23 +93,25 @@ export function ChatDialog({
 
   useEffect(() => {
     if (isOpen && user) {
-      // Only fetch messages if not already fetched for this conversation
-      if (!fetchedConversationsRef.current.has(conversationId)) {
-        fetchMessages(conversationId);
-        fetchedConversationsRef.current.add(conversationId);
+      // Only fetch messages if not already fetched for this conversation AND it's not a new conversation
+      if (!fetchedConversationsRef.current.has(actualConversationId) && !isNewConversation) {
+        fetchMessages(actualConversationId);
+        fetchedConversationsRef.current.add(actualConversationId);
       }
       subscribeToRide(rideId);
 
-      // Mark messages as read when dialog opens
-      markAsRead(conversationId, user.id).catch(err => {
-        console.error('Failed to mark messages as read:', err);
-      });
+      // Mark messages as read when dialog opens (only if conversation exists)
+      if (!isNewConversation) {
+        markAsRead(actualConversationId, user.id).catch(err => {
+          console.error('Failed to mark messages as read:', err);
+        });
+      }
 
       return () => {
         unsubscribeFromRide(rideId);
       };
     }
-  }, [isOpen, user, conversationId, fetchMessages, subscribeToRide, unsubscribeFromRide, markAsRead]);
+  }, [isOpen, user, actualConversationId, isNewConversation, fetchMessages, subscribeToRide, unsubscribeFromRide, markAsRead]);
 
   useEffect(() => {
     scrollToBottom();
@@ -102,23 +119,33 @@ export function ChatDialog({
 
   // Mark messages as read when viewing them (debounced to avoid excessive API calls)
   useEffect(() => {
-    if (isOpen && user && conversationId && conversationMessages.length > 0) {
+    if (isOpen && user && actualConversationId && conversationMessages.length > 0 && !isNewConversation) {
       const timer = setTimeout(() => {
-        markAsRead(conversationId, user.id).catch(err => {
+        markAsRead(actualConversationId, user.id).catch(err => {
           console.error('Failed to mark messages as read:', err);
         });
       }, 500);
 
       return () => clearTimeout(timer);
     }
-  }, [isOpen, conversationId, user, conversationMessages.length, markAsRead]);
+  }, [isOpen, actualConversationId, user, conversationMessages.length, isNewConversation, markAsRead]);
 
-  // Clear fetched conversations when conversationId changes
+  // Clear fetched conversations when actualConversationId changes
   useEffect(() => {
     return () => {
       fetchedConversationsRef.current.clear();
     };
-  }, [conversationId]);
+  }, [actualConversationId]);
+
+  // Watch for new conversation in store (when first message creates it)
+  useEffect(() => {
+    if (isNewConversation && conversations.length > 0) {
+      const newConv = conversations.find(c => c.rideId === rideId);
+      if (newConv && newConv.id !== actualConversationId) {
+        setActualConversationId(newConv.id);
+      }
+    }
+  }, [conversations, rideId, isNewConversation, actualConversationId]);
 
 
   const handleSendMessage = async () => {
@@ -129,10 +156,15 @@ export function ChatDialog({
 
     try {
       // Send message directly - the backend will handle conversation lookup/creation
-      await sendMessage({
+      const newMessageResponse = await sendMessage({
         ride_id: rideId,
         content: messageContent,
       });
+
+      // Update actualConversationId if a new conversation was created
+      if (newMessageResponse?.conversation_id && newMessageResponse.conversation_id !== actualConversationId) {
+        setActualConversationId(newMessageResponse.conversation_id);
+      }
 
       // Trigger notification prompt after sending message
       triggerPrompt();
@@ -150,13 +182,14 @@ export function ChatDialog({
   };
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && !isNewConversation && actualConversationId) {
       // Mark messages as read when opening the chat (non-blocking)
-      markAsRead(rideId, user.id).catch(err => {
+      // Only for existing conversations, not new ones
+      markAsRead(actualConversationId, user.id).catch(err => {
         console.warn('Failed to mark as read (non-critical):', err.message);
       });
     }
-  }, [isOpen, user, rideId, markAsRead]);
+  }, [isOpen, user, actualConversationId, isNewConversation, markAsRead]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -182,17 +215,17 @@ export function ChatDialog({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4 pr-4">
-            {isLoading ? (
+            {isLoading && !isNewConversation ? (
               <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
-            ) : error ? (
+            ) : shouldShowError ? (
               <div className="text-center py-4 text-red-500">
                 <p>Error loading messages: {error}</p>
               </div>
             ) : conversationMessages.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                <p>No messages yet. Start the conversation!</p>
+                <p>Aucun message pour l'instant. Lancez la conversation !</p>
               </div>
             ) : (
               conversationMessages.map((message) => (
