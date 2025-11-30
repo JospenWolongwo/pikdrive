@@ -30,6 +30,20 @@ export function OneSignalInitializer() {
   useEffect(() => {
     const cleanupOneSignalDatabases = async () => {
       try {
+        // Defensive check: Ensure we're in a browser environment
+        if (typeof window === 'undefined') {
+          console.log('ℹ️ Server-side render, skipping IndexedDB cleanup');
+          setDbCleanupComplete(true);
+          return;
+        }
+
+        // Defensive check: Ensure indexedDB is available
+        if (typeof indexedDB === 'undefined') {
+          console.log('ℹ️ IndexedDB not available, skipping cleanup');
+          setDbCleanupComplete(true);
+          return;
+        }
+
         console.log('🧹 PHASE 1: Cleaning up OneSignal IndexedDB databases...');
         
         // Check if indexedDB.databases() is supported
@@ -53,8 +67,12 @@ export function OneSignalInitializer() {
         // Delete all OneSignal databases
         for (const db of oneSignalDbs) {
           if (db.name) {
-            console.log(`🗑️ Deleting database: ${db.name}`);
-            indexedDB.deleteDatabase(db.name);
+            try {
+              console.log(`🗑️ Deleting database: ${db.name}`);
+              indexedDB.deleteDatabase(db.name);
+            } catch (deleteError) {
+              console.warn(`⚠️ Failed to delete database ${db.name}:`, deleteError);
+            }
           }
         }
         
@@ -67,6 +85,7 @@ export function OneSignalInitializer() {
       } catch (error) {
         console.error('❌ IndexedDB cleanup failed:', error);
         console.log('ℹ️ Proceeding with initialization anyway...');
+        // Always set cleanup complete even on error to prevent blocking initialization
         setDbCleanupComplete(true);
       }
     };
@@ -111,6 +130,12 @@ export function OneSignalInitializer() {
 
     const initOneSignal = () => {
       try {
+        // Defensive check: Ensure we're in a browser environment
+        if (typeof window === 'undefined') {
+          console.log('ℹ️ Server-side render, skipping OneSignal initialization');
+          return;
+        }
+
         const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
         if (!appId) {
           console.warn('⚠️ NEXT_PUBLIC_ONESIGNAL_APP_ID is not set; OneSignal will not initialize');
@@ -120,8 +145,10 @@ export function OneSignalInitializer() {
         console.log('🔧 PHASE 2: Setting up OneSignal deferred initialization...');
         console.log('🔍 OneSignal SDK script should be loaded from: /api/onesignal/sdk/OneSignalSDK.page.js');
         
-        // Use the proper OneSignal initialization pattern
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        // Use the proper OneSignal initialization pattern with defensive check
+        if (!window.OneSignalDeferred) {
+          window.OneSignalDeferred = [];
+        }
         window.OneSignalDeferred.push(async function(OneSignal) {
           try {
             console.log('🔧 OneSignal deferred callback executing...');
@@ -210,13 +237,18 @@ export function OneSignalInitializer() {
             
             // Check for existing service workers that might conflict
             try {
-              console.log('🔍 Checking for existing service workers...');
-              const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-              if (existingRegistrations.length > 0) {
-                console.log(`⚠️ Found ${existingRegistrations.length} existing service worker(s):`, existingRegistrations);
-                console.log('ℹ️ OneSignal will merge with existing service workers');
+              // Defensive check: Ensure service workers are supported
+              if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+                console.log('🔍 Checking for existing service workers...');
+                const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+                if (existingRegistrations.length > 0) {
+                  console.log(`⚠️ Found ${existingRegistrations.length} existing service worker(s):`, existingRegistrations);
+                  console.log('ℹ️ OneSignal will merge with existing service workers');
+                } else {
+                  console.log('✅ No existing service workers found - clean slate');
+                }
               } else {
-                console.log('✅ No existing service workers found - clean slate');
+                console.log('ℹ️ Service workers not supported in this browser');
               }
             } catch (swCheckError) {
               console.warn('⚠️ Error checking existing service workers:', swCheckError);
@@ -231,6 +263,12 @@ export function OneSignalInitializer() {
             // CRITICAL: Verify service worker registration and add fallback
             setTimeout(async () => {
               try {
+                // Defensive check: Ensure service workers are supported
+                if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+                  console.log('ℹ️ Service workers not supported, skipping verification');
+                  return;
+                }
+
                 console.log('🔍 Verifying service worker registration...');
                 const registration = await navigator.serviceWorker.getRegistration();
                 
@@ -254,15 +292,19 @@ export function OneSignalInitializer() {
                     console.log('2. Verify /OneSignalSDKWorker.js is accessible');
                     console.log('3. Check for CSP (Content Security Policy) blocking service workers');
                     console.log('4. Ensure HTTPS is enabled (required for service workers)');
+                    // Don't throw - gracefully degrade
                   }
                 }
               } catch (swError) {
                 console.error('❌ Error checking service worker:', swError);
+                // Don't throw - gracefully degrade if service worker check fails
               }
             }, 3000); // Increased delay to give OneSignal more time
             
           } catch (error) {
             console.error('❌ OneSignal initialization failed:', error);
+            // Don't throw - gracefully degrade if OneSignal fails to initialize
+            // The app should continue to work without push notifications
             if (error instanceof Error) {
               console.error('❌ Error details:', error.message);
               
@@ -283,6 +325,8 @@ export function OneSignalInitializer() {
             } else {
               console.error('❌ Error details:', String(error));
             }
+            // Gracefully degrade - don't crash the app
+            console.log('ℹ️ OneSignal initialization failed, but app will continue to work');
           }
         });
         
@@ -290,6 +334,9 @@ export function OneSignalInitializer() {
         console.log('🔍 Waiting for OneSignal SDK to load and execute deferred callbacks...');
       } catch (error) {
         console.error('❌ OneSignal setup failed:', error);
+        // Don't throw - gracefully degrade if setup fails
+        // The app should continue to work without push notifications
+        console.log('ℹ️ OneSignal setup failed, but app will continue to work');
       }
     };
 
