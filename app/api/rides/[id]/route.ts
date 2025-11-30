@@ -47,39 +47,67 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (rideError) {
       if (rideError.code === "PGRST116") {
         return NextResponse.json(
-          { error: "Ride not found" },
+          { success: false, error: "Ride not found" },
           { status: 404 }
         );
       }
       console.error("Error fetching ride:", rideError);
       return NextResponse.json(
-        { error: "Failed to fetch ride" },
+        { success: false, error: "Failed to fetch ride", details: rideError.message },
         { status: 500 }
       );
     }
 
     // Fetch user profiles separately if there are bookings
-    if (ride.bookings && ride.bookings.length > 0) {
-      const userIds = [...new Set(ride.bookings.map((b: any) => b.user_id))];
+    let enrichedRide = { ...ride };
+    
+    // Ensure bookings is always an array
+    if (!enrichedRide.bookings) {
+      enrichedRide.bookings = [];
+    }
+    
+    if (enrichedRide.bookings.length > 0) {
+      const userIds = [...new Set(enrichedRide.bookings.map((b: any) => b.user_id).filter(Boolean))];
       
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url")
-        .in("id", userIds);
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", userIds);
 
-      if (profilesError) {
-        console.error("Error fetching user profiles:", profilesError);
-        // Continue without profiles rather than failing completely
+        if (profilesError) {
+          console.error("Error fetching user profiles:", profilesError);
+          // Continue without profiles rather than failing completely
+          // Add empty user objects to bookings
+          enrichedRide.bookings = enrichedRide.bookings.map((booking: any) => ({
+            ...booking,
+            user: {
+              id: booking.user_id || "",
+              full_name: "Utilisateur inconnu",
+              avatar_url: null,
+            },
+          }));
+        } else {
+          // Merge profiles with bookings
+          const profilesMap = new Map(
+            (profiles || []).map((p: any) => [p.id, p])
+          );
+
+          enrichedRide.bookings = enrichedRide.bookings.map((booking: any) => ({
+            ...booking,
+            user: profilesMap.get(booking.user_id) || {
+              id: booking.user_id,
+              full_name: "Utilisateur inconnu",
+              avatar_url: null,
+            },
+          }));
+        }
       } else {
-        // Merge profiles with bookings
-        const profilesMap = new Map(
-          (profiles || []).map((p: any) => [p.id, p])
-        );
-
-        ride.bookings = ride.bookings.map((booking: any) => ({
+        // No valid user IDs, just add empty user objects
+        enrichedRide.bookings = enrichedRide.bookings.map((booking: any) => ({
           ...booking,
-          user: profilesMap.get(booking.user_id) || {
-            id: booking.user_id,
+          user: {
+            id: booking.user_id || "",
             full_name: "Utilisateur inconnu",
             avatar_url: null,
           },
@@ -89,12 +117,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      data: ride,
+      data: enrichedRide,
     });
   } catch (error) {
     console.error("Error in ride GET:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

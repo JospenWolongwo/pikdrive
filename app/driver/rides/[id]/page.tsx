@@ -124,6 +124,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const { currentRide, currentRideLoading, currentRideError, fetchRideById, updateRide, deleteRide: deleteRideFromStore } = useRidesStore();
   const ride = currentRide;
   const loading = currentRideLoading;
+  const error = currentRideError;
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [hasBookings, setHasBookings] = useState(false);
@@ -336,6 +337,22 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           <p className="mt-4 text-gray-500">
             Chargement des détails du trajet...
           </p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Erreur</AlertTitle>
+            <AlertDescription>
+              {error}
+            </AlertDescription>
+          </Alert>
+          <Button
+            className="mt-4"
+            onClick={() => router.push("/driver/dashboard")}
+          >
+            Retour au tableau de bord
+          </Button>
         </div>
       ) : ride ? (
         <div className="space-y-6">
