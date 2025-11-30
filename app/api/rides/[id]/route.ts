@@ -8,6 +8,7 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    console.log("🔍 [GET /api/rides/[id]] Fetching ride:", params.id);
     const supabase = createApiSupabaseClient();
 
     // Verify user session
@@ -17,13 +18,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     } = await supabase.auth.getSession();
 
     if (!session || !session.user) {
+      console.error("❌ [GET /api/rides/[id]] Unauthorized");
       return NextResponse.json(
-        { error: "Unauthorized", details: sessionError?.message },
+        { success: false, error: "Unauthorized", details: sessionError?.message },
         { status: 401 }
       );
     }
 
     const rideId = params.id;
+    console.log("✅ [GET /api/rides/[id]] User authenticated:", session.user.id);
 
     // Fetch ride with driver profile and bookings (without nested user profiles)
     const { data: ride, error: rideError } = await supabase
@@ -45,18 +48,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (rideError) {
+      console.error("❌ [GET /api/rides/[id]] Error fetching ride:", rideError);
       if (rideError.code === "PGRST116") {
+        console.log("⚠️ [GET /api/rides/[id]] Ride not found:", rideId);
         return NextResponse.json(
           { success: false, error: "Ride not found" },
           { status: 404 }
         );
       }
-      console.error("Error fetching ride:", rideError);
       return NextResponse.json(
         { success: false, error: "Failed to fetch ride", details: rideError.message },
         { status: 500 }
       );
     }
+
+    console.log("✅ [GET /api/rides/[id]] Ride fetched successfully:", ride?.id);
 
     // Fetch user profiles separately if there are bookings
     let enrichedRide = { ...ride };
@@ -115,12 +121,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    console.log("✅ [GET /api/rides/[id]] Returning enriched ride with", enrichedRide.bookings?.length || 0, "bookings");
     return NextResponse.json({
       success: true,
       data: enrichedRide,
     });
   } catch (error) {
-    console.error("Error in ride GET:", error);
+    console.error("❌ [GET /api/rides/[id]] Unexpected error:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

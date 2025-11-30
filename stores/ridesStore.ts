@@ -10,6 +10,7 @@ import type {
   PaginatedResponse 
 } from "@/types";
 import { ridesApiClient } from "@/lib/api-client/rides";
+import { ApiError } from "@/lib/api-client/error";
 
 interface RidesState {
   // All rides state (for search/browse)
@@ -334,22 +335,47 @@ export const useRidesStore = create<RidesState>()(
 
       // Actions for current ride
       fetchRideById: async (rideId: string) => {
+        console.log("🔄 [STORE] fetchRideById called for:", rideId);
         set({ currentRideLoading: true, currentRideError: null });
 
         try {
           const response = await ridesApiClient.getRideById(rideId);
+          console.log("📦 [STORE] API response received:", { 
+            success: response.success, 
+            hasData: !!response.data,
+            error: response.error 
+          });
           
           if (!response.success || !response.data) {
-            throw new Error(response.error || 'Failed to fetch ride details');
+            const errorMsg = response.error || 'Failed to fetch ride details';
+            console.error("❌ [STORE] API returned error:", errorMsg);
+            throw new Error(errorMsg);
           }
           
+          console.log("✅ [STORE] Setting currentRide:", response.data.id);
           set({
             currentRide: response.data,
             currentRideLoading: false,
             currentRideError: null,
           });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : "Failed to fetch ride";
+          console.error("❌ [STORE] Error in fetchRideById:", error);
+          // Handle ApiError from API client
+          let errorMessage = "Failed to fetch ride";
+          
+          if (error instanceof ApiError) {
+            // ApiError has data property with the JSON response
+            const errorData = error.data;
+            if (typeof errorData === 'object' && errorData !== null) {
+              errorMessage = errorData.error || errorData.message || error.getDisplayMessage();
+            } else {
+              errorMessage = error.getDisplayMessage();
+            }
+            console.error("❌ [STORE] ApiError details:", { status: error.status, message: errorMessage });
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          
           set({
             currentRideLoading: false,
             currentRideError: errorMessage,

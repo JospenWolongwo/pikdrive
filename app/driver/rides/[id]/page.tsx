@@ -144,36 +144,21 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     },
   });
 
-  // Load ride data when component mounts
+  // Load ride data when component mounts (only once)
   useEffect(() => {
     async function loadRide() {
-      if (!user) return;
+      if (!user) {
+        console.log("⏳ Waiting for user...");
+        return;
+      }
 
+      console.log("🔄 Loading ride:", params.id);
       try {
         // Use Zustand store to fetch ride
         await fetchRideById(params.id);
-        
-        // Check if there are any bookings at all
-        if (currentRide) {
-          setHasBookings(currentRide.bookings && currentRide.bookings.length > 0);
-        }
-
-        // Parse departure time and set form values
-        if (currentRide) {
-          const departureDate = new Date(currentRide.departure_time);
-
-          form.reset({
-            from_city: currentRide.from_city,
-            to_city: currentRide.to_city,
-            departure_date: format(departureDate, "yyyy-MM-dd"),
-            departure_time: format(departureDate, "HH:mm"),
-            price: currentRide.price.toString(),
-            seats: currentRide.seats_available.toString(),
-            description: currentRide.description || "",
-          });
-        }
+        console.log("✅ fetchRideById completed");
       } catch (error) {
-        console.error("Unexpected error:", error);
+        console.error("❌ Error in loadRide:", error);
         toast({
           title: "Erreur",
           description: "Une erreur s'est produite lors du chargement du trajet",
@@ -183,7 +168,42 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     }
 
     loadRide();
-  }, [params.id, user, router, toast, form, fetchRideById, currentRide]);
+    // Only depend on params.id and user - NOT currentRide to avoid infinite loop
+  }, [params.id, user, fetchRideById, toast]);
+
+  // Separate effect to populate form when ride data is loaded
+  useEffect(() => {
+    // Only populate form when loading is complete and we have ride data
+    if (!loading && currentRide && !error) {
+      console.log("📝 Populating form with ride data:", currentRide.id);
+      
+      // Check if there are any bookings
+      setHasBookings(currentRide.bookings && currentRide.bookings.length > 0);
+
+      // Parse departure time and set form values
+      try {
+        const departureDate = new Date(currentRide.departure_time);
+
+        form.reset({
+          from_city: currentRide.from_city,
+          to_city: currentRide.to_city,
+          departure_date: format(departureDate, "yyyy-MM-dd"),
+          departure_time: format(departureDate, "HH:mm"),
+          price: currentRide.price.toString(),
+          seats: currentRide.seats_available.toString(),
+          description: currentRide.description || "",
+        });
+        console.log("✅ Form populated successfully");
+      } catch (formError) {
+        console.error("❌ Error populating form:", formError);
+        toast({
+          title: "Erreur",
+          description: "Erreur lors du chargement des données du formulaire",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [loading, currentRide, error, form, toast]);
 
   // Function to update ride details
   async function onSubmit(values: RideFormValues) {
