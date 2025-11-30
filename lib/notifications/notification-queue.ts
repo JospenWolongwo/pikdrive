@@ -103,12 +103,23 @@ export class NotificationQueue {
     this.processing = true;
 
     try {
-      // Check if notifications are available
-      if (
-        !("Notification" in window) ||
-        Notification.permission !== "granted"
-      ) {
+      // Check if notifications are available (iOS Safari doesn't support Notification API)
+      if (typeof Notification === 'undefined' || !("Notification" in window)) {
         console.log("🚫 Notifications not available, keeping queue");
+        return;
+      }
+
+      // Safely check permission
+      let permissionGranted = false;
+      try {
+        permissionGranted = Notification.permission === "granted";
+      } catch (error) {
+        console.warn("Error checking Notification.permission:", error);
+        return;
+      }
+
+      if (!permissionGranted) {
+        console.log("🚫 Notifications not granted, keeping queue");
         return;
       }
 

@@ -82,7 +82,22 @@ export function PushNotificationTester() {
       return;
     }
 
-    if (Notification.permission !== "granted") {
+    // Check if Notification API is available (iOS Safari doesn't support it)
+    if (typeof Notification === 'undefined' || !('Notification' in window)) {
+      console.warn('⚠️ Notification API not supported on this device');
+      return;
+    }
+
+    // Safely check permission
+    let permissionGranted = false;
+    try {
+      permissionGranted = Notification.permission === "granted";
+    } catch (error) {
+      console.warn('Error accessing Notification.permission:', error);
+      return;
+    }
+
+    if (!permissionGranted) {
       toast({
         title: "Permission requise",
         description: "Veuillez d'abord autoriser les notifications",

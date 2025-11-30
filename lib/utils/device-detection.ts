@@ -139,11 +139,59 @@ export function getNotificationSupportMessage(deviceInfo: DeviceInfo): string {
 }
 
 /**
+ * Safely check if Notification API is available
+ * iOS Safari doesn't support Notification API, so we need to check carefully
+ */
+export function isNotificationSupported(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  
+  // Check if Notification exists and is available
+  return typeof Notification !== 'undefined' && 'Notification' in window;
+}
+
+/**
+ * Safely get Notification permission status
+ * Returns 'default' if Notification API is not available
+ */
+export function getNotificationPermission(): NotificationPermission | 'default' {
+  if (!isNotificationSupported()) {
+    return 'default';
+  }
+  
+  try {
+    return Notification.permission;
+  } catch (error) {
+    console.warn('Error accessing Notification.permission:', error);
+    return 'default';
+  }
+}
+
+/**
+ * Safely request notification permission
+ * Returns 'default' if Notification API is not available
+ */
+export async function requestNotificationPermission(): Promise<NotificationPermission | 'default'> {
+  if (!isNotificationSupported()) {
+    console.warn('Notification API not supported on this device');
+    return 'default';
+  }
+  
+  try {
+    return await Notification.requestPermission();
+  } catch (error) {
+    console.warn('Error requesting notification permission:', error);
+    return 'default';
+  }
+}
+
+/**
  * Check if device can request notification permission
  */
 export function canRequestNotificationPermission(deviceInfo: DeviceInfo): boolean {
-  // Must support web push and have user gesture capability
-  return deviceInfo.supportsWebPush && 'Notification' in window;
+  // Must support web push and have Notification API available
+  return deviceInfo.supportsWebPush && isNotificationSupported();
 }
 
 /**

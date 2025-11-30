@@ -146,19 +146,39 @@ export function useOneSignal(): UseOneSignalReturn {
         return false;
       }
 
-      // Check current permission
-      if (Notification.permission === "granted") {
+      // Check if Notification API is available (iOS Safari doesn't support it)
+      if (typeof Notification === 'undefined' || !('Notification' in window)) {
+        console.warn('⚠️ Notification API not supported on this device');
+        return false;
+      }
+
+      // Check current permission (safely)
+      let currentPermission: NotificationPermission;
+      try {
+        currentPermission = Notification.permission;
+      } catch (error) {
+        console.warn('Error accessing Notification.permission:', error);
+        return false;
+      }
+
+      if (currentPermission === "granted") {
         console.log('✅ Notification permission already granted');
         return true;
       }
 
-      if (Notification.permission === "denied") {
+      if (currentPermission === "denied") {
         console.log('❌ Notification permission was previously denied');
         return false;
       }
 
       console.log('📱 Requesting notification permission via native API...');
-      const permission = await Notification.requestPermission();
+      let permission: NotificationPermission;
+      try {
+        permission = await Notification.requestPermission();
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+        return false;
+      }
       const granted = permission === "granted";
       
       if (granted) {

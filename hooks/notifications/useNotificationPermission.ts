@@ -6,7 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 
 interface UseNotificationPermissionReturn {
-  readonly permission: NotificationPermission;
+  readonly permission: NotificationPermission | 'unsupported';
   readonly isSubscribed: boolean;
   readonly isLoading: boolean;
   readonly requestPermission: () => Promise<boolean>;
@@ -30,7 +30,7 @@ interface UseNotificationPermissionReturn {
  * ```
  */
 export function useNotificationPermission(): UseNotificationPermissionReturn {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -71,15 +71,33 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
         return false;
       }
 
-      // Check current permission
-      if (Notification.permission === "granted") {
+      // Check if Notification API is available (iOS Safari doesn't support it)
+      if (typeof Notification === 'undefined' || !('Notification' in window)) {
+        console.warn('⚠️ Notification API not supported on this device');
+        setPermission('unsupported');
+        setIsSubscribed(false);
+        return false;
+      }
+
+      // Check current permission (safely)
+      let currentPermission: NotificationPermission;
+      try {
+        currentPermission = Notification.permission;
+      } catch (error) {
+        console.warn('Error accessing Notification.permission:', error);
+        setPermission('unsupported');
+        setIsSubscribed(false);
+        return false;
+      }
+
+      if (currentPermission === "granted") {
         setPermission('granted');
         setIsSubscribed(true);
         console.log('✅ Notification permission already granted');
         return true;
       }
 
-      if (Notification.permission === "denied") {
+      if (currentPermission === "denied") {
         setPermission('denied');
         setIsSubscribed(false);
         console.log('❌ Notification permission was previously denied');
@@ -88,7 +106,15 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
 
       // Request permission using native API (this will show browser popup)
       console.log('🔔 Requesting notification permission via native API...');
-      const permission = await Notification.requestPermission();
+      let permission: NotificationPermission;
+      try {
+        permission = await Notification.requestPermission();
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+        setPermission('unsupported');
+        setIsSubscribed(false);
+        return false;
+      }
       const granted = permission === "granted";
       
       if (granted) {

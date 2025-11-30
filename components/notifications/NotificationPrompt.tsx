@@ -22,8 +22,17 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
   const [deviceInfo] = useState(() => detectDevice());
   const [error, setError] = useState<string | null>(null);
   
-  // Check if permission was denied - show instructions instead
-  const isPermissionDenied = typeof window !== 'undefined' && Notification.permission === 'denied';
+  // Check if permission was denied - show instructions instead (safely for iOS)
+  const isPermissionDenied = (() => {
+    if (typeof window === 'undefined') return false;
+    if (typeof Notification === 'undefined' || !('Notification' in window)) return false;
+    try {
+      return Notification.permission === 'denied';
+    } catch (error) {
+      console.warn('Error checking Notification.permission:', error);
+      return false;
+    }
+  })();
 
   const handleEnableNotifications = async () => {
     setError(null);
@@ -146,7 +155,15 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
               <p className="text-sm text-red-800">
                 {error}
               </p>
-              {Notification.permission === 'denied' && (
+              {(() => {
+                if (typeof window === 'undefined') return false;
+                if (typeof Notification === 'undefined' || !('Notification' in window)) return false;
+                try {
+                  return Notification.permission === 'denied';
+                } catch {
+                  return false;
+                }
+              })() && (
                 <p className="text-xs text-red-700 mt-2">
                   💡 Pour réactiver les notifications :<br />
                   Cliquez sur 🔒 dans la barre d'adresse → Notifications → Autoriser

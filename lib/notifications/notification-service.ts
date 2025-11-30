@@ -104,8 +104,13 @@ export class NotificationService {
   }
 
   private checkPermission() {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      this.permissionGranted = Notification.permission === "granted";
+    if (typeof window !== "undefined" && typeof Notification !== 'undefined' && "Notification" in window) {
+      try {
+        this.permissionGranted = Notification.permission === "granted";
+      } catch (error) {
+        console.warn("Error checking Notification.permission:", error);
+        this.permissionGranted = false;
+      }
     }
   }
 
@@ -118,17 +123,27 @@ export class NotificationService {
   }
 
   async requestPermission(): Promise<boolean> {
-    if (!("Notification" in window)) {
+    // Check if Notification API is available (iOS Safari doesn't support it)
+    if (typeof Notification === 'undefined' || !("Notification" in window)) {
       console.warn("This browser does not support notifications");
       return false;
     }
 
-    if (Notification.permission === "granted") {
+    // Safely check permission
+    let currentPermission: NotificationPermission;
+    try {
+      currentPermission = Notification.permission;
+    } catch (error) {
+      console.warn("Error accessing Notification.permission:", error);
+      return false;
+    }
+
+    if (currentPermission === "granted") {
       this.permissionGranted = true;
       return true;
     }
 
-    if (Notification.permission === "denied") {
+    if (currentPermission === "denied") {
       console.warn("❌ Notification permission was previously denied");
       return false;
     }
@@ -317,7 +332,15 @@ export class NotificationService {
   isEnabled(): boolean {
     // Always check the current browser permission state
     if (typeof window !== "undefined" && "Notification" in window) {
-      const currentPermission = Notification.permission === "granted";
+      // Safely check permission (iOS Safari doesn't support Notification API)
+      let currentPermission = false;
+      if (typeof Notification !== 'undefined' && 'Notification' in window) {
+        try {
+          currentPermission = Notification.permission === "granted";
+        } catch (error) {
+          console.warn("Error checking Notification.permission:", error);
+        }
+      }
       if (currentPermission !== this.permissionGranted) {
         this.permissionGranted = currentPermission;
       }

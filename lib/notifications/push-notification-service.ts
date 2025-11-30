@@ -58,11 +58,26 @@ export class PushNotificationService {
       throw new Error("Push notifications are not supported in this browser");
     }
 
-    if (Notification.permission === "granted") {
+    // Check if Notification API is available (iOS Safari doesn't support it)
+    if (typeof Notification === 'undefined' || !('Notification' in window)) {
+      console.warn('⚠️ Notification API not supported on this device');
+      return "default";
+    }
+
+    // Safely check permission
+    let currentPermission: NotificationPermission;
+    try {
+      currentPermission = Notification.permission;
+    } catch (error) {
+      console.warn('Error accessing Notification.permission:', error);
+      return "default";
+    }
+
+    if (currentPermission === "granted") {
       return "granted";
     }
 
-    if (Notification.permission === "denied") {
+    if (currentPermission === "denied") {
       return "denied";
     }
 

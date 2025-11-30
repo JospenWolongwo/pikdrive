@@ -162,9 +162,17 @@ export default function MessagesPage() {
       return;
     }
 
-    // Check current permission state
-    const currentPermission =
-      typeof window !== "undefined" ? Notification.permission : "default";
+    // Check current permission state (safely for iOS)
+    const currentPermission = (() => {
+      if (typeof window === "undefined") return "default";
+      if (typeof Notification === "undefined" || !("Notification" in window)) return "default";
+      try {
+        return Notification.permission;
+      } catch (error) {
+        console.warn("Error accessing Notification.permission:", error);
+        return "default";
+      }
+    })();
     console.log("🔐 Current browser permission:", currentPermission);
 
     // If already denied, show instructions
