@@ -480,5 +480,6 @@ export default function NewRidePage() {
         </Card>
       </div>
     </div>
+    </>
   );
 }
