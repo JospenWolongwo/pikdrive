@@ -294,7 +294,11 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
       <CardContent className="p-6">
         <div className="text-center space-y-4">
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-800">Code de Vérification</h3>
+            <h3 className="text-lg font-semibold text-foreground">Code de Vérification</h3>
+            <p className="text-sm text-foreground px-2">
+              Montrez ce code à votre chauffeur <strong className="text-foreground">en personne</strong> pour vérifier votre réservation. 
+              Le chauffeur entrera ce code dans son application pour confirmer que vous êtes bien présents ensemble.
+            </p>
             <div className="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-4 rounded-md shadow-md">
               <div className="flex justify-center">
                 <span className="font-mono text-2xl font-bold tracking-wider">

@@ -203,7 +203,11 @@ export function BookingCard({ booking }: BookingCardProps) {
           </div>
           <div>
             <strong>Total :</strong>{" "}
-            {payment ? `${payment.amount} ${payment.currency}` : "N/A"}
+            {payment 
+              ? `${payment.amount} ${payment.currency}` 
+              : booking.ride?.price 
+                ? `${(booking.seats * booking.ride.price).toLocaleString()} FCFA`
+                : "N/A"}
           </div>
           <div>
             <strong>Statut :</strong>{" "}
