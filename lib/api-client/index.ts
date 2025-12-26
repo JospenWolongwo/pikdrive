@@ -23,3 +23,4 @@ export { bookingApiClient } from './booking';
 export { paymentApiClient } from './payment';
 export { ridesApiClient } from './rides';
 export { chatApiClient } from './chat';
+export { driverApiClient } from './driver';

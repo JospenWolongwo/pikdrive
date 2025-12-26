@@ -50,3 +50,28 @@ export interface UpdateDriverStatusRequest {
   readonly status: DriverStatus;
   readonly reason?: string;
 }
+
+export interface RidePreview {
+  readonly id: string;
+  readonly from_city: string;
+  readonly to_city: string;
+  readonly departure_time: string;
+  readonly price: number;
+}
+
+export interface DriverPublicProfile {
+  readonly id: string;
+  readonly full_name: string;
+  readonly avatar_url: string | null;
+  readonly city: string | null;
+  readonly driver_status: string;
+  readonly created_at: string;
+  readonly vehicle_images: string[];
+  readonly verification_status: string;
+  readonly statistics: {
+    readonly totalTrips: number;
+    readonly totalPassengers: number;
+    readonly memberSince: string;
+  };
+  readonly recentRides?: RidePreview[];
+}
