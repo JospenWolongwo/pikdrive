@@ -1,6 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Shield } from "lucide-react";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { useEffect, useState } from "react";
 
 interface DriverProfileHeaderProps {
   full_name: string;
@@ -17,20 +19,30 @@ export function DriverProfileHeader({
   memberSince,
   isVerified,
 }: DriverProfileHeaderProps) {
-  console.log('🖼️ [DRIVER PROFILE HEADER] Rendering with:', {
-    full_name,
-    avatar_url,
-    city,
-    memberSince,
-    isVerified,
-  });
+  const { supabase } = useSupabase();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (avatar_url) {
+      // Check if it's already a full URL
+      if (avatar_url.startsWith('http')) {
+        setAvatarUrl(avatar_url);
+      } else {
+        // Convert storage path to full URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(avatar_url);
+        setAvatarUrl(publicUrl);
+      }
+    }
+  }, [avatar_url, supabase]);
 
   return (
     <div className="flex flex-col items-center text-center space-y-4 pb-8 border-b">
       {/* Avatar with verification badge */}
       <div className="relative">
         <Avatar className="h-32 w-32 border-4 border-primary/20 shadow-xl">
-          <AvatarImage src={avatar_url || undefined} alt={full_name} />
+          <AvatarImage src={avatarUrl || undefined} alt={full_name} />
           <AvatarFallback className="bg-gradient-to-br from-primary to-amber-500 text-primary-foreground text-4xl font-bold">
             {full_name?.charAt(0) || "D"}
           </AvatarFallback>

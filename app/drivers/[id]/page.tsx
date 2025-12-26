@@ -28,35 +28,16 @@ export default function DriverProfilePage() {
         setLoading(true);
         setError(null);
 
-        console.log('🔍 [DRIVER PROFILE PAGE] Fetching profile for driverId:', driverId);
-        
         const response = await driverApiClient.getDriverProfile(driverId);
 
-        console.log('📥 [DRIVER PROFILE PAGE] API Response received:', {
-          success: response.success,
-          has_data: !!response.data,
-          error: response.error,
-          profile_keys: response.data ? Object.keys(response.data) : [],
-        });
-
         if (!response.success || !response.data) {
-          console.error('❌ [DRIVER PROFILE PAGE] Response error:', response.error);
           setError(response.error || "Driver not found");
           return;
         }
 
-        console.log('✅ [DRIVER PROFILE PAGE] Setting profile data:', {
-          id: response.data.id,
-          full_name: response.data.full_name,
-          avatar_url: response.data.avatar_url,
-          vehicle_images_count: response.data.vehicle_images?.length || 0,
-          vehicle_images: response.data.vehicle_images,
-          statistics: response.data.statistics,
-        });
-
         setProfile(response.data);
       } catch (err) {
-        console.error("❌ [DRIVER PROFILE PAGE] Error fetching driver profile:", err);
+        console.error("Error fetching driver profile:", err);
         if (err instanceof ApiError) {
           setError(err.message || "Failed to load driver profile");
         } else {
