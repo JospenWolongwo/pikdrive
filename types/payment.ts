@@ -22,6 +22,7 @@ export type PaymentTransactionStatus =
 export type PaymentMethod = 
   | 'mtn'
   | 'orange'
+  | 'pawapay'
   | 'card'
   | 'cash'
   | 'bank_transfer';

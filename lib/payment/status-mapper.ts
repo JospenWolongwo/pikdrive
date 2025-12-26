@@ -1,5 +1,5 @@
 import type { PaymentTransactionStatus } from '@/types/payment';
-import { MtnMomoStatus, OrangeMoneyStatus } from '@/types/payment-ext';
+import { MtnMomoStatus, OrangeMoneyStatus, PawaPayStatus } from '@/types/payment-ext';
 
 /**
  * Maps MTN MOMO provider status to internal PaymentTransactionStatus
@@ -37,6 +37,34 @@ export function mapOrangeMoneyStatus(
       return 'pending';
     default:
       console.warn('Unknown Orange Money status:', providerStatus);
+      return 'pending';
+  }
+}
+
+/**
+ * Maps pawaPay provider status to internal PaymentTransactionStatus
+ */
+export function mapPawaPayStatus(
+  providerStatus: string
+): PaymentTransactionStatus {
+  const upperStatus = providerStatus.toUpperCase() as PawaPayStatus;
+
+  switch (upperStatus) {
+    case PawaPayStatus.COMPLETED:
+    case PawaPayStatus.SUCCESSFUL:
+      return 'completed';
+    case PawaPayStatus.FAILED:
+    case PawaPayStatus.FAILURE:
+      return 'failed';
+    case PawaPayStatus.ACCEPTED:
+    case PawaPayStatus.SUBMITTED:
+    case PawaPayStatus.PROCESSING:
+    case PawaPayStatus.ENQUEUED:
+      return 'processing';
+    case PawaPayStatus.PENDING:
+      return 'pending';
+    default:
+      console.warn('Unknown pawaPay status:', providerStatus);
       return 'pending';
   }
 }

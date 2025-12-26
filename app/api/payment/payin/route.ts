@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
 import { PayoutOrchestratorService } from "@/lib/payment/payout-orchestrator.service";
-import type { PaymentApiRequest } from "@/types/payment-ext";
+import type { PaymentApiRequest, Environment } from "@/types/payment-ext";
+import { Environment as EnvEnum, PawaPayApiUrl } from "@/types/payment-ext";
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,6 +62,12 @@ export async function POST(request: NextRequest) {
         merchantNumber: process.env.DIRECT_OM_MERCHAND_NUMBER,
         tokenUrl: process.env.DIRECT_OM_TOKEN_URL,
         baseUrl: process.env.DIRECT_OM_BASE_URL,
+      },
+      {
+        apiToken: process.env.PAWAPAY_API_TOKEN || "",
+        baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
+        environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
       }
     );
 

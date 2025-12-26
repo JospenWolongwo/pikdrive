@@ -74,4 +74,113 @@ export const HTTP_CODE = {
   UNKNOWN: 600,
 } as const;
 
+// pawaPay provider status values
+export const PawaPayStatus = {
+  COMPLETED: 'COMPLETED',
+  SUCCESSFUL: 'SUCCESSFUL',
+  FAILED: 'FAILED',
+  FAILURE: 'FAILURE',
+  ACCEPTED: 'ACCEPTED',
+  SUBMITTED: 'SUBMITTED',
+  PROCESSING: 'PROCESSING',
+  ENQUEUED: 'ENQUEUED',
+  PENDING: 'PENDING',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export type PawaPayStatus = typeof PawaPayStatus[keyof typeof PawaPayStatus];
+
+// Currency codes
+export const Currency = {
+  EUR: 'EUR',
+  XAF: 'XAF',
+  USD: 'USD',
+} as const;
+
+export type Currency = typeof Currency[keyof typeof Currency];
+
+// Environment types
+export const Environment = {
+  SANDBOX: 'sandbox',
+  PRODUCTION: 'production',
+} as const;
+
+export type Environment = typeof Environment[keyof typeof Environment];
+
+// pawaPay API endpoints
+export const PawaPayEndpoint = {
+  DEPOSITS: '/v2/deposits',
+  PAYOUTS: '/v2/payouts',
+} as const;
+
+export type PawaPayEndpoint = typeof PawaPayEndpoint[keyof typeof PawaPayEndpoint];
+
+// HTTP methods
+export const HttpMethod = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  DELETE: 'DELETE',
+} as const;
+
+export type HttpMethod = typeof HttpMethod[keyof typeof HttpMethod];
+
+// HTTP headers
+export const HttpHeader = {
+  AUTHORIZATION: 'Authorization',
+  CONTENT_TYPE: 'Content-Type',
+} as const;
+
+export type HttpHeader = typeof HttpHeader[keyof typeof HttpHeader];
+
+// Content types
+export const ContentType = {
+  JSON: 'application/json',
+} as const;
+
+export type ContentType = typeof ContentType[keyof typeof ContentType];
+
+// Authorization schemes
+export const AuthScheme = {
+  BEARER: 'Bearer',
+} as const;
+
+export type AuthScheme = typeof AuthScheme[keyof typeof AuthScheme];
+
+// Country codes
+export const CountryCode = {
+  CAMEROON: '237',
+} as const;
+
+export type CountryCode = typeof CountryCode[keyof typeof CountryCode];
+
+// Transaction types
+export const TransactionType = {
+  DEPOSIT: 'deposit',
+  PAYOUT: 'payout',
+} as const;
+
+export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
+
+// Sandbox constants
+export const SandboxConfig = {
+  DEFAULT_AMOUNT: 2,
+  DEFAULT_CURRENCY: Currency.EUR,
+} as const;
+
+// pawaPay API base URLs
+export const PawaPayApiUrl = {
+  PRODUCTION: 'https://api.pawapay.io',
+  SANDBOX: 'https://api.sandbox.pawapay.io',
+} as const;
+
+export type PawaPayApiUrl = typeof PawaPayApiUrl[keyof typeof PawaPayApiUrl];
+
+// Feature flags
+export const FeatureFlag = {
+  USE_PAWAPAY: 'true',
+} as const;
+
+export type FeatureFlag = typeof FeatureFlag[keyof typeof FeatureFlag];
+
 

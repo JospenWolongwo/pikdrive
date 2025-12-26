@@ -3,7 +3,10 @@ import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { ServerPaymentService } from '@/lib/services/server/payment-service';
 import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
 import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
-import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
+import { PawaPayService } from '@/lib/payment/pawapay/pawapay-service';
+import { mapMtnMomoStatus, mapPawaPayStatus } from '@/lib/payment/status-mapper';
+import type { Environment } from '@/types/payment-ext';
+import { Environment as EnvEnum, PawaPayApiUrl } from '@/types/payment-ext';
 
 export async function POST(request: NextRequest) {
   try {
@@ -167,6 +170,79 @@ export async function POST(request: NextRequest) {
         }
       } catch (providerError) {
         console.error('❌ [CHECK-STATUS] MTN MOMO API error:', providerError);
+        
+        // Don't fail the entire request if provider check fails
+        // Return current status from database
+        return NextResponse.json({
+          success: true,
+          data: {
+            status: payment.status,
+            message: getStatusMessage(payment.status),
+            paymentId: payment.id,
+            transactionId: payment.transaction_id,
+            warning: 'Unable to check with provider, returning cached status',
+          },
+        });
+      }
+    } else if (provider === 'pawapay') {
+      console.log('🔄 [CHECK-STATUS] Querying pawaPay API for status...');
+      
+      try {
+        const pawapayService = new PawaPayService({
+          apiToken: process.env.PAWAPAY_API_TOKEN || "",
+          baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
+          callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
+          environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+        });
+
+        // Use checkPayment with transaction_id (which is the depositId)
+        const checkResult = await pawapayService.checkPayment(transactionId);
+        
+        if (!checkResult.response.success) {
+          console.error('❌ [CHECK-STATUS] Failed to check payment status:', checkResult.response.message);
+          throw new Error(checkResult.response.message);
+        }
+
+        // Extract status from pawaPay response
+        const transactionStatus = checkResult.response.transactionStatus;
+        const statusString = transactionStatus || 'UNKNOWN';
+
+        console.log('📊 [CHECK-STATUS] pawaPay Status:', {
+          status: statusString,
+          transactionStatus,
+          apiResponse: checkResult.response.apiResponse,
+        });
+
+        // Map pawaPay status to our payment status
+        // pawaPay API returns status directly in the response
+        const pawapayStatus = checkResult.response.apiResponse?.status || statusString;
+        newStatus = mapPawaPayStatus(pawapayStatus);
+        
+        console.log('🔄 [CHECK-STATUS] Status mapping:', { 
+          pawapayStatus: pawapayStatus, 
+          ourStatus: newStatus,
+        });
+
+        // Update payment if status changed
+        if (newStatus !== payment.status) {
+          console.log('🔄 [CHECK-STATUS] Status changed, orchestrating update:', {
+            oldStatus: payment.status,
+            newStatus,
+          });
+          
+          console.log('🔔 [CHECK-STATUS] Triggering orchestration service for status change');
+          await orchestrationService.handlePaymentStatusChange(payment, newStatus, {
+            transaction_id: transactionId,
+            provider_response: checkResult.response.apiResponse,
+          });
+          
+          console.log('🔔 [CHECK-STATUS] Orchestration completed, notifications should be sent');
+          console.log('✅ [CHECK-STATUS] Payment status updated successfully');
+        } else {
+          console.log('ℹ️ [CHECK-STATUS] Status unchanged, no update needed');
+        }
+      } catch (providerError) {
+        console.error('❌ [CHECK-STATUS] pawaPay API error:', providerError);
         
         // Don't fail the entire request if provider check fails
         // Return current status from database

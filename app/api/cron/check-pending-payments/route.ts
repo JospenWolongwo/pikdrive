@@ -3,10 +3,13 @@ import { NextResponse } from 'next/server';
 import { ServerPaymentService } from '@/lib/services/server/payment-service';
 import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
 import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
+import { PawaPayService } from '@/lib/payment/pawapay/pawapay-service';
 import { PayoutOrchestratorService } from '@/lib/payment/payout-orchestrator.service';
-import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
+import { mapMtnMomoStatus, mapPawaPayStatus } from '@/lib/payment/status-mapper';
 import { mapMtnPayoutStatus, shouldRetry } from '@/lib/payment/retry-logic';
 import { sendPayoutNotificationIfNeeded } from '@/lib/payment/payout-notification-helper';
+import type { Environment } from '@/types/payment-ext';
+import { Environment as EnvEnum, PawaPayApiUrl } from '@/types/payment-ext';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -59,7 +62,7 @@ export async function GET(request: Request) {
     const paymentResults = await Promise.all(
       (stalePayments || []).map(async (payment) => {
         try {
-          // Only check MTN for now (add Orange if needed)
+          // Check MTN payments
           if (payment.provider === 'mtn' && payment.transaction_id) {
             const mtnService = new MTNMomoService({
               subscriptionKey: process.env.MOMO_SUBSCRIPTION_KEY!,
@@ -110,6 +113,50 @@ export async function GET(request: Request) {
             };
           }
 
+          // Check pawaPay payments
+          if (payment.provider === 'pawapay' && payment.transaction_id) {
+            const pawapayService = new PawaPayService({
+              apiToken: process.env.PAWAPAY_API_TOKEN || "",
+              baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
+              callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
+              environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+            });
+
+            // Use checkPayment with transaction_id (which is the depositId)
+            const checkResult = await pawapayService.checkPayment(payment.transaction_id);
+
+            if (!checkResult.response.success) {
+              console.error('❌ Failed to check pawaPay payment status:', checkResult.response.message);
+              throw new Error(checkResult.response.message);
+            }
+
+            // Extract status from pawaPay response
+            const pawapayStatus = checkResult.response.apiResponse?.status || checkResult.response.transactionStatus || 'UNKNOWN';
+            const mappedStatus = mapPawaPayStatus(pawapayStatus);
+
+            // Update if status changed
+            if (mappedStatus !== payment.status) {
+              await orchestrationService.handlePaymentStatusChange(payment, mappedStatus, {
+                transaction_id: payment.transaction_id,
+                provider_response: checkResult.response.apiResponse,
+              });
+            }
+
+            console.log('📊 pawaPay payment status updated:', {
+              paymentId: payment.id,
+              transactionId: payment.transaction_id,
+              oldStatus: payment.status,
+              newStatus: mappedStatus
+            });
+
+            return {
+              paymentId: payment.id,
+              oldStatus: payment.status,
+              newStatus: mappedStatus,
+              error: null
+            };
+          }
+
           return {
             paymentId: payment.id,
             oldStatus: payment.status,
@@ -136,7 +183,7 @@ export async function GET(request: Request) {
     const payoutResults = await Promise.all(
       (stalePayouts || []).map(async (payout) => {
         try {
-          // Only check MTN for now (add Orange if needed)
+          // Check MTN payouts
           if (payout.provider === 'mtn' && payout.transaction_id) {
             const mtnService = new MTNMomoService({
               subscriptionKey: process.env.DIRECT_MOMO_APIM_SUBSCRIPTION_KEY || process.env.MOMO_SUBSCRIPTION_KEY || '',
@@ -437,6 +484,97 @@ export async function GET(request: Request) {
               retryable,
               retryAttempted,
               retryResult,
+              error: null
+            };
+          }
+
+          // Check pawaPay payouts
+          if (payout.provider === 'pawapay' && payout.transaction_id) {
+            const pawapayService = new PawaPayService({
+              apiToken: process.env.PAWAPAY_API_TOKEN || "",
+              baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
+              callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
+              environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+            });
+
+            // Use checkPayoutStatus with transaction_id (which is the payoutId)
+            const statusResult = await pawapayService.checkPayoutStatus(payout.transaction_id);
+
+            if (!statusResult) {
+              console.error('❌ Failed to check pawaPay payout status - no result returned');
+              throw new Error('Failed to check payout status');
+            }
+
+            const pawapayStatus = statusResult.status;
+            const reason = statusResult.reason;
+            const mappedStatus = mapPawaPayStatus(pawapayStatus);
+
+            // Update if status changed
+            if (mappedStatus !== payout.status) {
+              const { error: updateError } = await supabase
+                .from('payouts')
+                .update({
+                  status: mappedStatus,
+                  transaction_id: statusResult.transactionId || payout.transaction_id,
+                  metadata: {
+                    ...(payout.metadata || {}),
+                    lastStatusCheck: new Date().toISOString(),
+                    pawapayStatus: pawapayStatus,
+                    pawapayReason: reason,
+                    statusCheckedAt: new Date().toISOString(),
+                  },
+                })
+                .eq('id', payout.id);
+
+              if (updateError) {
+                console.error('❌ Error updating pawaPay payout status:', updateError);
+                throw updateError;
+              }
+
+              console.log('📊 pawaPay payout status updated:', {
+                payoutId: payout.id,
+                transactionId: payout.transaction_id,
+                oldStatus: payout.status,
+                newStatus: mappedStatus,
+              });
+
+              // Send notification if status changed to failed or completed
+              if (mappedStatus === 'failed' && payout.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  payout,
+                  'failed',
+                  reason || pawapayStatus || 'Transaction échouée',
+                  'cron'
+                );
+              } else if (mappedStatus === 'completed' && payout.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  payout,
+                  'completed',
+                  undefined,
+                  'cron'
+                );
+              }
+            } else {
+              // Update metadata even if status unchanged
+              await supabase
+                .from('payouts')
+                .update({
+                  metadata: {
+                    ...(payout.metadata || {}),
+                    lastStatusCheck: new Date().toISOString(),
+                    pawapayStatus: pawapayStatus,
+                    pawapayReason: reason,
+                  },
+                })
+                .eq('id', payout.id);
+            }
+
+            return {
+              payoutId: payout.id,
+              oldStatus: payout.status,
+              newStatus: mappedStatus,
               error: null
             };
           }
