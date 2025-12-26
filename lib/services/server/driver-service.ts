@@ -14,6 +14,8 @@ export class ServerDriverService {
    * Only returns approved drivers
    */
   async getPublicDriverProfile(driverId: string): Promise<DriverPublicProfile | null> {
+    console.log('🔍 [DRIVER SERVICE] Fetching driver profile for:', driverId);
+    
     // Fetch driver profile - only approved drivers
     const { data: profile, error: profileError } = await this.supabase
       .from('profiles')
@@ -23,8 +25,17 @@ export class ServerDriverService {
       .single();
 
     if (profileError || !profile) {
+      console.error('❌ [DRIVER SERVICE] Profile error or not found:', profileError);
       return null;
     }
+
+    console.log('✅ [DRIVER SERVICE] Profile fetched:', {
+      id: profile.id,
+      full_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+      city: profile.city,
+      driver_status: profile.driver_status,
+    });
 
     // Fetch driver documents for vehicle images and verification status
     const { data: documents, error: documentsError } = await this.supabase
@@ -33,8 +44,18 @@ export class ServerDriverService {
       .eq('driver_id', driverId)
       .maybeSingle();
 
+    if (documentsError) {
+      console.error('❌ [DRIVER SERVICE] Documents error:', documentsError);
+    }
+
     const vehicleImages = documents?.vehicle_images || [];
     const verificationStatus = documents?.verification_status || 'pending';
+
+    console.log('📸 [DRIVER SERVICE] Vehicle images:', {
+      count: vehicleImages.length,
+      images: vehicleImages,
+      verification_status: verificationStatus,
+    });
 
     // Calculate total trips (completed/past rides)
     const now = new Date().toISOString();
@@ -101,7 +122,7 @@ export class ServerDriverService {
         price: ride.price,
       })) || [];
 
-    return {
+    const result = {
       id: profile.id,
       full_name: profile.full_name,
       avatar_url: profile.avatar_url,
@@ -117,6 +138,17 @@ export class ServerDriverService {
       },
       recentRides: recentRidesFormatted.length > 0 ? recentRidesFormatted : undefined,
     };
+
+    console.log('📦 [DRIVER SERVICE] Returning profile data:', {
+      id: result.id,
+      full_name: result.full_name,
+      avatar_url: result.avatar_url,
+      vehicle_images_count: result.vehicle_images.length,
+      statistics: result.statistics,
+      recentRides_count: result.recentRides?.length || 0,
+    });
+
+    return result;
   }
 }
 

@@ -10,18 +10,29 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    console.log('🔍 [API /drivers/[id]] Fetching driver profile:', params.id);
+    
     const supabase = createApiSupabaseClient();
     const driverService = new ServerDriverService(supabase);
 
     const profile = await driverService.getPublicDriverProfile(params.id);
 
     if (!profile) {
-      console.error("❌ [GET /api/drivers/[id]] Driver not found or not approved");
+      console.error("❌ [API /drivers/[id]] Driver not found or not approved");
       return NextResponse.json(
         { success: false, error: "Driver not found or not approved" },
         { status: 404 }
       );
     }
+
+    console.log('✅ [API /drivers/[id]] Profile retrieved, sending response:', {
+      success: true,
+      has_data: !!profile,
+      profile_id: profile.id,
+      profile_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+      vehicle_images_count: profile.vehicle_images?.length || 0,
+    });
 
     return NextResponse.json({
       success: true,

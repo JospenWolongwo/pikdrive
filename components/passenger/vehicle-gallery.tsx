@@ -11,6 +11,12 @@ export function VehicleGallery({
   vehicle_images,
   isVerified,
 }: VehicleGalleryProps) {
+  console.log('🚗 [VEHICLE GALLERY] Rendering with:', {
+    vehicle_images_count: vehicle_images?.length || 0,
+    vehicle_images: vehicle_images,
+    isVerified,
+  });
+
   if (!vehicle_images || vehicle_images.length === 0) {
     return (
       <Card>
@@ -50,22 +56,29 @@ export function VehicleGallery({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {vehicle_images.map((imageUrl, index) => (
-            <div
-              key={index}
-              className="relative aspect-video rounded-lg overflow-hidden bg-muted"
-            >
-              <img
-                src={imageUrl}
-                alt={`Photo du véhicule ${index + 1}`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                }}
-              />
-            </div>
-          ))}
+          {vehicle_images.map((imageUrl, index) => {
+            console.log(`🖼️ [VEHICLE GALLERY] Rendering image ${index + 1}:`, imageUrl);
+            return (
+              <div
+                key={index}
+                className="relative aspect-video rounded-lg overflow-hidden bg-muted"
+              >
+                <img
+                  src={imageUrl}
+                  alt={`Photo du véhicule ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    console.error(`❌ [VEHICLE GALLERY] Image ${index + 1} failed to load:`, imageUrl);
+                    target.style.display = "none";
+                  }}
+                  onLoad={() => {
+                    console.log(`✅ [VEHICLE GALLERY] Image ${index + 1} loaded successfully:`, imageUrl);
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

@@ -17,6 +17,14 @@ export function DriverProfileHeader({
   memberSince,
   isVerified,
 }: DriverProfileHeaderProps) {
+  console.log('🖼️ [DRIVER PROFILE HEADER] Rendering with:', {
+    full_name,
+    avatar_url,
+    city,
+    memberSince,
+    isVerified,
+  });
+
   return (
     <div className="flex flex-col items-center text-center space-y-4 pb-8 border-b">
       {/* Avatar with verification badge */}
