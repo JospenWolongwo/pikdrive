@@ -53,12 +53,16 @@ export class PawaPayVerificationService {
       }
 
       if ("error" in statusResult) {
+        const errorStatusCode = typeof statusResult.status === 'number' 
+          ? statusResult.status 
+          : HTTP_CODE.INTERNAL_SERVER_ERROR;
+        
         return {
-          statusCode: statusResult.status || HTTP_CODE.INTERNAL_SERVER_ERROR,
+          statusCode: errorStatusCode,
           response: {
             success: false,
             message: statusResult.error,
-            status: statusResult.status || HTTP_CODE.INTERNAL_SERVER_ERROR,
+            status: errorStatusCode,
             transactionStatus: null,
             transactionAmount: null,
             apiResponse: null,
