@@ -45,11 +45,12 @@ export class PawaPayPayoutService {
       // Sandbox test numbers for payout testing:
       // - 237653456789 - Returns COMPLETED status
       // - 237653456129 - Returns SUBMITTED status
+      let payoutPhoneNumber = request.phoneNumber;
       if (this.config.environment === EnvEnum.SANDBOX) {
         const sandboxTestPhone = process.env.SANDBOX_PAWAPAY_TEST_PHONE;
         if (sandboxTestPhone) {
           const originalPhone = request.phoneNumber;
-          request.phoneNumber = sandboxTestPhone;
+          payoutPhoneNumber = sandboxTestPhone;
           console.log("🧪 [PAWAPAY-PAYOUT] Sandbox test number override active:", {
             originalPhone,
             testPhone: sandboxTestPhone,
@@ -59,16 +60,16 @@ export class PawaPayPayoutService {
       }
 
       console.log("💰 [PAWAPAY-PAYOUT] Initiating payout:", {
-        phoneNumber: request.phoneNumber,
+        phoneNumber: payoutPhoneNumber,
         amount: request.amount,
         currency: request.currency,
         reason: request.reason,
       });
 
       // Format phone number - ensure it has country code
-      const phoneWithCountryCode = request.phoneNumber.startsWith(CountryCode.CAMEROON)
-        ? request.phoneNumber
-        : `${CountryCode.CAMEROON}${removeCallingCode(request.phoneNumber) || request.phoneNumber}`;
+      const phoneWithCountryCode = payoutPhoneNumber.startsWith(CountryCode.CAMEROON)
+        ? payoutPhoneNumber
+        : `${CountryCode.CAMEROON}${removeCallingCode(payoutPhoneNumber) || payoutPhoneNumber}`;
 
       // Generate external ID for tracking
       const externalId = uuidv4();
