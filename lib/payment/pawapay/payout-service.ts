@@ -152,13 +152,15 @@ export class PawaPayPayoutService {
       // XAF does not support decimal places - send as integer string
       const formattedAmount = Math.floor(data.amount).toString();
       
+      // pawaPay API v2 format
+      // Note: callbackUrl is configured in pawaPay dashboard, not sent in request body
       const requestBody: any = {
         amount: {
           value: formattedAmount, // Integer string without decimals for XAF
           currency: data.currency,
         },
         customerPhoneNumber: data.customerPhoneNumber,
-        callbackUrl: data.callbackUrl,
+        // callbackUrl is NOT included - it's configured in pawaPay dashboard
         description: data.description,
         externalId: data.externalId,
       };

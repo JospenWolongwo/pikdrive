@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { FeeCalculator } from '@/lib/payment/fee-calculator';
 import { PaymentOrchestratorService } from '@/lib/payment/payment-orchestrator.service';
+import type { Environment } from '@/types/payment-ext';
+import { Environment as EnvEnum, PawaPayApiUrl } from '@/types/payment-ext';
 
 export async function POST(request: Request) {
   try {
@@ -198,21 +200,43 @@ export async function POST(request: Request) {
               merchantNumber: process.env.DIRECT_OM_MERCHAND_NUMBER,
               tokenUrl: process.env.DIRECT_OM_TOKEN_URL,
               baseUrl: process.env.DIRECT_OM_BASE_URL,
+            },
+            {
+              apiToken: process.env.PAWAPAY_API_TOKEN || "",
+              baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
+              callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
+              environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
             }
           );
 
-          // Sandbox MTN test number override (for testing MTN payouts in sandbox)
-          // This allows testing MTN payout flow even when driver has Orange number
+          // Sandbox test number override (for testing payouts in sandbox)
           let payoutPhoneNumber = driverProfile.phone;
-          const sandboxTestPhone = process.env.SANDBOX_MTN_TEST_PHONE;
+          const usePawaPay = process.env.USE_PAWAPAY === 'true';
           
-          if (targetEnvironment === 'sandbox' && sandboxTestPhone) {
-            payoutPhoneNumber = sandboxTestPhone;
-            console.log('🧪 [PAYOUT] Sandbox MTN test number override active:', {
-              originalPhone: driverProfile.phone,
-              testPhone: sandboxTestPhone,
-              note: 'Using test MTN number for sandbox payout testing',
-            });
+          if (targetEnvironment === 'sandbox') {
+            if (usePawaPay) {
+              // pawaPay sandbox test number override
+              const sandboxPawaPayTestPhone = process.env.SANDBOX_PAWAPAY_TEST_PHONE;
+              if (sandboxPawaPayTestPhone) {
+                payoutPhoneNumber = sandboxPawaPayTestPhone;
+                console.log('🧪 [PAYOUT] Sandbox pawaPay test number override active:', {
+                  originalPhone: driverProfile.phone,
+                  testPhone: sandboxPawaPayTestPhone,
+                  note: 'Using pawaPay test number for sandbox payout testing',
+                });
+              }
+            } else {
+              // Direct MTN test number override (for direct MTN/Orange payouts)
+              const sandboxTestPhone = process.env.SANDBOX_MTN_TEST_PHONE;
+              if (sandboxTestPhone) {
+                payoutPhoneNumber = sandboxTestPhone;
+                console.log('🧪 [PAYOUT] Sandbox MTN test number override active:', {
+                  originalPhone: driverProfile.phone,
+                  testPhone: sandboxTestPhone,
+                  note: 'Using test MTN number for sandbox payout testing',
+                });
+              }
+            }
           }
 
           // Initiate payout
