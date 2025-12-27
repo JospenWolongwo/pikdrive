@@ -99,7 +99,6 @@ export default function Home() {
                     })
                   }
                 } catch (error) {
-                  console.error('Error handling driver action:', error)
                   router.push('/become-driver')
                 }
               }}

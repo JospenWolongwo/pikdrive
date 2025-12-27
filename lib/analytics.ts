@@ -19,10 +19,7 @@ export function trackSubmissionEvent(data: SubmissionEventData): void {
   // Track the event timestamp
   const eventTime = Date.now();
   
-  console.log(`📊 Tracking submission event at ${new Date(eventTime).toISOString()}`);
-  
   // In production, you would send this to your analytics platform
-  // For now we're just logging it
   const eventData = {
     ...data,
     event: 'driver_application_submitted',
@@ -36,7 +33,7 @@ export function trackSubmissionEvent(data: SubmissionEventData): void {
       events.push(eventData);
       localStorage.setItem('analytics_events', JSON.stringify(events));
     } catch (error) {
-      console.error('Error storing analytics event:', error);
+      // Silently fail - analytics storage error
     }
   }
   

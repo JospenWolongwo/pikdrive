@@ -33,7 +33,6 @@ export function PaymentStatusChecker({
       if (!isPolling) return;
 
       if (!transactionId) {
-        console.error('❌ Missing transaction ID for payment status check');
         setStatus('failed');
         setMessage('Invalid payment reference');
         setIsPolling(false);
@@ -41,8 +40,6 @@ export function PaymentStatusChecker({
         onPaymentComplete?.('failed');
         return;
       }
-
-      console.log('🔄 Checking payment status:', { transactionId, provider, bookingId, attempt: attempts + 1 });
 
       try {
         // Use our server API endpoint as a proxy to avoid CORS issues
@@ -69,14 +66,6 @@ export function PaymentStatusChecker({
         // Extract status and message from the nested data structure
         const paymentStatus = responseData.data?.status;
         const paymentMessage = responseData.data?.message;
-        
-        console.log('✅ Payment status update:', { 
-          transactionId,
-          currentStatus: status,
-          newStatus: paymentStatus,
-          message: paymentMessage,
-          timestamp: new Date().toISOString()
-        });
         
         // Use functional updates to ensure state consistency
         setStatus((prev: PaymentStatus) => paymentStatus !== prev ? paymentStatus : prev);
@@ -115,15 +104,12 @@ export function PaymentStatusChecker({
           }
         }
       } catch (error) {
-        console.error('❌ Payment status check error:', error);
-        
         // Check if this is a CORS error and handle accordingly
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         const isCorsError = errorMessage.includes('CORS') || errorMessage.includes('NetworkError');
         
         if (isCorsError && attempts < 3) {
           // For CORS errors, try a few more times with longer delays
-          console.log('⚠️ CORS error detected, retrying with exponential backoff...');
           setAttempts(prev => prev + 1);
           const backoffTime = pollingInterval * Math.pow(2, attempts); // Exponential backoff
           timeoutId = setTimeout(checkStatus, backoffTime);
@@ -134,7 +120,6 @@ export function PaymentStatusChecker({
         if (attempts < maxAttempts - 1) {
           // Keep trying for a while, with increasing delays
           const backoffTime = pollingInterval * Math.pow(1.5, attempts); // Slower backoff
-          console.log(`⏱️ Retry #${attempts + 1} in ${backoffTime/1000}s`);
           setAttempts(prev => prev + 1);
           timeoutId = setTimeout(checkStatus, backoffTime);
         } else {

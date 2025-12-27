@@ -74,22 +74,6 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     console.error('Error details:', error);
     console.error('Stack trace:', error.stack);
 
-    // Additional mobile-specific checks
-    if (typeof window !== 'undefined') {
-      console.log('🔍 Mobile Debug Info:', {
-        userAgent: navigator.userAgent,
-        isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
-        isAndroid: /Android/.test(navigator.userAgent),
-        isMobile: /Mobi|Android/i.test(navigator.userAgent),
-        touchSupport: 'ontouchstart' in window,
-        screenSize: `${screen.width}x${screen.height}`,
-        viewport: `${window.innerWidth}x${window.innerHeight}`,
-        devicePixelRatio: window.devicePixelRatio,
-        cookies: navigator.cookieEnabled,
-        online: navigator.onLine
-      });
-    }
-
     // In production, you could send this to an error tracking service
     // Example: Sentry.captureException(error, { extra: errorInfo });
   }, [error]);
@@ -111,7 +95,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy error details:', err);
+      // Silently fail - copy operation failed
     }
   };
 

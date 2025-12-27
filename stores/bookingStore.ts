@@ -300,7 +300,6 @@ export const useBookingStore = create<BookingState>()(
           
           return updatedBooking;
         } catch (error) {
-          console.error("Error updating booking:", error);
           throw error;
         }
       },
@@ -329,7 +328,6 @@ export const useBookingStore = create<BookingState>()(
             set({ currentBooking: null });
           }
         } catch (error) {
-          console.error("Error cancelling booking:", error);
           throw error;
         }
       },
@@ -344,7 +342,6 @@ export const useBookingStore = create<BookingState>()(
 
           return response.data?.success || false;
         } catch (error) {
-          console.error("Error verifying booking code:", error);
           throw error;
         }
       },
@@ -360,7 +357,6 @@ export const useBookingStore = create<BookingState>()(
 
           return response.data || null;
         } catch (error) {
-          console.error("Error checking existing booking:", error);
           throw error;
         }
       },

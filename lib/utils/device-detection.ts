@@ -163,7 +163,6 @@ export function getNotificationPermission(): NotificationPermission | 'default' 
   try {
     return Notification.permission;
   } catch (error) {
-    console.warn('Error accessing Notification.permission:', error);
     return 'default';
   }
 }
@@ -174,14 +173,12 @@ export function getNotificationPermission(): NotificationPermission | 'default' 
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission | 'default'> {
   if (!isNotificationSupported()) {
-    console.warn('Notification API not supported on this device');
     return 'default';
   }
   
   try {
     return await Notification.requestPermission();
   } catch (error) {
-    console.warn('Error requesting notification permission:', error);
     return 'default';
   }
 }

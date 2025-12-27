@@ -34,13 +34,17 @@ export function usePayoutStatistics(
   const error = usePayoutsStore((state) => state.error);
   const fetchPayouts = usePayoutsStore((state) => state.fetchPayouts);
   const refreshPayouts = usePayoutsStore((state) => state.refreshPayouts);
-  const getFilteredPayouts = usePayoutsStore((state) => state.getFilteredPayouts);
   const subscribeToPayoutUpdates = usePayoutsStore((state) => state.subscribeToPayoutUpdates);
   const unsubscribeFromPayoutUpdates = usePayoutsStore((state) => state.unsubscribeFromPayoutUpdates);
 
   // Filter payouts client-side based on status
+  // FIX: Depend on allPayouts directly to ensure reactivity when store updates
   const filteredPayouts = useMemo(() => {
-    const filtered = getFilteredPayouts(options.status);
+    // Filter by status
+    let filtered = allPayouts;
+    if (options.status && options.status !== 'all') {
+      filtered = allPayouts.filter((payout) => payout.status === options.status);
+    }
     
     // Apply pagination if needed
     if (options.limit || options.offset) {
@@ -50,7 +54,7 @@ export function usePayoutStatistics(
     }
     
     return filtered;
-  }, [getFilteredPayouts, options.status, options.limit, options.offset]);
+  }, [allPayouts, options.status, options.limit, options.offset]);
 
   // Initial fetch on mount
   useEffect(() => {

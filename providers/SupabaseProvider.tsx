@@ -34,15 +34,10 @@ export const SupabaseProvider = ({
     // Refresh session every 5 minutes to keep tokens warm
     backgroundRefreshRef.current = setInterval(async () => {
       try {
-        console.log("🔄 Background session refresh...");
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.warn("Background refresh failed:", error.message);
-        } else if (session) {
-          console.log("✅ Background refresh successful");
-        }
+        // Silently handle refresh errors - background operation
       } catch (error) {
-        console.warn("Background refresh error:", error);
+        // Silently handle refresh errors - background operation
       }
     }, 5 * 60 * 1000); // 5 minutes
   }, [supabase]);
@@ -58,7 +53,6 @@ export const SupabaseProvider = ({
       } = await supabase.auth.getSession();
 
       if (error) {
-        console.error("Session error:", error);
         setLoading(false);
         return;
       }
@@ -70,7 +64,7 @@ export const SupabaseProvider = ({
         startBackgroundRefresh();
       }
     } catch (error) {
-      console.error("Error loading session:", error);
+      // Silently fail - session loading error
     } finally {
       setLoading(false);
     }
@@ -82,20 +76,13 @@ export const SupabaseProvider = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("🔐 Auth state change:", event, session ? `session exists (user: ${session.user?.id})` : "no session");
-      
-      // Log token refresh attempts
-      if (event === 'TOKEN_REFRESHED') {
-        console.log("🔄 Token refreshed successfully");
-      } else if (event === 'SIGNED_OUT') {
-        console.log("🚪 User signed out");
+      if (event === 'SIGNED_OUT') {
         // Clear background refresh
         if (backgroundRefreshRef.current) {
           clearInterval(backgroundRefreshRef.current);
           backgroundRefreshRef.current = null;
         }
       } else if (event === 'SIGNED_IN' && session?.user) {
-        console.log("✅ User signed in:", session.user.id);
         // Start background refresh for signed-in users
         startBackgroundRefresh();
       }

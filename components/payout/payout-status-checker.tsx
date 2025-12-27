@@ -69,20 +69,12 @@ export function PayoutStatusChecker({
       }
 
       if (!transactionId && !payoutId) {
-        console.error('❌ Missing transaction ID or payout ID for payout status check');
         setStatus('failed');
         setMessage('Référence de paiement invalide');
         setIsPolling(false);
         onComplete?.('failed');
         return;
       }
-
-      console.log('🔄 Checking payout status:', { 
-        transactionId, 
-        payoutId, 
-        provider, 
-        elapsedSeconds: Math.floor(elapsed / 1000) 
-      });
 
       try {
         const response = await fetch('/api/payouts/check-status', {
@@ -110,16 +102,6 @@ export function PayoutStatusChecker({
         const payoutStatus = responseData.data?.status as PayoutStatus;
         const payoutMessage = responseData.data?.message;
         const shouldRetry = responseData.data?.shouldRetry;
-        
-        console.log('✅ Payout status update:', { 
-          transactionId,
-          payoutId,
-          currentStatus: status,
-          newStatus: payoutStatus,
-          message: payoutMessage,
-          shouldRetry,
-          timestamp: new Date().toISOString()
-        });
         
         setLastCheck(Date.now());
         
@@ -163,13 +145,9 @@ export function PayoutStatusChecker({
           const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
           const nextInterval = getPollingInterval(elapsedSeconds, provider);
           
-          console.log(`⏱️ Next check in ${nextInterval / 1000}s (elapsed: ${elapsedSeconds}s, provider: ${provider})`);
-          
           timeoutId = setTimeout(checkStatus, nextInterval);
         }
       } catch (error) {
-        console.error('❌ Payout status check error:', error);
-        
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         
         // Retry with exponential backoff on errors
@@ -178,7 +156,6 @@ export function PayoutStatusChecker({
           const baseInterval = getPollingInterval(elapsedSeconds, provider);
           const backoffTime = baseInterval * Math.pow(1.5, Math.floor(elapsedSeconds / 30)); // Exponential backoff
           
-          console.log(`⏱️ Error retry in ${backoffTime / 1000}s`);
           timeoutId = setTimeout(checkStatus, backoffTime);
         } else {
           setIsPolling(false);

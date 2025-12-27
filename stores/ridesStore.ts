@@ -206,8 +206,6 @@ export const useRidesStore = create<RidesState>()(
         
         const rideIds = allRides.map(ride => ride.id);
         
-        console.log('🔔 [RIDES STORE] Subscribing to real-time updates for rides:', rideIds);
-        
         const channel = supabase
           .channel('passenger-rides-updates')
           .on('postgres_changes', {
@@ -216,8 +214,6 @@ export const useRidesStore = create<RidesState>()(
             table: 'rides',
             filter: `id=in.(${rideIds.join(',')})`,
           }, (payload) => {
-            console.log('🔄 [RIDES STORE] Ride updated via real-time:', payload.new);
-            
             const updatedRide = payload.new;
             
             // Update the specific ride in the allRides array
@@ -233,9 +229,7 @@ export const useRidesStore = create<RidesState>()(
               )
             }));
           })
-          .subscribe((status) => {
-            console.log('📡 [RIDES STORE] Real-time subscription status:', status);
-          });
+          .subscribe();
         
         set({ realTimeChannel: channel });
       },
@@ -245,7 +239,6 @@ export const useRidesStore = create<RidesState>()(
         const { realTimeChannel } = get();
         
         if (realTimeChannel) {
-          console.log('🔕 [RIDES STORE] Unsubscribing from real-time updates');
           // Note: This assumes supabase is available, but we can't access it here
           // The caller should handle cleanup
           set({ realTimeChannel: null });
@@ -280,7 +273,6 @@ export const useRidesStore = create<RidesState>()(
             lastDriverRidesFetch: now,
           });
         } catch (error) {
-          console.error("Error fetching driver rides:", error);
           const errorMessage = error instanceof Error ? error.message : "Failed to fetch driver rides";
           set({
             driverRidesLoading: false,
@@ -325,41 +317,26 @@ export const useRidesStore = create<RidesState>()(
           driverRides: [ride, ...state.driverRides],
           lastDriverRidesFetch: Date.now(), // Mark as fresh
         }));
-        console.log('✅ [RIDES STORE] Added driver ride optimistically:', {
-          id: ride.id,
-          from: ride.from_city,
-          to: ride.to_city,
-          seats: ride.seats_available
-        });
       },
 
       // Actions for current ride
       fetchRideById: async (rideId: string) => {
-        console.log("🔄 [STORE] fetchRideById called for:", rideId);
         set({ currentRideLoading: true, currentRideError: null });
 
         try {
           const response = await ridesApiClient.getRideById(rideId);
-          console.log("📦 [STORE] API response received:", { 
-            success: response.success, 
-            hasData: !!response.data,
-            error: response.error 
-          });
           
           if (!response.success || !response.data) {
             const errorMsg = response.error || 'Failed to fetch ride details';
-            console.error("❌ [STORE] API returned error:", errorMsg);
             throw new Error(errorMsg);
           }
           
-          console.log("✅ [STORE] Setting currentRide:", response.data.id);
           set({
             currentRide: response.data,
             currentRideLoading: false,
             currentRideError: null,
           });
         } catch (error) {
-          console.error("❌ [STORE] Error in fetchRideById:", error);
           // Handle ApiError from API client
           let errorMessage = "Failed to fetch ride";
           
@@ -371,7 +348,6 @@ export const useRidesStore = create<RidesState>()(
             } else {
               errorMessage = error.getDisplayMessage();
             }
-            console.error("❌ [STORE] ApiError details:", { status: error.status, message: errorMessage });
           } else if (error instanceof Error) {
             errorMessage = error.message;
           }
@@ -415,7 +391,6 @@ export const useRidesStore = create<RidesState>()(
           await get().refreshDriverRides();
           return response.data;
         } catch (error) {
-          console.error("Error creating ride:", error);
           throw error;
         }
       },
@@ -445,7 +420,6 @@ export const useRidesStore = create<RidesState>()(
           
           return updatedRide;
         } catch (error) {
-          console.error("Error updating ride:", error);
           throw error;
         }
       },
@@ -469,7 +443,6 @@ export const useRidesStore = create<RidesState>()(
             set({ currentRide: null });
           }
         } catch (error) {
-          console.error("Error deleting ride:", error);
           throw error;
         }
       },
@@ -489,7 +462,6 @@ export const useRidesStore = create<RidesState>()(
             userRidesLoading: false 
           });
         } catch (error) {
-          console.error("Error fetching user rides:", error);
           set({ 
             userRidesError: error instanceof Error ? error.message : "Failed to fetch user rides",
             userRidesLoading: false 

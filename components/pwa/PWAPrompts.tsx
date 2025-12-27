@@ -32,17 +32,6 @@ export default function PWAPrompts() {
   const [showIOS, setShowIOS] = useState(false);
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
 
-  useEffect(() => {
-    console.log('🔍 PWAPrompts Debug:', { 
-      showAndroid, 
-      isInstallable, 
-      hasPrompt,
-      isInstalled,
-      isIOSDevice,
-      isAndroidDevice,
-      env: process.env.NODE_ENV 
-    });
-  }, [showAndroid, isInstallable, hasPrompt, isIOSDevice, isAndroidDevice, isInstalled]);
 
   // Show appropriate prompt on initial load
   useEffect(() => {
@@ -55,7 +44,6 @@ export default function PWAPrompts() {
     
     if (isInstallable && isAndroidDevice && !hasPrompt) {
       // Only show our custom dialog if there's no native prompt
-      console.log('ℹ️ No native prompt available on load, showing custom dialog');
       setShowAndroid(true);
     } else if (isInstallable && isIOSDevice) {
       setShowIOS(true);
@@ -64,23 +52,17 @@ export default function PWAPrompts() {
 
   const handleInstall = useCallback(async () => {
     if (!install) {
-      console.log('❌ Install function not available');
       return;
     }
 
     try {
-      console.log('🚀 Attempting installation from dialog...');
       const success = await install();
       
       if (success) {
-        console.log('✅ Installation successful');
         setShowAndroid(false);
-      } else {
-        console.log('ℹ️ Installation not completed');
-        // Keep dialog open if installation wasn't successful
       }
+      // Keep dialog open if installation wasn't successful
     } catch (err) {
-      console.error('❌ Installation error:', err);
       // Keep dialog open if there was an error
     }
   }, [install]);

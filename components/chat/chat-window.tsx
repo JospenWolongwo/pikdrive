@@ -36,21 +36,16 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
     // Load initial messages
     const loadMessages = async () => {
       try {
-        console.log("Loading messages for conversation:", conversationId);
         const initialMessages = await getMessages(conversationId);
-        console.log("Loaded initial messages:", initialMessages);
         setMessages(initialMessages);
         scrollToBottom();
       } catch (error) {
-        console.error("Error loading messages:", error);
         setError("Failed to load messages");
       }
     };
 
     // Subscribe to new messages
-    console.log("Setting up message subscription for:", conversationId);
     const subscription = subscribeToMessages(conversationId, (message) => {
-      console.log("Received new message:", message);
       setMessages((prev) => [...prev, message]);
       scrollToBottom();
     });
@@ -58,7 +53,6 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
     loadMessages();
 
     return () => {
-      console.log("Cleaning up subscription");
       subscription.unsubscribe();
     };
   }, [conversationId]);
@@ -69,14 +63,12 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
     try {
       setIsLoading(true);
       setError(null);
-      console.log("Sending message:", newMessage);
 
       const message = await sendMessage(
         conversationId,
         user.id,
         newMessage.trim()
       );
-      console.log("Message sent:", message);
 
       if (message) {
         setNewMessage("");
@@ -84,7 +76,6 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
         setError("Failed to send message");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
       setError("Failed to send message");
     } finally {
       setIsLoading(false);

@@ -239,7 +239,6 @@ export const usePaymentStore = create<PaymentState>()(
 
           return response.data || null;
         } catch (error) {
-          console.error("Error fetching payment by booking:", error);
           throw error;
         }
       },

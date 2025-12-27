@@ -81,32 +81,24 @@ export default function RootLayout({
                 try {
                   // Defensive check: Ensure document is available
                   if (typeof document === 'undefined') {
-                    console.warn('⚠️ Document not available, skipping OneSignal script tracking');
                     return;
                   }
 
                   // Use IIFE to avoid polluting global scope
                   function trackOneSignalScript() {
                     try {
-                      console.log('🔍 Checking OneSignal SDK script loading...');
-                      
                       // Check if script loaded successfully
                       const script = document.querySelector('script[src="/api/onesignal/sdk/OneSignalSDK.page.js"]');
                       if (script) {
                         script.addEventListener('load', function() {
-                          console.log('✅ OneSignal SDK script loaded successfully');
+                          // Script loaded successfully
                         });
                         script.addEventListener('error', function(e) {
-                          console.error('❌ OneSignal SDK script failed to load:', e);
-                          // Don't throw - gracefully degrade if script fails to load
-                          console.log('ℹ️ App will continue to work without OneSignal push notifications');
+                          // Script failed to load - gracefully degrade
                         });
-                      } else {
-                        console.warn('⚠️ OneSignal SDK script element not found');
                       }
                     } catch (error) {
-                      console.error('❌ Error tracking OneSignal script:', error);
-                      // Don't throw - gracefully degrade
+                      // Silently fail - gracefully degrade
                     }
                   }
 
@@ -118,8 +110,7 @@ export default function RootLayout({
                     trackOneSignalScript();
                   }
                 } catch (error) {
-                  console.error('❌ Error in OneSignal script tracking setup:', error);
-                  // Don't throw - gracefully degrade
+                  // Silently fail - gracefully degrade
                 }
               })();
             `,

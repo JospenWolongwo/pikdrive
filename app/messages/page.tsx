@@ -71,20 +71,18 @@ export default function MessagesPage() {
     if (!user) return;
     
     try {
-      console.log("🔄 Manual refresh triggered");
       // Reset the loaded flag to force fresh fetch
       conversationsLoadedRef.current = false;
       
       // Load user rides using Zustand store (non-blocking)
       loadUserRides(user.id).catch((error) => {
-        console.warn("Failed to load user rides during refresh (non-blocking):", error);
+        // Silently fail - non-blocking operation
       });
       
       // Fetch conversations using chatStore (this is the important part)
       await fetchConversations(user.id);
       conversationsLoadedRef.current = true;
     } catch (error) {
-      console.error("Error loading conversations:", error);
       toast({
         title: "Erreur de chargement",
         description:
@@ -102,9 +100,6 @@ export default function MessagesPage() {
   // Open chat with a specific user - wrapped in useCallback to prevent re-renders
   const openChat = useCallback(
     (conversation: UIConversation) => {
-      console.log(
-        `📱 Opening chat with ${conversation.otherUserName} for ride ${conversation.rideId}`
-      );
       setSelectedChat(conversation);
 
       // Mark messages as read when opening the chat
@@ -128,9 +123,6 @@ export default function MessagesPage() {
       const userId = params.get("user");
 
       if (rideId && userId) {
-        console.log(
-          `🔗 URL parameters detected: ride=${rideId}, user=${userId}`
-        );
         setUrlParams({ rideId, userId });
 
         // Clean URL parameters immediately
@@ -158,15 +150,10 @@ export default function MessagesPage() {
       );
 
       if (conversation) {
-        console.log(`✅ Found conversation from URL parameters, opening chat`);
         openChat(conversation);
 
         // Clear URL params after handling
         setUrlParams({});
-      } else {
-        console.log(
-          `⚠️ Conversation from URL parameters not found in loaded conversations`
-        );
       }
     }
   }, [user, conversations, urlParams, openChat]);
@@ -181,8 +168,7 @@ export default function MessagesPage() {
     const loadConversations = async () => {
       try {
         // Load user rides using Zustand store (non-blocking)
-        loadUserRides(user.id).catch((error) => {
-          console.warn("Failed to load user rides (non-blocking):", error);
+        loadUserRides(user.id).catch(() => {
           // Don't show error toast for rides - conversations are more important
         });
         
@@ -191,14 +177,10 @@ export default function MessagesPage() {
         
         // Only fetch conversations if not already loaded (caching)
         if (!conversationsLoadedRef.current) {
-          console.log("📱 Loading conversations from API...");
           await fetchConversations(user.id);
           conversationsLoadedRef.current = true;
-        } else {
-          console.log("📱 Using cached conversations:", conversations.length);
         }
       } catch (error) {
-        console.error("Error loading conversations:", error);
         toast({
           title: "Erreur de chargement",
           description:
@@ -227,24 +209,16 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!user) return;
     
-    console.log('📡 Subscribing to all conversations for real-time updates');
-    
     // Subscribe to all conversations with a single global subscription
     subscribeToAllConversations(user.id);
     
     return () => {
       // Cleanup global subscription
-      console.log('🧹 Cleaning up global conversation subscription');
       unsubscribeFromAllConversations();
     };
   }, [user, subscribeToAllConversations, unsubscribeFromAllConversations]);
 
   // Note: Unread counts and conversation updates are now handled by the chatStore automatically
-
-  // Debug: Log when conversations change
-  useEffect(() => {
-    console.log('📋 Conversations updated in UI:', conversations.length, conversations.map(c => c.lastMessage));
-  }, [conversations]);
 
   // Memoized conversation filtering to prevent unnecessary re-computations
   const filteredConversations = useMemo(() => {

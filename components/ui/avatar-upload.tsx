@@ -36,7 +36,7 @@ export function AvatarUpload({ uid, url, size = 150, onUpload }: AvatarUploadPro
       const url = URL.createObjectURL(data)
       setAvatarUrl(url)
     } catch (error) {
-      console.error("Error downloading image: ", error)
+      // Silently fail - error handling done via UI
     }
   }
 
@@ -78,7 +78,6 @@ export function AvatarUpload({ uid, url, size = 150, onUpload }: AvatarUploadPro
         description: "Error uploading avatar",
         variant: "destructive",
       })
-      console.error("Error uploading avatar:", error)
     } finally {
       setUploading(false)
     }

@@ -134,7 +134,7 @@ export function useBookingModal({
         }
       }
     } catch (error) {
-      console.error("Error checking existing booking:", error);
+      // Silently fail - booking check error
     }
   };
 
@@ -164,7 +164,6 @@ export function useBookingModal({
       // NOTE: Notifications removed here - they will be sent AFTER payment completes
       // This prevents sending driver notification before payment is confirmed
     } catch (error) {
-      console.error("Booking creation failed:", error);
       toast.error(
         error instanceof Error ? error.message : "Échec de la création de la réservation"
       );

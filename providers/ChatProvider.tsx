@@ -68,7 +68,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         )
       );
     } catch (error) {
-      console.error("Error loading unread counts:", error);
+      // Silently fail - unread counts loading error
     }
   }, [user, supabase]);
 
@@ -91,7 +91,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         prev.filter((count) => count.rideId !== rideId)
       );
     } catch (error) {
-      console.error("Error marking messages as read:", error);
+      // Silently fail - marking as read error
     }
   };
 

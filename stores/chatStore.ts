@@ -268,7 +268,6 @@ export const useChatStore = create<ChatState>()(
 
           return newMessage;
         } catch (error) {
-          console.error("Error sending message:", error);
           throw error;
         }
       },
@@ -333,7 +332,6 @@ export const useChatStore = create<ChatState>()(
           // Get rideId from conversation for API call
           const conversation = get().conversations.find(c => c.id === conversationId);
           if (!conversation) {
-            console.warn("Conversation not found for markAsRead:", conversationId);
             return;
           }
           
@@ -353,7 +351,6 @@ export const useChatStore = create<ChatState>()(
             };
           });
         } catch (error) {
-          console.error("Error marking messages as read:", error);
           throw error;
         }
       },
@@ -408,14 +405,10 @@ export const useChatStore = create<ChatState>()(
         const { channels } = get();
         
         if (channels.has(rideId)) {
-          console.log('⏭️ Already subscribed to ride:', rideId);
           return; // Already subscribed
         }
 
-        console.log('🔧 Setting up subscription for ride:', rideId);
         const channel = chatApiClient.subscribeToMessages(supabase, rideId, (message) => {
-          console.log('🔔 subscribeToRide received message for ride:', rideId, 'conversation:', message.conversation_id, 'content:', message.content);
-          
           // Add new message to local state and update conversation
           set((state) => {
             const conversationId = message.conversation_id;
@@ -522,8 +515,6 @@ export const useChatStore = create<ChatState>()(
         
         if (globalChannel) return; // Already subscribed
         
-        console.log('🔧 Setting up subscribeToAllConversations for user:', userId);
-        
         const channel = supabase
           .channel(`user-conversations:${userId}`)
           .on(
@@ -536,8 +527,6 @@ export const useChatStore = create<ChatState>()(
             (payload) => {
               const message = payload.new;
               
-              console.log('🔔 subscribeToAllConversations received message:', message);
-              
               // Update conversation in store immediately (no async database call)
               set((state) => {
                 // Check if conversation exists in local state
@@ -546,7 +535,6 @@ export const useChatStore = create<ChatState>()(
                 );
                 
                 if (!conversationExists) {
-                  console.log('⚠️ Conversation not in local state:', message.conversation_id);
                   return state; // Return unchanged state
                 }
                 
@@ -556,8 +544,6 @@ export const useChatStore = create<ChatState>()(
                 );
                 
                 if (!conversation) return state;
-                
-                console.log('✅ Found conversation, updating with message:', message.content);
                 
                 // Update conversation with new message data
                 const updatedConversations = state.conversations.map(conv => {
@@ -591,18 +577,9 @@ export const useChatStore = create<ChatState>()(
               });
             }
           )
-          .subscribe((status, err) => {
-            if (err) {
-              console.error('❌ Subscription error:', err);
-            }
-            console.log('📡 Subscription status:', status);
-            if (status === 'SUBSCRIBED') {
-              console.log('✅ Successfully subscribed to all conversations');
-            }
-          });
+          .subscribe();
         
         set({ globalChannel: channel });
-        console.log('✅ subscribeToAllConversations setup complete');
       },
 
       unsubscribeFromAllConversations: () => {
@@ -625,7 +602,6 @@ export const useChatStore = create<ChatState>()(
           
           return response.data;
         } catch (error) {
-          console.error("Error getting/creating conversation:", error);
           throw error;
         }
       },
@@ -640,7 +616,6 @@ export const useChatStore = create<ChatState>()(
           
           return response.data || [];
         } catch (error) {
-          console.error("Error fetching ride messages:", error);
           throw error;
         }
       },

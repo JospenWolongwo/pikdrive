@@ -32,19 +32,14 @@ export function useServiceWorker() {
   // Check for existing service worker (OneSignal's)
   const checkServiceWorker = useCallback(async () => {
     if (!state.isSupported) {
-      console.warn("Service Worker not supported");
       return false;
     }
 
     try {
-      console.log("🔧 Checking for OneSignal Service Worker...");
-      
       // Get existing service worker registration (OneSignal should have registered it)
       const registration = await navigator.serviceWorker.getRegistration();
       
       if (registration) {
-        console.log("✅ OneSignal Service Worker found:", registration);
-        
         setState((prev) => ({
           ...prev,
           isRegistered: true,
@@ -54,11 +49,9 @@ export function useServiceWorker() {
         
         return true;
       } else {
-        console.log("⚠️ No service worker found - OneSignal may not be initialized yet");
         return false;
       }
     } catch (error) {
-      console.error("Failed to check service worker:", error);
       return false;
     }
   }, [state.isSupported]);
@@ -68,8 +61,6 @@ export function useServiceWorker() {
     if (!state.registration) return;
 
     try {
-      console.log("🔄 Installing Service Worker update...");
-
       // Send message to service worker to skip waiting
       if (state.registration.waiting) {
         state.registration.waiting.postMessage({ type: "SKIP_WAITING" });
@@ -77,45 +68,27 @@ export function useServiceWorker() {
 
       setUpdateAvailable(false);
     } catch (error) {
-      console.error("Failed to install update:", error);
+      // Silently fail - update installation error
     }
   }, [state.registration]);
 
   // Subscribe to push notifications
   const subscribeToPushNotifications = useCallback(
     async (userId: string) => {
-      console.log("🔧 Service Worker state:", {
-        isRegistered: state.isRegistered,
-        hasRegistration: !!state.registration,
-        userId,
-        oneSignalInitialized,
-      });
-
       if (!state.isRegistered || !state.registration) {
-        console.warn("Service Worker not registered");
         return false;
       }
 
       try {
-        console.log(
-          "🔧 Service worker registration status:",
-          state.registration.active ? "active" : "installing"
-        );
-        // Service worker should already be ready if registered
-        console.log("🔧 Service worker is ready");
-
         // Use OneSignal if available, otherwise fall back to custom push service
         if (oneSignalInitialized && window.OneSignal) {
-          console.log("🔧 Using OneSignal for push notifications");
           // Use native browser API to avoid "Permission blocked" errors
           if (!("Notification" in window)) {
-            console.warn("This browser does not support notifications");
             return false;
           }
 
           // Check if Notification API is available (iOS Safari doesn't support it)
           if (typeof Notification === 'undefined' || !('Notification' in window)) {
-            console.warn('⚠️ Notification API not supported on this device');
             return false;
           }
 
@@ -124,51 +97,39 @@ export function useServiceWorker() {
           try {
             currentPermission = Notification.permission;
           } catch (error) {
-            console.warn('Error accessing Notification.permission:', error);
             return false;
           }
 
           if (currentPermission === "granted") {
-            console.log('✅ Notification permission already granted');
             return true;
           }
 
           if (currentPermission === "denied") {
-            console.log('❌ Notification permission was previously denied');
             return false;
           }
 
-          console.log('📱 Requesting notification permission via native API...');
           let permission: NotificationPermission;
           try {
             permission = await Notification.requestPermission();
           } catch (error) {
-            console.error('Error requesting notification permission:', error);
             return false;
           }
           const granted = permission === "granted";
           
           if (granted) {
-            console.log('✅ Notification permission granted via native API');
-            
             // Sync with OneSignal after native permission is granted
             try {
               await window.OneSignal.Notifications.requestPermission();
-              console.log('✅ OneSignal permission sync successful');
             } catch (oneSignalError) {
-              console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
+              // Silently fail - native permission already granted
             }
-          } else {
-            console.log('❌ Notification permission denied via native API');
           }
 
           return granted;
         } else {
-          console.log("🔧 OneSignal not initialized yet");
           return false;
         }
       } catch (error) {
-        console.error("Failed to subscribe to push notifications:", error);
         return false;
       }
     },
@@ -180,7 +141,6 @@ export function useServiceWorker() {
     async (userId: string) => {
       // Note: OneSignal handles push subscription management
       // This function is kept for API compatibility but OneSignal manages subscriptions
-      console.log("Note: Push notifications are managed by OneSignal");
       return true;
     },
     []
@@ -208,14 +168,10 @@ export function useServiceWorker() {
     if (!state.registration) return;
 
     const handleMessage = (event: MessageEvent) => {
-      console.log("📨 Main thread received message:", event.data);
-
       if (event.data?.type === "SYNC_OFFLINE_TRANSACTIONS") {
         // Handle offline transaction sync
-        console.log("💾 Syncing offline transactions...");
       } else if (event.data?.type === "SYNC_OFFLINE_MESSAGES") {
         // Handle offline message sync
-        console.log("💬 Syncing offline messages...");
       }
     };
 

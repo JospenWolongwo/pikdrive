@@ -102,8 +102,8 @@ export function ChatDialog({
 
       // Mark messages as read when dialog opens (only if conversation exists)
       if (!isNewConversation) {
-        markAsRead(actualConversationId, user.id).catch(err => {
-          console.error('Failed to mark messages as read:', err);
+        markAsRead(actualConversationId, user.id).catch(() => {
+          // Silently fail - non-critical operation
         });
       }
 
@@ -121,8 +121,8 @@ export function ChatDialog({
   useEffect(() => {
     if (isOpen && user && actualConversationId && conversationMessages.length > 0 && !isNewConversation) {
       const timer = setTimeout(() => {
-        markAsRead(actualConversationId, user.id).catch(err => {
-          console.error('Failed to mark messages as read:', err);
+        markAsRead(actualConversationId, user.id).catch(() => {
+          // Silently fail - non-critical operation
         });
       }, 500);
 
@@ -171,7 +171,6 @@ export function ChatDialog({
 
       scrollToBottom();
     } catch (error) {
-      console.error("Error sending message:", error);
       setNewMessage(messageContent); // Restore message if failed
       toast({
         variant: "destructive",
@@ -185,8 +184,8 @@ export function ChatDialog({
     if (isOpen && user && !isNewConversation && actualConversationId) {
       // Mark messages as read when opening the chat (non-blocking)
       // Only for existing conversations, not new ones
-      markAsRead(actualConversationId, user.id).catch(err => {
-        console.warn('Failed to mark as read (non-critical):', err.message);
+      markAsRead(actualConversationId, user.id).catch(() => {
+        // Silently fail - non-critical operation
       });
     }
   }, [isOpen, user, actualConversationId, isNewConversation, markAsRead]);

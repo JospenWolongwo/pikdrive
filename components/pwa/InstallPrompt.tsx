@@ -54,7 +54,6 @@ export function InstallPrompt() {
     // Optional: Track the outcome
     if (outcome === 'accepted') {
       // You could send analytics here
-      console.log('User accepted the install prompt');
     }
   };
 

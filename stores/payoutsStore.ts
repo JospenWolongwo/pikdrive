@@ -131,7 +131,6 @@ export const usePayoutsStore = create<PayoutsState>()(
             loading: false,
             error: errorMessage,
           });
-          console.error('Error fetching payouts:', error);
         }
       },
 
@@ -201,23 +200,47 @@ export const usePayoutsStore = create<PayoutsState>()(
               table: 'payouts',
               filter: `driver_id=eq.${userId}`,
             },
-            (payload) => {
-              console.log('🔄 [PAYOUTS STORE] Payout updated via real-time:', payload);
-
+            async (payload) => {
               // Update the specific payout in the array
               set((state) => {
                 let updatedPayouts = [...state.allPayouts];
 
                 if (payload.eventType === 'INSERT') {
-                  // Add new payout
-                  updatedPayouts = [payload.new as PayoutWithDetails, ...updatedPayouts];
+                  // FIX: For INSERT, add payout immediately but trigger fetch to get full data with relations
+                  const newPayout = payload.new as PayoutWithDetails;
+                  
+                  // Check if payout already exists (avoid duplicates)
+                  const exists = updatedPayouts.some(p => p.id === newPayout.id);
+                  if (!exists) {
+                    // Add new payout at the beginning (most recent first)
+                    updatedPayouts = [newPayout, ...updatedPayouts];
+                  }
+                  
+                  // Trigger a refresh to get full payout data with booking/ride relations
+                  // Use setTimeout to avoid blocking the current state update
+                  setTimeout(() => {
+                    get().fetchPayouts(true);
+                  }, 100);
                 } else if (payload.eventType === 'UPDATE') {
-                  // Update existing payout
-                  updatedPayouts = updatedPayouts.map((payout) =>
-                    payout.id === payload.new.id
-                      ? (payload.new as PayoutWithDetails)
-                      : payout
-                  );
+                  // Update existing payout - merge to preserve existing relations if payload.new doesn't have them
+                  updatedPayouts = updatedPayouts.map((payout) => {
+                    if (payout.id === payload.new.id) {
+                      // Merge new data with existing payout to preserve relations
+                      return {
+                        ...payout,
+                        ...(payload.new as PayoutWithDetails),
+                        // Preserve booking/ride if not in payload.new (real-time updates may not include relations)
+                        booking: (payload.new as PayoutWithDetails).booking || payout.booking,
+                      } as PayoutWithDetails;
+                    }
+                    return payout;
+                  });
+                  
+                  // If payout wasn't found, add it (shouldn't happen but handle edge case)
+                  const found = updatedPayouts.some(p => p.id === payload.new.id);
+                  if (!found) {
+                    updatedPayouts = [payload.new as PayoutWithDetails, ...updatedPayouts];
+                  }
                 } else if (payload.eventType === 'DELETE') {
                   // Remove deleted payout
                   updatedPayouts = updatedPayouts.filter(
@@ -236,9 +259,7 @@ export const usePayoutsStore = create<PayoutsState>()(
               });
             }
           )
-          .subscribe((status) => {
-            console.log('📡 [PAYOUTS STORE] Real-time subscription status:', status);
-          });
+          .subscribe();
 
         set({ realTimeChannel: channel });
       },
@@ -248,7 +269,6 @@ export const usePayoutsStore = create<PayoutsState>()(
         const { realTimeChannel } = get();
 
         if (realTimeChannel) {
-          console.log('🔕 [PAYOUTS STORE] Unsubscribing from real-time updates');
           supabase.removeChannel(realTimeChannel);
           set({ realTimeChannel: null });
         }

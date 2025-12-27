@@ -178,7 +178,6 @@ export default function DriverDashboard() {
           .eq("driver_id", user.id);
 
         if (error) {
-          console.error("Error deleting ride:", error);
           toast({
             title: "Erreur",
             description:
@@ -197,7 +196,6 @@ export default function DriverDashboard() {
         await refreshRides();
       }
     } catch (error) {
-      console.error("Error in delete process:", error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la suppression.",

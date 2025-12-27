@@ -20,8 +20,6 @@ export async function createConversation(
   rideId: string,
   participants: string[]
 ): Promise<Conversation | null> {
-  console.log('Creating conversation with:', { rideId, participants })
-
   // First check if a conversation already exists
   try {
     const { data: existing, error: fetchError } = await supabase
@@ -32,12 +30,10 @@ export async function createConversation(
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Error checking existing conversation:', fetchError)
       return null
     }
 
     if (existing) {
-      console.log('Found existing conversation:', existing)
       return existing
     }
 
@@ -54,14 +50,11 @@ export async function createConversation(
       .single()
 
     if (error) {
-      console.error('Error creating conversation:', error)
       return null
     }
 
-    console.log('Created new conversation:', data)
     return data
   } catch (error) {
-    console.error('Exception in createConversation:', error)
     return null
   }
 }
@@ -71,8 +64,6 @@ export async function getConversation(
   rideId: string,
   userId: string
 ): Promise<Conversation | null> {
-  console.log('Getting conversation for:', { rideId, userId })
-
   try {
     const { data, error } = await supabase
       .from('conversations')
@@ -82,14 +73,11 @@ export async function getConversation(
       .maybeSingle()
 
     if (error) {
-      console.error('Error getting conversation:', error)
       return null
     }
 
-    console.log('Found conversation:', data)
     return data
   } catch (error) {
-    console.error('Exception in getConversation:', error)
     return null
   }
 }
@@ -98,8 +86,6 @@ export async function getConversation(
 export async function getMessages(
   conversationId: string
 ): Promise<Message[]> {
-  console.log('Getting messages for conversation:', conversationId)
-
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -108,14 +94,11 @@ export async function getMessages(
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Error getting messages:', error)
       return []
     }
 
-    console.log('Found messages:', data)
     return data || []
   } catch (error) {
-    console.error('Exception in getMessages:', error)
     return []
   }
 }
@@ -126,8 +109,6 @@ export async function sendMessage(
   senderId: string,
   content: string
 ): Promise<Message | null> {
-  console.log('Sending message:', { conversationId, senderId, content })
-
   try {
     // Filter sensitive information
     const filteredContent = filterSensitiveInfo(content)
@@ -145,14 +126,11 @@ export async function sendMessage(
       .single()
 
     if (error) {
-      console.error('Error sending message:', error)
       return null
     }
 
-    console.log('Sent message:', data)
     return data
   } catch (error) {
-    console.error('Exception in sendMessage:', error)
     return null
   }
 }
@@ -162,8 +140,6 @@ export function subscribeToMessages(
   conversationId: string,
   callback: (message: Message) => void
 ) {
-  console.log('Subscribing to messages for conversation:', conversationId)
-
   const channel = supabase.channel(`messages:${conversationId}`)
   
   const subscription = channel
@@ -176,13 +152,10 @@ export function subscribeToMessages(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
-        console.log('New message received:', payload)
         callback(payload.new as Message)
       }
     )
-    .subscribe((status) => {
-      console.log('Subscription status:', status)
-    })
+    .subscribe()
 
   return subscription
 }
