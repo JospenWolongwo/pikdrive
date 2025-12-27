@@ -136,6 +136,10 @@ export class PawaPayPayinService {
     | null
   > {
     try {
+      // Format amount as string with 2 decimal places (pawaPay validation requirement)
+      // Amount should be formatted as "4000.00" not "4000"
+      const formattedAmount = Number(data.amount).toFixed(2);
+
       // pawaPay API v2 format (type field removed - not required in v2)
       const requestBody = {
         depositId: data.depositId,
@@ -145,7 +149,7 @@ export class PawaPayPayinService {
             provider: data.provider, // MTN_CM or ORANGE_CM
           },
         },
-        amount: data.amount.toString(), // v2 expects string, not object
+        amount: formattedAmount, // Formatted string with 2 decimals: "4000.00"
         currency: data.currency,
         clientReferenceId: data.clientReferenceId,
         callbackUrl: data.callbackUrl,
@@ -169,7 +173,8 @@ export class PawaPayPayinService {
       console.log("📤 [PAWAPAY-PAYIN] Sending deposit request (v2 format):", {
         url: depositsUrl,
         depositId: data.depositId,
-        amount: data.amount,
+        originalAmount: data.amount,
+        formattedAmount: formattedAmount,
         currency: data.currency,
         phoneNumber: data.phoneNumber.substring(0, 5) + "...",
         provider: data.provider,

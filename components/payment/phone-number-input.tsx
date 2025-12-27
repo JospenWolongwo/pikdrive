@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { isMTNPhoneNumber, isOrangePhoneNumber } from '@/lib/payment/phone-utils';
 
 interface PhoneNumberInputProps {
   value: string;
@@ -31,31 +32,42 @@ export function PhoneNumberInput({
     const phoneRegex = /^(?:\+237|237)?[6-9][0-9]{8}$/;
     const isValidFormat = phoneRegex.test(cleaned);
 
-    // Extract the actual number without country code
+    // Extract the actual number without country code for validation
     const actualNumber = cleaned.replace(/^(?:\+237|237)?/, '');
 
-    // Provider-specific validation
+    // Provider-specific validation using utility functions
     let isValidProvider = true;
+    let providerError: string | null = null;
+    
     if (provider) {
-      const prefix = actualNumber.slice(0, 2);
-      if (provider === 'mtn' && prefix !== '67') {
-        setError('Please enter a valid MTN number (starting with 67)');
-        isValidProvider = false;
-      } else if (provider === 'orange' && prefix !== '69') {
-        setError('Please enter a valid Orange number (starting with 69)');
-        isValidProvider = false;
+      if (provider === 'mtn') {
+        if (!isMTNPhoneNumber(actualNumber)) {
+          providerError = 'Please enter a valid MTN number (650-654, 677-683)';
+          isValidProvider = false;
+        }
+      } else if (provider === 'orange') {
+        if (!isOrangePhoneNumber(actualNumber)) {
+          providerError = 'Please enter a valid Orange number (655-659, 679, 690-699)';
+          isValidProvider = false;
+        }
       }
     }
 
     const isValidNumber = isValidFormat && isValidProvider;
-    setIsValid(isValidNumber);
-    onValidityChange(isValidNumber);
-
-    if (!isValidNumber && !error) {
+    
+    // Set error message
+    if (providerError) {
+      setError(providerError);
+    } else if (!isValidNumber && isValidFormat) {
       setError('Please enter a valid Cameroon phone number');
     } else if (isValidNumber) {
       setError(null);
+    } else {
+      setError('Please enter a valid Cameroon phone number');
     }
+
+    setIsValid(isValidNumber);
+    onValidityChange(isValidNumber);
 
     return isValidNumber;
   };

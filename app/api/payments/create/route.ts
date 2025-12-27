@@ -6,6 +6,7 @@ import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment
 import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
 import type { Environment } from '@/types/payment-ext';
 import { Environment as EnvEnum, PawaPayApiUrl, HTTP_CODE } from '@/types/payment-ext';
+import { isMTNPhoneNumber, isOrangePhoneNumber } from '@/lib/payment/phone-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,10 +47,11 @@ export async function POST(request: NextRequest) {
     // Format phone number
     const formattedPhone = formatPhoneNumber(phoneNumber);
     
-    // Validate phone number
-    if (!validatePhoneNumber(formattedPhone)) {
+    // Validate phone number (pass provider for provider-specific validation)
+    if (!validatePhoneNumber(formattedPhone, provider)) {
+      const providerName = provider === 'mtn' ? 'MTN' : provider === 'orange' ? 'Orange' : 'phone';
       return NextResponse.json(
-        { success: false, error: 'Invalid phone number format' },
+        { success: false, error: `Invalid ${providerName} number format` },
         { status: 400 }
       );
     }
@@ -204,7 +206,7 @@ function formatPhoneNumber(phoneNumber: string): string {
   return formattedPhone.startsWith('237') ? formattedPhone : `237${formattedPhone}`;
 }
 
-function validatePhoneNumber(phoneNumber: string): boolean {
+function validatePhoneNumber(phoneNumber: string, provider?: string): boolean {
   const cleanedNumber = phoneNumber.replace(/[^\d]/g, '');
   
   // Accept 9 digits (without country code) or 12 digits (with country code 237)
@@ -216,12 +218,15 @@ function validatePhoneNumber(phoneNumber: string): boolean {
     ? cleanedNumber.slice(-9) // Remove country code if present
     : cleanedNumber;
   
-  // MTN prefixes: 67, 68, 50-54 (6[7-8] or 6[5][0-4])
-  // Orange prefixes: 69, 65-59 (6[9] or 6[5-9])
-  // When pawaPay is enabled, it handles both, so we accept all valid Cameroon mobile prefixes
-  const validPrefixes = ['67', '68', '69', '65', '66']; // Common MTN and Orange prefixes
-  const prefix = actualNumber.slice(0, 2);
-
-  return validPrefixes.includes(prefix) || 
-         (actualNumber.startsWith('6') && actualNumber.length === 9); // Accept any 6XX prefix for flexibility
+  // When provider is specified, validate against that provider's pattern
+  if (provider) {
+    if (provider === 'mtn') {
+      return isMTNPhoneNumber(actualNumber);
+    } else if (provider === 'orange') {
+      return isOrangePhoneNumber(actualNumber);
+    }
+  }
+  
+  // When pawaPay is enabled or no provider specified, accept numbers that match either MTN or Orange patterns
+  return isMTNPhoneNumber(actualNumber) || isOrangePhoneNumber(actualNumber);
 }

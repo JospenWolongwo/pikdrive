@@ -61,27 +61,27 @@ export function removeCallingCode(phoneNumber: string): string | null {
 
 /**
  * Check if phone number belongs to Orange Money network
- * Orange numbers: 69XX, 655-659 (prefix 6 then 9 or 5[5-9])
+ * Orange numbers: 655-659, 679, 690-699
  */
 export function isOrangePhoneNumber(phoneNumber: string): boolean {
   const formattedPhone = removeCallingCode(phoneNumber);
   if (!formattedPhone) return false;
 
-  // Orange pattern: 6(9[0-9]|5[5-9])[0-9]{6}
-  const regexOrange = /^6(9([0-9])|5([5-9]))[0-9]{6}$/;
+  // Orange pattern: 655-659 (65[5-9]), 679, 690-699 (69[0-9])
+  const regexOrange = /^6(5[5-9]|679|69[0-9])[0-9]{6}$/;
   return regexOrange.test(formattedPhone);
 }
 
 /**
  * Check if phone number belongs to MTN network
- * MTN numbers: 67XX, 68XX, 50-54 (prefix 6 then 7, 8, or 5[0-4])
+ * MTN numbers: 650-654, 677-683
  */
 export function isMTNPhoneNumber(phoneNumber: string): boolean {
   const formattedPhone = removeCallingCode(phoneNumber);
   if (!formattedPhone) return false;
 
-  // MTN pattern: 6(7[0-9]|8[0-9]|5[0-4])[0-9]{6}
-  const regexMTN = /^6(7([0-9])|(8|5)([0-4]))[0-9]{6}$/;
+  // MTN pattern: 650-654 (65[0-4]), 677-683 (67[7-9] and 68[0-3])
+  const regexMTN = /^6(5[0-4]|67[7-9]|68[0-3])[0-9]{6}$/;
   return regexMTN.test(formattedPhone);
 }
 
