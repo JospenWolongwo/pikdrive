@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
+import { PawaPayService } from '@/lib/payment/pawapay/pawapay-service';
 import { mapMtnPayoutStatus, shouldRetry } from '@/lib/payment/retry-logic';
-import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
+import { mapPawaPayStatus } from '@/lib/payment/status-mapper';
 import { sendPayoutNotificationIfNeeded } from '@/lib/payment/payout-notification-helper';
+import { Environment, PawaPayApiUrl } from '@/types/payment-ext';
 
 export async function POST(request: NextRequest) {
   try {
@@ -113,7 +115,116 @@ export async function POST(request: NextRequest) {
     let statusUpdated = false;
     let retryable = false;
     
-    if (payout.provider === 'mtn' && payout.transaction_id) {
+    if (payout.provider === 'pawapay' && payout.transaction_id) {
+      console.log('🔄 [PAYOUT-STATUS] Querying pawaPay API for payout status...');
+      
+      try {
+        const pawapayService = new PawaPayService({
+          apiToken: process.env.PAWAPAY_API_TOKEN || '',
+          baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === Environment.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
+          callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/callbacks/pawapay`,
+          environment: (process.env.PAWAPAY_ENVIRONMENT || Environment.SANDBOX) as Environment,
+        });
+
+        // Check payout status using transaction_id (payoutId from pawaPay)
+        const statusResult = await pawapayService.checkPayoutStatus(payout.transaction_id);
+        
+        if (!statusResult) {
+          console.error('❌ [PAYOUT-STATUS] Failed to check payout status - no result returned');
+          throw new Error('Failed to check payout status');
+        }
+
+        const pawapayStatus = statusResult.status;
+        const reason = statusResult.reason;
+
+        console.log('📊 [PAYOUT-STATUS] pawaPay payout status:', {
+          status: pawapayStatus,
+          reason,
+          amount: statusResult.amount,
+          currency: statusResult.currency,
+          transactionId: statusResult.transactionId,
+        });
+
+        // Map pawaPay status to our internal status
+        newStatus = mapPawaPayStatus(pawapayStatus);
+        
+        // Determine if retryable (pawaPay doesn't have the same retry logic as MTN, but we can check for processing/pending)
+        retryable = newStatus === 'processing' || newStatus === 'pending';
+
+        console.log('🔄 [PAYOUT-STATUS] Status mapping:', { 
+          pawapayStatus, 
+          ourStatus: newStatus,
+          retryable,
+        });
+
+        // Update payout if status changed
+        if (newStatus !== payout.status) {
+          console.log('🔄 [PAYOUT-STATUS] Status changed, updating payout:', {
+            oldStatus: payout.status,
+            newStatus,
+          });
+          
+          const { error: updateError } = await supabase
+            .from('payouts')
+            .update({
+              status: newStatus,
+              transaction_id: statusResult.transactionId || payout.transaction_id,
+              metadata: {
+                ...(payout.metadata || {}),
+                lastStatusCheck: new Date().toISOString(),
+                pawapayStatus: pawapayStatus,
+                pawapayReason: reason,
+                statusCheckedAt: new Date().toISOString(),
+              },
+            })
+            .eq('id', payout.id);
+
+          if (updateError) {
+            console.error('❌ [PAYOUT-STATUS] Error updating payout status:', updateError);
+          } else {
+            statusUpdated = true;
+            console.log('✅ [PAYOUT-STATUS] Payout status updated successfully');
+
+            // Send notification if status changed to completed or failed (with deduplication)
+            if (newStatus === 'completed' && payout.driver_id) {
+              await sendPayoutNotificationIfNeeded(
+                supabase,
+                { ...payout, status: newStatus },
+                'completed',
+                undefined,
+                'status-check'
+              );
+            } else if (newStatus === 'failed' && payout.driver_id) {
+              await sendPayoutNotificationIfNeeded(
+                supabase,
+                { ...payout, status: newStatus },
+                'failed',
+                reason || pawapayStatus || 'Transaction échouée',
+                'status-check'
+              );
+            }
+          }
+        } else {
+          console.log('ℹ️ [PAYOUT-STATUS] Status unchanged, no update needed');
+        }
+      } catch (providerError) {
+        console.error('❌ [PAYOUT-STATUS] pawaPay API error:', providerError);
+        
+        // Don't fail the entire request if provider check fails
+        // Return current status from database
+        return NextResponse.json({
+          success: true,
+          data: {
+            status: payout.status,
+            message: getStatusMessage(payout.status),
+            payoutId: payout.id,
+            transactionId: payout.transaction_id,
+            updated: false,
+            warning: 'Unable to check with provider, returning cached status',
+          },
+        });
+      }
+    } else if (payout.provider === 'mtn' && payout.transaction_id) {
       console.log('🔄 [PAYOUT-STATUS] Querying MTN API for payout status...');
       
       try {

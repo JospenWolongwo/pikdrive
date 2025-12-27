@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { FeeCalculator } from '@/lib/payment/fee-calculator';
-import { PayoutOrchestratorService } from '@/lib/payment/payout-orchestrator.service';
+import { PaymentOrchestratorService } from '@/lib/payment/payment-orchestrator.service';
 
 export async function POST(request: Request) {
   try {
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
 
           // Initialize payout orchestrator
           const targetEnvironment = (process.env.MOMO_TARGET_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production';
-          const orchestrator = new PayoutOrchestratorService(
+          const orchestrator = new PaymentOrchestratorService(
             {
               subscriptionKey: process.env.DIRECT_MOMO_APIM_SUBSCRIPTION_KEY || process.env.MOMO_SUBSCRIPTION_KEY || '',
               apiKey: process.env.DIRECT_MOMO_API_KEY || process.env.MOMO_API_KEY || '',

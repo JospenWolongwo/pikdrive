@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
-import { PayoutOrchestratorService } from "@/lib/payment/payout-orchestrator.service";
+import { PaymentOrchestratorService } from "@/lib/payment/payment-orchestrator.service";
 import type { PaymentApiRequest, Environment } from "@/types/payment-ext";
 import { Environment as EnvEnum, PawaPayApiUrl } from "@/types/payment-ext";
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize orchestrator with environment config
-    const orchestrator = new PayoutOrchestratorService(
+    const orchestrator = new PaymentOrchestratorService(
       {
         subscriptionKey: process.env.DIRECT_MOMO_APIM_SUBSCRIPTION_KEY || process.env.MOMO_SUBSCRIPTION_KEY!,
         apiKey: process.env.DIRECT_MOMO_API_KEY || process.env.MOMO_API_KEY!,

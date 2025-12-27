@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { ServerPaymentService } from '@/lib/services/server/payment-service';
-import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
-import { OrangeMoneyService } from '@/lib/payment/orange-money-service';
+import { PaymentOrchestratorService } from '@/lib/payment/payment-orchestrator.service';
 import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
 import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
+import type { Environment } from '@/types/payment-ext';
+import { Environment as EnvEnum, PawaPayApiUrl, HTTP_CODE } from '@/types/payment-ext';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,68 +63,64 @@ export async function POST(request: NextRequest) {
       idempotency_key: idempotencyKey,
     });
 
-    // Initialize payment with provider
-    let transactionId: string | undefined;
-    
-    if (provider === 'mtn') {
-      const mtnService = new MTNMomoService({
-        subscriptionKey: process.env.MOMO_SUBSCRIPTION_KEY!,
-        apiKey: process.env.MOMO_API_KEY!,
-        targetEnvironment: (process.env.MOMO_TARGET_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production',
-        callbackHost: process.env.MOMO_CALLBACK_HOST!,
-        collectionPrimaryKey: process.env.MOMO_COLLECTION_PRIMARY_KEY!,
-        collectionUserId: process.env.MOMO_COLLECTION_USER_ID!,
-      });
+    // Initialize orchestrator - this will route to pawaPay if USE_PAWAPAY=true
+    // Otherwise routes to MTN/Orange based on phone number
+    const orchestrator = new PaymentOrchestratorService(
+      {
+        subscriptionKey: process.env.DIRECT_MOMO_APIM_SUBSCRIPTION_KEY || process.env.MOMO_SUBSCRIPTION_KEY!,
+        apiKey: process.env.DIRECT_MOMO_API_KEY || process.env.MOMO_API_KEY!,
+        targetEnvironment: (process.env.DIRECT_MOMO_TARGET_ENVIRONMENT || process.env.MOMO_TARGET_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+        callbackHost: process.env.DIRECT_MOMO_CALLBACK_HOST || process.env.MOMO_CALLBACK_HOST || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+        collectionPrimaryKey: process.env.DIRECT_MOMO_COLLECTION_PRIMARY_KEY || process.env.MOMO_COLLECTION_PRIMARY_KEY!,
+        collectionUserId: process.env.DIRECT_MOMO_API_USER || process.env.MOMO_COLLECTION_USER_ID!,
+        disbursementApiUser: process.env.DIRECT_MOMO_API_USER_DISBURSMENT,
+        disbursementApiKey: process.env.DIRECT_MOMO_API_KEY_DISBURSMENT,
+        disbursementSubscriptionKey: process.env.DIRECT_MOMO_APIM_PAY_OUT_SUBSCRIPTION_KEY,
+      },
+      {
+        merchantId: process.env.DIRECT_OM_MERCHAND_NUMBER || process.env.ORANGE_MONEY_MERCHANT_ID || "",
+        merchantKey: process.env.ORANGE_MONEY_MERCHANT_KEY || "",
+        environment: (process.env.DIRECT_OM_ENVIRONMENT || process.env.ORANGE_MONEY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+        notificationUrl: process.env.DIRECT_OM_CALLBACK_URL || process.env.ORANGE_MONEY_NOTIFICATION_URL || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/om`,
+        returnUrl: process.env.ORANGE_MONEY_RETURN_URL || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/payments/status`,
+        consumerUser: process.env.DIRECT_OM_CONSUMER_USER,
+        consumerSecret: process.env.DIRECT_OM_CONSUMER_SECRET,
+        apiUsername: process.env.DIRECT_OM_API_USERNAME,
+        apiPassword: process.env.DIRECT_OM_API_PASSWORD,
+        pinCode: process.env.DIRECT_OM_PIN_CODE,
+        merchantNumber: process.env.DIRECT_OM_MERCHAND_NUMBER,
+        tokenUrl: process.env.DIRECT_OM_TOKEN_URL,
+        baseUrl: process.env.DIRECT_OM_BASE_URL,
+      },
+      {
+        apiToken: process.env.PAWAPAY_API_TOKEN || "",
+        baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
+        environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+      }
+    );
 
-      // Use the callback URL from service config (matches MTN Developer Portal)
-      // The service config uses DIRECT_MOMO_CALLBACK_URL or ${MOMO_CALLBACK_HOST}/api/callbacks/momo
-      const callbackUrl = process.env.DIRECT_MOMO_CALLBACK_URL || `${process.env.MOMO_CALLBACK_HOST}/api/callbacks/momo`;
-
-      const momoResponse = await mtnService.requestToPay({
-        amount,
-        currency: 'XAF',
-        phoneNumber: formattedPhone,
-        externalId: payment.id,
-        payerMessage: `Payment for booking ${bookingId}`,
-        payeeNote: 'PikDrive booking payment',
-        callbackUrl: callbackUrl,
-      });
-
-      transactionId = momoResponse.transactionId;
-      console.log('🔄 MTN MOMO response:', { transactionId, momoResponse });
-    } else if (provider === 'orange') {
-      const orangeConfig = {
-        merchantId: process.env.ORANGE_MONEY_MERCHANT_ID || '',
-        merchantKey: process.env.ORANGE_MONEY_MERCHANT_KEY || '',
-        environment: (process.env.ORANGE_MONEY_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production',
-        notificationUrl: process.env.ORANGE_MONEY_NOTIFICATION_URL || `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/orange/callback`,
-        returnUrl: process.env.ORANGE_MONEY_RETURN_URL || `${process.env.NEXT_PUBLIC_APP_URL}/payments/status`,
-      };
-
-      const orangeService = new OrangeMoneyService(orangeConfig);
-
-      // Use payin method with PaymentApiRequest format
-      const orangeResult = await orangeService.payin({
+    // Use orchestrator to initiate payment
+    // The orchestrator will route to pawaPay if USE_PAWAPAY=true, otherwise route based on phone number
+    const payinResult = await orchestrator.payin({
         phoneNumber: formattedPhone,
         amount,
         reason: `PikDrive Ride Payment - ${bookingId}`,
       });
 
       // Check if payment was initiated successfully
-      if (orangeResult.statusCode !== 200 || !orangeResult.response.success || !orangeResult.response.verificationToken) {
+    if (payinResult.statusCode !== HTTP_CODE.OK || !payinResult.response.success || !payinResult.response.verificationToken) {
         throw new Error(
-          orangeResult.response.message || "Failed to initiate Orange Money payment"
-        );
-      }
-
-      transactionId = orangeResult.response.verificationToken;
-      console.log('🟠 Orange Money response:', { transactionId, orangeResult });
-    } else {
-      return NextResponse.json(
-        { success: false, error: `Unsupported payment provider: ${provider}` },
-        { status: 400 }
+        payinResult.response.message || "Failed to initiate payment"
       );
     }
+
+    const transactionId = payinResult.response.verificationToken;
+    console.log('🔄 Payment initiated via orchestrator:', { 
+      transactionId, 
+      provider: process.env.USE_PAWAPAY === 'true' ? 'pawapay' : provider,
+      payinResult 
+    });
 
     // Update payment with transaction ID
     if (transactionId) {
@@ -185,13 +182,21 @@ function formatPhoneNumber(phoneNumber: string): string {
 function validatePhoneNumber(phoneNumber: string): boolean {
   const cleanedNumber = phoneNumber.replace(/[^\d]/g, '');
   
+  // Accept 9 digits (without country code) or 12 digits (with country code 237)
   if (cleanedNumber.length !== 12 && cleanedNumber.length !== 9) {
     return false;
   }
 
-  const actualNumber = cleanedNumber.slice(-9);
-  const validPrefixes = ['67', '69']; // MTN (67) and Orange (69)
+  const actualNumber = cleanedNumber.length === 12 
+    ? cleanedNumber.slice(-9) // Remove country code if present
+    : cleanedNumber;
+  
+  // MTN prefixes: 67, 68, 50-54 (6[7-8] or 6[5][0-4])
+  // Orange prefixes: 69, 65-59 (6[9] or 6[5-9])
+  // When pawaPay is enabled, it handles both, so we accept all valid Cameroon mobile prefixes
+  const validPrefixes = ['67', '68', '69', '65', '66']; // Common MTN and Orange prefixes
   const prefix = actualNumber.slice(0, 2);
 
-  return validPrefixes.includes(prefix);
+  return validPrefixes.includes(prefix) || 
+         (actualNumber.startsWith('6') && actualNumber.length === 9); // Accept any 6XX prefix for flexibility
 }

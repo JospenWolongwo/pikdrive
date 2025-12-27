@@ -23,7 +23,7 @@ import {
   isMTNPhoneNumber,
 } from "./phone-utils";
 
-export class PayoutOrchestratorService {
+export class PaymentOrchestratorService {
   private momoService?: MTNMomoService;
   private omService?: OrangeMoneyService;
   private pawapayService?: PawaPayService;
@@ -218,13 +218,4 @@ export class PayoutOrchestratorService {
     };
   }
 }
-
-
-
-
-
-
-
-
-
 
