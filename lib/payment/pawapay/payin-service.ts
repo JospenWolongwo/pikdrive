@@ -132,17 +132,32 @@ export class PawaPayPayinService {
 
       const depositsUrl = `${this.config.baseUrl}${PawaPayEndpoint.DEPOSITS}`;
       
+      // Helper to mask sensitive values
+      const maskToken = (token: string): string => {
+        if (!token) return "NOT_SET";
+        if (token.length <= 8) return "***";
+        return `${token.substring(0, 4)}***${token.substring(token.length - 4)}`;
+      };
+
+      const authHeader = `${AuthScheme.BEARER} ${this.config.apiToken}`;
+      
       console.log("📤 [PAWAPAY-PAYIN] Sending deposit request:", {
         url: depositsUrl,
         amount: data.amount,
         currency: data.currency,
         phoneNumber: data.customerPhoneNumber.substring(0, 5) + "...",
+        apiToken: maskToken(this.config.apiToken),
+        apiTokenLength: this.config.apiToken.length,
+        apiTokenExists: !!this.config.apiToken,
+        authHeader: maskToken(authHeader),
+        baseUrl: this.config.baseUrl,
+        environment: this.config.environment,
       });
 
       const response = await fetch(depositsUrl, {
         method: HttpMethod.POST,
         headers: {
-          [HttpHeader.AUTHORIZATION]: `${AuthScheme.BEARER} ${this.config.apiToken}`,
+          [HttpHeader.AUTHORIZATION]: authHeader,
           [HttpHeader.CONTENT_TYPE]: ContentType.JSON,
         },
         body: JSON.stringify(requestBody),

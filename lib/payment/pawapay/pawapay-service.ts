@@ -28,6 +28,22 @@ export class PawaPayService {
   private readonly verificationService: PawaPayVerificationService;
 
   constructor(config: PawaPayConfig) {
+    // Helper to mask sensitive values
+    const maskToken = (token: string): string => {
+      if (!token) return "NOT_SET";
+      if (token.length <= 8) return "***";
+      return `${token.substring(0, 4)}***${token.substring(token.length - 4)}`;
+    };
+
+    console.log("🔍 [PAWAPAY-SERVICE] Initializing with config:", {
+      apiToken: maskToken(config.apiToken),
+      apiTokenLength: config.apiToken.length,
+      apiTokenExists: !!config.apiToken,
+      baseUrl: config.baseUrl,
+      callbackUrl: config.callbackUrl,
+      environment: config.environment,
+    });
+
     if (!config.apiToken) {
       console.error("❌ [PAWAPAY-SERVICE] Missing required pawaPay API token");
     } else {

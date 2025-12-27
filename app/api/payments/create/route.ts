@@ -63,6 +63,31 @@ export async function POST(request: NextRequest) {
       idempotency_key: idempotencyKey,
     });
 
+    // Log pawaPay environment variables (masked for security)
+    const pawapayApiToken = process.env.PAWAPAY_API_TOKEN || "";
+    const pawapayBaseUrl = process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX);
+    const pawapayCallbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`;
+    const pawapayEnvironment = (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment;
+    const usePawaPay = process.env.USE_PAWAPAY;
+
+    // Helper to mask sensitive values
+    const maskToken = (token: string): string => {
+      if (!token) return "NOT_SET";
+      if (token.length <= 8) return "***";
+      return `${token.substring(0, 4)}***${token.substring(token.length - 4)}`;
+    };
+
+    console.log("🔍 [ENV-CHECK] pawaPay Configuration:", {
+      USE_PAWAPAY: usePawaPay,
+      PAWAPAY_API_TOKEN: maskToken(pawapayApiToken),
+      PAWAPAY_API_TOKEN_LENGTH: pawapayApiToken.length,
+      PAWAPAY_API_TOKEN_EXISTS: !!pawapayApiToken,
+      PAWAPAY_BASE_URL: pawapayBaseUrl,
+      PAWAPAY_ENVIRONMENT: pawapayEnvironment,
+      PAWAPAY_CALLBACK_URL: pawapayCallbackUrl,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    });
+
     // Initialize orchestrator - this will route to pawaPay if USE_PAWAPAY=true
     // Otherwise routes to MTN/Orange based on phone number
     const orchestrator = new PaymentOrchestratorService(
@@ -93,10 +118,10 @@ export async function POST(request: NextRequest) {
         baseUrl: process.env.DIRECT_OM_BASE_URL,
       },
       {
-        apiToken: process.env.PAWAPAY_API_TOKEN || "",
-        baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
-        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
-        environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+        apiToken: pawapayApiToken,
+        baseUrl: pawapayBaseUrl,
+        callbackUrl: pawapayCallbackUrl,
+        environment: pawapayEnvironment,
       }
     );
 
