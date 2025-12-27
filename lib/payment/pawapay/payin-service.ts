@@ -140,10 +140,11 @@ export class PawaPayPayinService {
       // Amount should be formatted as "4000.00" not "4000"
       const formattedAmount = Number(data.amount).toFixed(2);
 
-      // pawaPay API v2 format (type field removed - not required in v2)
+      // pawaPay API v2 format (type field is required)
       const requestBody = {
         depositId: data.depositId,
         payer: {
+          type: "MMO", // Required by pawaPay API v2 - Mobile Money Operator
           accountDetails: {
             phoneNumber: data.phoneNumber,
             provider: data.provider, // MTN_CM or ORANGE_CM
