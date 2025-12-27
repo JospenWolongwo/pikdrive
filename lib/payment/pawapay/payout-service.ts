@@ -21,7 +21,7 @@ import {
   HTTP_CODE,
   SandboxConfig,
 } from "@/types/payment-ext";
-import { removeCallingCode, removeAllSpecialCaracter } from "../phone-utils";
+import { removeCallingCode, removeAllSpecialCaracter, isMTNPhoneNumber, isOrangePhoneNumber } from "../phone-utils";
 import { v4 as uuidv4 } from "uuid";
 
 interface PayoutConfig {
@@ -132,7 +132,7 @@ export class PawaPayPayoutService {
   }
 
   /**
-   * Create payout via pawaPay API
+   * Create payout via pawaPay API v2
    */
   private async createPayout(data: {
     amount: number;
@@ -151,32 +151,67 @@ export class PawaPayPayoutService {
       // Format amount for XAF - no decimal places (pawaPay requirement for XAF)
       // XAF does not support decimal places - send as integer string
       const formattedAmount = Math.floor(data.amount).toString();
-      
+
+      // Determine provider based on phone number
+      // pawaPay provider codes for Cameroon: MTN_MOMO_CMR, ORANGE_CMR
+      let provider: string;
+      if (isMTNPhoneNumber(data.customerPhoneNumber)) {
+        provider = "MTN_MOMO_CMR"; // MTN Mobile Money Cameroon
+      } else if (isOrangePhoneNumber(data.customerPhoneNumber)) {
+        provider = "ORANGE_CMR"; // Orange Money Cameroon
+      } else {
+        // Default to MTN if cannot determine (pawaPay will handle validation)
+        provider = "MTN_MOMO_CMR";
+        console.warn("⚠️ [PAWAPAY-PAYOUT] Could not determine provider, defaulting to MTN_MOMO_CMR");
+      }
+
+      // Generate payoutId (UUID) for v2 API
+      const payoutId = uuidv4();
+
       // pawaPay API v2 format
       // Note: callbackUrl is configured in pawaPay dashboard, not sent in request body
       const requestBody: any = {
-        amount: {
-          value: formattedAmount, // Integer string without decimals for XAF
-          currency: data.currency,
+        payoutId: payoutId,
+        recipient: {
+          type: "MMO", // Required by pawaPay API v2 - Mobile Money Operator
+          accountDetails: {
+            phoneNumber: data.customerPhoneNumber,
+            provider: provider, // MTN_MOMO_CMR or ORANGE_CMR
+          },
         },
-        customerPhoneNumber: data.customerPhoneNumber,
-        // callbackUrl is NOT included - it's configured in pawaPay dashboard
-        description: data.description,
-        externalId: data.externalId,
+        amount: formattedAmount, // Formatted string without decimals for XAF: "4000"
+        currency: data.currency,
+        clientReferenceId: data.externalId,
+        correspondent: provider, // The provider/correspondent to use
+        statementDescription: data.description.substring(0, 22), // Max 22 chars
       };
 
       // Add customer name if provided
       if (data.customerName) {
-        requestBody.customerName = data.customerName;
+        requestBody.recipient.name = data.customerName;
       }
 
       const payoutsUrl = `${this.config.baseUrl}${PawaPayEndpoint.PAYOUTS}`;
-      
-      console.log("📤 [PAWAPAY-PAYOUT] Sending payout request:", {
+
+      console.log("📤 [PAWAPAY-PAYOUT] Sending payout request (v2 format):", {
         url: payoutsUrl,
-        amount: data.amount,
+        payoutId: payoutId,
+        originalAmount: data.amount,
+        formattedAmount: formattedAmount,
         currency: data.currency,
         phoneNumber: data.customerPhoneNumber.substring(0, 5) + "...",
+        provider: provider,
+        clientReferenceId: data.externalId,
+        requestBody: {
+          ...requestBody,
+          recipient: {
+            ...requestBody.recipient,
+            accountDetails: {
+              phoneNumber: requestBody.recipient.accountDetails.phoneNumber.substring(0, 5) + "...",
+              provider: requestBody.recipient.accountDetails.provider,
+            },
+          },
+        },
       });
 
       const response = await fetch(payoutsUrl, {
