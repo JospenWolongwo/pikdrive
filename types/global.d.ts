@@ -8,8 +8,6 @@ declare global {
   }
 
   interface Window {
-    __messageNotificationManager?: any;
-    __bookingNotificationManager?: any;
     __oneSignalReady?: boolean;
     OneSignalDeferred?: Array<(OneSignal: IOneSignal) => void>;
     OneSignal?: IOneSignal;

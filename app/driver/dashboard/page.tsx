@@ -26,10 +26,6 @@ import { PaymentStatistics } from "@/components/driver/dashboard/payment-statist
 // Custom hooks - using centralized rides store
 import { useRidesStoreData } from "@/hooks/rides";
 import { useRidesFilteringStore } from "@/hooks/rides";
-import {
-  initializeGlobalBookingNotificationManager,
-  cleanupGlobalBookingNotificationManager,
-} from "@/lib/notifications/booking-notification-manager";
 import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 
 // Types
@@ -104,38 +100,7 @@ export default function DriverDashboard() {
     if (user) initialLoad();
   }, [user, loadRides, router, triggerPrompt]);
 
-  // Set up global booking notification manager for drivers
-  useEffect(() => {
-    if (!user || typeof window === "undefined") {
-      cleanupGlobalBookingNotificationManager();
-      return;
-    }
-
-    // Prevent multiple managers from starting
-    if (window.__bookingNotificationManager) {
-      return;
-    }
-
-    const manager = initializeGlobalBookingNotificationManager(
-      supabase,
-      user.id,
-      () => {
-        // Navigate to driver dashboard when notification is clicked
-        router.push("/driver/dashboard");
-      }
-    );
-
-    try {
-      manager.start();
-      console.log("BookingNotificationManager started for driver dashboard");
-    } catch (error) {
-      console.error("Failed to start BookingNotificationManager:", error);
-    }
-
-    return () => {
-      cleanupGlobalBookingNotificationManager();
-    };
-  }, [user, supabase, router]);
+  // Note: Booking notifications are handled by OneSignal via server-side triggers
 
   const handleOpenChat = (
     ride: RideWithDetails,

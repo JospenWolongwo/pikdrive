@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { pushNotificationService } from "@/lib/notifications/push-notification-service";
 import { useOneSignal } from "@/hooks/notifications/useOneSignal";
 
 interface ServiceWorkerState {
@@ -165,12 +164,8 @@ export function useServiceWorker() {
 
           return granted;
         } else {
-          console.log("🔧 OneSignal not initialized, using custom push service...");
-          const subscription = await pushNotificationService.subscribeToPush(
-            userId
-          );
-          console.log("🔧 Subscription result:", subscription);
-          return !!subscription;
+          console.log("🔧 OneSignal not initialized yet");
+          return false;
         }
       } catch (error) {
         console.error("Failed to subscribe to push notifications:", error);
@@ -183,14 +178,10 @@ export function useServiceWorker() {
   // Unsubscribe from push notifications
   const unsubscribeFromPushNotifications = useCallback(
     async (userId: string) => {
-      try {
-        const success = await pushNotificationService.unsubscribeFromPush();
-        // Note: We'll handle database cleanup via API route if needed
-        return success;
-      } catch (error) {
-        console.error("Failed to unsubscribe from push notifications:", error);
-        return false;
-      }
+      // Note: OneSignal handles push subscription management
+      // This function is kept for API compatibility but OneSignal manages subscriptions
+      console.log("Note: Push notifications are managed by OneSignal");
+      return true;
     },
     []
   );

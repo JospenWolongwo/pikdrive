@@ -4,10 +4,6 @@ import { useRidesStore, useBookingStore } from "@/stores";
 import { useChatStore } from "@/stores/chatStore";
 import { useToast } from "@/hooks/ui";
 import { mapUnreadCountsByRideId } from "@/lib/utils/unread-counts";
-import {
-  initializeGlobalBookingNotificationManager,
-  cleanupGlobalBookingNotificationManager,
-} from "@/lib/notifications/booking-notification-manager";
 import { useRouter } from "next/navigation";
 import type { RideFilters } from "./use-ride-filters";
 import type { UnreadCounts } from "@/lib/utils/unread-counts";
@@ -168,37 +164,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     }
   }, [user?.id]);
 
-  // Set up global booking notification manager
-  useEffect(() => {
-    if (!user || typeof window === "undefined") {
-      cleanupGlobalBookingNotificationManager();
-      return;
-    }
-
-    // Prevent multiple managers from starting
-    if (window.__bookingNotificationManager) {
-      return;
-    }
-
-    const manager = initializeGlobalBookingNotificationManager(
-      supabase,
-      user.id,
-      () => {
-        // Navigate to bookings page when notification is clicked
-        router.push("/bookings");
-      }
-    );
-
-    try {
-      manager.start();
-    } catch (error) {
-      console.error("[RIDES] Failed to start BookingNotificationManager:", error);
-    }
-
-    return () => {
-      cleanupGlobalBookingNotificationManager();
-    };
-  }, [user, supabase, router]);
+  // Note: Booking notifications are handled by OneSignal via server-side triggers
 
   return {
     loading: allRidesLoading,
