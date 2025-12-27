@@ -41,6 +41,23 @@ export class PawaPayPayoutService {
     request: PayoutRequest
   ): Promise<{ statusCode: number; response: PaymentServiceResponse }> {
     try {
+      // Sandbox test number override (for automatic payout testing)
+      // Sandbox test numbers for payout testing:
+      // - 237653456789 - Returns COMPLETED status
+      // - 237653456129 - Returns SUBMITTED status
+      if (this.config.environment === EnvEnum.SANDBOX) {
+        const sandboxTestPhone = process.env.SANDBOX_PAWAPAY_TEST_PHONE;
+        if (sandboxTestPhone) {
+          const originalPhone = request.phoneNumber;
+          request.phoneNumber = sandboxTestPhone;
+          console.log("🧪 [PAWAPAY-PAYOUT] Sandbox test number override active:", {
+            originalPhone,
+            testPhone: sandboxTestPhone,
+            note: "Using pawaPay sandbox test number for automatic payout testing",
+          });
+        }
+      }
+
       console.log("💰 [PAWAPAY-PAYOUT] Initiating payout:", {
         phoneNumber: request.phoneNumber,
         amount: request.amount,
@@ -59,26 +76,15 @@ export class PawaPayPayoutService {
       // Format reason/description
       const description = removeAllSpecialCaracter(request.reason);
 
-      // Use currency from request, default to XAF for production
-      const currency =
-        request.currency ||
-        (this.config.environment === EnvEnum.SANDBOX ? Currency.EUR : Currency.XAF);
+      // Always use XAF for Cameroon (both sandbox and production)
+      // Sandbox mirrors production - same currencies and formatting rules
+      const currency = request.currency || Currency.XAF;
 
-      // Sandbox amount override (similar to MTN implementation)
-      const originalAmount = request.amount;
-      const payoutAmount =
-        this.config.environment === EnvEnum.SANDBOX ? SandboxConfig.DEFAULT_AMOUNT : originalAmount;
-      const payoutCurrency =
-        this.config.environment === EnvEnum.SANDBOX ? SandboxConfig.DEFAULT_CURRENCY : currency;
-
-      if (this.config.environment === EnvEnum.SANDBOX) {
-        console.log("🧪 [PAWAPAY-PAYOUT] Sandbox amount override:", {
-          originalAmount,
-          originalCurrency: request.currency,
-          overrideAmount: payoutAmount,
-          overrideCurrency: payoutCurrency,
-        });
-      }
+      // Note: Sandbox test numbers for payout testing:
+      // - 237653456789 - Returns COMPLETED status
+      // - 237653456129 - Returns SUBMITTED status
+      const payoutAmount = request.amount;
+      const payoutCurrency = currency;
 
       const payoutResult = await this.createPayout({
         amount: payoutAmount,
@@ -141,9 +147,13 @@ export class PawaPayPayoutService {
     | null
   > {
     try {
+      // Format amount for XAF - no decimal places (pawaPay requirement for XAF)
+      // XAF does not support decimal places - send as integer string
+      const formattedAmount = Math.floor(data.amount).toString();
+      
       const requestBody: any = {
         amount: {
-          value: data.amount.toString(),
+          value: formattedAmount, // Integer string without decimals for XAF
           currency: data.currency,
         },
         customerPhoneNumber: data.customerPhoneNumber,

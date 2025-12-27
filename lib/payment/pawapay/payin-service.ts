@@ -52,15 +52,16 @@ export class PawaPayPayinService {
         : `${CountryCode.CAMEROON}${removeCallingCode(request.phoneNumber) || request.phoneNumber}`;
 
       // Determine provider based on phone number
+      // pawaPay provider codes for Cameroon: MTN_MOMO_CMR, ORANGE_CMR
       let provider: string;
       if (isMTNPhoneNumber(phoneWithCountryCode)) {
-        provider = "MTN_CM"; // MTN Cameroon
+        provider = "MTN_MOMO_CMR"; // MTN Mobile Money Cameroon
       } else if (isOrangePhoneNumber(phoneWithCountryCode)) {
-        provider = "ORANGE_CM"; // Orange Cameroon
+        provider = "ORANGE_CMR"; // Orange Money Cameroon
       } else {
         // Default to MTN if cannot determine (pawaPay will handle validation)
-        provider = "MTN_CM";
-        console.warn("⚠️ [PAWAPAY-PAYIN] Could not determine provider, defaulting to MTN_CM");
+        provider = "MTN_MOMO_CMR";
+        console.warn("⚠️ [PAWAPAY-PAYIN] Could not determine provider, defaulting to MTN_MOMO_CMR");
       }
 
       // Generate depositId (UUID) for v2 API
@@ -72,8 +73,9 @@ export class PawaPayPayinService {
       // Format reason/description
       const description = removeAllSpecialCaracter(request.reason);
 
-      // Determine currency based on environment
-      const currency = this.config.environment === EnvEnum.SANDBOX ? Currency.EUR : Currency.XAF;
+      // Always use XAF for Cameroon (both sandbox and production)
+      // Sandbox mirrors production - same currencies and formatting rules
+      const currency = Currency.XAF;
 
       const depositResult = await this.createDeposit({
         depositId,
@@ -136,9 +138,9 @@ export class PawaPayPayinService {
     | null
   > {
     try {
-      // Format amount as string with 2 decimal places (pawaPay validation requirement)
-      // Amount should be formatted as "4000.00" not "4000"
-      const formattedAmount = Number(data.amount).toFixed(2);
+      // Format amount for XAF - no decimal places (pawaPay requirement for XAF)
+      // XAF does not support decimal places - send as integer string
+      const formattedAmount = Math.floor(data.amount).toString();
 
       // pawaPay API v2 format
       const requestBody = {
@@ -147,10 +149,10 @@ export class PawaPayPayinService {
           type: "MMO", // Required by pawaPay API v2 - Mobile Money Operator
           accountDetails: {
             phoneNumber: data.phoneNumber,
-            provider: data.provider, // MTN_CM or ORANGE_CM
+            provider: data.provider, // MTN_MOMO_CMR or ORANGE_CMR
           },
         },
-        amount: formattedAmount, // Formatted string with 2 decimals: "4000.00"
+        amount: formattedAmount, // Formatted string without decimals for XAF: "4000"
         currency: data.currency,
         clientReferenceId: data.clientReferenceId,
       };
