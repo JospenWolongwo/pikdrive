@@ -168,10 +168,14 @@ export class PawaPayPayoutService {
       // Generate payoutId (UUID) for v2 API
       const payoutId = uuidv4();
 
-      // pawaPay API v2 format
+      // pawaPay API v2 format for Cameroon MOMO and Orange Money
+      // Required: payoutId, amount, currency, recipient (type + accountDetails)
+      // Optional: clientReferenceId, customerMessage (4-22 chars), metadata
       // Note: callbackUrl is configured in pawaPay dashboard, not sent in request body
       const requestBody: any = {
         payoutId: payoutId,
+        amount: formattedAmount, // Formatted string without decimals for XAF: "4000"
+        currency: data.currency,
         recipient: {
           type: "MMO", // Required by pawaPay API v2 - Mobile Money Operator
           accountDetails: {
@@ -179,16 +183,12 @@ export class PawaPayPayoutService {
             provider: provider, // MTN_MOMO_CMR or ORANGE_CMR
           },
         },
-        amount: formattedAmount, // Formatted string without decimals for XAF: "4000"
-        currency: data.currency,
         clientReferenceId: data.externalId,
-        correspondent: provider, // The provider/correspondent to use
-        statementDescription: data.description.substring(0, 22), // Max 22 chars
       };
 
-      // Add customer name if provided
-      if (data.customerName) {
-        requestBody.recipient.name = data.customerName;
+      // Add optional customerMessage if description is provided (4-22 chars)
+      if (data.description && data.description.length >= 4) {
+        requestBody.customerMessage = data.description.substring(0, 22);
       }
 
       const payoutsUrl = `${this.config.baseUrl}${PawaPayEndpoint.PAYOUTS}`;
