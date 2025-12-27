@@ -141,6 +141,10 @@ export class PawaPayPayinService {
 
       const authHeader = `${AuthScheme.BEARER} ${this.config.apiToken}`;
       
+      // Debug: Check for whitespace issues
+      const cleanToken = this.config.apiToken.trim();
+      const tokenHasWhitespace = this.config.apiToken !== cleanToken;
+      
       console.log("📤 [PAWAPAY-PAYIN] Sending deposit request:", {
         url: depositsUrl,
         amount: data.amount,
@@ -152,6 +156,22 @@ export class PawaPayPayinService {
         authHeader: maskToken(authHeader),
         baseUrl: this.config.baseUrl,
         environment: this.config.environment,
+      });
+
+      // Detailed debug logging for Authorization header
+      console.log("🔍 [PAWAPAY-DEBUG] Exact Authorization Header Analysis:", {
+        headerValue: authHeader,
+        headerLength: authHeader.length,
+        startsWithBearer: authHeader.startsWith('Bearer '),
+        bearerPrefix: AuthScheme.BEARER,
+        tokenStartsWith: this.config.apiToken.substring(0, 10),
+        tokenEndsWith: this.config.apiToken.substring(this.config.apiToken.length - 10),
+        tokenHasWhitespace: tokenHasWhitespace,
+        tokenHasNewlines: this.config.apiToken.includes('\n') || this.config.apiToken.includes('\r'),
+        originalTokenLength: this.config.apiToken.length,
+        trimmedTokenLength: cleanToken.length,
+        firstCharCode: this.config.apiToken.charCodeAt(0),
+        lastCharCode: this.config.apiToken.charCodeAt(this.config.apiToken.length - 1),
       });
 
       const response = await fetch(depositsUrl, {
