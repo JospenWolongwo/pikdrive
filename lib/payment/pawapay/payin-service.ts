@@ -20,7 +20,7 @@ import {
   PawaPayStatus,
   HTTP_CODE,
 } from "@/types/payment-ext";
-import { removeCallingCode, removeAllSpecialCaracter } from "../phone-utils";
+import { removeCallingCode, removeAllSpecialCaracter, isMTNPhoneNumber, isOrangePhoneNumber } from "../phone-utils";
 import { v4 as uuidv4 } from "uuid";
 
 interface PayinConfig {
@@ -51,8 +51,23 @@ export class PawaPayPayinService {
         ? request.phoneNumber
         : `${CountryCode.CAMEROON}${removeCallingCode(request.phoneNumber) || request.phoneNumber}`;
 
-      // Generate external ID for tracking
-      const externalId = uuidv4();
+      // Determine provider based on phone number
+      let provider: string;
+      if (isMTNPhoneNumber(phoneWithCountryCode)) {
+        provider = "MTN_CM"; // MTN Cameroon
+      } else if (isOrangePhoneNumber(phoneWithCountryCode)) {
+        provider = "ORANGE_CM"; // Orange Cameroon
+      } else {
+        // Default to MTN if cannot determine (pawaPay will handle validation)
+        provider = "MTN_CM";
+        console.warn("⚠️ [PAWAPAY-PAYIN] Could not determine provider, defaulting to MTN_CM");
+      }
+
+      // Generate depositId (UUID) for v2 API
+      const depositId = uuidv4();
+
+      // Generate client reference ID for tracking
+      const clientReferenceId = uuidv4();
 
       // Format reason/description
       const description = removeAllSpecialCaracter(request.reason);
@@ -61,12 +76,13 @@ export class PawaPayPayinService {
       const currency = this.config.environment === EnvEnum.SANDBOX ? Currency.EUR : Currency.XAF;
 
       const depositResult = await this.createDeposit({
+        depositId,
         amount: request.amount,
         currency,
-        customerPhoneNumber: phoneWithCountryCode,
+        phoneNumber: phoneWithCountryCode,
+        provider,
         callbackUrl: this.config.callbackUrl,
-        description,
-        externalId,
+        clientReferenceId,
       });
 
       if (!depositResult) {
@@ -77,15 +93,15 @@ export class PawaPayPayinService {
         throw new Error(depositResult.error);
       }
 
-      // pawaPay returns depositId in the response
-      const depositId = depositResult.depositId || externalId;
+      // pawaPay v2 returns depositId in the response (or use the one we sent)
+      const returnedDepositId = depositResult.depositId || depositId;
 
       return {
         statusCode: HTTP_CODE.OK,
         response: {
           success: true,
           message: "Payment initiated successfully",
-          verificationToken: depositId,
+          verificationToken: returnedDepositId,
           apiResponse: depositResult,
         },
       };
@@ -104,30 +120,35 @@ export class PawaPayPayinService {
   }
 
   /**
-   * Create deposit via pawaPay API
+   * Create deposit via pawaPay API v2
    */
   private async createDeposit(data: {
+    depositId: string;
     amount: number;
     currency: string;
-    customerPhoneNumber: string;
+    phoneNumber: string;
+    provider: string;
     callbackUrl: string;
-    description: string;
-    externalId: string;
+    clientReferenceId: string;
   }): Promise<
     | { depositId: string; status: string; [key: string]: any }
     | { error: string; status?: number }
     | null
   > {
     try {
+      // pawaPay API v2 format (type field removed - not required in v2)
       const requestBody = {
-        amount: {
-          value: data.amount.toString(),
-          currency: data.currency,
+        depositId: data.depositId,
+        payer: {
+          accountDetails: {
+            phoneNumber: data.phoneNumber,
+            provider: data.provider, // MTN_CM or ORANGE_CM
+          },
         },
-        customerPhoneNumber: data.customerPhoneNumber,
+        amount: data.amount.toString(), // v2 expects string, not object
+        currency: data.currency,
+        clientReferenceId: data.clientReferenceId,
         callbackUrl: data.callbackUrl,
-        description: data.description,
-        externalId: data.externalId,
       };
 
       const depositsUrl = `${this.config.baseUrl}${PawaPayEndpoint.DEPOSITS}`;
@@ -145,17 +166,30 @@ export class PawaPayPayinService {
       const cleanToken = this.config.apiToken.trim();
       const tokenHasWhitespace = this.config.apiToken !== cleanToken;
       
-      console.log("📤 [PAWAPAY-PAYIN] Sending deposit request:", {
+      console.log("📤 [PAWAPAY-PAYIN] Sending deposit request (v2 format):", {
         url: depositsUrl,
+        depositId: data.depositId,
         amount: data.amount,
         currency: data.currency,
-        phoneNumber: data.customerPhoneNumber.substring(0, 5) + "...",
+        phoneNumber: data.phoneNumber.substring(0, 5) + "...",
+        provider: data.provider,
+        clientReferenceId: data.clientReferenceId,
         apiToken: maskToken(this.config.apiToken),
         apiTokenLength: this.config.apiToken.length,
         apiTokenExists: !!this.config.apiToken,
         authHeader: maskToken(authHeader),
         baseUrl: this.config.baseUrl,
         environment: this.config.environment,
+        requestBody: {
+          ...requestBody,
+          payer: {
+            ...requestBody.payer,
+            accountDetails: {
+              phoneNumber: requestBody.payer.accountDetails.phoneNumber.substring(0, 5) + "...",
+              provider: requestBody.payer.accountDetails.provider,
+            },
+          },
+        },
       });
 
       // Detailed debug logging for Authorization header
