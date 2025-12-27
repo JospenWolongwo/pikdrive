@@ -62,25 +62,29 @@ export function useBookingModal({
   // Reset modal state when it closes
   useEffect(() => {
     if (!isOpen) {
-      setStep(1);
-      setSeats(1);
-      setExistingBooking(null);
-      setBookingId(undefined);
-      setSelectedProvider(undefined);
-      setPhoneNumber("");
-      setIsPhoneValid(false);
-      setPaymentTransactionId(null);
-      setPaymentStatus(null);
-      setStatusMessage("");
-      setIsPolling(false);
-      setPaymentSuccess(false);
-      // Clear any pending navigation timeout
-      if (navigationTimeoutRef.current) {
+      // Don't clear navigation timeout if we're in payment success state
+      // This allows navigation to happen even if modal closes
+      if (!paymentSuccess && navigationTimeoutRef.current) {
         clearTimeout(navigationTimeoutRef.current);
         navigationTimeoutRef.current = null;
       }
+      
+      // Only reset state if not in payment success (to allow success step to show)
+      if (!paymentSuccess) {
+        setStep(1);
+        setSeats(1);
+        setExistingBooking(null);
+        setBookingId(undefined);
+        setSelectedProvider(undefined);
+        setPhoneNumber("");
+        setIsPhoneValid(false);
+        setPaymentTransactionId(null);
+        setPaymentStatus(null);
+        setStatusMessage("");
+        setIsPolling(false);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, paymentSuccess]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -221,17 +225,11 @@ export function useBookingModal({
       setPaymentSuccess(true);
       setStep(3);
 
-      // Navigate after 800ms WITHOUT calling onClose()
-      // Navigation will unmount component, closing modal naturally
+      // Navigate after showing success step (2000ms to ensure user sees confirmation)
       navigationTimeoutRef.current = setTimeout(() => {
         router.replace("/bookings");
-      }, 800);
+      }, 2000);
 
-      if (onBookingComplete) {
-        onBookingComplete();
-      }
-
-      // Note: Driver notification is sent automatically by OneSignal via PaymentOrchestrationService
     }
   };
 
