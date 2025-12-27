@@ -140,7 +140,7 @@ export class PawaPayPayinService {
       // Amount should be formatted as "4000.00" not "4000"
       const formattedAmount = Number(data.amount).toFixed(2);
 
-      // pawaPay API v2 format (type field is required)
+      // pawaPay API v2 format
       const requestBody = {
         depositId: data.depositId,
         payer: {
@@ -153,7 +153,6 @@ export class PawaPayPayinService {
         amount: formattedAmount, // Formatted string with 2 decimals: "4000.00"
         currency: data.currency,
         clientReferenceId: data.clientReferenceId,
-        callbackUrl: data.callbackUrl,
       };
 
       const depositsUrl = `${this.config.baseUrl}${PawaPayEndpoint.DEPOSITS}`;
