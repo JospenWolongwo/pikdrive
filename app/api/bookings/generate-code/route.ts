@@ -1,7 +1,6 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { SMSService } from '@/lib/notifications/sms-service';
 
 // This is a server-side API route for generating verification codes
 export async function POST(request: Request) {
@@ -123,44 +122,8 @@ export async function POST(request: Request) {
 
     console.log('✅ API: Verification code generated:', codeData);
 
-    // Send SMS with the verification code if we have the phone number
-    // Since we no longer directly join the user, we need to get phone separately
-    try {
-      // Get user's phone number from profiles table
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('phone')
-        .eq('id', user.id)
-        .single();
-        
-      const userPhone = userProfile?.phone;
-      
-      if (userPhone) {
-        try {
-          const smsService = new SMSService({
-            accountSid: process.env.TWILIO_ACCOUNT_SID!,
-            authToken: process.env.TWILIO_AUTH_TOKEN!,
-            fromNumber: process.env.TWILIO_FROM_NUMBER!,
-            environment: (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')
-          });
-
-          await smsService.sendMessage({
-            to: userPhone,
-            message: `Your PikDrive verification code is: ${codeData}. Show this to your driver to confirm your ride.`
-          });
-          
-          console.log('✅ API: SMS sent to user with verification code');
-        } catch (smsError) {
-          console.error('⚠️ API: Error sending SMS:', smsError);
-          // Continue even if SMS fails, as we'll show the code in the app
-        }
-      } else {
-        console.log('ℹ️ API: User has no phone number, skipping SMS notification');
-      }
-    } catch (profileError) {
-      console.error('⚠️ API: Error fetching user profile:', profileError);
-      // Continue even if profile fetch fails
-    }
+    // Note: SMS notifications are handled by OneSignal when payment completes
+    // This endpoint only generates and returns the code for UI display
 
     return NextResponse.json({
       success: true,
