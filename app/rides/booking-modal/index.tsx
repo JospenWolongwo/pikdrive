@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { RideWithDriver } from "@/types";
 import { useBookingModal } from "./hooks/use-booking-modal";
+import { BookingPassengerInfoStep } from "./components/booking-passenger-info-step";
 import { BookingSeatSelection } from "./components/booking-seat-selection";
 import { BookingPaymentStep } from "./components/booking-payment-step";
 import { BookingSuccessStep } from "./components/booking-success-step";
@@ -37,11 +38,14 @@ export function BookingModal({
     isCreatingBooking,
     userBookingsLoading,
     userBookings,
+    checkingPassengerInfo,
+    profileName,
     setSeats,
     setSelectedProvider,
     setPhoneNumber,
     setIsPhoneValid,
     setStep,
+    handlePassengerInfoComplete,
     handleCreateBooking,
     handlePayment,
     handlePaymentComplete,
@@ -53,8 +57,8 @@ export function BookingModal({
 
   if (!ride) return null;
 
-  // Show loading state while user bookings are being loaded
-  if (isOpen && userBookingsLoading && userBookings.length === 0) {
+  // Show loading state while checking passenger info or user bookings are being loaded
+  if (isOpen && (checkingPassengerInfo || (userBookingsLoading && userBookings.length === 0))) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">
@@ -71,6 +75,15 @@ export function BookingModal({
 
   const renderStep = () => {
     switch (step) {
+      case 0:
+        return (
+          <BookingPassengerInfoStep
+            onComplete={handlePassengerInfoComplete}
+            onClose={onClose}
+            initialName={profileName}
+          />
+        );
+
       case 1:
         return (
           <BookingSeatSelection
@@ -122,6 +135,8 @@ export function BookingModal({
 
   const getTitle = () => {
     switch (step) {
+      case 0:
+        return "Informations personnelles";
       case 1:
         return "Réserver votre trajet";
       case 2:

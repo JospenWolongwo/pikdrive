@@ -103,6 +103,14 @@ export class BookingApiClient {
 
     return apiClient.get(`/api/bookings/existing?${searchParams}`);
   }
+
+  /**
+   * Check passenger info completeness (name and ID documents)
+   */
+  async checkPassengerInfo(userId: string): Promise<BookingApiResponse<{ isComplete: boolean; profileName: string }>> {
+    const searchParams = new URLSearchParams({ userId });
+    return apiClient.get(`/api/passengers/check-info?${searchParams}`);
+  }
 }
 
 // Export singleton instance

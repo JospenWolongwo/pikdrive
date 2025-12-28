@@ -21,3 +21,19 @@ export interface PassengerWithRide extends Passenger {
     readonly price: number;
   };
 }
+
+export interface PassengerDocument {
+  readonly id: string;
+  readonly user_id: string;
+  readonly full_name: string;
+  readonly national_id_file_recto: string;
+  readonly national_id_file_verso: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface PassengerInfoData {
+  readonly fullName: string;
+  readonly idRecto: string;
+  readonly idVerso: string;
+}

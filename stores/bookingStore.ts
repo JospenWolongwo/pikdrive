@@ -31,6 +31,12 @@ interface BookingState {
   isCreatingBooking: boolean;
   createBookingError: string | null;
 
+  // Passenger info cache
+  passengerInfoComplete: boolean | null;
+  passengerInfoProfileName: string;
+  lastPassengerInfoFetch: number | null;
+  passengerInfoLoading: boolean;
+
   // Actions for user bookings
   fetchUserBookings: (userId: string) => Promise<void>;
   refreshUserBookings: (userId: string) => Promise<void>;
@@ -61,6 +67,11 @@ interface BookingState {
   // Utility actions
   getExistingBookingForRide: (rideId: string, userId: string) => Promise<Booking | null>;
   getCachedBookingForRide: (rideId: string, userId: string) => Booking | null;
+
+  // Passenger info actions
+  checkPassengerInfo: (userId: string, force?: boolean) => Promise<{ isComplete: boolean; profileName: string }>;
+  getCachedPassengerInfo: () => { isComplete: boolean | null; profileName: string } | null;
+  invalidatePassengerInfoCache: () => void;
 }
 
 export const useBookingStore = create<BookingState>()(
@@ -83,6 +94,12 @@ export const useBookingStore = create<BookingState>()(
 
       isCreatingBooking: false,
       createBookingError: null,
+
+      // Passenger info cache
+      passengerInfoComplete: null,
+      passengerInfoProfileName: "",
+      lastPassengerInfoFetch: null,
+      passengerInfoLoading: false,
 
       // Actions for user bookings
       fetchUserBookings: async (userId: string) => {
@@ -367,6 +384,83 @@ export const useBookingStore = create<BookingState>()(
           booking => booking.ride_id === rideId && booking.user_id === userId
         ) || null;
       },
+
+      // Passenger info actions
+      checkPassengerInfo: async (userId: string, force = false) => {
+        const { lastPassengerInfoFetch, passengerInfoComplete, passengerInfoProfileName } = get();
+        const now = Date.now();
+        
+        // Use cache if fresh (5 minutes) and not forcing refresh
+        if (!force && 
+            lastPassengerInfoFetch && 
+            now - lastPassengerInfoFetch < 5 * 60 * 1000 && 
+            passengerInfoComplete !== null) {
+          return {
+            isComplete: passengerInfoComplete,
+            profileName: passengerInfoProfileName,
+          };
+        }
+
+        set({ passengerInfoLoading: true });
+
+        try {
+          const response = await bookingApiClient.checkPassengerInfo(userId);
+          
+          if (!response.success) {
+            throw new Error(response.error || "Failed to check passenger info");
+          }
+
+          const { isComplete, profileName } = response.data!;
+
+          set({
+            passengerInfoComplete: isComplete,
+            passengerInfoProfileName: profileName,
+            lastPassengerInfoFetch: now,
+            passengerInfoLoading: false,
+          });
+
+          return {
+            isComplete,
+            profileName,
+          };
+        } catch (error) {
+          console.error("Error checking passenger info:", error);
+          set({ 
+            passengerInfoLoading: false,
+            passengerInfoComplete: false,
+            passengerInfoProfileName: "",
+          });
+          return {
+            isComplete: false,
+            profileName: "",
+          };
+        }
+      },
+
+      getCachedPassengerInfo: () => {
+        const { lastPassengerInfoFetch, passengerInfoComplete, passengerInfoProfileName } = get();
+        const now = Date.now();
+        
+        // Return cached value if fresh (5 minutes)
+        if (lastPassengerInfoFetch && 
+            now - lastPassengerInfoFetch < 5 * 60 * 1000 &&
+            passengerInfoComplete !== null) {
+          return {
+            isComplete: passengerInfoComplete,
+            profileName: passengerInfoProfileName,
+          };
+        }
+        
+        return null; // Cache expired or not set
+      },
+
+      invalidatePassengerInfoCache: () => {
+        set({
+          lastPassengerInfoFetch: null,
+          passengerInfoComplete: null,
+          passengerInfoProfileName: "",
+        });
+      },
     }),
     {
       name: 'booking-storage',
@@ -376,6 +470,9 @@ export const useBookingStore = create<BookingState>()(
         lastUserBookingsFetch: state.lastUserBookingsFetch,
         driverBookings: state.driverBookings,
         lastDriverBookingsFetch: state.lastDriverBookingsFetch,
+        passengerInfoComplete: state.passengerInfoComplete,
+        passengerInfoProfileName: state.passengerInfoProfileName,
+        lastPassengerInfoFetch: state.lastPassengerInfoFetch,
       }),
     }
   )

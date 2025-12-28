@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { PaymentProviderType } from "@/lib/payment/types";
@@ -20,7 +20,7 @@ export function useBookingModal({
   ride,
   onBookingComplete,
 }: UseBookingModalProps) {
-  const { supabase, user } = useSupabase();
+  const { user } = useSupabase();
   const router = useRouter();
   const {
     createBooking,
@@ -29,10 +29,14 @@ export function useBookingModal({
     getCachedBookingForRide,
     userBookings,
     userBookingsLoading,
+    checkPassengerInfo: checkPassengerInfoStore,
+    getCachedPassengerInfo,
+    invalidatePassengerInfoCache,
+    passengerInfoLoading,
   } = useBookingStore();
   const { triggerPrompt } = useNotificationPromptTrigger();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [seats, setSeats] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProviderType>();
@@ -46,6 +50,8 @@ export function useBookingModal({
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [isPolling, setIsPolling] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [isPassengerInfoComplete, setIsPassengerInfoComplete] = useState<boolean | null>(null);
+  const [profileName, setProfileName] = useState<string>("");
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate total price - for paid bookings, only charge for additional seats
@@ -79,6 +85,42 @@ export function useBookingModal({
     processingFee: p.processingFee,
   }));
 
+  // Check passenger info when modal opens - using cached store
+  const checkPassengerInfo = useCallback(async () => {
+    if (!user) {
+      setIsPassengerInfoComplete(false);
+      return;
+    }
+
+    // First check cache
+    const cached = getCachedPassengerInfo();
+    if (cached) {
+      setIsPassengerInfoComplete(cached.isComplete);
+      setProfileName(cached.profileName);
+      setStep(cached.isComplete ? 1 : 0);
+      return;
+    }
+
+    // If not cached, fetch from store (which uses API client)
+    try {
+      const result = await checkPassengerInfoStore(user.id);
+      setIsPassengerInfoComplete(result.isComplete);
+      setProfileName(result.profileName);
+      setStep(result.isComplete ? 1 : 0);
+    } catch (error) {
+      console.error("Error checking passenger info:", error);
+      setIsPassengerInfoComplete(false);
+      setStep(0);
+    }
+  }, [user, checkPassengerInfoStore, getCachedPassengerInfo]);
+
+  // Check passenger info when modal opens
+  useEffect(() => {
+    if (isOpen && user) {
+      checkPassengerInfo();
+    }
+  }, [isOpen, user, checkPassengerInfo]);
+
   // Reset modal state when it closes
   useEffect(() => {
     if (!isOpen) {
@@ -91,7 +133,7 @@ export function useBookingModal({
       
       // Only reset state if not in payment success (to allow success step to show)
       if (!paymentSuccess) {
-        setStep(1);
+        setStep(0);
         setSeats(1);
         setExistingBooking(null);
         setOriginalSeats(null);
@@ -103,6 +145,8 @@ export function useBookingModal({
         setPaymentStatus(null);
         setStatusMessage("");
         setIsPolling(false);
+        setIsPassengerInfoComplete(null);
+        setProfileName("");
       }
     }
   }, [isOpen, paymentSuccess]);
@@ -116,12 +160,12 @@ export function useBookingModal({
     };
   }, []);
 
-  // Check for existing booking when modal opens - optimized with cache
+  // Check for existing booking when modal opens - only after passenger info is confirmed complete
   useEffect(() => {
-    if (isOpen && user && ride && user.id && !userBookingsLoading) {
+    if (isOpen && user && ride && user.id && !userBookingsLoading && isPassengerInfoComplete === true && step >= 1) {
       checkExistingBooking();
     }
-  }, [isOpen, user, ride, userBookings, userBookingsLoading]);
+  }, [isOpen, user, ride, userBookings, userBookingsLoading, isPassengerInfoComplete, step]);
 
   const checkExistingBooking = async () => {
     if (!ride || !user) return;
@@ -161,6 +205,17 @@ export function useBookingModal({
     } catch (error) {
       // Silently fail - booking check error
     }
+  };
+
+  const handlePassengerInfoComplete = () => {
+    // Invalidate cache and update state
+    invalidatePassengerInfoCache();
+    // Force refresh to update cache with new completion status
+    checkPassengerInfoStore(user!.id, true).then((result) => {
+      setIsPassengerInfoComplete(result.isComplete);
+      setProfileName(result.profileName);
+      setStep(1); // Move to seat selection
+    });
   };
 
   const handleCreateBooking = async () => {
@@ -277,6 +332,9 @@ export function useBookingModal({
     userBookingsLoading,
     userBookings,
     isCreatingBooking,
+    isPassengerInfoComplete,
+    checkingPassengerInfo: passengerInfoLoading,
+    profileName,
     // Setters
     setSeats,
     setSelectedProvider,
@@ -284,6 +342,7 @@ export function useBookingModal({
     setIsPhoneValid,
     setStep,
     // Handlers
+    handlePassengerInfoComplete,
     handleCreateBooking,
     handlePayment,
     handlePaymentComplete,

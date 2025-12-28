@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Car } from "lucide-react";
+import { Users, Car, UserCheck } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -14,6 +14,12 @@ export default function AdminDashboard() {
       description: "Review and manage driver applications",
       icon: Users,
       href: "/admin/drivers",
+    },
+    {
+      title: "Passenger Management",
+      description: "View and manage passenger information",
+      icon: UserCheck,
+      href: "/admin/passengers",
     },
     // Add more admin modules here as needed
   ];

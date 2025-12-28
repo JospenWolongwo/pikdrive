@@ -2,19 +2,25 @@
 -- to handle payment_status when updating paid bookings
 
 -- Add 'partial' value to payment_status enum if it doesn't exist
+-- Note: ALTER TYPE ADD VALUE cannot be rolled back, so we wrap in DO block with error handling
 DO $$ 
 BEGIN
+    -- Check if 'partial' already exists
     IF NOT EXISTS (
         SELECT 1 FROM pg_enum e
         JOIN pg_type t ON e.enumtypid = t.oid
         WHERE t.typname = 'payment_status' 
         AND e.enumlabel = 'partial'
     ) THEN
+        -- Try to add the value
         ALTER TYPE payment_status ADD VALUE 'partial';
     END IF;
 EXCEPTION
     WHEN duplicate_object THEN
         -- Value already exists, ignore
+        NULL;
+    WHEN OTHERS THEN
+        -- Ignore other errors
         NULL;
 END $$;
 
@@ -38,6 +44,7 @@ DECLARE
   v_existing_payment_status payment_status;
   v_effective_available INTEGER;
   v_new_payment_status payment_status;
+  v_row_count INTEGER;
 BEGIN
   -- Lock the ride row for update to prevent concurrent access
   SELECT seats_available, driver_id INTO v_available_seats, v_ride_driver_id
@@ -115,8 +122,8 @@ BEGIN
     WHERE id = p_booking_id;
     
     -- Verify update succeeded
-    GET DIAGNOSTICS v_booking_id = ROW_COUNT;
-    IF v_booking_id = 0 THEN
+    GET DIAGNOSTICS v_row_count = ROW_COUNT;
+    IF v_row_count = 0 THEN
       RETURN QUERY SELECT FALSE, NULL::UUID, 'Failed to update booking'::TEXT;
       RETURN;
     END IF;
