@@ -185,23 +185,67 @@ export async function POST(request: NextRequest) {
             statusUpdated = true;
             console.log('✅ [PAYOUT-STATUS] Payout status updated successfully');
 
-            // Send notification if status changed to completed or failed (with deduplication)
-            if (newStatus === 'completed' && payout.driver_id) {
-              await sendPayoutNotificationIfNeeded(
-                supabase,
-                { ...payout, status: newStatus },
-                'completed',
-                undefined,
-                'status-check'
-              );
-            } else if (newStatus === 'failed' && payout.driver_id) {
-              await sendPayoutNotificationIfNeeded(
-                supabase,
-                { ...payout, status: newStatus },
-                'failed',
-                reason || pawapayStatus || 'Transaction échouée',
-                'status-check'
-              );
+            // Fetch the updated payout to get the latest metadata
+            const { data: updatedPayout, error: fetchError } = await supabase
+              .from('payouts')
+              .select('id, driver_id, amount, currency, booking_id, transaction_id, metadata')
+              .eq('id', payout.id)
+              .single();
+
+            if (fetchError) {
+              console.error('❌ [PAYOUT-STATUS] Error fetching updated payout:', fetchError);
+              // Fallback: manually merge status check metadata
+              const payoutToUse = {
+                ...payout,
+                status: newStatus,
+                transaction_id: statusResult.transactionId || payout.transaction_id,
+                metadata: {
+                  ...(payout.metadata || {}),
+                  lastStatusCheck: new Date().toISOString(),
+                  pawapayStatus: pawapayStatus,
+                  pawapayReason: reason,
+                  statusCheckedAt: new Date().toISOString(),
+                },
+              };
+
+              // Send notification if status changed to completed or failed (with deduplication)
+              if (newStatus === 'completed' && payoutToUse.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  payoutToUse,
+                  'completed',
+                  undefined,
+                  'status-check'
+                );
+              } else if (newStatus === 'failed' && payoutToUse.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  payoutToUse,
+                  'failed',
+                  reason || pawapayStatus || 'Transaction échouée',
+                  'status-check'
+                );
+              }
+            } else {
+              // Use the freshly fetched payout with latest metadata
+              // Send notification if status changed to completed or failed (with deduplication)
+              if (newStatus === 'completed' && updatedPayout.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  updatedPayout,
+                  'completed',
+                  undefined,
+                  'status-check'
+                );
+              } else if (newStatus === 'failed' && updatedPayout.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  updatedPayout,
+                  'failed',
+                  reason || pawapayStatus || 'Transaction échouée',
+                  'status-check'
+                );
+              }
             }
           }
         } else {
@@ -299,23 +343,67 @@ export async function POST(request: NextRequest) {
             statusUpdated = true;
             console.log('✅ [PAYOUT-STATUS] Payout status updated successfully');
 
-            // Send notification if status changed to completed or failed (with deduplication)
-            if (newStatus === 'completed' && payout.driver_id) {
-              await sendPayoutNotificationIfNeeded(
-                supabase,
-                { ...payout, status: newStatus },
-                'completed',
-                undefined,
-                'status-check'
-              );
-            } else if (newStatus === 'failed' && payout.driver_id) {
-              await sendPayoutNotificationIfNeeded(
-                supabase,
-                { ...payout, status: newStatus },
-                'failed',
-                reason || mtnStatus || 'Transaction échouée',
-                'status-check'
-              );
+            // Fetch the updated payout to get the latest metadata
+            const { data: updatedPayout, error: fetchError } = await supabase
+              .from('payouts')
+              .select('id, driver_id, amount, currency, booking_id, transaction_id, metadata')
+              .eq('id', payout.id)
+              .single();
+
+            if (fetchError) {
+              console.error('❌ [PAYOUT-STATUS] Error fetching updated payout:', fetchError);
+              // Fallback: manually merge status check metadata
+              const payoutToUse = {
+                ...payout,
+                status: newStatus,
+                transaction_id: statusResult.financialTransactionId || payout.transaction_id,
+                metadata: {
+                  ...(payout.metadata || {}),
+                  lastStatusCheck: new Date().toISOString(),
+                  mtnStatus: mtnStatus,
+                  mtnReason: reason,
+                  statusCheckedAt: new Date().toISOString(),
+                },
+              };
+
+              // Send notification if status changed to completed or failed (with deduplication)
+              if (newStatus === 'completed' && payoutToUse.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  payoutToUse,
+                  'completed',
+                  undefined,
+                  'status-check'
+                );
+              } else if (newStatus === 'failed' && payoutToUse.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  payoutToUse,
+                  'failed',
+                  reason || mtnStatus || 'Transaction échouée',
+                  'status-check'
+                );
+              }
+            } else {
+              // Use the freshly fetched payout with latest metadata
+              // Send notification if status changed to completed or failed (with deduplication)
+              if (newStatus === 'completed' && updatedPayout.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  updatedPayout,
+                  'completed',
+                  undefined,
+                  'status-check'
+                );
+              } else if (newStatus === 'failed' && updatedPayout.driver_id) {
+                await sendPayoutNotificationIfNeeded(
+                  supabase,
+                  updatedPayout,
+                  'failed',
+                  reason || mtnStatus || 'Transaction échouée',
+                  'status-check'
+                );
+              }
             }
           }
         } else {

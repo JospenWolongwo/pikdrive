@@ -147,23 +147,68 @@ export async function POST(request: Request) {
       } else {
         console.log('✅ Payout status updated:', { payoutId: payout.id, status: payoutStatus });
 
-        // Send driver notification based on payout status (with deduplication)
-        if (payoutStatus === 'completed' && payout.driver_id) {
-          await sendPayoutNotificationIfNeeded(
-            supabase,
-            payout,
-            'completed',
-            undefined,
-            'callback'
-          );
-        } else if (payoutStatus === 'failed' && payout.driver_id) {
-          await sendPayoutNotificationIfNeeded(
-            supabase,
-            payout,
-            'failed',
-            reason || 'Raison inconnue',
-            'callback'
-          );
+        // Fetch the updated payout to get the latest metadata (including callback fields)
+        // This ensures the notification function has the current state and preserves callback metadata
+        const { data: updatedPayout, error: fetchError } = await supabase
+          .from('payouts')
+          .select('id, driver_id, amount, currency, booking_id, transaction_id, metadata')
+          .eq('id', payout.id)
+          .single();
+
+        if (fetchError) {
+          console.error('❌ Error fetching updated payout:', fetchError);
+          // Fallback: manually merge callback metadata into payout object
+          const payoutToUse = {
+            ...payout,
+            status: payoutStatus,
+            transaction_id: transactionId,
+            metadata: {
+              ...(payout.metadata || {}),
+              callbackReceivedAt: new Date().toISOString(),
+              callbackStatus: status,
+              financialTransactionId: financialTransactionId,
+              providerResponse: callback,
+            },
+          };
+
+          // Send driver notification based on payout status (with deduplication)
+          if (payoutStatus === 'completed' && payoutToUse.driver_id) {
+            await sendPayoutNotificationIfNeeded(
+              supabase,
+              payoutToUse,
+              'completed',
+              undefined,
+              'callback'
+            );
+          } else if (payoutStatus === 'failed' && payoutToUse.driver_id) {
+            await sendPayoutNotificationIfNeeded(
+              supabase,
+              payoutToUse,
+              'failed',
+              reason || 'Raison inconnue',
+              'callback'
+            );
+          }
+        } else {
+          // Use the freshly fetched payout with latest metadata
+          // Send driver notification based on payout status (with deduplication)
+          if (payoutStatus === 'completed' && updatedPayout.driver_id) {
+            await sendPayoutNotificationIfNeeded(
+              supabase,
+              updatedPayout,
+              'completed',
+              undefined,
+              'callback'
+            );
+          } else if (payoutStatus === 'failed' && updatedPayout.driver_id) {
+            await sendPayoutNotificationIfNeeded(
+              supabase,
+              updatedPayout,
+              'failed',
+              reason || 'Raison inconnue',
+              'callback'
+            );
+          }
         }
       }
     } else {
