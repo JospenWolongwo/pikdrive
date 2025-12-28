@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { ServerPaymentService } from '@/lib/services/server/payment-service';
 import { PaymentOrchestratorService } from '@/lib/payment/payment-orchestrator.service';
-import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
 import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
 import type { Environment } from '@/types/payment-ext';
 import { Environment as EnvEnum, PawaPayApiUrl, HTTP_CODE } from '@/types/payment-ext';
@@ -12,7 +11,6 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createApiSupabaseClient();
     const paymentService = new ServerPaymentService(supabase);
-    const notificationService = new ServerOneSignalNotificationService(supabase);
     
     // Verify user session
     const {
@@ -38,6 +36,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: bookingId, amount, provider, phoneNumber' },
         { status: 400 }
+      );
+    }
+
+    // Verify booking exists
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('id', bookingId)
+      .single();
+
+    if (bookingError || !booking) {
+      return NextResponse.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
       );
     }
 

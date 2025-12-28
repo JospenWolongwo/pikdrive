@@ -249,9 +249,7 @@ export function RideCard({
               {/* Show payment status indicator */}
               {(() => {
                 const paidBookings = ride.bookings.filter(
-                  (b) =>
-                    b.payment_status === "completed" ||
-                    b.payment_status === "paid"
+                  (b) => b.payment_status === "completed"
                 );
                 if (paidBookings.length > 0) {
                   return (

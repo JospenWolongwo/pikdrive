@@ -32,7 +32,7 @@ export class ServerBookingService {
       // First, check if user already has a booking for this ride
       const { data: existingBooking } = await this.supabase
         .from('bookings')
-        .select('id, seats, status')
+        .select('id, seats, status, payment_status')
         .eq('ride_id', params.ride_id)
         .eq('user_id', params.user_id)
         .not('status', 'in', '(cancelled,completed)')
@@ -340,6 +340,54 @@ export class ServerBookingService {
       return data;
     } catch (error) {
       console.error('ServerBookingService.getExistingBookingForRide error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate payment amount for booking update
+   * Returns amount for additional seats only if booking is already paid, otherwise full amount
+   */
+  async calculateAdditionalPaymentAmount(bookingId: string, newSeats: number): Promise<number> {
+    try {
+      // Fetch booking with ride details
+      const { data: booking, error: bookingError } = await this.supabase
+        .from('bookings')
+        .select(`
+          id,
+          seats,
+          payment_status,
+          ride_id,
+          ride:rides!inner(price)
+        `)
+        .eq('id', bookingId)
+        .single();
+
+      if (bookingError || !booking) {
+        throw new Error(`Booking not found: ${bookingError?.message || 'Unknown error'}`);
+      }
+
+      const currentSeats = booking.seats;
+      const paymentStatus = booking.payment_status;
+      const ridePrice = (booking.ride as any)?.price;
+
+      if (!ridePrice) {
+        throw new Error('Ride price not found');
+      }
+
+      // If booking is already paid/completed and adding seats, calculate for additional seats only
+      if (paymentStatus === 'completed') {
+        if (newSeats <= currentSeats) {
+          throw new Error('Cannot reduce seats on a paid booking');
+        }
+        const additionalSeats = newSeats - currentSeats;
+        return additionalSeats * ridePrice;
+      }
+
+      // For unpaid bookings, return full amount
+      return newSeats * ridePrice;
+    } catch (error) {
+      console.error('ServerBookingService.calculateAdditionalPaymentAmount error:', error);
       throw error;
     }
   }

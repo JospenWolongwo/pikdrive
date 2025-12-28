@@ -96,6 +96,9 @@ export function BookingModal({
             loading={loading}
             paymentTransactionId={paymentTransactionId}
             bookingId={bookingId}
+            existingBooking={existingBooking}
+            ride={ride}
+            seats={seats}
             onProviderSelect={setSelectedProvider}
             onPhoneNumberChange={setPhoneNumber}
             onPhoneValidityChange={setIsPhoneValid}

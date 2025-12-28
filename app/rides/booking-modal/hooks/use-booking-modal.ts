@@ -40,6 +40,7 @@ export function useBookingModal({
   const [isPhoneValid, setIsPhoneValid] = useState(false);
   const [bookingId, setBookingId] = useState<string>();
   const [existingBooking, setExistingBooking] = useState<any>(null);
+  const [originalSeats, setOriginalSeats] = useState<number | null>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "SUCCESSFUL" | "FAILED" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
@@ -47,7 +48,26 @@ export function useBookingModal({
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const totalPrice = seats * (ride?.price || 0);
+  // Calculate total price - for paid bookings, only charge for additional seats
+  const calculateTotalPrice = (): number => {
+    if (!ride?.price) return 0;
+    
+    // If booking is paid/completed and we have original seats, calculate for additional seats only
+    if (existingBooking && existingBooking.payment_status === 'completed') {
+      const currentPaidSeats = originalSeats ?? existingBooking.seats;
+      if (seats > currentPaidSeats) {
+        const additionalSeats = seats - currentPaidSeats;
+        return additionalSeats * ride.price;
+      }
+      // If seats <= currentPaidSeats, return 0 (user shouldn't be able to reduce, but handle gracefully)
+      return 0;
+    }
+    
+    // For unpaid bookings, charge for all seats
+    return seats * ride.price;
+  };
+
+  const totalPrice = calculateTotalPrice();
   const providers = getAvailableProviders().map((p) => ({
     name: p.name as PaymentProviderType,
     logo: p.logo,
@@ -74,6 +94,7 @@ export function useBookingModal({
         setStep(1);
         setSeats(1);
         setExistingBooking(null);
+        setOriginalSeats(null);
         setBookingId(undefined);
         setSelectedProvider(undefined);
         setPhoneNumber("");
@@ -113,10 +134,12 @@ export function useBookingModal({
         // Use cached data immediately for instant UI update
         setExistingBooking(cachedBooking);
         setSeats(cachedBooking.seats);
+        setOriginalSeats(cachedBooking.seats);
         setBookingId(cachedBooking.id);
 
-        if (cachedBooking.payment_status === "paid") {
-          setStep(2);
+        if (cachedBooking.payment_status === "completed") {
+          // For paid bookings, don't auto-advance to payment step
+          // User should be able to see seat selection and add more seats if needed
         }
         return; // Exit early with cached data
       }
@@ -127,10 +150,12 @@ export function useBookingModal({
       if (existing) {
         setExistingBooking(existing);
         setSeats(existing.seats);
+        setOriginalSeats(existing.seats);
         setBookingId(existing.id);
 
-        if (existing.payment_status === "paid") {
-          setStep(2);
+        if (existing.payment_status === "completed") {
+          // For paid bookings, don't auto-advance to payment step
+          // User should be able to see seat selection and add more seats if needed
         }
       }
     } catch (error) {

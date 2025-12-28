@@ -32,11 +32,22 @@ export function BookingSeatSelection({
     <>
       <div className="space-y-6">
         {existingBooking && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-800">
-              <strong>Modification de réservation :</strong> Vous avez déjà une réservation pour ce trajet. 
-              Vous pouvez modifier le nombre de places ou procéder au paiement.
-            </p>
+          <div className={`border rounded-lg p-3 ${
+            existingBooking.payment_status === 'completed'
+              ? 'bg-green-50 border-green-200'
+              : 'bg-blue-50 border-blue-200'
+          }`}>
+            {existingBooking.payment_status === 'completed' ? (
+              <p className="text-sm text-green-800">
+                <strong>Réservation déjà payée :</strong> Vous avez déjà payé pour {existingBooking.seats} {existingBooking.seats > 1 ? 'places' : 'place'}. 
+                Vous pouvez ajouter des places supplémentaires ci-dessous.
+              </p>
+            ) : (
+              <p className="text-sm text-blue-800">
+                <strong>Modification de réservation :</strong> Vous avez déjà une réservation pour ce trajet. 
+                Vous pouvez modifier le nombre de places ou procéder au paiement.
+              </p>
+            )}
           </div>
         )}
 
@@ -70,15 +81,26 @@ export function BookingSeatSelection({
           <Input
             id="seats"
             type="number"
-            min={1}
+            min={existingBooking && existingBooking.payment_status === 'completed' 
+              ? existingBooking.seats 
+              : 1}
             max={ride.seats_available}
             value={seats}
             onChange={(e) => onSeatsChange(parseInt(e.target.value))}
           />
+          {existingBooking && existingBooking.payment_status === 'completed' && (
+            <p className="text-xs text-muted-foreground">
+              Vous ne pouvez pas réduire le nombre de places d'une réservation déjà payée
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between items-center text-lg font-semibold">
-          <span>Prix total :</span>
+          <span>
+            {existingBooking && existingBooking.payment_status === 'completed'
+              ? 'Montant à payer (places supplémentaires) :'
+              : 'Prix total :'}
+          </span>
           <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
         </div>
       </div>

@@ -83,9 +83,25 @@ export class ServerPaymentOrchestrationService {
    */
   private async handleCompletedPayment(payment: Payment): Promise<void> {
     try {
-      // Update booking status first
+      // Fetch current booking to check payment_status
+      const { data: currentBooking, error: bookingFetchError } = await this.supabase
+        .from('bookings')
+        .select('payment_status, status')
+        .eq('id', payment.booking_id)
+        .single();
+
+      if (bookingFetchError) {
+        console.error('❌ [ORCHESTRATION] Error fetching booking for payment status check:', bookingFetchError);
+      }
+
+      // Determine new payment_status: if booking was 'partial', set to 'completed'; otherwise 'completed'
+      // Note: For partial payments (adding seats to paid booking), set back to 'completed'
+      const currentPaymentStatus = currentBooking?.payment_status;
+      const newPaymentStatus = currentPaymentStatus === 'partial' ? 'completed' : 'completed';
+
+      // Update booking status
       await this.bookingService.updateBooking(payment.booking_id, {
-        payment_status: 'completed',
+        payment_status: newPaymentStatus,
         status: 'pending_verification',
       });
 

@@ -23,7 +23,6 @@ export type BookingStatus =
 
 export type PaymentStatus = 
   | 'pending'
-  | 'paid'
   | 'completed'
   | 'failed'
   | 'refunded'

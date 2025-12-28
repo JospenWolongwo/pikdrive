@@ -26,6 +26,9 @@ interface BookingPaymentStepProps {
   loading: boolean;
   paymentTransactionId: string | null;
   bookingId: string | undefined;
+  existingBooking?: any;
+  ride?: any;
+  seats?: number;
   onProviderSelect: (provider: PaymentProviderType) => void;
   onPhoneNumberChange: (phone: string) => void;
   onPhoneValidityChange: (isValid: boolean) => void;
@@ -43,6 +46,9 @@ export function BookingPaymentStep({
   loading,
   paymentTransactionId,
   bookingId,
+  existingBooking,
+  ride,
+  seats,
   onProviderSelect,
   onPhoneNumberChange,
   onPhoneValidityChange,
@@ -50,6 +56,9 @@ export function BookingPaymentStep({
   onBack,
   onPaymentComplete,
 }: BookingPaymentStepProps) {
+  const isPartialPayment = existingBooking && 
+    existingBooking.payment_status === 'completed' &&
+    seats && seats > existingBooking.seats;
   return (
     <>
       <div className="space-y-6">
@@ -71,10 +80,27 @@ export function BookingPaymentStep({
           disabled={loading || paymentTransactionId !== null}
         />
 
-        <div className="flex justify-between items-center text-lg font-semibold">
-          <span>Montant à payer :</span>
-          <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
-        </div>
+        {isPartialPayment && ride ? (
+          <div className="space-y-2 border rounded-lg p-4 bg-muted/50">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Places déjà payées :</span>
+              <span>{existingBooking.seats} {existingBooking.seats > 1 ? 'places' : 'place'}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Places supplémentaires :</span>
+              <span>{seats! - existingBooking.seats} {(seats! - existingBooking.seats) > 1 ? 'places' : 'place'}</span>
+            </div>
+            <div className="flex justify-between items-center text-lg font-semibold pt-2 border-t">
+              <span>Montant à payer :</span>
+              <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-between items-center text-lg font-semibold">
+            <span>Montant à payer :</span>
+            <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
+          </div>
+        )}
 
         {paymentTransactionId ? (
           <PaymentStatusChecker

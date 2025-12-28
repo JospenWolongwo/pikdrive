@@ -61,14 +61,15 @@ export function removeCallingCode(phoneNumber: string): string | null {
 
 /**
  * Check if phone number belongs to Orange Money network
- * Orange numbers: 655-659, 679, 690-699
+ * Orange numbers: 653 (sandbox testing), 655-659, 679, 690-699
+ * Note: 653 is used by PawaPay sandbox for Orange Money testing
  */
 export function isOrangePhoneNumber(phoneNumber: string): boolean {
   const formattedPhone = removeCallingCode(phoneNumber);
   if (!formattedPhone) return false;
 
-  // Orange pattern: 655-659 (65[5-9]), 679, 690-699 (69[0-9])
-  const regexOrange = /^6(5[5-9]|679|69[0-9])[0-9]{6}$/;
+  // Orange pattern: 653 (sandbox), 655-659 (65[5-9]), 679, 690-699 (69[0-9])
+  const regexOrange = /^6(53|5[5-9]|679|69[0-9])[0-9]{6}$/;
   return regexOrange.test(formattedPhone);
 }
 
