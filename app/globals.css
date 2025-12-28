@@ -83,7 +83,7 @@
   }
 
   /* Section Spacing */
-  section {
+  section:not([aria-label*="Notifications"]) {
     @apply py-12 md:py-16 lg:py-20;
   }
 
