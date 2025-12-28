@@ -38,12 +38,13 @@ export class ServerBookingService {
         .not('status', 'in', '(cancelled,completed)')
         .maybeSingle();
 
-      // Use atomic seat reservation function with overloaded signatures
-      // Call the 4-parameter version if updating, 3-parameter version if creating
+      // Use atomic seat reservation function
+      // Always call with 4 parameters to avoid PostgreSQL function ambiguity
+      // Pass null for p_booking_id when creating, existing booking id when updating
       let reservationResult, reservationError;
       
       if (existingBooking) {
-        // UPDATE MODE: Call 4-parameter function
+        // UPDATE MODE: Pass existing booking ID
         console.log('🔍 [BOOKING SERVICE] Updating booking:', {
           bookingId: existingBooking.id,
           oldSeats: existingBooking.seats,
@@ -60,7 +61,7 @@ export class ServerBookingService {
           }
         ));
       } else {
-        // CREATE MODE: Call 3-parameter function
+        // CREATE MODE: Explicitly pass null to avoid function signature ambiguity
         console.log('🔍 [BOOKING SERVICE] Creating new booking');
         
         ({ data: reservationResult, error: reservationError } = await this.supabase.rpc(
@@ -68,7 +69,8 @@ export class ServerBookingService {
           {
             p_ride_id: params.ride_id,
             p_user_id: params.user_id,
-            p_seats: params.seats
+            p_seats: params.seats,
+            p_booking_id: null
           }
         ));
       }
