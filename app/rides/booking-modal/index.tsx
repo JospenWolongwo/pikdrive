@@ -159,11 +159,19 @@ export function BookingModal({
         }
       }}
     >
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent
+        className={`sm:max-w-[500px] ${
+          step === 0 ? "max-h-[90vh] flex flex-col" : ""
+        }`}
+      >
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
         </DialogHeader>
-        {renderStep()}
+        {step === 0 ? (
+          <div className="overflow-y-auto flex-1">{renderStep()}</div>
+        ) : (
+          renderStep()
+        )}
       </DialogContent>
     </Dialog>
   );
