@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
@@ -41,6 +42,7 @@ import { useDeviceDetect } from "@/hooks/common";
 export function Navbar() {
   const { supabase, user, loading } = useSupabase();
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   // Debug logging for auth state
@@ -397,10 +399,8 @@ export function Navbar() {
                   currentTarget: e.currentTarget,
                   defaultPrevented: e.defaultPrevented
                 });
-                // Fallback: use window.location if Link doesn't work
-                if (typeof window !== 'undefined') {
-                  window.location.href = '/auth';
-                }
+                // Use Next.js router for client-side navigation
+                router.replace('/auth');
               }}
             >
               Connexion
