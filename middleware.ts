@@ -16,39 +16,49 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  // Server-side cookie clearing: Check for environment mismatch
+  // Server-side cookie clearing: Always check and clear if environment changed
   const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const storedSupabaseUrl = req.cookies.get('supabase-project-url')?.value;
-  
+  const storageKey = getVersionedStorageKey("auth-storage");
+
+  // If environment changed, clear ALL cookies
   if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
-    // Environment changed - clear all auth cookies server-side
-    const storageKey = getVersionedStorageKey("auth-storage");
-    const authCookieNames = [
-      `${storageKey}-access-token`,
-      `${storageKey}-refresh-token`,
-    ];
-    
-    // Clear all auth cookies
-    authCookieNames.forEach(name => {
-      res.cookies.delete(name);
-    });
-    
-    // Also clear any cookies that might exist from old environment
+    // Get all cookies and clear auth-related ones with proper attributes
     req.cookies.getAll().forEach(cookie => {
-      if (cookie.name.includes('auth') || cookie.name.includes('supabase') || cookie.name.includes('sb-')) {
+      const isAuthCookie = cookie.name.includes('auth') || 
+                          cookie.name.includes('supabase') || 
+                          cookie.name.includes('sb-') ||
+                          cookie.name.includes(storageKey);
+      
+      if (isAuthCookie) {
+        // Delete with all possible attribute combinations
         res.cookies.delete(cookie.name);
+        res.cookies.set(cookie.name, '', {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 0,
+        });
+        res.cookies.set(cookie.name, '', {
+          path: '/',
+          httpOnly: false,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 0,
+        });
       }
     });
   }
-  
-  // Store current environment in cookie for next check
+
+  // Store current environment (always update)
   if (currentSupabaseUrl) {
     res.cookies.set('supabase-project-url', currentSupabaseUrl, {
       path: '/',
-      httpOnly: false, // Allow client-side read for comparison
+      httpOnly: false,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 365, // 1 year
+      maxAge: 60 * 60 * 24 * 365,
     });
   }
 
