@@ -16,43 +16,10 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  // Server-side cookie clearing: Always check and clear if environment changed
+  // Store current environment in cookie for tracking
+  // (Cookie clearing is handled by Route Handler: /api/auth/clear-cookies)
   const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const storedSupabaseUrl = req.cookies.get('supabase-project-url')?.value;
-  const storageKey = getVersionedStorageKey("auth-storage");
-
-  // If environment changed, clear ALL cookies
-  if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
-    // Get all cookies and clear auth-related ones with proper attributes
-    req.cookies.getAll().forEach(cookie => {
-      const isAuthCookie = cookie.name.includes('auth') || 
-                          cookie.name.includes('supabase') || 
-                          cookie.name.includes('sb-') ||
-                          cookie.name.includes(storageKey);
-      
-      if (isAuthCookie) {
-        // Delete with all possible attribute combinations
-        res.cookies.delete(cookie.name);
-        res.cookies.set(cookie.name, '', {
-          path: '/',
-          httpOnly: true,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 0,
-        });
-        res.cookies.set(cookie.name, '', {
-          path: '/',
-          httpOnly: false,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 0,
-        });
-      }
-    });
-  }
-
-  // Store current environment (always update)
-  if (currentSupabaseUrl) {
+  if (currentSupabaseUrl && !req.cookies.get('supabase-project-url')) {
     res.cookies.set('supabase-project-url', currentSupabaseUrl, {
       path: '/',
       httpOnly: false,

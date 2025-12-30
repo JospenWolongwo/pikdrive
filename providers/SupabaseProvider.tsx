@@ -42,19 +42,28 @@ export const SupabaseProvider = ({
     }, 5 * 60 * 1000); // 5 minutes
   }, [supabase]);
 
-  // Clear client-side storage when switching Supabase environments
-  // (Server-side handles cookie clearing in middleware)
+  // Clear cookies and storage when switching Supabase environments
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const storedSupabaseUrl = localStorage.getItem('last-supabase-url');
 
-    // If we switched environments, clear storage and reload
+    // If we switched environments, clear cookies server-side and storage client-side
     if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.reload();
+      // Call route handler to clear cookies server-side
+      fetch('/api/auth/clear-cookies', { method: 'POST' })
+        .then(() => {
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.reload();
+        })
+        .catch(() => {
+          // If API call fails, still clear storage and reload
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.reload();
+        });
       return;
     }
 
