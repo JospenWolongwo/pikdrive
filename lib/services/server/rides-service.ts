@@ -292,7 +292,15 @@ export class ServerRidesService {
       throw new Error(`Failed to fetch ride details: ${detailsError.message}`);
     }
 
-    return detailedRides || [];
+    // Filter out cancelled bookings from nested relation
+    // Note: Supabase doesn't support filtering nested relations in select,
+    // so we filter after fetching for this query structure
+    const filteredRides = (detailedRides || []).map((ride: any) => ({
+      ...ride,
+      bookings: (ride.bookings || []).filter((booking: any) => booking.status !== 'cancelled')
+    }));
+
+    return filteredRides;
   }
 
   /**

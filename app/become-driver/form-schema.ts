@@ -17,6 +17,7 @@ export const formSchema = z.object({
   insuranceFileRecto: z.string().optional(),
   insuranceFileVerso: z.string().optional(),
   
-  // Vehicle images (optional additional photos)
+  // Vehicle images (required - at least one image must be uploaded)
+  // Optional in schema, validated separately in form submission
   vehicleImages: z.array(z.string()).optional(),
 })

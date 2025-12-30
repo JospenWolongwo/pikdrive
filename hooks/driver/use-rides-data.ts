@@ -122,6 +122,7 @@ export function useRidesData() {
         const rideIds = simpleRides.map((r: any) => r.id);
 
         // Fetch bookings without complex joins to avoid foreign key issues
+        // Exclude cancelled bookings at database level for optimization
         const [{ data: bookings }, { data: messages }] = await Promise.all([
           supabase
             .from("bookings")
@@ -129,6 +130,7 @@ export function useRidesData() {
               "id, ride_id, user_id, seats, status, payment_status, code_verified, created_at, updated_at"
             )
             .or(rideIds.map((id: string) => `ride_id.eq.${id}`).join(","))
+            .neq("status", "cancelled")
             .order("created_at", { ascending: false }),
           supabase
             .from("messages")

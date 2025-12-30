@@ -146,9 +146,19 @@ export function useDocumentUploadHandlers(
       }
     } catch (error) {
       console.error("❌ Document upload failed:", error);
+      
+      // Extract clear error message
+      let errorMessage = "There was an error uploading your document. Please try again or contact support if the issue persists.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
       toast({
         title: "Upload Failed",
-        description: "There was an error uploading your document. Please try again or contact support if the issue persists.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -299,9 +309,19 @@ export function useDocumentUploadHandlers(
       }
     } catch (error) {
       console.error("❌ Vehicle image upload failed:", error);
+      
+      // Extract clear error message
+      let errorMessage = "There was an error uploading your images. Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
       toast({
         title: "Upload Failed",
-        description: "There was an error uploading your images. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

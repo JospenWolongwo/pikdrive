@@ -8,6 +8,7 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useBookingStore } from "@/stores";
 import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 import type { RideWithDriver } from "@/types";
+import { ApiError } from "@/lib/api-client/error";
 
 interface UseBookingModalProps {
   isOpen: boolean;
@@ -244,9 +245,16 @@ export function useBookingModal({
       // NOTE: Notifications removed here - they will be sent AFTER payment completes
       // This prevents sending driver notification before payment is confirmed
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Échec de la création de la réservation"
-      );
+      // Extract clear error message from ApiError or regular Error
+      let errorMessage = "Échec de la création de la réservation";
+      
+      if (error instanceof ApiError) {
+        errorMessage = error.getDisplayMessage();
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -287,7 +295,16 @@ export function useBookingModal({
         throw new Error(data.error || "Le paiement a échoué");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Le paiement a échoué");
+      // Extract clear error message from ApiError or regular Error
+      let errorMessage = "Le paiement a échoué";
+      
+      if (error instanceof ApiError) {
+        errorMessage = error.getDisplayMessage();
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

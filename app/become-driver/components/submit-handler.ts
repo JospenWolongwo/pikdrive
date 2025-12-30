@@ -64,6 +64,16 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
       return;
     }
 
+    // Validate vehicle images are required
+    if (!vehicleImages || vehicleImages.length === 0) {
+      toast({
+        title: "Images du véhicule requises",
+        description: "Veuillez télécharger au moins une image de votre véhicule.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       console.log("✅ User can proceed with driver application");
@@ -105,7 +115,7 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
         registration_file_verso: registrationFileVerso,
         insurance_file_recto: insuranceFileRecto,
         insurance_file_verso: insuranceFileVerso,
-        vehicle_images: vehicleImages.length > 0 ? vehicleImages : null,
+        vehicle_images: vehicleImages, // Required - validated above
       };
 
       // Write to database

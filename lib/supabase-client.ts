@@ -3,6 +3,7 @@
  * Uses COOKIES ONLY for authentication - no localStorage
  */
 import { createBrowserClient } from "@supabase/ssr";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 // Cookie helper functions
 const getCookie = (name: string): string | null => {
@@ -46,7 +47,7 @@ export const supabaseClient = createBrowserClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: "auth-storage",
+      storageKey: getVersionedStorageKey("auth-storage"),
     },
   }
 );

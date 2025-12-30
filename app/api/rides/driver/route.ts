@@ -92,11 +92,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch bookings separately
+    // Fetch bookings separately - exclude cancelled bookings at database level for optimization
     const { data: bookings } = await supabase
       .from("bookings")
       .select("id, ride_id, user_id, seats, status, payment_status, code_verified, created_at, updated_at")
       .in("ride_id", rideIds)
+      .neq("status", "cancelled")
       .order("created_at", { ascending: false });
 
     // Fetch messages separately

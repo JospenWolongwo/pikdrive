@@ -145,9 +145,19 @@ export default function DriverApplicationForm() {
       }
     } catch (error) {
       console.error("Document upload failed:", error)
+      
+      // Extract clear error message
+      let errorMessage = "There was an error uploading your document. Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
       toast({
         title: "Upload Failed",
-        description: "There was an error uploading your document. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -315,6 +325,16 @@ export default function DriverApplicationForm() {
       return
     }
     
+    // Validate vehicle images are required
+    if (!vehicleImages || vehicleImages.length === 0) {
+      toast({
+        title: "Images du véhicule requises",
+        description: "Veuillez télécharger au moins une image de votre véhicule.",
+        variant: "destructive",
+      })
+      return
+    }
+    
     try {
       setIsSubmitting(true)
 
@@ -329,7 +349,7 @@ export default function DriverApplicationForm() {
         registration_file_verso: registrationFileVerso,
         insurance_file_recto: insuranceFileRecto,
         insurance_file_verso: insuranceFileVerso,
-        vehicle_images: vehicleImages.length > 0 ? vehicleImages : undefined,
+        vehicle_images: vehicleImages, // Required - validated above
       }
 
       // Submit application using the utility function
@@ -405,7 +425,7 @@ export default function DriverApplicationForm() {
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold flex items-center gap-2">
                   <Camera className="h-5 w-5 text-primary" />
-                  Images du Véhicule (Optionnel)
+                  Images du Véhicule <span className="text-destructive">*</span>
                 </h3>
                 <VehicleImagesUpload
                   images={vehicleImages}

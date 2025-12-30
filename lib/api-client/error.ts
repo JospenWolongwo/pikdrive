@@ -8,7 +8,11 @@ export class ApiError extends Error {
     public data: any,
     public url: string
   ) {
-    const message = typeof data === 'string' ? data : data?.message || statusText;
+    // Extract error message from multiple possible fields
+    // Priority: error > message > details > statusText
+    const message = typeof data === 'string' 
+      ? data 
+      : data?.error || data?.message || data?.details || statusText;
     super(message);
     this.name = 'ApiError';
   }
@@ -36,8 +40,23 @@ export class ApiError extends Error {
 
   /**
    * Get formatted error message for display
+   * Prioritizes actual error messages from API responses
    */
   getDisplayMessage(): string {
+    // First, try to extract actual error message from data
+    if (typeof this.data === 'object' && this.data !== null) {
+      const actualError = this.data.error || this.data.message || this.data.details;
+      if (actualError && typeof actualError === 'string' && actualError.trim()) {
+        return actualError;
+      }
+    }
+    
+    // If data is a string, use it directly
+    if (typeof this.data === 'string' && this.data.trim()) {
+      return this.data;
+    }
+    
+    // Fall back to status-based messages if no specific error message found
     if (this.isAuthError) {
       return 'Authentication required. Please log in again.';
     }
@@ -54,6 +73,7 @@ export class ApiError extends Error {
       return 'Network error. Please check your connection.';
     }
     
+    // Use the extracted message (which should have been set in constructor)
     return this.message || 'An error occurred. Please try again.';
   }
 }

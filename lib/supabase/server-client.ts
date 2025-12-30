@@ -6,6 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 /**
  * Creates a server-side Supabase client for API routes
@@ -53,7 +54,7 @@ export function createApiSupabaseClient(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: "auth-storage",
+        storageKey: getVersionedStorageKey("auth-storage"),
       },
       global: {
         fetch: async (url, options = {}) => {

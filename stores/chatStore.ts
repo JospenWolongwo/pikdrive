@@ -346,9 +346,19 @@ export const useChatStore = create<ChatState>()(
               conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
             );
             
+            // Update messages array to mark them as read locally
+            const conversationMessages = state.messages[conversationId] || [];
+            const updatedMessages = conversationMessages.map(msg => 
+              msg.sender_id !== userId ? { ...msg, read: true } : msg
+            );
+            
             return {
               unreadCounts: newUnreadCounts,
               conversations: updatedConversations,
+              messages: {
+                ...state.messages,
+                [conversationId]: updatedMessages,
+              },
             };
           });
         } catch (error) {

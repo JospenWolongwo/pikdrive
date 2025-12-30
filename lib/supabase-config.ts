@@ -3,11 +3,13 @@
  * Users will stay logged in for 1 year with auto-refresh
  */
 
+import { getVersionedStorageKey } from "@/lib/storage-version";
+
 const baseAuthConfig = {
   persistSession: true,
   autoRefreshToken: true,
   detectSessionInUrl: true,
-  storageKey: "auth-storage",
+  storageKey: getVersionedStorageKey("auth-storage"),
 } as const;
 
 export const supabaseConfig = {

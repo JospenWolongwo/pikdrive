@@ -68,6 +68,11 @@ export function validateDriverApplication(data: DriverApplicationData): {
     errors.push("Insurance document is required");
   }
 
+  // Validate vehicle images are required
+  if (!data.vehicle_images || data.vehicle_images.length === 0) {
+    errors.push("Vehicle images are required");
+  }
+
   return {
     isValid: errors.length === 0,
     errors,

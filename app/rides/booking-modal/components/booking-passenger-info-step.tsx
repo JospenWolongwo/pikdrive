@@ -133,7 +133,17 @@ export function BookingPassengerInfoStep({
       });
     } catch (error) {
       console.error("Error submitting passenger info:", error);
-      toast.error(error instanceof Error ? error.message : "Erreur lors de l'enregistrement");
+      
+      // Extract clear error message - handle both regular errors and Supabase errors
+      let errorMessage = "Erreur lors de l'enregistrement";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

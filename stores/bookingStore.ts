@@ -272,6 +272,10 @@ export const useBookingStore = create<BookingState>()(
             throw new Error(response.error || "Failed to create booking");
           }
 
+          // Invalidate cache to ensure fresh data is fetched on next navigation
+          // This ensures the new booking appears immediately when user navigates to bookings page
+          set({ lastUserBookingsFetch: null });
+
           // Only refresh user bookings if explicitly requested (for performance)
           if (options.refreshUserBookings && params.user_id) {
             await get().refreshUserBookings(params.user_id);

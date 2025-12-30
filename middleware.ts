@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
@@ -55,7 +56,7 @@ export async function middleware(req: NextRequest) {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: "auth-storage",
+        storageKey: getVersionedStorageKey("auth-storage"),
       },
     }
   );
