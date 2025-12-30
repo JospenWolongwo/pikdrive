@@ -11,6 +11,7 @@ import type {
 } from "@/types";
 import { chatApiClient } from "@/lib/api-client/chat";
 import { supabase } from "@/lib/supabase/client";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 // Helper function to sort conversations by latest message time
 const sortConversationsByLatest = (conversations: UIConversation[]): UIConversation[] => {
@@ -621,7 +622,7 @@ export const useChatStore = create<ChatState>()(
       },
     }),
     {
-      name: 'chat-storage',
+      name: getVersionedStorageKey('chat-storage'),
       // Only persist data, not loading states or channels
       partialize: (state) => ({
         conversations: state.conversations,

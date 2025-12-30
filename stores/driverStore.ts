@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { RideWithPassengers } from "@/types";
 import { apiClient } from "@/lib/api-client";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 interface DriverState {
   // Reservations state
@@ -93,7 +94,7 @@ export const useDriverStore = create<DriverState>()(
       },
     }),
     {
-      name: 'driver-storage',
+      name: getVersionedStorageKey('driver-storage'),
       // Only persist the data, not loading states
       partialize: (state) => ({
         reservations: state.reservations,

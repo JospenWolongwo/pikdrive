@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PayoutWithDetails, PayoutStatistics } from "@/types/payout";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 interface PayoutsState {
   // All payouts state
@@ -275,7 +276,7 @@ export const usePayoutsStore = create<PayoutsState>()(
       },
     }),
     {
-      name: 'payouts-storage',
+      name: getVersionedStorageKey('payouts-storage'),
       // Only persist the data, not loading states
       partialize: (state) => ({
         allPayouts: state.allPayouts,

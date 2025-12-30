@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 interface AppState {
   // Global app state
@@ -63,7 +64,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'app-storage',
+      name: getVersionedStorageKey('app-storage'),
       // Only persist theme and lastSyncTime
       partialize: (state) => ({
         theme: state.theme,

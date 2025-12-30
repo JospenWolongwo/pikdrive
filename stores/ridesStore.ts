@@ -11,6 +11,7 @@ import type {
 } from "@/types";
 import { ridesApiClient } from "@/lib/api-client/rides";
 import { ApiError } from "@/lib/api-client/error";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 interface RidesState {
   // All rides state (for search/browse)
@@ -507,7 +508,7 @@ export const useRidesStore = create<RidesState>()(
       },
     }),
     {
-      name: 'rides-storage',
+      name: getVersionedStorageKey('rides-storage'),
       // Only persist the data, not loading states
       partialize: (state) => ({
         allRides: state.allRides,

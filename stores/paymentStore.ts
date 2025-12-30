@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Payment, CreatePaymentRequest, PaymentTransactionStatus } from "@/types";
 import { paymentApiClient } from "@/lib/api-client/payment";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 interface PaymentStatusResult {
   readonly success: boolean;
@@ -250,7 +251,7 @@ export const usePaymentStore = create<PaymentState>()(
       },
     }),
     {
-      name: 'payment-storage',
+      name: getVersionedStorageKey('payment-storage'),
       // Only persist the data, not loading states
       partialize: (state) => ({
         userPayments: state.userPayments,

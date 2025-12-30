@@ -8,6 +8,7 @@ import type {
   DriverBooking 
 } from "@/types";
 import { bookingApiClient } from "@/lib/api-client/booking";
+import { getVersionedStorageKey } from "@/lib/storage-version";
 
 interface BookingState {
   // User bookings state
@@ -463,7 +464,7 @@ export const useBookingStore = create<BookingState>()(
       },
     }),
     {
-      name: 'booking-storage',
+      name: getVersionedStorageKey('booking-storage'),
       // Only persist the data, not loading states
       partialize: (state) => ({
         userBookings: state.userBookings,
