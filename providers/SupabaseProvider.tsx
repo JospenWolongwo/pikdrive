@@ -51,15 +51,36 @@ export const SupabaseProvider = ({
 
     // If we switched environments, clear cookies server-side and storage client-side
     if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
-      // Call route handler to clear cookies server-side
-      fetch('/api/auth/clear-cookies', { method: 'POST' })
-        .then(() => {
+      console.log('🔄 Environment changed, clearing cookies and storage...');
+      
+      // Call route handler with cache-busting and proper error handling
+      fetch('/api/auth/clear-cookies', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ timestamp: Date.now() }), // Cache busting
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log('✅ Cookies cleared:', data);
+          
+          // Clear storage
           localStorage.clear();
           sessionStorage.clear();
-          window.location.reload();
+          
+          // Small delay to ensure cookies are processed
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
         })
-        .catch(() => {
-          // If API call fails, still clear storage and reload
+        .catch((error) => {
+          console.error('❌ Failed to clear cookies:', error);
+          // Still clear storage and reload even if API fails
           localStorage.clear();
           sessionStorage.clear();
           window.location.reload();
