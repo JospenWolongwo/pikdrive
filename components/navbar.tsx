@@ -31,6 +31,7 @@ import {
   MessageSquare,
   PlusCircle,
   CalendarCheck,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
@@ -42,7 +43,18 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Debug logging
+  // Debug logging for auth state
+  useEffect(() => {
+    console.log('🔍 Navbar Auth State:', { 
+      loading, 
+      hasUser: !!user, 
+      userId: user?.id,
+      supabaseUrl: typeof window !== 'undefined' 
+        ? (process.env.NEXT_PUBLIC_SUPABASE_URL || 'MISSING').substring(0, 40) + '...'
+        : 'SSR',
+      timestamp: new Date().toISOString()
+    });
+  }, [loading, user]);
 
 
   const [isOpen, setIsOpen] = useState(false);
@@ -377,10 +389,27 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : !loading ? (
-            <Button asChild>
-              <Link href="/auth">Connexion</Link>
+            <Button 
+              onClick={(e) => {
+                console.log('🔵 Connexion button clicked', {
+                  event: e.type,
+                  target: e.target,
+                  currentTarget: e.currentTarget,
+                  defaultPrevented: e.defaultPrevented
+                });
+                // Fallback: use window.location if Link doesn't work
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/auth';
+                }
+              }}
+            >
+              Connexion
             </Button>
-          ) : null}
+          ) : (
+            <Button disabled size="sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+          )}
         </div>
       </div>
     </header>
