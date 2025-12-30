@@ -42,6 +42,55 @@ export const SupabaseProvider = ({
     }, 5 * 60 * 1000); // 5 minutes
   }, [supabase]);
 
+  // Clear stale cookies when switching Supabase environments
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const storedSupabaseUrl = localStorage.getItem('last-supabase-url');
+
+    // If we switched environments, clear auth cookies
+    if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
+      // Clear all auth-related cookies
+      document.cookie.split(';').forEach((c) => {
+        const cookieName = c.trim().split('=')[0];
+        if (
+          cookieName.includes('auth') ||
+          cookieName.includes('supabase') ||
+          cookieName.includes('sb-')
+        ) {
+          const domain = window.location.hostname;
+          // Clear with domain
+          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${domain}`;
+          // Clear without domain (for localhost)
+          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+          // Clear with .domain (for subdomains)
+          if (domain.includes('.')) {
+            const rootDomain = domain.split('.').slice(-2).join('.');
+            document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=.${rootDomain}`;
+          }
+        }
+      });
+      
+      // Clear Supabase session storage
+      try {
+        const storageKey = `sb-${currentSupabaseUrl?.split('//')[1]?.split('.')[0]}-auth-token`;
+        Object.keys(localStorage).forEach((key) => {
+          if (key.includes('supabase') || key.includes('auth') || key.includes('sb-')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    }
+
+    // Store current environment
+    if (currentSupabaseUrl) {
+      localStorage.setItem('last-supabase-url', currentSupabaseUrl);
+    }
+  }, []);
+
   const initializeAuth = useCallback(async () => {
     if (initializedRef.current) return;
 
