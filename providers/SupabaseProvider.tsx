@@ -49,43 +49,33 @@ export const SupabaseProvider = ({
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const storedSupabaseUrl = localStorage.getItem('last-supabase-url');
 
-    // If we switched environments, clear auth cookies
+    // If we switched environments, clear everything and reload
     if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
-      // Clear all auth-related cookies
-      document.cookie.split(';').forEach((c) => {
-        const cookieName = c.trim().split('=')[0];
-        if (
-          cookieName.includes('auth') ||
-          cookieName.includes('supabase') ||
-          cookieName.includes('sb-')
-        ) {
-          const domain = window.location.hostname;
-          // Clear with domain
-          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${domain}`;
-          // Clear without domain (for localhost)
-          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
-          // Clear with .domain (for subdomains)
-          if (domain.includes('.')) {
-            const rootDomain = domain.split('.').slice(-2).join('.');
-            document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=.${rootDomain}`;
-          }
-        }
+      // Clear ALL cookies
+      document.cookie.split(';').forEach((cookie) => {
+        const cookieName = cookie.trim().split('=')[0];
+        const domain = window.location.hostname;
+        
+        // Clear with multiple domain/path combinations to catch all
+        [
+          `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`,
+          `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`,
+          `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain}`,
+        ].forEach(clearStr => {
+          document.cookie = clearStr;
+        });
       });
       
-      // Clear Supabase session storage
-      try {
-        const storageKey = `sb-${currentSupabaseUrl?.split('//')[1]?.split('.')[0]}-auth-token`;
-        Object.keys(localStorage).forEach((key) => {
-          if (key.includes('supabase') || key.includes('auth') || key.includes('sb-')) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (e) {
-        // Ignore localStorage errors
-      }
+      // Clear all storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Reload to ensure clean state
+      window.location.reload();
+      return;
     }
 
-    // Store current environment
+    // Store current environment for next check
     if (currentSupabaseUrl) {
       localStorage.setItem('last-supabase-url', currentSupabaseUrl);
     }
