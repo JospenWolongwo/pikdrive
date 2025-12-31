@@ -104,6 +104,7 @@ export function Navbar() {
     { href: "/about", label: "À Propos" },
     { href: "/advice", label: "Sécurité & FAQ" },
     { href: "/contact", label: "Contact" },
+    { href: "/debug", label: "🔧 Debug" },
   ];
 
   const NavItems = ({ className }: { className?: string }) => (

@@ -9,6 +9,8 @@ export async function POST() {
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const storedSupabaseUrl = cookieStore.get('supabase-project-url')?.value;
 
+    const response = NextResponse.json({ success: true, cleared: true });
+
     // If environment changed, clear all auth cookies
     if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
       console.log('🔄 Environment changed, clearing cookies...', {
@@ -16,7 +18,7 @@ export async function POST() {
         current: currentSupabaseUrl?.substring(0, 30),
       });
 
-      // Create Supabase client to use signOut for proper cookie clearing
+      // Create Supabase client to use signOut
       const supabase = createServerClient(
         currentSupabaseUrl!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -38,10 +40,25 @@ export async function POST() {
         }
       );
 
-      // Use Supabase's signOut to properly clear auth cookies
+      // Sign out from Supabase
       await supabase.auth.signOut();
 
-      // Clear all auth-related cookies as backup
+      // Get storage key for cookie names
+      const storageKey = getVersionedStorageKey("auth-storage");
+      
+      // Clear specific Supabase cookies by setting maxAge: 0 in response (as per guide)
+      const authCookieNames = [
+        `${storageKey}-access-token`,
+        `${storageKey}-refresh-token`,
+        'sb-access-token',
+        'sb-refresh-token',
+      ];
+
+      authCookieNames.forEach(name => {
+        response.cookies.set(name, '', { maxAge: 0, path: '/' });
+      });
+
+      // Also clear any other auth-related cookies
       const allCookies = cookieStore.getAll();
       let clearedCount = 0;
       allCookies.forEach(cookie => {
@@ -50,7 +67,7 @@ export async function POST() {
           cookie.name.includes('supabase') ||
           cookie.name.includes('sb-')
         ) {
-          cookieStore.delete(cookie.name);
+          response.cookies.set(cookie.name, '', { maxAge: 0, path: '/' });
           clearedCount++;
         }
       });
@@ -67,9 +84,16 @@ export async function POST() {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 365,
       });
+      response.cookies.set('supabase-project-url', currentSupabaseUrl, {
+        path: '/',
+        httpOnly: false,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 365,
+      });
     }
 
-    return NextResponse.json({ success: true, cleared: true });
+    return response;
   } catch (error) {
     console.error('❌ Error clearing cookies:', error);
     return NextResponse.json(

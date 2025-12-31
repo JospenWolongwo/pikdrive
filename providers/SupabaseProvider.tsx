@@ -53,38 +53,59 @@ export const SupabaseProvider = ({
     if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
       console.log('🔄 Environment changed, clearing cookies and storage...');
       
-      // Call route handler with cache-busting and proper error handling
-      fetch('/api/auth/clear-cookies', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ timestamp: Date.now() }), // Cache busting
-      })
-        .then(async (response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          console.log('✅ Cookies cleared:', data);
-          
-          // Clear storage
-          localStorage.clear();
-          sessionStorage.clear();
-          
-          // Small delay to ensure cookies are processed
-          setTimeout(() => {
-            window.location.reload();
-          }, 100);
-        })
-        .catch((error) => {
-          console.error('❌ Failed to clear cookies:', error);
-          // Still clear storage and reload even if API fails
-          localStorage.clear();
-          sessionStorage.clear();
-          window.location.reload();
+      // First, sign out from Supabase client-side
+      supabase.auth.signOut().then(() => {
+        // Then call server route handler
+        return fetch('/api/auth/clear-cookies', {
+          method: 'POST',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ timestamp: Date.now() }),
         });
+      })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('✅ Server cleared cookies:', data);
+        
+        // Client-side cookie clearing as backup (as per guide)
+        document.cookie.split(";").forEach((c) => {
+          const cookieName = c.replace(/^ +/, "").replace(/=.*/, "");
+          if (
+            cookieName.includes('auth') ||
+            cookieName.includes('supabase') ||
+            cookieName.includes('sb-')
+          ) {
+            const isSecure = window.location.protocol === 'https:';
+            document.cookie = `${cookieName}=; expires=${new Date().toUTCString()}; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+          }
+        });
+        
+        // Clear storage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Reload
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      })
+      .catch((error) => {
+        console.error('❌ Failed to clear cookies:', error);
+        // Still clear everything and reload
+        document.cookie.split(";").forEach((c) => {
+          const cookieName = c.replace(/^ +/, "").replace(/=.*/, "");
+          const isSecure = window.location.protocol === 'https:';
+          document.cookie = `${cookieName}=; expires=${new Date().toUTCString()}; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+        });
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
+      });
       return;
     }
 
@@ -92,7 +113,7 @@ export const SupabaseProvider = ({
     if (currentSupabaseUrl) {
       localStorage.setItem('last-supabase-url', currentSupabaseUrl);
     }
-  }, []);
+  }, [supabase]);
 
   const initializeAuth = useCallback(async () => {
     if (initializedRef.current) return;
