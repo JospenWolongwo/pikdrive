@@ -54,9 +54,12 @@ export async function GET() {
       sessionError = e instanceof Error ? e.message : 'Unknown error';
     }
 
-    // Check token issuer
+    // Check token issuer - check all possible cookie name variations
     const storageKey = getVersionedStorageKey("auth-storage");
-    const accessTokenCookie = cookieStore.get(`${storageKey}-access-token`);
+    const accessTokenCookie = cookieStore.get(`${storageKey}-access-token`) 
+      || cookieStore.get("auth-storage-access-token")
+      || cookieStore.get(storageKey)
+      || cookieStore.get("auth-storage");
     const currentProjectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
     let tokenIssuerMismatch = false;
     let tokenIssuer = null;
@@ -67,13 +70,39 @@ export async function GET() {
       try {
         const cookieValue = accessTokenCookie.value;
         if (cookieValue.startsWith('{')) {
+          // It's a JSON object - parse it
           const parsed = JSON.parse(cookieValue);
           accessToken = parsed.access_token || parsed.token || null;
         } else {
+          // It's the token directly
           accessToken = cookieValue;
         }
       } catch {
         accessToken = accessTokenCookie.value;
+      }
+      
+      // Also search all cookies if we didn't find a token yet
+      if (!accessToken) {
+        for (const cookie of allCookies) {
+          if (cookie.name.includes('auth') || cookie.name.includes('supabase')) {
+            try {
+              const value = cookie.value;
+              if (value.startsWith('{')) {
+                const parsed = JSON.parse(value);
+                if (parsed.access_token) {
+                  accessToken = parsed.access_token;
+                  break;
+                }
+              } else if (value.startsWith('eyJ')) {
+                // Looks like a JWT token
+                accessToken = value;
+                break;
+              }
+            } catch {
+              // Continue searching
+            }
+          }
+        }
       }
       
       if (accessToken) {

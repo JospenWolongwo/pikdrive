@@ -21,7 +21,13 @@ export async function POST() {
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const storedSupabaseUrl = cookieStore.get('supabase-project-url')?.value;
     const storageKey = getVersionedStorageKey("auth-storage");
-    const accessTokenCookie = cookieStore.get(`${storageKey}-access-token`);
+    
+    // Check for all possible cookie name variations
+    // Supabase SSR might use: auth-storage, auth-storage-{hash}, auth-storage-access-token, etc.
+    const accessTokenCookie = cookieStore.get(`${storageKey}-access-token`) 
+      || cookieStore.get("auth-storage-access-token")
+      || cookieStore.get(storageKey)
+      || cookieStore.get("auth-storage");
     const hasAuthCookies = !!accessTokenCookie;
 
     // Create Supabase client to validate session
@@ -57,19 +63,46 @@ export async function POST() {
     let accessToken: string | null = null;
     
     // Try to extract access token from cookie
+    // The auth-storage cookie is often a JSON object: {"access_token":"...","refresh_token":"..."}
     if (accessTokenCookie?.value) {
       try {
-        // The cookie might be a JSON object with access_token, or just the token itself
         const cookieValue = accessTokenCookie.value;
         if (cookieValue.startsWith('{')) {
+          // It's a JSON object - parse it
           const parsed = JSON.parse(cookieValue);
           accessToken = parsed.access_token || parsed.token || null;
         } else {
+          // It's the token directly
           accessToken = cookieValue;
         }
       } catch {
         // If parsing fails, treat the whole value as the token
         accessToken = accessTokenCookie.value;
+      }
+    }
+    
+    // Also check all cookies for any auth tokens (in case cookie name doesn't match)
+    if (!accessToken) {
+      const allCookies = cookieStore.getAll();
+      for (const cookie of allCookies) {
+        if (cookie.name.includes('auth') || cookie.name.includes('supabase')) {
+          try {
+            const value = cookie.value;
+            if (value.startsWith('{')) {
+              const parsed = JSON.parse(value);
+              if (parsed.access_token) {
+                accessToken = parsed.access_token;
+                break;
+              }
+            } else if (value.startsWith('eyJ')) {
+              // Looks like a JWT token
+              accessToken = value;
+              break;
+            }
+          } catch {
+            // Continue searching
+          }
+        }
       }
     }
     
@@ -108,10 +141,14 @@ export async function POST() {
       // Sign out from Supabase to properly clear auth state
       await supabase.auth.signOut();
       
-      // Clear specific Supabase cookies by setting maxAge: 0 in response (as per guide)
+      // Clear specific Supabase cookies - check all possible name variations
       const authCookieNames = [
         `${storageKey}-access-token`,
         `${storageKey}-refresh-token`,
+        "auth-storage-access-token",  // Unversioned
+        "auth-storage-refresh-token", // Unversioned
+        storageKey,                   // Base versioned name
+        "auth-storage",               // Base unversioned name
         'sb-access-token',
         'sb-refresh-token',
       ];
@@ -160,6 +197,10 @@ export async function POST() {
       const authCookieNames = [
         `${storageKey}-access-token`,
         `${storageKey}-refresh-token`,
+        "auth-storage-access-token",  // Unversioned
+        "auth-storage-refresh-token", // Unversioned
+        storageKey,                   // Base versioned name
+        "auth-storage",               // Base unversioned name
         'sb-access-token',
         'sb-refresh-token',
       ];
