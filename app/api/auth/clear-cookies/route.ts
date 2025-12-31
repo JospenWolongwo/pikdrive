@@ -78,7 +78,7 @@ export async function POST() {
       const tokenIssuer = getJwtIssuer(accessToken);
       // JWT issuer format: https://xxx.supabase.co/auth/v1
       const issuerProjectRef = tokenIssuer?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
-      tokenIssuerMismatch = issuerProjectRef && issuerProjectRef !== currentProjectRef;
+      tokenIssuerMismatch = !!(issuerProjectRef && issuerProjectRef !== currentProjectRef);
     }
 
     // Determine if we should clear cookies:
