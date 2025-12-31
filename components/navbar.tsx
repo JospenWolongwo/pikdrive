@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
 import { Button } from "@/components/ui/button";
@@ -65,94 +66,148 @@ export function Navbar() {
 
 
   useEffect(() => {
-    if (user) {
-      const getDriverStatus = async () => {
-        const { data, error } = await supabase
+    if (!user) return;
+
+    const getDriverStatus = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("is_driver, driver_status, avatar_url, full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      // If profile doesn't exist (PGRST116 = not found), create it
+      if ((error && error.code === 'PGRST116') || !data) {
+        const { error: createError } = await supabase
           .from("profiles")
-          .select("is_driver, driver_status, avatar_url, full_name")
-          .eq("id", user.id)
-          .maybeSingle();
+          .insert({
+            id: user.id,
+            phone: user.phone || null,
+            email: user.email || null,
+            full_name: null,
+            city: null,
+            avatar_url: null,
+            is_driver: false,
+            driver_status: 'pending',
+            role: 'user',
+            driver_application_status: 'pending',
+            driver_application_date: null,
+            is_driver_applicant: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
 
-        // If profile doesn't exist (PGRST116 = not found), create it
-        if ((error && error.code === 'PGRST116') || !data) {
-          const { error: createError } = await supabase
+        // If profile already exists (409/23505 = unique constraint violation), just fetch it
+        if (createError && (createError.code === '23505' || createError.message?.includes('duplicate'))) {
+          const { data: existingProfile } = await supabase
             .from("profiles")
-            .insert({
-              id: user.id,
-              phone: user.phone || null,
-              email: user.email || null,
-              full_name: null,
-              city: null,
-              avatar_url: null,
-              is_driver: false,
-              driver_status: 'pending',
-              role: 'user',
-              driver_application_status: 'pending',
-              driver_application_date: null,
-              is_driver_applicant: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
+            .select("is_driver, driver_status, avatar_url, full_name")
+            .eq("id", user.id)
+            .single();
 
-          // If profile already exists (409/23505 = unique constraint violation), just fetch it
-          if (createError && (createError.code === '23505' || createError.message?.includes('duplicate'))) {
-            console.log('[NAVBAR] Profile already exists, fetching it:', user.id);
-            const { data: existingProfile } = await supabase
-              .from("profiles")
-              .select("is_driver, driver_status, avatar_url, full_name")
-              .eq("id", user.id)
-              .single();
-
-            if (existingProfile) {
-              setIsDriver(existingProfile.is_driver || false);
-              setDriverStatus(existingProfile.driver_status || null);
-              setFullName(existingProfile.full_name || null);
-              if (existingProfile.avatar_url) {
-                const {
-                  data: { publicUrl },
-                } = supabase.storage.from("avatars").getPublicUrl(existingProfile.avatar_url);
-                setAvatarUrl(publicUrl);
-              }
-            }
-            return;
-          }
-
-          if (!createError) {
-            // Retry fetching
-            const { data: newProfile } = await supabase
-              .from("profiles")
-              .select("is_driver, driver_status, avatar_url, full_name")
-              .eq("id", user.id)
-              .single();
-
-            if (newProfile) {
-              setIsDriver(newProfile.is_driver || false);
-              setDriverStatus(newProfile.driver_status || null);
-              setFullName(newProfile.full_name || null);
-              if (newProfile.avatar_url) {
-                const {
-                  data: { publicUrl },
-                } = supabase.storage.from("avatars").getPublicUrl(newProfile.avatar_url);
-                setAvatarUrl(publicUrl);
-              }
+          if (existingProfile) {
+            setIsDriver(existingProfile.is_driver || false);
+            setDriverStatus(existingProfile.driver_status || null);
+            setFullName(existingProfile.full_name || null);
+            if (existingProfile.avatar_url) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("avatars").getPublicUrl(existingProfile.avatar_url);
+              setAvatarUrl(publicUrl);
             }
           }
           return;
         }
 
-        // Profile exists - use it
-        setIsDriver(data.is_driver || false);
-        setDriverStatus(data.driver_status || null);
-        setFullName(data.full_name || null);
-        if (data.avatar_url) {
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("avatars").getPublicUrl(data.avatar_url);
-          setAvatarUrl(publicUrl);
+        if (!createError) {
+          // Retry fetching
+          const { data: newProfile } = await supabase
+            .from("profiles")
+            .select("is_driver, driver_status, avatar_url, full_name")
+            .eq("id", user.id)
+            .single();
+
+          if (newProfile) {
+            setIsDriver(newProfile.is_driver || false);
+            setDriverStatus(newProfile.driver_status || null);
+            setFullName(newProfile.full_name || null);
+            if (newProfile.avatar_url) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("avatars").getPublicUrl(newProfile.avatar_url);
+              setAvatarUrl(publicUrl);
+            }
+          }
         }
-      };
-      getDriverStatus();
-    }
+        return;
+      }
+
+      // Profile exists - use it
+      setIsDriver(data.is_driver || false);
+      setDriverStatus(data.driver_status || null);
+      setFullName(data.full_name || null);
+      if (data.avatar_url) {
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("avatars").getPublicUrl(data.avatar_url);
+        setAvatarUrl(publicUrl);
+      }
+    };
+
+    // Initial load
+    getDriverStatus();
+
+    // Subscribe to real-time profile updates
+    const channel = supabase
+      .channel(`profile-updates-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload: RealtimePostgresChangesPayload<{
+          is_driver: boolean;
+          driver_status: string;
+          avatar_url: string | null;
+          full_name: string | null;
+        }>) => {
+          // Profile was updated, refresh navbar data
+          const updatedProfile = payload.new as {
+            is_driver?: boolean;
+            driver_status?: string;
+            avatar_url?: string | null;
+            full_name?: string | null;
+          };
+
+          if (updatedProfile.is_driver !== undefined) {
+            setIsDriver(updatedProfile.is_driver);
+          }
+          if (updatedProfile.driver_status !== undefined) {
+            setDriverStatus(updatedProfile.driver_status);
+          }
+          if (updatedProfile.full_name !== undefined) {
+            setFullName(updatedProfile.full_name);
+          }
+          if (updatedProfile.avatar_url !== undefined) {
+            if (updatedProfile.avatar_url) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("avatars").getPublicUrl(updatedProfile.avatar_url);
+              setAvatarUrl(publicUrl);
+            } else {
+              setAvatarUrl(null);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, supabase]);
 
   // Fetch unread counts when user is available

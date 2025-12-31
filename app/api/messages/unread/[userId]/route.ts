@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
-import { cookies } from "next/headers";
 
 export async function GET(
   request: NextRequest,
@@ -16,88 +15,16 @@ export async function GET(
       );
     }
 
-    // Debug: Log cookie names (not values for security)
-    const cookieStore = cookies();
-    const allCookies = cookieStore.getAll();
-    const cookieNames = allCookies.map(c => c.name);
-    const authCookies = allCookies.filter(c => 
-      c.name.includes('auth') || 
-      c.name.includes('supabase') || 
-      c.name.includes('sb-')
-    );
-    
-    console.log('[UNREAD] ===== AUTH DEBUG START =====');
-    console.log('[UNREAD] Request userId:', userId);
-    console.log('[UNREAD] Total cookies:', allCookies.length);
-    console.log('[UNREAD] Cookie names:', cookieNames);
-    console.log('[UNREAD] Auth-related cookies:', authCookies.map(c => ({
-      name: c.name,
-      hasValue: !!c.value,
-      valueLength: c.value?.length || 0
-    })));
-
-    // Debug: Try to parse the auth-storage cookie to see what's inside
-    const authStorageCookie = authCookies.find(c => c.name.startsWith('auth-storage'));
-    if (authStorageCookie) {
-      try {
-        // The cookie value is URL-encoded JSON
-        const decoded = decodeURIComponent(authStorageCookie.value);
-        const parsed = JSON.parse(decoded);
-        console.log('[UNREAD] Parsed auth-storage cookie structure:', {
-          hasAccessToken: !!parsed.access_token,
-          hasRefreshToken: !!parsed.refresh_token,
-          expiresAt: parsed.expires_at,
-          tokenType: parsed.token_type,
-          user: parsed.user ? {
-            id: parsed.user.id,
-            email: parsed.user.email,
-            phone: parsed.user.phone
-          } : null
-        });
-      } catch (e) {
-        console.log('[UNREAD] Failed to parse auth-storage cookie:', (e as Error).message);
-        console.log('[UNREAD] Raw cookie value (first 200 chars):', authStorageCookie.value.substring(0, 200));
-      }
-    } else {
-      console.log('[UNREAD] No auth-storage cookie found');
-    }
-
     // Create a Supabase client using cookie-based authentication
     const supabaseClient = createApiSupabaseClient();
 
-    // Get session first to check authentication state
-    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-    
     // Verify user authentication
     const {
       data: { user },
       error: userError,
     } = await supabaseClient.auth.getUser();
 
-    console.log('[UNREAD] Auth check result:', {
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      userPhone: user?.phone,
-      hasSession: !!session,
-      sessionAccessToken: session?.access_token ? 'present' : 'missing',
-      sessionRefreshToken: session?.refresh_token ? 'present' : 'missing',
-      sessionExpiresAt: session?.expires_at || null,
-      sessionError: sessionError ? {
-        message: sessionError.message,
-        status: sessionError.status,
-        name: sessionError.name
-      } : null,
-      userError: userError ? {
-        message: userError.message,
-        status: userError.status,
-        name: userError.name
-      } : null
-    });
-
     if (!user || userError) {
-      console.log('[UNREAD] ❌ UNAUTHORIZED - User check failed');
-      console.log('[UNREAD] ===== AUTH DEBUG END =====');
       return NextResponse.json(
         { success: false, error: "Unauthorized", details: userError?.message },
         { status: 401 }
@@ -106,18 +33,11 @@ export async function GET(
 
     // Verify the user is requesting their own unread counts
     if (user.id !== userId) {
-      console.log('[UNREAD] ❌ FORBIDDEN - User ID mismatch:', {
-        authenticatedUserId: user.id,
-        requestedUserId: userId
-      });
-      console.log('[UNREAD] ===== AUTH DEBUG END =====');
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 }
       );
     }
-
-    console.log('[UNREAD] ✅ User authenticated, fetching unread messages...');
 
     // Fetch unread messages count by conversation
     const { data, error } = await supabaseClient
@@ -127,18 +47,12 @@ export async function GET(
       .eq("read", false);
 
     if (error) {
-      console.error('[UNREAD] ❌ Error fetching unread messages:', error);
-      console.log('[UNREAD] ===== AUTH DEBUG END =====');
+      console.error("Error fetching unread messages:", error);
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
       );
     }
-
-    console.log('[UNREAD] Messages fetched:', {
-      count: data?.length || 0,
-      messages: data?.slice(0, 3) // Log first 3 for debugging
-    });
 
     // Count messages by conversation_id
     const unreadCounts = (data || []).reduce(
@@ -155,13 +69,9 @@ export async function GET(
       count,
     }));
 
-    console.log('[UNREAD] ✅ Success - Unread counts:', result);
-    console.log('[UNREAD] ===== AUTH DEBUG END =====');
-
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('[UNREAD] ❌ EXCEPTION in GET /api/messages/unread/[userId]:', error);
-    console.log('[UNREAD] ===== AUTH DEBUG END =====');
+    console.error("Error in GET /api/messages/unread/[userId]:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 }
