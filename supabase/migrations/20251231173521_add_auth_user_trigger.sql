@@ -1,0 +1,19 @@
+-- NOTE: Triggers on auth.users cannot be created via migrations
+-- The auth schema is managed by Supabase and requires special permissions.
+-- 
+-- This trigger must be created manually in Supabase Dashboard → SQL Editor
+-- for each environment (DEV, UAT, PROD).
+--
+-- Run this SQL in Supabase Dashboard → SQL Editor:
+--
+-- CREATE OR REPLACE TRIGGER on_auth_user_created
+--   AFTER INSERT ON auth.users
+--   FOR EACH ROW
+--   EXECUTE FUNCTION public.handle_new_user();
+--
+-- The handle_new_user() function already exists in the database.
+-- This migration file serves as documentation only.
+--
+-- Client-side fallback: The app will automatically create profiles on-demand
+-- if they don't exist (see components/navbar.tsx and app/profile/page.tsx)
+

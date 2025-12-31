@@ -42,20 +42,27 @@ export const SupabaseProvider = ({
     }, 5 * 60 * 1000); // 5 minutes
   }, [supabase]);
 
-  // Validate and clear cookies when switching environments or invalid session
-  // Server-side handles the validation logic
+  // Validate and clear cookies ONLY when switching environments
+  // Don't run on every page load - only when environment actually changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const storedSupabaseUrl = localStorage.getItem('last-supabase-url');
 
-    // Always call server route handler to validate session and clear if needed
-    // Server will check both URL mismatch and session validity
+    // Only validate if environment changed (not on every load)
+    const environmentChanged = storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl;
+    
+    if (!environmentChanged) {
+      // No environment change - just store current URL and exit
+      if (currentSupabaseUrl) {
+        localStorage.setItem('last-supabase-url', currentSupabaseUrl);
+      }
+      return;
+    }
+
+    // Environment changed - validate and clear
     const validateAndClear = async () => {
-      const environmentChanged = storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl;
-      
-      // Call server route handler - it will validate session and clear if invalid
       try {
         const response = await fetch('/api/auth/clear-cookies', {
           method: 'POST',
@@ -72,8 +79,8 @@ export const SupabaseProvider = ({
         
         const data = await response.json();
         
-        // If server cleared cookies (environment changed or invalid session), reload
-        if (data.cleared || environmentChanged) {
+        // If server cleared cookies, reload
+        if (data.cleared) {
           // Sign out client-side as well
           await supabase.auth.signOut();
           

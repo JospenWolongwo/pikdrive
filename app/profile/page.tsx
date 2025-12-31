@@ -188,16 +188,55 @@ export default function ProfilePage() {
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError) {
-        console.error("[PROFILE] Error loading profile:", profileError);
-        // Don't clear existing data on error, just show error toast
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de charger le profil. Veuillez réessayer.",
-        });
+      // If profile doesn't exist, create it
+      if ((profileError && profileError.code === 'PGRST116') || !profile) {
+        const { error: createError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            phone: user.phone || null,
+            email: user.email || null,
+            full_name: null,
+            city: null,
+            avatar_url: null,
+            is_driver: false,
+            driver_status: 'pending',
+            role: 'user',
+            driver_application_status: 'pending',
+            driver_application_date: null,
+            is_driver_applicant: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (createError) {
+          console.error("[PROFILE] Error creating profile:", createError);
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de créer le profil. Veuillez réessayer.",
+          });
+          return;
+        }
+
+        // Retry loading
+        const { data: newProfile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (newProfile) {
+          console.log("[PROFILE] Profile created and loaded successfully:", newProfile);
+          setProfileData(newProfile);
+          setFormData({
+            fullName: newProfile.full_name || "",
+            email: newProfile.email || "",
+            city: newProfile.city || "",
+          });
+        }
         return;
       }
 

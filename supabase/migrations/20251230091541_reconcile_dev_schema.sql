@@ -2063,8 +2063,8 @@ BEGIN
     WHERE conname = 'bookings_pkey' 
     AND conrelid = 'public.bookings'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."bookings"
-      ADD CONSTRAINT "bookings_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."bookings"
+    ADD CONSTRAINT "bookings_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2077,8 +2077,8 @@ BEGIN
     WHERE conname = 'conversations_pkey' 
     AND conrelid = 'public.conversations'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."conversations"
-      ADD CONSTRAINT "conversations_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."conversations"
+    ADD CONSTRAINT "conversations_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2091,8 +2091,8 @@ BEGIN
     WHERE conname = 'driver_documents_pkey' 
     AND conrelid = 'public.driver_documents'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."driver_documents"
-      ADD CONSTRAINT "driver_documents_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."driver_documents"
+    ADD CONSTRAINT "driver_documents_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2105,8 +2105,8 @@ BEGIN
     WHERE conname = 'driver_profiles_pkey' 
     AND conrelid = 'public.driver_profiles'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."driver_profiles"
-      ADD CONSTRAINT "driver_profiles_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."driver_profiles"
+    ADD CONSTRAINT "driver_profiles_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2119,8 +2119,8 @@ BEGIN
     WHERE conname = 'driver_profiles_user_id_key' 
     AND conrelid = 'public.driver_profiles'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."driver_profiles"
-      ADD CONSTRAINT "driver_profiles_user_id_key" UNIQUE ("user_id");
+ALTER TABLE ONLY "public"."driver_profiles"
+    ADD CONSTRAINT "driver_profiles_user_id_key" UNIQUE ("user_id");
   END IF;
 END $$;
 
@@ -2133,8 +2133,8 @@ BEGIN
     WHERE conname = 'messages_pkey' 
     AND conrelid = 'public.messages'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."messages"
-      ADD CONSTRAINT "messages_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."messages"
+    ADD CONSTRAINT "messages_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2147,8 +2147,8 @@ BEGIN
     WHERE conname = 'notification_logs_pkey' 
     AND conrelid = 'public.notification_logs'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."notification_logs"
-      ADD CONSTRAINT "notification_logs_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."notification_logs"
+    ADD CONSTRAINT "notification_logs_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2161,8 +2161,8 @@ BEGIN
     WHERE conname = 'onesignal_webhook_logs_pkey' 
     AND conrelid = 'public.onesignal_webhook_logs'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."onesignal_webhook_logs"
-      ADD CONSTRAINT "onesignal_webhook_logs_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."onesignal_webhook_logs"
+    ADD CONSTRAINT "onesignal_webhook_logs_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2175,8 +2175,8 @@ BEGIN
     WHERE conname = 'passenger_documents_pkey' 
     AND conrelid = 'public.passenger_documents'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."passenger_documents"
-      ADD CONSTRAINT "passenger_documents_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."passenger_documents"
+    ADD CONSTRAINT "passenger_documents_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2189,8 +2189,8 @@ BEGIN
     WHERE conname = 'passenger_documents_user_id_key' 
     AND conrelid = 'public.passenger_documents'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."passenger_documents"
-      ADD CONSTRAINT "passenger_documents_user_id_key" UNIQUE ("user_id");
+ALTER TABLE ONLY "public"."passenger_documents"
+    ADD CONSTRAINT "passenger_documents_user_id_key" UNIQUE ("user_id");
   END IF;
 END $$;
 
@@ -2203,8 +2203,8 @@ BEGIN
     WHERE conname = 'payment_event_queue_pkey' 
     AND conrelid = 'public.payment_event_queue'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_event_queue"
-      ADD CONSTRAINT "payment_event_queue_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."payment_event_queue"
+    ADD CONSTRAINT "payment_event_queue_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2217,8 +2217,8 @@ BEGIN
     WHERE conname = 'payment_logs_pkey' 
     AND conrelid = 'public.payment_logs'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_logs"
-      ADD CONSTRAINT "payment_logs_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."payment_logs"
+    ADD CONSTRAINT "payment_logs_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2231,8 +2231,8 @@ BEGIN
     WHERE conname = 'payment_notification_log_pkey' 
     AND conrelid = 'public.payment_notification_log'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_notification_log"
-      ADD CONSTRAINT "payment_notification_log_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."payment_notification_log"
+    ADD CONSTRAINT "payment_notification_log_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2245,8 +2245,8 @@ BEGIN
     WHERE conname = 'payment_receipts_payment_id_key' 
     AND conrelid = 'public.payment_receipts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_receipts"
-      ADD CONSTRAINT "payment_receipts_payment_id_key" UNIQUE ("payment_id");
+ALTER TABLE ONLY "public"."payment_receipts"
+    ADD CONSTRAINT "payment_receipts_payment_id_key" UNIQUE ("payment_id");
   END IF;
 END $$;
 
@@ -2259,8 +2259,8 @@ BEGIN
     WHERE conname = 'payment_receipts_pkey' 
     AND conrelid = 'public.payment_receipts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_receipts"
-      ADD CONSTRAINT "payment_receipts_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."payment_receipts"
+    ADD CONSTRAINT "payment_receipts_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2273,8 +2273,8 @@ BEGIN
     WHERE conname = 'payments_idempotency_key_key' 
     AND conrelid = 'public.payments'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payments"
-      ADD CONSTRAINT "payments_idempotency_key_key" UNIQUE ("idempotency_key");
+ALTER TABLE ONLY "public"."payments"
+    ADD CONSTRAINT "payments_idempotency_key_key" UNIQUE ("idempotency_key");
   END IF;
 END $$;
 
@@ -2287,8 +2287,8 @@ BEGIN
     WHERE conname = 'payments_pkey' 
     AND conrelid = 'public.payments'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payments"
-      ADD CONSTRAINT "payments_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."payments"
+    ADD CONSTRAINT "payments_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2301,8 +2301,8 @@ BEGIN
     WHERE conname = 'payouts_pkey' 
     AND conrelid = 'public.payouts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payouts"
-      ADD CONSTRAINT "payouts_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."payouts"
+    ADD CONSTRAINT "payouts_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2315,8 +2315,8 @@ BEGIN
     WHERE conname = 'profiles_pkey' 
     AND conrelid = 'public.profiles'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."profiles"
-      ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2329,8 +2329,8 @@ BEGIN
     WHERE conname = 'push_subscriptions_pkey' 
     AND conrelid = 'public.push_subscriptions'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."push_subscriptions"
-      ADD CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."push_subscriptions"
+    ADD CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2343,8 +2343,8 @@ BEGIN
     WHERE conname = 'receipt_number_unique' 
     AND conrelid = 'public.payment_receipts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_receipts"
-      ADD CONSTRAINT "receipt_number_unique" UNIQUE ("receipt_number");
+ALTER TABLE ONLY "public"."payment_receipts"
+    ADD CONSTRAINT "receipt_number_unique" UNIQUE ("receipt_number");
   END IF;
 END $$;
 
@@ -2357,8 +2357,8 @@ BEGIN
     WHERE conname = 'rides_pkey' 
     AND conrelid = 'public.rides'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."rides"
-      ADD CONSTRAINT "rides_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."rides"
+    ADD CONSTRAINT "rides_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2371,8 +2371,8 @@ BEGIN
     WHERE conname = 'unique_user_ride_booking' 
     AND conrelid = 'public.bookings'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."bookings"
-      ADD CONSTRAINT "unique_user_ride_booking" UNIQUE ("user_id", "ride_id");
+ALTER TABLE ONLY "public"."bookings"
+    ADD CONSTRAINT "unique_user_ride_booking" UNIQUE ("user_id", "ride_id");
   END IF;
 END $$;
 
@@ -2385,8 +2385,8 @@ BEGIN
     WHERE conname = 'user_settings_pkey' 
     AND conrelid = 'public.user_settings'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."user_settings"
-      ADD CONSTRAINT "user_settings_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."user_settings"
+    ADD CONSTRAINT "user_settings_pkey" PRIMARY KEY ("id");
   END IF;
 END $$;
 
@@ -2399,8 +2399,8 @@ BEGIN
     WHERE conname = 'user_settings_user_id_key' 
     AND conrelid = 'public.user_settings'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."user_settings"
-      ADD CONSTRAINT "user_settings_user_id_key" UNIQUE ("user_id");
+ALTER TABLE ONLY "public"."user_settings"
+    ADD CONSTRAINT "user_settings_user_id_key" UNIQUE ("user_id");
   END IF;
 END $$;
 
@@ -2664,8 +2664,8 @@ BEGIN
     WHERE conname = 'bookings_ride_id_fkey' 
     AND conrelid = 'public.bookings'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."bookings"
-      ADD CONSTRAINT "bookings_ride_id_fkey" FOREIGN KEY ("ride_id") REFERENCES "public"."rides"("id");
+ALTER TABLE ONLY "public"."bookings"
+    ADD CONSTRAINT "bookings_ride_id_fkey" FOREIGN KEY ("ride_id") REFERENCES "public"."rides"("id");
   END IF;
 END $$;
 
@@ -2676,8 +2676,8 @@ BEGIN
     WHERE conname = 'bookings_user_id_fkey' 
     AND conrelid = 'public.bookings'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."bookings"
-      ADD CONSTRAINT "bookings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."bookings"
+    ADD CONSTRAINT "bookings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2690,8 +2690,8 @@ BEGIN
     WHERE conname = 'conversations_ride_id_fkey' 
     AND conrelid = 'public.conversations'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."conversations"
-      ADD CONSTRAINT "conversations_ride_id_fkey" FOREIGN KEY ("ride_id") REFERENCES "public"."rides"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."conversations"
+    ADD CONSTRAINT "conversations_ride_id_fkey" FOREIGN KEY ("ride_id") REFERENCES "public"."rides"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2704,8 +2704,8 @@ BEGIN
     WHERE conname = 'driver_documents_driver_id_fkey' 
     AND conrelid = 'public.driver_documents'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."driver_documents"
-      ADD CONSTRAINT "driver_documents_driver_id_fkey" FOREIGN KEY ("driver_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."driver_documents"
+    ADD CONSTRAINT "driver_documents_driver_id_fkey" FOREIGN KEY ("driver_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2718,8 +2718,8 @@ BEGIN
     WHERE conname = 'driver_profiles_user_id_fkey' 
     AND conrelid = 'public.driver_profiles'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."driver_profiles"
-      ADD CONSTRAINT "driver_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+ALTER TABLE ONLY "public"."driver_profiles"
+    ADD CONSTRAINT "driver_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
   END IF;
 END $$;
 
@@ -2732,8 +2732,8 @@ BEGIN
     WHERE conname = 'messages_conversation_id_fkey' 
     AND conrelid = 'public.messages'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."messages"
-      ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."messages"
+    ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2744,8 +2744,8 @@ BEGIN
     WHERE conname = 'messages_sender_id_fkey' 
     AND conrelid = 'public.messages'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."messages"
-      ADD CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."messages"
+    ADD CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2758,8 +2758,8 @@ BEGIN
     WHERE conname = 'notification_logs_user_id_fkey' 
     AND conrelid = 'public.notification_logs'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."notification_logs"
-      ADD CONSTRAINT "notification_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."notification_logs"
+    ADD CONSTRAINT "notification_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2772,8 +2772,8 @@ BEGIN
     WHERE conname = 'passenger_documents_user_id_fkey' 
     AND conrelid = 'public.passenger_documents'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."passenger_documents"
-      ADD CONSTRAINT "passenger_documents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."passenger_documents"
+    ADD CONSTRAINT "passenger_documents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2786,8 +2786,8 @@ BEGIN
     WHERE conname = 'payment_event_queue_payment_id_fkey' 
     AND conrelid = 'public.payment_event_queue'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_event_queue"
-      ADD CONSTRAINT "payment_event_queue_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."payment_event_queue"
+    ADD CONSTRAINT "payment_event_queue_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2800,8 +2800,8 @@ BEGIN
     WHERE conname = 'payment_notification_log_payment_id_fkey' 
     AND conrelid = 'public.payment_notification_log'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_notification_log"
-      ADD CONSTRAINT "payment_notification_log_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."payment_notification_log"
+    ADD CONSTRAINT "payment_notification_log_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2814,8 +2814,8 @@ BEGIN
     WHERE conname = 'payment_receipts_payment_id_fkey' 
     AND conrelid = 'public.payment_receipts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payment_receipts"
-      ADD CONSTRAINT "payment_receipts_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."payment_receipts"
+    ADD CONSTRAINT "payment_receipts_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2828,8 +2828,8 @@ BEGIN
     WHERE conname = 'payments_booking_id_fkey' 
     AND conrelid = 'public.payments'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payments"
-      ADD CONSTRAINT "payments_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "public"."bookings"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."payments"
+    ADD CONSTRAINT "payments_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "public"."bookings"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2842,8 +2842,8 @@ BEGIN
     WHERE conname = 'payouts_booking_id_fkey' 
     AND conrelid = 'public.payouts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payouts"
-      ADD CONSTRAINT "payouts_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "public"."bookings"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."payouts"
+    ADD CONSTRAINT "payouts_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "public"."bookings"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2854,8 +2854,8 @@ BEGIN
     WHERE conname = 'payouts_driver_id_fkey' 
     AND conrelid = 'public.payouts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payouts"
-      ADD CONSTRAINT "payouts_driver_id_fkey" FOREIGN KEY ("driver_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."payouts"
+    ADD CONSTRAINT "payouts_driver_id_fkey" FOREIGN KEY ("driver_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2866,8 +2866,8 @@ BEGIN
     WHERE conname = 'payouts_payment_id_fkey' 
     AND conrelid = 'public.payouts'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."payouts"
-      ADD CONSTRAINT "payouts_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."payouts"
+    ADD CONSTRAINT "payouts_payment_id_fkey" FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2880,8 +2880,8 @@ BEGIN
     WHERE conname = 'profiles_created_by_fkey' 
     AND conrelid = 'public.profiles'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."profiles"
-      ADD CONSTRAINT "profiles_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
   END IF;
 END $$;
 
@@ -2892,8 +2892,8 @@ BEGIN
     WHERE conname = 'profiles_id_fkey' 
     AND conrelid = 'public.profiles'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."profiles"
-      ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2904,8 +2904,8 @@ BEGIN
     WHERE conname = 'profiles_updated_by_fkey' 
     AND conrelid = 'public.profiles'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."profiles"
-      ADD CONSTRAINT "profiles_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
   END IF;
 END $$;
 
@@ -2918,8 +2918,8 @@ BEGIN
     WHERE conname = 'push_subscriptions_user_id_fkey' 
     AND conrelid = 'public.push_subscriptions'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."push_subscriptions"
-      ADD CONSTRAINT "push_subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."push_subscriptions"
+    ADD CONSTRAINT "push_subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2932,8 +2932,8 @@ BEGIN
     WHERE conname = 'rides_driver_id_fkey' 
     AND conrelid = 'public.rides'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."rides"
-      ADD CONSTRAINT "rides_driver_id_fkey" FOREIGN KEY ("driver_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."rides"
+    ADD CONSTRAINT "rides_driver_id_fkey" FOREIGN KEY ("driver_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -2946,8 +2946,8 @@ BEGIN
     WHERE conname = 'user_settings_user_id_fkey' 
     AND conrelid = 'public.user_settings'::regclass
   ) THEN
-    ALTER TABLE ONLY "public"."user_settings"
-      ADD CONSTRAINT "user_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."user_settings"
+    ADD CONSTRAINT "user_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
   END IF;
 END $$;
 

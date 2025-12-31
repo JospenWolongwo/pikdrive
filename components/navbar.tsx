@@ -67,16 +67,61 @@ export function Navbar() {
   useEffect(() => {
     if (user) {
       const getDriverStatus = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("profiles")
           .select("is_driver, driver_status, avatar_url, full_name")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
-        setIsDriver(data?.is_driver || false);
-        setDriverStatus(data?.driver_status || null);
-        setFullName(data?.full_name || null);
-        if (data?.avatar_url) {
+        // If profile doesn't exist (PGRST116 = not found), create it
+        if ((error && error.code === 'PGRST116') || !data) {
+          const { error: createError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              phone: user.phone || null,
+              email: user.email || null,
+              full_name: null,
+              city: null,
+              avatar_url: null,
+              is_driver: false,
+              driver_status: 'pending',
+              role: 'user',
+              driver_application_status: 'pending',
+              driver_application_date: null,
+              is_driver_applicant: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+          if (!createError) {
+            // Retry fetching
+            const { data: newProfile } = await supabase
+              .from("profiles")
+              .select("is_driver, driver_status, avatar_url, full_name")
+              .eq("id", user.id)
+              .single();
+
+            if (newProfile) {
+              setIsDriver(newProfile.is_driver || false);
+              setDriverStatus(newProfile.driver_status || null);
+              setFullName(newProfile.full_name || null);
+              if (newProfile.avatar_url) {
+                const {
+                  data: { publicUrl },
+                } = supabase.storage.from("avatars").getPublicUrl(newProfile.avatar_url);
+                setAvatarUrl(publicUrl);
+              }
+            }
+          }
+          return;
+        }
+
+        // Profile exists - use it
+        setIsDriver(data.is_driver || false);
+        setDriverStatus(data.driver_status || null);
+        setFullName(data.full_name || null);
+        if (data.avatar_url) {
           const {
             data: { publicUrl },
           } = supabase.storage.from("avatars").getPublicUrl(data.avatar_url);
