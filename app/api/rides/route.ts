@@ -23,11 +23,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("rides")
-      .select(`
-        *,
-        driver:profiles(id, full_name, avatar_url),
-        bookings(id, seats, status, payment_status)
-      `)
+      .select("*")
       .order("departure_time", { ascending: true });
 
     // Apply filters
@@ -91,9 +87,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch vehicle images for all drivers
+    // Fetch driver profiles separately (avoids PostgREST relationship syntax issues)
     const driverIds = [...new Set((rides || []).map((ride: any) => ride.driver_id))];
     
+    const { data: driverProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", driverIds);
+
+    // Create a map of driver_id to driver profile
+    const driverProfileMap = new Map<string, { id: string; full_name: string; avatar_url: string | null }>();
+    if (driverProfiles) {
+      driverProfiles.forEach((profile: any) => {
+        driverProfileMap.set(profile.id, profile);
+      });
+    }
+
+    // Fetch vehicle images for all drivers
     const { data: driverDocuments, error: docsError } = await supabase
       .from("driver_documents")
       .select("driver_id, vehicle_images")
@@ -113,16 +123,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Merge vehicle images with rides data
+    // Merge driver profiles and vehicle images with rides data
     const ridesWithVehicleImages = (rides || []).map((ride: any) => {
+      const driverProfile = driverProfileMap.get(ride.driver_id);
       const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
       
       return {
         ...ride,
-        driver: {
-          ...ride.driver,
+        driver: driverProfile ? {
+          ...driverProfile,
           vehicle_images: vehicleImages,
-        },
+        } : null,
       };
     });
 
