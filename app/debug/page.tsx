@@ -99,6 +99,28 @@ export default function DebugPage() {
                   </p>
                 </div>
 
+                {cookieInfo.tokenIssuerMismatch !== undefined && (
+                  <div className="flex items-center gap-2">
+                    {!cookieInfo.tokenIssuerMismatch ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    <p className="text-sm font-medium">
+                      Token Project Match: {!cookieInfo.tokenIssuerMismatch ? 'Yes' : 'No'}
+                    </p>
+                  </div>
+                )}
+
+                {cookieInfo.currentProjectRef && (
+                  <div className="p-2 bg-muted rounded text-xs">
+                    <p className="text-muted-foreground">Current Project: <span className="font-mono">{cookieInfo.currentProjectRef}</span></p>
+                    {cookieInfo.tokenProjectRef && (
+                      <p className="text-muted-foreground mt-1">Token Project: <span className="font-mono">{cookieInfo.tokenProjectRef}</span></p>
+                    )}
+                  </div>
+                )}
+
                 {cookieInfo.sessionError && (
                   <div className="p-2 bg-red-50 dark:bg-red-950 rounded">
                     <p className="text-xs text-red-900 dark:text-red-100">
@@ -110,7 +132,9 @@ export default function DebugPage() {
                 {cookieInfo.needsClearing && (
                   <Alert variant="destructive">
                     <AlertDescription>
-                      ⚠️ Invalid session detected! Cookies should be cleared automatically.
+                      ⚠️ {cookieInfo.tokenIssuerMismatch 
+                        ? 'Token from wrong project detected! Cookies should be cleared automatically.'
+                        : 'Invalid session detected! Cookies should be cleared automatically.'}
                     </AlertDescription>
                   </Alert>
                 )}

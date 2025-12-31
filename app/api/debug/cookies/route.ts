@@ -3,6 +3,18 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { getVersionedStorageKey } from "@/lib/storage-version";
 
+// Helper to decode JWT without verification (just to check issuer)
+function getJwtIssuer(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    return payload.iss || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
@@ -42,6 +54,35 @@ export async function GET() {
       sessionError = e instanceof Error ? e.message : 'Unknown error';
     }
 
+    // Check token issuer
+    const storageKey = getVersionedStorageKey("auth-storage");
+    const accessTokenCookie = cookieStore.get(`${storageKey}-access-token`);
+    const currentProjectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+    let tokenIssuerMismatch = false;
+    let tokenIssuer = null;
+    let tokenProjectRef = null;
+    
+    if (accessTokenCookie?.value && currentProjectRef) {
+      let accessToken: string | null = null;
+      try {
+        const cookieValue = accessTokenCookie.value;
+        if (cookieValue.startsWith('{')) {
+          const parsed = JSON.parse(cookieValue);
+          accessToken = parsed.access_token || parsed.token || null;
+        } else {
+          accessToken = cookieValue;
+        }
+      } catch {
+        accessToken = accessTokenCookie.value;
+      }
+      
+      if (accessToken) {
+        tokenIssuer = getJwtIssuer(accessToken);
+        tokenProjectRef = tokenIssuer?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+        tokenIssuerMismatch = tokenProjectRef && tokenProjectRef !== currentProjectRef;
+      }
+    }
+
     return NextResponse.json({
       totalCookies: allCookies.length,
       authCookies: authCookies.map(c => ({
@@ -55,7 +96,10 @@ export async function GET() {
       environmentMatch: process.env.NEXT_PUBLIC_SUPABASE_URL === cookieStore.get('supabase-project-url')?.value,
       sessionValid,
       sessionError,
-      needsClearing: !sessionValid && authCookies.length > 0,
+      tokenIssuerMismatch,
+      currentProjectRef,
+      tokenProjectRef,
+      needsClearing: (!sessionValid && authCookies.length > 0) || tokenIssuerMismatch,
     });
   } catch (error) {
     return NextResponse.json(
