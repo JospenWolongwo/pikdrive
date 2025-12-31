@@ -36,6 +36,16 @@ export function PassengerRideCard({
   onBookingClick,
   onChatClick,
 }: PassengerRideCardProps) {
+  // Debug logging
+  if (index === 0) {
+    console.log("[PassengerRideCard] First ride data:", {
+      ride_id: ride.id,
+      driver_id: ride.driver_id,
+      driver: ride.driver,
+      driver_avatar_url: ride.driver?.avatar_url,
+      driver_full_name: ride.driver?.full_name,
+    });
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: 30, scale: 0.95 }}

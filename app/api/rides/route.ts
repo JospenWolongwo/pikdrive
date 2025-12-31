@@ -90,10 +90,25 @@ export async function GET(request: NextRequest) {
     // Fetch driver profiles separately (avoids PostgREST relationship syntax issues)
     const driverIds = [...new Set((rides || []).map((ride: any) => ride.driver_id))];
     
-    const { data: driverProfiles } = await supabase
+    const { data: driverProfiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, full_name, avatar_url")
       .in("id", driverIds);
+
+    if (profilesError) {
+      console.error("[GET /api/rides] Error fetching driver profiles:", profilesError);
+    }
+
+    // Debug logging
+    console.log("[GET /api/rides] Driver IDs:", driverIds);
+    console.log("[GET /api/rides] Fetched profiles count:", driverProfiles?.length || 0);
+    if (driverProfiles && driverProfiles.length > 0) {
+      console.log("[GET /api/rides] Sample profile:", {
+        id: driverProfiles[0].id,
+        full_name: driverProfiles[0].full_name,
+        avatar_url: driverProfiles[0].avatar_url,
+      });
+    }
 
     // Create a map of driver_id to driver profile
     const driverProfileMap = new Map<string, { id: string; full_name: string; avatar_url: string | null }>();
@@ -102,6 +117,8 @@ export async function GET(request: NextRequest) {
         driverProfileMap.set(profile.id, profile);
       });
     }
+
+    console.log("[GET /api/rides] Driver profile map size:", driverProfileMap.size);
 
     // Fetch vehicle images for all drivers
     const { data: driverDocuments, error: docsError } = await supabase
@@ -127,6 +144,16 @@ export async function GET(request: NextRequest) {
     const ridesWithVehicleImages = (rides || []).map((ride: any) => {
       const driverProfile = driverProfileMap.get(ride.driver_id);
       const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
+      
+      // Debug logging for first ride
+      if (rides.indexOf(ride) === 0) {
+        console.log("[GET /api/rides] First ride debug:", {
+          ride_id: ride.id,
+          driver_id: ride.driver_id,
+          found_profile: !!driverProfile,
+          profile_data: driverProfile,
+        });
+      }
       
       return {
         ...ride,
