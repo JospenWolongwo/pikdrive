@@ -42,21 +42,22 @@ export const SupabaseProvider = ({
     }, 5 * 60 * 1000); // 5 minutes
   }, [supabase]);
 
-  // Clear cookies and storage when switching Supabase environments
+  // Validate and clear cookies when switching environments or invalid session
+  // Server-side handles the validation logic
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const storedSupabaseUrl = localStorage.getItem('last-supabase-url');
 
-    // If we switched environments, clear cookies server-side and storage client-side
-    if (storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
-      console.log('🔄 Environment changed, clearing cookies and storage...');
+    // Always call server route handler to validate session and clear if needed
+    // Server will check both URL mismatch and session validity
+    const validateAndClear = async () => {
+      const environmentChanged = storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl;
       
-      // First, sign out from Supabase client-side
-      supabase.auth.signOut().then(() => {
-        // Then call server route handler
-        return fetch('/api/auth/clear-cookies', {
+      // Call server route handler - it will validate session and clear if invalid
+      try {
+        const response = await fetch('/api/auth/clear-cookies', {
           method: 'POST',
           cache: 'no-store',
           headers: {
@@ -64,55 +65,55 @@ export const SupabaseProvider = ({
           },
           body: JSON.stringify({ timestamp: Date.now() }),
         });
-      })
-      .then(async (response) => {
+        
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
         const data = await response.json();
-        console.log('✅ Server cleared cookies:', data);
         
-        // Client-side cookie clearing as backup (as per guide)
-        document.cookie.split(";").forEach((c) => {
-          const cookieName = c.replace(/^ +/, "").replace(/=.*/, "");
-          if (
-            cookieName.includes('auth') ||
-            cookieName.includes('supabase') ||
-            cookieName.includes('sb-')
-          ) {
-            const isSecure = window.location.protocol === 'https:';
-            document.cookie = `${cookieName}=; expires=${new Date().toUTCString()}; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
-          }
-        });
-        
-        // Clear storage
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Reload
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-      })
-      .catch((error) => {
-        console.error('❌ Failed to clear cookies:', error);
-        // Still clear everything and reload
-        document.cookie.split(";").forEach((c) => {
-          const cookieName = c.replace(/^ +/, "").replace(/=.*/, "");
-          const isSecure = window.location.protocol === 'https:';
-          document.cookie = `${cookieName}=; expires=${new Date().toUTCString()}; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
-        });
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.reload();
-      });
-      return;
-    }
+        // If server cleared cookies (environment changed or invalid session), reload
+        if (data.cleared || environmentChanged) {
+          console.log('🔄 Server cleared cookies, reloading...', data);
+          
+          // Sign out client-side as well
+          await supabase.auth.signOut();
+          
+          // Client-side cookie clearing as backup
+          document.cookie.split(";").forEach((c) => {
+            const cookieName = c.replace(/^ +/, "").replace(/=.*/, "");
+            if (
+              cookieName.includes('auth') ||
+              cookieName.includes('supabase') ||
+              cookieName.includes('sb-')
+            ) {
+              const isSecure = window.location.protocol === 'https:';
+              document.cookie = `${cookieName}=; expires=${new Date().toUTCString()}; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+            }
+          });
+          
+          // Clear storage
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          // Reload
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Failed to validate cookies:', error);
+        // Don't reload on error - let user continue
+      }
 
-    // Store current environment
-    if (currentSupabaseUrl) {
-      localStorage.setItem('last-supabase-url', currentSupabaseUrl);
-    }
+      // Store current environment
+      if (currentSupabaseUrl) {
+        localStorage.setItem('last-supabase-url', currentSupabaseUrl);
+      }
+    };
+
+    validateAndClear();
   }, [supabase]);
 
   const initializeAuth = useCallback(async () => {

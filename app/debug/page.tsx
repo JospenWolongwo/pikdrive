@@ -88,6 +88,33 @@ export default function DebugPage() {
                   </p>
                 </div>
 
+                <div className="flex items-center gap-2">
+                  {cookieInfo.sessionValid ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  )}
+                  <p className="text-sm font-medium">
+                    Session Valid: {cookieInfo.sessionValid ? 'Yes' : 'No'}
+                  </p>
+                </div>
+
+                {cookieInfo.sessionError && (
+                  <div className="p-2 bg-red-50 dark:bg-red-950 rounded">
+                    <p className="text-xs text-red-900 dark:text-red-100">
+                      Session Error: {cookieInfo.sessionError}
+                    </p>
+                  </div>
+                )}
+
+                {cookieInfo.needsClearing && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      ⚠️ Invalid session detected! Cookies should be cleared automatically.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">Current Supabase URL</p>
                   <p className="text-xs font-mono break-all">{cookieInfo.currentSupabaseUrl}</p>
