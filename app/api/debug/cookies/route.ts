@@ -79,7 +79,7 @@ export async function GET() {
       if (accessToken) {
         tokenIssuer = getJwtIssuer(accessToken);
         tokenProjectRef = tokenIssuer?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
-        tokenIssuerMismatch = tokenProjectRef && tokenProjectRef !== currentProjectRef;
+        tokenIssuerMismatch = !!(tokenProjectRef && tokenProjectRef !== currentProjectRef);
       }
     }
 
