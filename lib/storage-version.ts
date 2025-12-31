@@ -10,11 +10,14 @@
  * Generates a version hash for localStorage keys based on database URL
  * When the database URL changes, Zustand will use a new storage key
  * and automatically ignore old persisted data
+ * 
+ * Works on both client and server to ensure consistent key generation
  */
 export const getStorageVersion = (): string => {
-  if (typeof window === 'undefined') return '';
-  
+  // Works on both client and server - use environment variable
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  if (!url) return '';
+  
   // Simple hash function - converts URL to short hash
   let hash = 0;
   for (let i = 0; i < url.length; i++) {

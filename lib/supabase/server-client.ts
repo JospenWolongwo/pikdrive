@@ -14,6 +14,13 @@ import { getVersionedStorageKey } from "@/lib/storage-version";
  */
 export function createApiSupabaseClient(): SupabaseClient {
   const cookieStore = cookies();
+  const storageKey = getVersionedStorageKey("auth-storage");
+  
+  // Debug: Log the storage key being used (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[SERVER-CLIENT] Using storage key:', storageKey);
+    console.log('[SERVER-CLIENT] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+  }
   
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +28,11 @@ export function createApiSupabaseClient(): SupabaseClient {
     {
       cookies: {
         get(name: string) {
+          // Debug: Log when we're looking for the auth-storage cookie
+          if (process.env.NODE_ENV === 'development' && name.startsWith('auth-storage')) {
+            const value = cookieStore.get(name)?.value;
+            console.log(`[SERVER-CLIENT] Cookie get('${name}'):`, value ? 'found' : 'not found');
+          }
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: any) {
@@ -54,7 +66,7 @@ export function createApiSupabaseClient(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: getVersionedStorageKey("auth-storage"),
+        storageKey: storageKey,
       },
       global: {
         fetch: async (url, options = {}) => {

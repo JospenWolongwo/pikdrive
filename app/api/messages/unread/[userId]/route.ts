@@ -36,6 +36,32 @@ export async function GET(
       valueLength: c.value?.length || 0
     })));
 
+    // Debug: Try to parse the auth-storage cookie to see what's inside
+    const authStorageCookie = authCookies.find(c => c.name.startsWith('auth-storage'));
+    if (authStorageCookie) {
+      try {
+        // The cookie value is URL-encoded JSON
+        const decoded = decodeURIComponent(authStorageCookie.value);
+        const parsed = JSON.parse(decoded);
+        console.log('[UNREAD] Parsed auth-storage cookie structure:', {
+          hasAccessToken: !!parsed.access_token,
+          hasRefreshToken: !!parsed.refresh_token,
+          expiresAt: parsed.expires_at,
+          tokenType: parsed.token_type,
+          user: parsed.user ? {
+            id: parsed.user.id,
+            email: parsed.user.email,
+            phone: parsed.user.phone
+          } : null
+        });
+      } catch (e) {
+        console.log('[UNREAD] Failed to parse auth-storage cookie:', (e as Error).message);
+        console.log('[UNREAD] Raw cookie value (first 200 chars):', authStorageCookie.value.substring(0, 200));
+      }
+    } else {
+      console.log('[UNREAD] No auth-storage cookie found');
+    }
+
     // Create a Supabase client using cookie-based authentication
     const supabaseClient = createApiSupabaseClient();
 
