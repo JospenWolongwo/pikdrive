@@ -37,21 +37,39 @@ export default function AdminLayout({
       try {
         const {
           data: { user },
+          error: userError,
         } = await supabase.auth.getUser();
-        if (!user) {
+        
+        if (userError || !user) {
           router.push("/auth");
           return;
         }
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
-        if (profile?.role !== "admin") {
+        // If profile doesn't exist or there's an error, deny access
+        if (profileError) {
+          console.error("Error fetching profile for admin check:", profileError);
           router.push("/");
+          return;
         }
+
+        if (!profile || profile.role !== "admin") {
+          console.log("Admin access denied:", {
+            hasProfile: !!profile,
+            role: profile?.role,
+            userId: user.id
+          });
+          router.push("/");
+          return;
+        }
+
+        // Admin access granted
+        console.log("Admin access granted for user:", user.id);
       } catch (error) {
         console.error("Error checking admin access:", error);
         router.push("/");
