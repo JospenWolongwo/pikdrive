@@ -74,8 +74,6 @@ export const SupabaseProvider = ({
         
         // If server cleared cookies (environment changed or invalid session), reload
         if (data.cleared || environmentChanged) {
-          console.log('🔄 Server cleared cookies, reloading...', data);
-          
           // Sign out client-side as well
           await supabase.auth.signOut();
           
@@ -103,7 +101,6 @@ export const SupabaseProvider = ({
           return;
         }
       } catch (error) {
-        console.error('❌ Failed to validate cookies:', error);
         // Don't reload on error - let user continue
       }
 

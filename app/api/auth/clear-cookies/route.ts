@@ -126,18 +126,6 @@ export async function POST() {
 
     // If any condition is true, clear all auth cookies
     if (environmentChanged || hasInvalidSession || tokenFromWrongProject) {
-      console.log('🔄 Clearing cookies...', {
-        reason: environmentChanged ? 'environment changed' 
-          : tokenFromWrongProject ? 'token from wrong project'
-          : 'invalid session',
-        stored: storedSupabaseUrl?.substring(0, 30),
-        current: currentSupabaseUrl?.substring(0, 30),
-        sessionValid,
-        tokenFromWrongProject,
-        currentProjectRef,
-        sessionError: sessionError?.message,
-      });
-
       // Sign out from Supabase to properly clear auth state
       await supabase.auth.signOut();
       
@@ -159,7 +147,6 @@ export async function POST() {
 
       // Also clear any other auth-related cookies
       const allCookies = cookieStore.getAll();
-      let clearedCount = 0;
       allCookies.forEach(cookie => {
         if (
           cookie.name.includes('auth') ||
@@ -167,11 +154,9 @@ export async function POST() {
           cookie.name.includes('sb-')
         ) {
           cookieStore.delete(cookie.name);
-          clearedCount++;
         }
       });
 
-      console.log(`✅ Cleared ${clearedCount} cookies`);
       actuallyCleared = true;
     }
 
@@ -179,17 +164,6 @@ export async function POST() {
     const response = NextResponse.json({ 
       success: true, 
       cleared: actuallyCleared,
-      reason: actuallyCleared 
-        ? (environmentChanged ? 'environment changed' 
-          : tokenFromWrongProject ? 'token from wrong project'
-          : 'invalid session')
-        : 'no action needed',
-      debug: {
-        environmentChanged,
-        hasInvalidSession,
-        tokenFromWrongProject,
-        sessionValid,
-      },
     });
 
     // If we cleared cookies, also set them in response with maxAge: 0
@@ -242,7 +216,6 @@ export async function POST() {
 
     return response;
   } catch (error) {
-    console.error('❌ Error clearing cookies:', error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
