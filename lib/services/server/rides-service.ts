@@ -186,17 +186,25 @@ export class ServerRidesService {
         car_model: rideData.car_model,
         car_color: rideData.car_color,
       })
-      .select(`
-        *,
-        driver:profiles(id, full_name, avatar_url)
-      `)
+      .select("*")
       .single();
 
     if (error) {
       throw new Error(`Failed to create ride: ${error.message}`);
     }
 
-    return data;
+    // Fetch driver profile separately (avoids PostgREST relationship syntax issues)
+    const { data: driverProfile } = await this.supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .eq("id", driverId)
+      .single();
+
+    // Attach driver profile to ride
+    return {
+      ...data,
+      driver: driverProfile || null,
+    } as Ride;
   }
 
   /**

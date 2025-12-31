@@ -166,10 +166,10 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // Verify user is a driver
+    // Verify user is a driver AND fetch profile data for response
     const { data: driverData, error: driverError } = await supabase
       .from("profiles")
-      .select("is_driver")
+      .select("id, full_name, avatar_url, is_driver")
       .eq("id", userId)
       .single();
 
@@ -204,10 +204,7 @@ export async function POST(request: NextRequest) {
         car_model: rideData.car_model,
         car_color: rideData.car_color,
       })
-      .select(`
-        *,
-        driver:profiles(id, full_name, avatar_url)
-      `)
+      .select("*")
       .single();
 
     if (createError) {
@@ -218,9 +215,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Attach driver profile (already fetched above - no extra query!)
+    const rideWithDriver = {
+      ...ride,
+      driver: {
+        id: driverData.id,
+        full_name: driverData.full_name,
+        avatar_url: driverData.avatar_url,
+      },
+    };
+
     return NextResponse.json({
       success: true,
-      data: ride,
+      data: rideWithDriver,
     });
   } catch (error) {
     console.error("Error in rides POST:", error);
