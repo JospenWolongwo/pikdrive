@@ -94,6 +94,29 @@ export function Navbar() {
               updated_at: new Date().toISOString(),
             });
 
+          // If profile already exists (409/23505 = unique constraint violation), just fetch it
+          if (createError && (createError.code === '23505' || createError.message?.includes('duplicate'))) {
+            console.log('[NAVBAR] Profile already exists, fetching it:', user.id);
+            const { data: existingProfile } = await supabase
+              .from("profiles")
+              .select("is_driver, driver_status, avatar_url, full_name")
+              .eq("id", user.id)
+              .single();
+
+            if (existingProfile) {
+              setIsDriver(existingProfile.is_driver || false);
+              setDriverStatus(existingProfile.driver_status || null);
+              setFullName(existingProfile.full_name || null);
+              if (existingProfile.avatar_url) {
+                const {
+                  data: { publicUrl },
+                } = supabase.storage.from("avatars").getPublicUrl(existingProfile.avatar_url);
+                setAvatarUrl(publicUrl);
+              }
+            }
+            return;
+          }
+
           if (!createError) {
             // Retry fetching
             const { data: newProfile } = await supabase

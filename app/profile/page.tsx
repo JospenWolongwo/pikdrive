@@ -211,6 +211,26 @@ export default function ProfilePage() {
             updated_at: new Date().toISOString(),
           });
 
+        // If profile already exists (409/23505 = unique constraint violation), just fetch it
+        if (createError && (createError.code === '23505' || createError.message?.includes('duplicate'))) {
+          console.log("[PROFILE] Profile already exists, fetching it:", user.id);
+          const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+          if (existingProfile) {
+            setProfileData(existingProfile);
+            setFormData({
+              fullName: existingProfile.full_name || "",
+              email: existingProfile.email || "",
+              city: existingProfile.city || "",
+            });
+          }
+          return;
+        }
+
         if (createError) {
           console.error("[PROFILE] Error creating profile:", createError);
           toast({
