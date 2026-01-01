@@ -48,20 +48,27 @@ export const SupabaseProvider = ({
 
   // Validate and clear cookies ONLY when switching environments
   // Don't run on every page load - only when environment actually changes
+  // Uses cookie to match server-side logic (cookie is set by middleware/server)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const storedSupabaseUrl = localStorage.getItem('last-supabase-url');
+    
+    // Use cookie instead of localStorage to match server-side logic
+    const getCookie = (name: string): string | null => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+    };
+    
+    const storedSupabaseUrl = getCookie('supabase-project-url');
 
     // Only validate if environment changed (not on every load)
     const environmentChanged = storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl;
     
     if (!environmentChanged) {
-      // No environment change - just store current URL and exit
-      if (currentSupabaseUrl) {
-        localStorage.setItem('last-supabase-url', currentSupabaseUrl);
-      }
+      // No environment change - just exit (cookie is set by middleware/server)
       return;
     }
 
@@ -113,11 +120,6 @@ export const SupabaseProvider = ({
         }
       } catch (error) {
         // Don't reload on error - let user continue
-      }
-
-      // Store current environment
-      if (currentSupabaseUrl) {
-        localStorage.setItem('last-supabase-url', currentSupabaseUrl);
       }
     };
 
