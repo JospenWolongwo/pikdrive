@@ -310,7 +310,7 @@ export function useBookingModal({
     }
   };
 
-  const handlePaymentComplete = async (status: PaymentTransactionStatus) => {
+  const handlePaymentComplete = async (status: PaymentTransactionStatus, message?: string) => {
     if (status === "completed" && ride) {
       // Trigger notification prompt after payment completion
       // This is the highest value moment - user just completed transaction
@@ -325,7 +325,12 @@ export function useBookingModal({
       navigationTimeoutRef.current = setTimeout(() => {
         router.replace("/bookings");
       }, 2000);
-
+    } else if (status === "failed") {
+      // Reset payment transaction ID to enable form fields
+      setPaymentTransactionId(null);
+      // Store error message for display
+      setStatusMessage(message || "Le paiement a échoué. Veuillez réessayer.");
+      setPaymentStatus("FAILED");
     }
   };
 
@@ -358,6 +363,8 @@ export function useBookingModal({
     setPhoneNumber,
     setIsPhoneValid,
     setStep,
+    setStatusMessage,
+    setPaymentStatus,
     // Handlers
     handlePassengerInfoComplete,
     handleCreateBooking,

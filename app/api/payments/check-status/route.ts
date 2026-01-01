@@ -5,6 +5,7 @@ import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment
 import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
 import { PawaPayService } from '@/lib/payment/pawapay/pawapay-service';
 import { mapMtnMomoStatus, mapPawaPayStatus } from '@/lib/payment/status-mapper';
+import { parseFailureReason } from '@/lib/payment/failure-reason-parser';
 import type { Environment } from '@/types/payment-ext';
 import { Environment as EnvEnum, PawaPayApiUrl } from '@/types/payment-ext';
 
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
 
     // Check status with provider
     let newStatus = payment.status;
+    let userFriendlyErrorMessage: string | undefined = undefined;
     
     if (actualProvider === 'pawapay') {
       console.log('🔄 [CHECK-STATUS] Querying pawaPay API for status...');
@@ -170,10 +172,16 @@ export async function POST(request: NextRequest) {
           || statusString;
         newStatus = mapPawaPayStatus(pawapayStatus);
         
+        // Parse failure reason to user-friendly message if payment failed
+        if (newStatus === 'failed' && failureReason) {
+          userFriendlyErrorMessage = parseFailureReason(failureReason);
+        }
+        
         console.log('🔄 [CHECK-STATUS] Status mapping:', { 
           pawapayStatus: pawapayStatus, 
           ourStatus: newStatus,
           failureReason: failureReason ? (typeof failureReason === 'object' ? JSON.stringify(failureReason) : failureReason) : undefined,
+          userFriendlyMessage: userFriendlyErrorMessage,
         });
 
         // Update payment if status changed
@@ -308,11 +316,14 @@ export async function POST(request: NextRequest) {
       transactionId: payment.transaction_id,
     });
 
+    // Use user-friendly error message if available, otherwise use generic status message
+    const responseMessage = userFriendlyErrorMessage || getStatusMessage(newStatus);
+
     return NextResponse.json({
       success: true,
       data: {
         status: newStatus,
-        message: getStatusMessage(newStatus),
+        message: responseMessage,
         paymentId: payment.id,
         transactionId: payment.transaction_id,
       },

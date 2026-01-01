@@ -7,7 +7,7 @@ interface PaymentStatusCheckerProps {
   transactionId: string;
   provider: string;
   bookingId?: string; // ✅ Add bookingId for resilient fallback queries
-  onPaymentComplete?: (status: PaymentStatus) => void;
+  onPaymentComplete?: (status: PaymentStatus, message?: string) => void;
   pollingInterval?: number;
   maxAttempts?: number;
 }
@@ -37,7 +37,7 @@ export function PaymentStatusChecker({
         setMessage('Invalid payment reference');
         setIsPolling(false);
         setLastUpdated(Date.now());
-        onPaymentComplete?.('failed');
+        onPaymentComplete?.('failed', 'Invalid payment reference');
         return;
       }
 
@@ -75,7 +75,7 @@ export function PaymentStatusChecker({
           setIsPolling(false);
           setMessage('Payment completed successfully!');
           toast.success(paymentMessage || 'Payment completed successfully!');
-          onPaymentComplete?.(paymentStatus);
+          onPaymentComplete?.(paymentStatus, paymentMessage);
           return;
         }
 
@@ -83,7 +83,7 @@ export function PaymentStatusChecker({
           setIsPolling(false);
           setMessage(paymentMessage || 'Payment failed');
           toast.error(paymentMessage || 'Payment failed');
-          onPaymentComplete?.(paymentStatus);
+          onPaymentComplete?.(paymentStatus, paymentMessage);
           return;
         }
 
@@ -100,7 +100,7 @@ export function PaymentStatusChecker({
             setIsPolling(false);
             setMessage('Payment verification timed out');
             toast.error('Payment verification timed out. Please contact support.');
-            onPaymentComplete?.('failed');
+            onPaymentComplete?.('failed', 'Payment verification timed out. Please contact support.');
           }
         }
       } catch (error) {
@@ -127,7 +127,7 @@ export function PaymentStatusChecker({
           setMessage('Failed to verify payment status');
           setLastUpdated(Date.now());
           toast.error('Failed to verify payment status. Please contact support.');
-          onPaymentComplete?.('failed');
+          onPaymentComplete?.('failed', 'Failed to verify payment status. Please contact support.');
         }
       }
     };

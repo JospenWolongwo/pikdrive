@@ -31,6 +31,8 @@ export function BookingModal({
     bookingId,
     existingBooking,
     paymentTransactionId,
+    paymentStatus,
+    statusMessage,
     isPolling,
     paymentSuccess,
     totalPrice,
@@ -45,6 +47,8 @@ export function BookingModal({
     setPhoneNumber,
     setIsPhoneValid,
     setStep,
+    setStatusMessage,
+    setPaymentStatus,
     handlePassengerInfoComplete,
     handleCreateBooking,
     handlePayment,
@@ -54,6 +58,12 @@ export function BookingModal({
     ride,
     onBookingComplete,
   });
+
+  // Handle retry after payment failure
+  const handleRetry = () => {
+    setStatusMessage("");
+    setPaymentStatus(null);
+  };
 
   if (!ride) return null;
 
@@ -112,6 +122,7 @@ export function BookingModal({
             existingBooking={existingBooking}
             ride={ride}
             seats={seats}
+            paymentError={paymentStatus === "FAILED" ? statusMessage : undefined}
             onProviderSelect={setSelectedProvider}
             onPhoneNumberChange={setPhoneNumber}
             onPhoneValidityChange={setIsPhoneValid}
@@ -122,6 +133,7 @@ export function BookingModal({
               }
             }}
             onPaymentComplete={handlePaymentComplete}
+            onRetry={handleRetry}
           />
         );
 

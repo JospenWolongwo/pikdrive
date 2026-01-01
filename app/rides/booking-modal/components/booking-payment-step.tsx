@@ -1,10 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { PaymentMethodSelector } from "@/components/payment/payment-method-selector";
 import { PhoneNumberInput } from "@/components/payment/phone-number-input";
 import { PaymentStatusChecker } from "@/components/payment/payment-status-checker";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { PaymentProviderType } from "@/lib/payment/types";
 import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/types";
 
@@ -29,12 +30,14 @@ interface BookingPaymentStepProps {
   existingBooking?: any;
   ride?: any;
   seats?: number;
+  paymentError?: string;
   onProviderSelect: (provider: PaymentProviderType) => void;
   onPhoneNumberChange: (phone: string) => void;
   onPhoneValidityChange: (isValid: boolean) => void;
   onPayment: () => void;
   onBack: () => void;
-  onPaymentComplete: (status: PaymentTransactionStatus) => void;
+  onPaymentComplete: (status: PaymentTransactionStatus, message?: string) => void;
+  onRetry?: () => void;
 }
 
 export function BookingPaymentStep({
@@ -49,12 +52,14 @@ export function BookingPaymentStep({
   existingBooking,
   ride,
   seats,
+  paymentError,
   onProviderSelect,
   onPhoneNumberChange,
   onPhoneValidityChange,
   onPayment,
   onBack,
   onPaymentComplete,
+  onRetry,
 }: BookingPaymentStepProps) {
   const isPartialPayment = existingBooking && 
     existingBooking.payment_status === 'completed' &&
@@ -102,7 +107,24 @@ export function BookingPaymentStep({
           </div>
         )}
 
-        {paymentTransactionId ? (
+        {paymentError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erreur de paiement</AlertTitle>
+            <AlertDescription>
+              <p className="mb-3">{paymentError}</p>
+              {onRetry && (
+                <Button
+                  onClick={onRetry}
+                  variant="outline"
+                  size="sm"
+                >
+                  Réessayer
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        ) : paymentTransactionId ? (
           <PaymentStatusChecker
             transactionId={paymentTransactionId}
             provider={selectedProvider!}
