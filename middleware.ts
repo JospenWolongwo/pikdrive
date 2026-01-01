@@ -46,6 +46,9 @@ export async function middleware(req: NextRequest) {
             httpOnly: true,
             sameSite: 'lax' as const,
             secure: isProd,
+            // Add default maxAge of 1 year if not provided
+            // This ensures cookies persist across browser sessions and token refreshes
+            maxAge: options?.maxAge ?? 60 * 60 * 24 * 365, // 1 year in seconds
             ...options,
           };
           res.cookies.set(merged);
