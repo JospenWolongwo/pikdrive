@@ -184,11 +184,16 @@ export async function POST(request: NextRequest) {
           });
           
           console.log('🔔 [CHECK-STATUS] Triggering orchestration service for status change');
+          
+          // Format failure reason as error message for failed payments
+          const errorMessage = newStatus === 'failed' && failureReason
+            ? (typeof failureReason === 'object' ? JSON.stringify(failureReason) : String(failureReason)) + (customerMessage ? ` (${customerMessage})` : '')
+            : undefined;
+          
           await orchestrationService.handlePaymentStatusChange(payment, newStatus, {
             transaction_id: transactionId,
             provider_response: checkResult.response.apiResponse,
-            failure_reason: failureReason ? (typeof failureReason === 'object' ? JSON.stringify(failureReason) : String(failureReason)) : undefined,
-            customer_message: customerMessage,
+            error_message: errorMessage,
           });
           
           console.log('🔔 [CHECK-STATUS] Orchestration completed, notifications should be sent');
