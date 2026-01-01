@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, X } from "lucide-react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { cn } from "../../lib/utils"
 import { Button } from "./button"
@@ -61,6 +61,20 @@ export function SearchableSelect({
           />
           <CommandEmpty>{emptyMessage}</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
+            {value && (
+              <CommandItem
+                value="__clear__"
+                onSelect={() => {
+                  onValueChange?.(""); // Pass empty string, which should be treated as null
+                  setOpen(false)
+                  setSearch("")
+                }}
+                disabled={disabled}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear selection
+              </CommandItem>
+            )}
             {filteredOptions.map((option) => (
               <CommandItem
                 key={option}

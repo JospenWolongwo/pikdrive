@@ -77,9 +77,9 @@ export function useRideFilters(
     showFilters,
     setTempFilters: {
       setFromCity: (city: string | null) =>
-        setTempFilters((prev) => ({ ...prev, fromCity: city })),
+        setTempFilters((prev) => ({ ...prev, fromCity: city === "" ? null : city })),
       setToCity: (city: string | null) =>
-        setTempFilters((prev) => ({ ...prev, toCity: city })),
+        setTempFilters((prev) => ({ ...prev, toCity: city === "" ? null : city })),
       setMinPrice: (price: number) =>
         setTempFilters((prev) => ({ ...prev, minPrice: price })),
       setMaxPrice: (price: number) =>

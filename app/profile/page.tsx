@@ -876,7 +876,7 @@ export default function ProfilePage() {
                   <h2 className="text-2xl font-bold">
                     {profileData.full_name || "Nom non défini"}
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-sm text-muted-foreground break-all">
                     {profileData.email || user.phone}
                   </p>
                 </div>
