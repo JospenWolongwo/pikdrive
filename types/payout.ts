@@ -3,7 +3,7 @@ import type { Ride } from './ride';
 
 export type PayoutStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
-export type PayoutProvider = 'mtn' | 'orange';
+export type PayoutProvider = 'mtn' | 'orange' | 'pawapay';
 
 export interface Payout {
   readonly id: string;

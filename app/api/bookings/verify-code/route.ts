@@ -270,7 +270,7 @@ export async function POST(request: Request) {
                 transaction_fee: feeCalculation.transactionFee,
                 commission: feeCalculation.commission,
                 currency: payment.currency || 'XAF',
-                provider: payment.provider || 'mtn',
+                provider: usePawaPay ? 'pawapay' : (payment.provider || 'mtn'),
                 phone_number: driverProfile.phone,
                 transaction_id: payoutResult.response.verificationToken,
                 status: 'processing',
