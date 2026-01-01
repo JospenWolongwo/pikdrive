@@ -131,12 +131,25 @@ export class PawaPayVerificationService {
         return null;
       }
 
+      // pawaPay API may return status nested in data.status (like deposits)
+      // Check both locations: data.status first, then root status
+      const payoutStatus = (statusResult as any)?.data?.status || statusResult.status || PawaPayStatus.UNKNOWN;
+      
+      // Log full response for debugging
+      console.log("📦 [PAWAPAY-VERIFY] Full payout response:", {
+        payoutId,
+        rootStatus: statusResult.status,
+        nestedStatus: (statusResult as any)?.data?.status,
+        finalStatus: payoutStatus,
+        fullResponse: JSON.stringify(statusResult).substring(0, 500), // First 500 chars for debugging
+      });
+
       return {
-        status: statusResult.status || PawaPayStatus.UNKNOWN,
-        amount: statusResult.amount?.value,
-        currency: statusResult.amount?.currency,
-        transactionId: statusResult.transactionId || payoutId,
-        reason: statusResult.failureReason || statusResult.reason,
+        status: payoutStatus,
+        amount: statusResult.amount?.value || (statusResult as any)?.data?.amount?.value,
+        currency: statusResult.amount?.currency || (statusResult as any)?.data?.amount?.currency,
+        transactionId: statusResult.transactionId || (statusResult as any)?.data?.transactionId || payoutId,
+        reason: statusResult.failureReason || statusResult.reason || (statusResult as any)?.data?.failureReason,
       };
     } catch (error) {
       console.error("❌ [PAWAPAY-VERIFY] Error checking payout:", error);
