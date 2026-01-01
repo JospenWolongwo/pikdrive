@@ -54,6 +54,22 @@ export class PayoutReconciliationService {
    */
   async reconcilePayout(payout: PayoutRecord): Promise<ReconciliationResult> {
     try {
+      // If using pawaPay exclusively, skip MTN/Orange payouts
+      const usePawaPay = process.env.USE_PAWAPAY === 'true';
+      if (usePawaPay && payout.provider !== 'pawapay') {
+        console.log('⏭️ [RECONCILE] Skipping non-pawaPay payout (USE_PAWAPAY enabled):', {
+          payoutId: payout.id,
+          provider: payout.provider,
+        });
+        return {
+          payoutId: payout.id,
+          oldStatus: payout.status,
+          newStatus: payout.status,
+          retryable: false,
+          error: null,
+        };
+      }
+
       // Check MTN payouts
       if (payout.provider === 'mtn' && payout.transaction_id) {
         return await this.reconcileMTNPayout(payout);

@@ -60,6 +60,7 @@ export function mapPawaPayStatus(
     case PawaPayStatus.SUBMITTED:
     case PawaPayStatus.PROCESSING:
     case PawaPayStatus.ENQUEUED:
+    case PawaPayStatus.FOUND:
       return 'processing';
     case PawaPayStatus.PENDING:
       return 'pending';

@@ -85,6 +85,7 @@ export const PawaPayStatus = {
   PROCESSING: 'PROCESSING',
   ENQUEUED: 'ENQUEUED',
   PENDING: 'PENDING',
+  FOUND: 'FOUND', 
   UNKNOWN: 'UNKNOWN',
 } as const;
 
