@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,13 @@ export function BookingPassengerInfoStep({
 }: BookingPassengerInfoStepProps) {
   const { supabase, user } = useSupabase();
   const [fullName, setFullName] = useState(initialName);
+
+  // Update fullName when initialName prop changes (only if field is empty to respect user input)
+  useEffect(() => {
+    if (initialName && !fullName) {
+      setFullName(initialName);
+    }
+  }, [initialName, fullName]);
   const [idRectoFile, setIdRectoFile] = useState<File | null>(null);
   const [idVersoFile, setIdVersoFile] = useState<File | null>(null);
   const [idRectoPreview, setIdRectoPreview] = useState<string | null>(null);
