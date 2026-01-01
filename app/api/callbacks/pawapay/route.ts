@@ -99,6 +99,16 @@ export async function POST(request: NextRequest) {
       // Map pawaPay status to internal status
       const mappedStatus = mapPawaPayStatus(status);
 
+      // Skip orchestration if payment is already in the target status
+      // This prevents "Invalid payment state transition: completed → completed" errors
+      if (payment.status === mappedStatus) {
+        console.log('[CALLBACK] Payment already in target status, skipping orchestration:', {
+          payment_id: payment.id,
+          status: payment.status,
+        });
+        return NextResponse.json({ message: 'Callback received' }, { status: HTTP_CODE.OK });
+      }
+
       // Update payment status via orchestration service
       await orchestrationService.handlePaymentStatusChange(payment, mappedStatus, {
         transaction_id: transactionId || transactionReferenceId,
