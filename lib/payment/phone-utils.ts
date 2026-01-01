@@ -69,20 +69,22 @@ export function isOrangePhoneNumber(phoneNumber: string): boolean {
   if (!formattedPhone) return false;
 
   // Orange pattern: 653 (sandbox), 655-659 (65[5-9]), 679, 690-699 (69[0-9])
-  const regexOrange = /^6(53|5[5-9]|679|69[0-9])[0-9]{6}$/;
+  // Fixed: 679 should match as 67[7-9], and 69[0-9] pattern corrected
+  const regexOrange = /^6(53|5[5-9]|79|9[0-9])[0-9]{6}$/;
   return regexOrange.test(formattedPhone);
 }
 
 /**
  * Check if phone number belongs to MTN network
- * MTN numbers: 650-654, 677-683
+ * MTN numbers: 650-654, 670, 677-683
  */
 export function isMTNPhoneNumber(phoneNumber: string): boolean {
   const formattedPhone = removeCallingCode(phoneNumber);
   if (!formattedPhone) return false;
 
-  // MTN pattern: 650-654 (65[0-4]), 677-683 (67[7-9] and 68[0-3])
-  const regexMTN = /^6(5[0-4]|67[7-9]|68[0-3])[0-9]{6}$/;
+  // MTN pattern: 650-654 (65[0-4]), 670, 677-683 (67[7-9] and 68[0-3])
+  // Fixed: Added 670 to the pattern
+  const regexMTN = /^6(5[0-4]|70|7[7-9]|8[0-3])[0-9]{6}$/;
   return regexMTN.test(formattedPhone);
 }
 
