@@ -16,6 +16,10 @@ interface RideFiltersProps {
     setMaxPrice: (price: number) => void;
     setMinSeats: (seats: number) => void;
   };
+  onClearCityFilter: {
+    clearFromCity: () => void;
+    clearToCity: () => void;
+  };
   onSearch: () => void;
   onClear: () => void;
   onToggleFilters: () => void;
@@ -25,6 +29,7 @@ export function RideFiltersComponent({
   tempFilters,
   showFilters,
   onFilterChange,
+  onClearCityFilter,
   onSearch,
   onClear,
   onToggleFilters,
@@ -42,6 +47,7 @@ export function RideFiltersComponent({
             options={allCameroonCities}
             value={tempFilters.fromCity || ""}
             onValueChange={onFilterChange.setFromCity}
+            onClearWithApply={onClearCityFilter.clearFromCity}
             placeholder="Sélectionnez la ville de départ"
             searchPlaceholder="Rechercher une ville de départ..."
           />
@@ -56,6 +62,7 @@ export function RideFiltersComponent({
             options={allCameroonCities}
             value={tempFilters.toCity || ""}
             onValueChange={onFilterChange.setToCity}
+            onClearWithApply={onClearCityFilter.clearToCity}
             placeholder="Sélectionnez la ville de destination"
             searchPlaceholder="Rechercher une ville de destination..."
           />

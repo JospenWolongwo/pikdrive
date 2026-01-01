@@ -19,6 +19,10 @@ interface UseRideFiltersReturn {
     setMaxPrice: (price: number) => void;
     setMinSeats: (seats: number) => void;
   };
+  clearAndApplyCityFilter: {
+    clearFromCity: () => void;
+    clearToCity: () => void;
+  };
   handleSearch: () => void;
   handleClear: () => void;
   toggleFilters: () => void;
@@ -71,6 +75,26 @@ export function useRideFilters(
     [filters, onSearch]
   );
 
+  const clearFromCity = useCallback(() => {
+    const newFilters = { ...tempFilters, fromCity: null };
+    setFilters(newFilters);
+    setTempFilters(newFilters);
+    if (onPageChange) {
+      onPageChange();
+    }
+    onSearch(newFilters);
+  }, [tempFilters, onSearch, onPageChange]);
+
+  const clearToCity = useCallback(() => {
+    const newFilters = { ...tempFilters, toCity: null };
+    setFilters(newFilters);
+    setTempFilters(newFilters);
+    if (onPageChange) {
+      onPageChange();
+    }
+    onSearch(newFilters);
+  }, [tempFilters, onSearch, onPageChange]);
+
   return {
     filters,
     tempFilters,
@@ -86,6 +110,10 @@ export function useRideFilters(
         setTempFilters((prev) => ({ ...prev, maxPrice: price })),
       setMinSeats: (seats: number) =>
         setTempFilters((prev) => ({ ...prev, minSeats: seats })),
+    },
+    clearAndApplyCityFilter: {
+      clearFromCity,
+      clearToCity,
     },
     handleSearch,
     handleClear,

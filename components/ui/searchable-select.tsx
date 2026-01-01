@@ -10,6 +10,7 @@ interface SearchableSelectProps {
   options: string[]
   value?: string
   onValueChange?: (value: string) => void
+  onClearWithApply?: () => void
   placeholder?: string
   searchPlaceholder?: string
   emptyMessage?: string
@@ -20,6 +21,7 @@ export function SearchableSelect({
   options,
   value,
   onValueChange,
+  onClearWithApply,
   placeholder = "Select an option",
   searchPlaceholder = "Search...",
   emptyMessage = "No results found.",
@@ -53,7 +55,11 @@ export function SearchableSelect({
   }, [options, search])
 
   const handleClear = () => {
-    onValueChange?.("")
+    if (onClearWithApply) {
+      onClearWithApply()
+    } else {
+      onValueChange?.("")
+    }
     setOpen(false)
     setSearch("")
   }

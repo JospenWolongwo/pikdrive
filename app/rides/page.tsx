@@ -43,6 +43,7 @@ export default function RidesPage() {
     tempFilters,
     showFilters,
     setTempFilters,
+    clearAndApplyCityFilter,
     handleSearch,
     handleClear,
     toggleFilters,
@@ -121,6 +122,7 @@ export default function RidesPage() {
           tempFilters={tempFilters}
           showFilters={showFilters}
           onFilterChange={setTempFilters}
+          onClearCityFilter={clearAndApplyCityFilter}
           onSearch={handleSearch}
           onClear={handleClear}
           onToggleFilters={toggleFilters}

@@ -285,7 +285,7 @@ function AuthContent() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                   onClick={() => setSavedPhone(null)}
                 >
                   Utiliser un autre numéro
