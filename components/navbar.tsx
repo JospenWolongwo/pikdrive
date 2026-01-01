@@ -53,7 +53,12 @@ export function Navbar() {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
-  const { unreadCounts, fetchUnreadCounts } = useChatStore();
+  const { 
+    unreadCounts, 
+    fetchUnreadCounts, 
+    subscribeToAllConversations, 
+    unsubscribeFromAllConversations 
+  } = useChatStore();
 
   useEffect(() => {
     setMounted(true);
@@ -216,6 +221,18 @@ export function Navbar() {
       fetchUnreadCounts(user.id);
     }
   }, [user, fetchUnreadCounts]);
+
+  // Subscribe to real-time message updates for navbar unread counter
+  useEffect(() => {
+    if (!user) return;
+    
+    // Subscribe to all conversations for real-time unread count updates
+    subscribeToAllConversations(user.id);
+    
+    return () => {
+      unsubscribeFromAllConversations();
+    };
+  }, [user, subscribeToAllConversations, unsubscribeFromAllConversations]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
