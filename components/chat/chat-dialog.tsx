@@ -106,7 +106,11 @@ export function ChatDialog({
         fetchMessages(actualConversationId);
         fetchedConversationsRef.current.add(actualConversationId);
       }
-      subscribeToRide(rideId);
+      
+      // Subscribe to conversation messages (only if conversation exists)
+      if (!isNewConversation && actualConversationId) {
+        subscribeToRide(actualConversationId);
+      }
 
       // Mark messages as read when dialog opens (only if conversation exists)
       if (!isNewConversation) {
@@ -116,7 +120,9 @@ export function ChatDialog({
       }
 
       return () => {
-        unsubscribeFromRide(rideId);
+        if (!isNewConversation && actualConversationId) {
+          unsubscribeFromRide(actualConversationId);
+        }
       };
     }
   }, [isOpen, user, actualConversationId, isNewConversation, messages, fetchMessages, subscribeToRide, unsubscribeFromRide, markAsRead, rideId]);
@@ -151,9 +157,11 @@ export function ChatDialog({
       const newConv = conversations.find(c => c.rideId === rideId);
       if (newConv && newConv.id !== actualConversationId) {
         setActualConversationId(newConv.id);
+        // Subscribe to the new conversation immediately
+        subscribeToRide(newConv.id);
       }
     }
-  }, [conversations, rideId, isNewConversation, actualConversationId]);
+  }, [conversations, rideId, isNewConversation, actualConversationId, subscribeToRide]);
 
 
   const handleSendMessage = async () => {

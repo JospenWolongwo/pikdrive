@@ -77,12 +77,16 @@ export default function DriverDashboard() {
   });
 
 
-  // Subscribe to messages for each ride
+  // Subscribe to messages for each ride's conversation
   useEffect(() => {
     ridesData.rides.forEach((ride) => {
-      subscribeToRide(ride.id);
+      // Find the conversation for this ride
+      const conversation = conversations.find(conv => conv.rideId === ride.id);
+      if (conversation) {
+        subscribeToRide(conversation.id);
+      }
     });
-  }, [ridesData.rides, subscribeToRide]);
+  }, [ridesData.rides, conversations, subscribeToRide]);
 
   // Load rides on mount and when user changes
   useEffect(() => {

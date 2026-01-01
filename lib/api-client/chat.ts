@@ -64,19 +64,20 @@ export class ChatApiClient {
   }
 
   /**
-   * Subscribe to new messages for a ride (real-time)
+   * Subscribe to new messages for a conversation (real-time)
    * Note: This uses Supabase directly for real-time subscriptions
+   * Messages table uses conversation_id, not ride_id
    */
-  subscribeToMessages(supabase: any, rideId: string, callback: (message: Message) => void) {
+  subscribeToMessages(supabase: any, conversationId: string, callback: (message: Message) => void) {
     const channel = supabase
-      .channel(`messages:${rideId}`)
+      .channel(`messages:${conversationId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `ride_id=eq.${rideId}`,
+          filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload: any) => {
           const newMessage = payload.new as any;

@@ -150,12 +150,16 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     loadRides(undefined, currentPage);
   }, [currentPage, loadRides]);
 
-  // Subscribe to each ride for chat updates
+  // Subscribe to each ride's conversation for chat updates
   useEffect(() => {
     allRides.forEach((ride) => {
-      subscribeToRide(ride.id);
+      // Find the conversation for this ride
+      const conversation = conversations.find(conv => conv.rideId === ride.id);
+      if (conversation) {
+        subscribeToRide(conversation.id);
+      }
     });
-  }, [allRides, subscribeToRide]);
+  }, [allRides, conversations, subscribeToRide]);
 
   // Preload user bookings for instant modal performance
   useEffect(() => {

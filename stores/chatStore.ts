@@ -412,18 +412,18 @@ export const useChatStore = create<ChatState>()(
       },
 
       // Real-time subscription actions
-      subscribeToRide: (rideId: string) => {
+      subscribeToRide: (conversationId: string) => {
         const { channels } = get();
         
-        if (channels.has(rideId)) {
+        if (channels.has(conversationId)) {
           return; // Already subscribed
         }
 
-        const channel = chatApiClient.subscribeToMessages(supabase, rideId, (message) => {
+        const channel = chatApiClient.subscribeToMessages(supabase, conversationId, (message) => {
           // Add new message to local state and update conversation
           set((state) => {
-            const conversationId = message.conversation_id;
-            const existingMessages = state.messages[conversationId] || [];
+            const messageConversationId = message.conversation_id;
+            const existingMessages = state.messages[messageConversationId] || [];
             const exists = existingMessages.some((msg) => msg.id === message.id);
             
             if (exists) return state; // Don't add duplicates
@@ -431,9 +431,8 @@ export const useChatStore = create<ChatState>()(
             const updatedMessages = [...existingMessages, message];
             
             // Update conversation's last_message and move to top
-            // Match by conversation_id for exact conversation, not rideId
             const updatedConversations = state.conversations.map(conv => {
-              if (conv.id === conversationId) {
+              if (conv.id === messageConversationId) {
                 return {
                   ...conv,
                   lastMessage: message.content,
@@ -445,8 +444,8 @@ export const useChatStore = create<ChatState>()(
             });
             
             // Move the updated conversation to the top and sort
-            const updatedConv = updatedConversations.find(conv => conv.id === conversationId);
-            const otherConvs = updatedConversations.filter(conv => conv.id !== conversationId);
+            const updatedConv = updatedConversations.find(conv => conv.id === messageConversationId);
+            const otherConvs = updatedConversations.filter(conv => conv.id !== messageConversationId);
             const reorderedConversations = updatedConv ? [updatedConv, ...otherConvs] : updatedConversations;
             
             // Apply full sort by lastMessageTime
@@ -455,7 +454,7 @@ export const useChatStore = create<ChatState>()(
             return {
               messages: {
                 ...state.messages,
-                [conversationId]: updatedMessages,
+                [messageConversationId]: updatedMessages,
               },
               conversations: sortedConversations,
             };
@@ -463,27 +462,27 @@ export const useChatStore = create<ChatState>()(
 
           // Update unread count if message is not from current user
           // Note: You'll need to get current user ID from auth store
-          // get().addUnreadCount(rideId);
+          // get().addUnreadCount(conversationId);
         });
 
         set((state) => ({
-          channels: new Map([...state.channels, [rideId, channel]]),
-          subscribedRides: new Set([...state.subscribedRides, rideId]),
+          channels: new Map([...state.channels, [conversationId, channel]]),
+          subscribedRides: new Set([...state.subscribedRides, conversationId]),
         }));
       },
 
-      unsubscribeFromRide: (rideId: string) => {
+      unsubscribeFromRide: (conversationId: string) => {
         const { channels } = get();
-        const channel = channels.get(rideId);
+        const channel = channels.get(conversationId);
         
         if (channel) {
           chatApiClient.unsubscribe(supabase, channel);
           set((state) => {
             const newChannels = new Map(state.channels);
-            newChannels.delete(rideId);
+            newChannels.delete(conversationId);
             
             const newSubscribedRides = new Set(state.subscribedRides);
-            newSubscribedRides.delete(rideId);
+            newSubscribedRides.delete(conversationId);
 
             return {
               channels: newChannels,
