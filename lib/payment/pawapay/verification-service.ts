@@ -71,8 +71,10 @@ export class PawaPayVerificationService {
       }
 
       // Map pawaPay status to internal status
+      // pawaPay API returns status nested in data.status, fallback to root status
+      const depositStatus = (statusResult as any)?.data?.status || statusResult.status;
       const transactionStatus = this.mapPawaPayStatusToInternal(
-        statusResult.status
+        depositStatus
       );
 
       const amount = statusResult.amount?.value

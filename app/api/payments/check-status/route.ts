@@ -151,14 +151,29 @@ export async function POST(request: NextRequest) {
           apiResponse: checkResult.response.apiResponse,
         });
 
+        // Extract failure reason if payment failed
+        const failureReason = checkResult.response.apiResponse?.data?.failureReason;
+        const customerMessage = checkResult.response.apiResponse?.data?.customerMessage;
+        
+        if (failureReason) {
+          console.log('❌ [CHECK-STATUS] Payment failed - Reason:', {
+            failureReason: typeof failureReason === 'object' ? JSON.stringify(failureReason) : failureReason,
+            customerMessage,
+            depositId: checkResult.response.apiResponse?.data?.depositId,
+          });
+        }
+
         // Map pawaPay status to our payment status
-        // pawaPay API returns status directly in the response
-        const pawapayStatus = checkResult.response.apiResponse?.status || statusString;
+        // pawaPay API returns status nested in data.status, fallback to root status
+        const pawapayStatus = checkResult.response.apiResponse?.data?.status 
+          || checkResult.response.apiResponse?.status 
+          || statusString;
         newStatus = mapPawaPayStatus(pawapayStatus);
         
         console.log('🔄 [CHECK-STATUS] Status mapping:', { 
           pawapayStatus: pawapayStatus, 
           ourStatus: newStatus,
+          failureReason: failureReason ? (typeof failureReason === 'object' ? JSON.stringify(failureReason) : failureReason) : undefined,
         });
 
         // Update payment if status changed
@@ -172,6 +187,8 @@ export async function POST(request: NextRequest) {
           await orchestrationService.handlePaymentStatusChange(payment, newStatus, {
             transaction_id: transactionId,
             provider_response: checkResult.response.apiResponse,
+            failure_reason: failureReason ? (typeof failureReason === 'object' ? JSON.stringify(failureReason) : String(failureReason)) : undefined,
+            customer_message: customerMessage,
           });
           
           console.log('🔔 [CHECK-STATUS] Orchestration completed, notifications should be sent');
