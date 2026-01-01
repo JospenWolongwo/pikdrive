@@ -76,24 +76,28 @@ export function useRideFilters(
   );
 
   const clearFromCity = useCallback(() => {
-    const newFilters = { ...tempFilters, fromCity: null };
-    setFilters(newFilters);
-    setTempFilters(newFilters);
-    if (onPageChange) {
-      onPageChange();
-    }
-    onSearch(newFilters);
-  }, [tempFilters, onSearch, onPageChange]);
+    setTempFilters((prev) => {
+      const newFilters = { ...prev, fromCity: null };
+      setFilters(newFilters);
+      if (onPageChange) {
+        onPageChange();
+      }
+      onSearch(newFilters);
+      return newFilters;
+    });
+  }, [onSearch, onPageChange]);
 
   const clearToCity = useCallback(() => {
-    const newFilters = { ...tempFilters, toCity: null };
-    setFilters(newFilters);
-    setTempFilters(newFilters);
-    if (onPageChange) {
-      onPageChange();
-    }
-    onSearch(newFilters);
-  }, [tempFilters, onSearch, onPageChange]);
+    setTempFilters((prev) => {
+      const newFilters = { ...prev, toCity: null };
+      setFilters(newFilters);
+      if (onPageChange) {
+        onPageChange();
+      }
+      onSearch(newFilters);
+      return newFilters;
+    });
+  }, [onSearch, onPageChange]);
 
   return {
     filters,
