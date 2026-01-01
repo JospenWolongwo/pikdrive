@@ -116,16 +116,16 @@ export async function POST() {
 
     // Determine if we should clear cookies:
     // 1. Environment changed (URL mismatch)
-    // 2. We have auth cookies but session is invalid (wrong project)
-    // 3. Token issuer doesn't match current project (CRITICAL FIX)
+    // 2. Token issuer doesn't match current project (CRITICAL FIX)
+    // REMOVED: hasInvalidSession - too aggressive, clears on transient failures during page refresh
     const environmentChanged = storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl;
-    const hasInvalidSession = hasAuthCookies && !sessionValid;
     const tokenFromWrongProject = tokenIssuerMismatch;
 
     let actuallyCleared = false;
 
-    // If any condition is true, clear all auth cookies
-    if (environmentChanged || hasInvalidSession || tokenFromWrongProject) {
+    // Only clear if environment changed OR token is from wrong project
+    // Don't clear on transient session check failures (e.g., network issues on page refresh)
+    if (environmentChanged || tokenFromWrongProject) {
       // Sign out from Supabase to properly clear auth state
       await supabase.auth.signOut();
       
