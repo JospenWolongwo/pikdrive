@@ -14,12 +14,29 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
-const setCookie = (name: string, value: string): void => {
+const setCookie = (name: string, value: string, options?: any): void => {
   if (typeof document === "undefined") return;
-  const expires = new Date();
-  expires.setFullYear(expires.getFullYear() + 1); // 1 year expiration
+  
+  // Calculate expiration date
+  let expires: Date;
+  if (options?.maxAge) {
+    // Convert maxAge (seconds) to expires (date)
+    expires = new Date();
+    expires.setTime(expires.getTime() + options.maxAge * 1000);
+  } else if (options?.expires) {
+    // Use provided expires date if available
+    expires = options.expires instanceof Date ? options.expires : new Date(options.expires);
+  } else {
+    // Default to 1 year expiration (matching server-side: 60 * 60 * 24 * 365 seconds)
+    expires = new Date();
+    expires.setTime(expires.getTime() + 60 * 60 * 24 * 365 * 1000);
+  }
+  
   const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+  const sameSite = options?.sameSite || 'Lax';
+  const path = options?.path || '/';
+  
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=${path}; SameSite=${sameSite}${isSecure ? "; Secure" : ""}`;
 };
 
 const deleteCookie = (name: string): void => {
@@ -37,7 +54,7 @@ export const supabaseClient = createBrowserClient(
         return getCookie(name);
       },
       set(name: string, value: string, options: any) {
-        setCookie(name, value);
+        setCookie(name, value, options);
       },
       remove(name: string, options: any) {
         deleteCookie(name);

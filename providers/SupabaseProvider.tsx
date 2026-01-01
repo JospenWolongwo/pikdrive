@@ -34,10 +34,14 @@ export const SupabaseProvider = ({
     // Refresh session every 5 minutes to keep tokens warm
     backgroundRefreshRef.current = setInterval(async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        // Silently handle refresh errors - background operation
+        const { data: { session }, error } = await supabase.auth.refreshSession();
+        if (error) {
+          console.warn('🔄 Background token refresh failed:', error.message);
+        } else if (session) {
+          // Session refreshed successfully - cookies are automatically updated by Supabase
+        }
       } catch (error) {
-        // Silently handle refresh errors - background operation
+        console.warn('🔄 Background token refresh error:', error);
       }
     }, 5 * 60 * 1000); // 5 minutes
   }, [supabase]);
@@ -163,6 +167,10 @@ export const SupabaseProvider = ({
       } else if (event === 'SIGNED_IN' && session?.user) {
         // Start background refresh for signed-in users
         startBackgroundRefresh();
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // Token was refreshed - ensure session state is updated
+        // Cookies are automatically updated by Supabase SSR
+        console.log('🔄 Token refreshed successfully');
       }
       
       setSession(session);
