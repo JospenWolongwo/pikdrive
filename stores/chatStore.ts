@@ -535,10 +535,17 @@ export const useChatStore = create<ChatState>()(
               schema: 'public',
               table: 'messages',
             },
-            (payload) => {
+            async (payload) => {
               const message = payload.new;
               
-              // Update conversation in store immediately (no async database call)
+              // Fetch sender profile for the message
+              const { data: senderProfile } = await supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .eq('id', message.sender_id)
+                .single();
+              
+              // Update conversation and add message to messages array
               set((state) => {
                 // Check if conversation exists in local state
                 const conversationExists = state.conversations.some(
@@ -555,6 +562,20 @@ export const useChatStore = create<ChatState>()(
                 );
                 
                 if (!conversation) return state;
+                
+                // Check if message already exists (prevent duplicates)
+                const currentMessages = state.messages[message.conversation_id] || [];
+                const messageExists = currentMessages.some(m => m.id === message.id);
+                
+                // Build message with sender info
+                const newMessage = {
+                  ...message,
+                  sender: senderProfile ? {
+                    id: senderProfile.id,
+                    full_name: senderProfile.full_name,
+                    avatar_url: senderProfile.avatar_url
+                  } : undefined
+                };
                 
                 // Update conversation with new message data
                 const updatedConversations = state.conversations.map(conv => {
@@ -584,6 +605,11 @@ export const useChatStore = create<ChatState>()(
                 return {
                   conversations: sortConversationsByLatest(updatedConversations),
                   unreadCounts: updatedUnreadCounts,
+                  // Add message to messages array if it doesn't exist
+                  messages: messageExists ? state.messages : {
+                    ...state.messages,
+                    [message.conversation_id]: [...currentMessages, newMessage]
+                  }
                 };
               });
             }

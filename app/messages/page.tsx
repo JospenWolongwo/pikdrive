@@ -8,6 +8,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useUserRides } from "@/hooks/rides";
 import { useToast } from "@/hooks/ui";
 import type { UIConversation } from "@/types";
+import { getAvatarUrl } from "@/lib/utils/avatar-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +34,7 @@ import { fr } from "date-fns/locale";
 
 export default function MessagesPage() {
   const router = useRouter();
-  const { user } = useSupabase();
+  const { user, supabase } = useSupabase();
   const {
     conversations,
     conversationsLoading,
@@ -308,7 +309,7 @@ export default function MessagesPage() {
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-12 w-12">
                           <AvatarImage
-                            src={conversation.otherUserAvatar || undefined}
+                            src={getAvatarUrl(supabase, conversation.otherUserAvatar)}
                           />
                           <AvatarFallback className="bg-primary text-primary-foreground">
                             {conversation.otherUserName[0]?.toUpperCase() ||
@@ -410,7 +411,7 @@ export default function MessagesPage() {
                         <div className="flex items-center space-x-4">
                           <Avatar className="h-12 w-12">
                             <AvatarImage
-                              src={conversation.otherUserAvatar || undefined}
+                              src={getAvatarUrl(supabase, conversation.otherUserAvatar)}
                             />
                             <AvatarFallback className="bg-primary text-primary-foreground">
                               {conversation.otherUserName[0]?.toUpperCase() ||

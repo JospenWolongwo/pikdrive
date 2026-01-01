@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getAvatarUrl } from "@/lib/utils/avatar-url";
 
 interface Message {
   id: string;
@@ -50,7 +51,7 @@ export function ChatDialog({
   otherUserName,
   otherUserAvatar,
 }: ChatDialogProps) {
-  const { user } = useSupabase();
+  const { user, supabase } = useSupabase();
   const {
     messages,
     messagesLoading,
@@ -93,8 +94,15 @@ export function ChatDialog({
 
   useEffect(() => {
     if (isOpen && user) {
-      // Only fetch messages if not already fetched for this conversation AND it's not a new conversation
-      if (!fetchedConversationsRef.current.has(actualConversationId) && !isNewConversation) {
+      // Fetch messages if:
+      // 1. Not already fetched for this conversation
+      // 2. Not a new conversation
+      // 3. Messages array is empty (in case real-time didn't populate it)
+      const currentMessages = messages[actualConversationId] || [];
+      const hasMessages = currentMessages.length > 0;
+      const shouldFetch = !fetchedConversationsRef.current.has(actualConversationId) && !isNewConversation;
+      
+      if (shouldFetch || (!hasMessages && !isNewConversation)) {
         fetchMessages(actualConversationId);
         fetchedConversationsRef.current.add(actualConversationId);
       }
@@ -111,7 +119,7 @@ export function ChatDialog({
         unsubscribeFromRide(rideId);
       };
     }
-  }, [isOpen, user, actualConversationId, isNewConversation, fetchMessages, subscribeToRide, unsubscribeFromRide, markAsRead]);
+  }, [isOpen, user, actualConversationId, isNewConversation, messages, fetchMessages, subscribeToRide, unsubscribeFromRide, markAsRead, rideId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -203,7 +211,7 @@ export function ChatDialog({
         <DialogHeader className="p-4 border-b">
           <div className="flex items-center gap-3">
             <Avatar>
-              <AvatarImage src={otherUserAvatar} />
+              <AvatarImage src={getAvatarUrl(supabase, otherUserAvatar)} />
               <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-medium">
                 {(otherUserName || "Utilisateur").charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -242,7 +250,7 @@ export function ChatDialog({
                   }`}
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={message.sender?.avatar_url} />
+                    <AvatarImage src={message.sender?.avatar_url ? getAvatarUrl(supabase, message.sender.avatar_url) : undefined} />
                     <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-medium text-xs">
                       {message.sender?.full_name?.charAt(0).toUpperCase() ||
                         "U"}
