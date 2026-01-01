@@ -551,8 +551,36 @@ export const useChatStore = create<ChatState>()(
                   conv => conv.id === message.conversation_id
                 );
                 
+                // Always update unreadCounts if message is not from current user
+                const isFromCurrentUser = message.sender_id === userId;
+                let updatedUnreadCounts = [...state.unreadCounts];
+                
+                if (!isFromCurrentUser) {
+                  // Find or create unread count entry for this conversation
+                  const existingIndex = updatedUnreadCounts.findIndex(
+                    uc => uc.conversationId === message.conversation_id
+                  );
+                  
+                  if (existingIndex >= 0) {
+                    // Increment existing count
+                    updatedUnreadCounts[existingIndex] = {
+                      ...updatedUnreadCounts[existingIndex],
+                      count: updatedUnreadCounts[existingIndex].count + 1
+                    };
+                  } else {
+                    // Add new unread count
+                    updatedUnreadCounts.push({
+                      conversationId: message.conversation_id,
+                      count: 1
+                    });
+                  }
+                }
+                
+                // If conversation doesn't exist in local state, just update unreadCounts
                 if (!conversationExists) {
-                  return state; // Return unchanged state
+                  return {
+                    unreadCounts: updatedUnreadCounts
+                  };
                 }
                 
                 // Find the conversation in local state
@@ -560,7 +588,11 @@ export const useChatStore = create<ChatState>()(
                   conv => conv.id === message.conversation_id
                 );
                 
-                if (!conversation) return state;
+                if (!conversation) {
+                  return {
+                    unreadCounts: updatedUnreadCounts
+                  };
+                }
                 
                 // Check if message already exists (prevent duplicates)
                 const currentMessages = state.messages[message.conversation_id] || [];
@@ -579,7 +611,7 @@ export const useChatStore = create<ChatState>()(
                 // Update conversation with new message data
                 const updatedConversations = state.conversations.map(conv => {
                   if (conv.id === message.conversation_id) {
-                    const newUnreadCount = message.sender_id !== userId 
+                    const newUnreadCount = !isFromCurrentUser
                       ? (conv.unreadCount || 0) + 1 
                       : conv.unreadCount;
                     
@@ -593,17 +625,25 @@ export const useChatStore = create<ChatState>()(
                   return conv;
                 });
                 
-                // Sync unreadCounts array with conversation unreadCount
-                const updatedUnreadCounts = updatedConversations
+                // Sync unreadCounts array with conversation unreadCount (merge with our updates)
+                const finalUnreadCounts = updatedConversations
                   .filter(conv => conv.unreadCount > 0)
                   .map(conv => ({
                     conversationId: conv.id,
                     count: conv.unreadCount
                   }));
                 
+                // Merge: prefer counts from conversations, but keep any that aren't in conversations
+                const mergedUnreadCounts = [...finalUnreadCounts];
+                updatedUnreadCounts.forEach(uc => {
+                  if (!finalUnreadCounts.find(fuc => fuc.conversationId === uc.conversationId)) {
+                    mergedUnreadCounts.push(uc);
+                  }
+                });
+                
                 return {
                   conversations: sortConversationsByLatest(updatedConversations),
-                  unreadCounts: updatedUnreadCounts,
+                  unreadCounts: mergedUnreadCounts,
                   // Add message to messages array if it doesn't exist
                   messages: messageExists ? state.messages : {
                     ...state.messages,
