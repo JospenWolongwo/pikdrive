@@ -174,6 +174,7 @@ export async function POST(request: Request) {
 
           // Initialize payout orchestrator
           const targetEnvironment = (process.env.MOMO_TARGET_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production';
+          const pawaPayEnvironment = (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment;
           const orchestrator = new PaymentOrchestratorService(
             {
               subscriptionKey: process.env.DIRECT_MOMO_APIM_SUBSCRIPTION_KEY || process.env.MOMO_SUBSCRIPTION_KEY || '',
@@ -205,7 +206,7 @@ export async function POST(request: Request) {
               apiToken: process.env.PAWAPAY_API_TOKEN || "",
               baseUrl: process.env.PAWAPAY_BASE_URL || (process.env.PAWAPAY_ENVIRONMENT === EnvEnum.PRODUCTION ? PawaPayApiUrl.PRODUCTION : PawaPayApiUrl.SANDBOX),
               callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/callbacks/pawapay`,
-              environment: (process.env.PAWAPAY_ENVIRONMENT || EnvEnum.SANDBOX) as Environment,
+              environment: pawaPayEnvironment,
             }
           );
 
@@ -213,9 +214,9 @@ export async function POST(request: Request) {
           let payoutPhoneNumber = driverProfile.phone;
           const usePawaPay = process.env.USE_PAWAPAY === 'true';
           
-          if (targetEnvironment === 'sandbox') {
-            if (usePawaPay) {
-              // pawaPay sandbox test number override
+          if (usePawaPay) {
+            // For pawaPay, check PAWAPAY_ENVIRONMENT, not MOMO_TARGET_ENVIRONMENT
+            if (pawaPayEnvironment === EnvEnum.SANDBOX) {
               const sandboxPawaPayTestPhone = process.env.SANDBOX_PAWAPAY_TEST_PHONE;
               if (sandboxPawaPayTestPhone) {
                 payoutPhoneNumber = sandboxPawaPayTestPhone;
@@ -225,8 +226,10 @@ export async function POST(request: Request) {
                   note: 'Using pawaPay test number for sandbox payout testing',
                 });
               }
-            } else {
-              // Direct MTN test number override (for direct MTN/Orange payouts)
+            }
+          } else {
+            // For direct MTN/Orange, check MOMO_TARGET_ENVIRONMENT
+            if (targetEnvironment === 'sandbox') {
               const sandboxTestPhone = process.env.SANDBOX_MTN_TEST_PHONE;
               if (sandboxTestPhone) {
                 payoutPhoneNumber = sandboxTestPhone;
