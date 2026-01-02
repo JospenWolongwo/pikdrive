@@ -36,12 +36,12 @@ export const SupabaseProvider = ({
       try {
         const { data: { session }, error } = await supabase.auth.refreshSession();
         if (error) {
-          console.warn('🔄 Background token refresh failed:', error.message);
+          // Silent failure - error will NOT clear user state (onAuthStateChange handler preserves state)
         } else if (session) {
           // Session refreshed successfully - cookies are automatically updated by Supabase
         }
       } catch (error) {
-        console.warn('🔄 Background token refresh error:', error);
+        // Silent failure - error will NOT clear user state (onAuthStateChange handler preserves state)
       }
     }, 5 * 60 * 1000); // 5 minutes
   }, [supabase]);
@@ -161,22 +161,35 @@ export const SupabaseProvider = ({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
+        // User explicitly signed out - clear state
+        setSession(null);
+        setUser(null);
+        
         // Clear background refresh
         if (backgroundRefreshRef.current) {
           clearInterval(backgroundRefreshRef.current);
           backgroundRefreshRef.current = null;
         }
       } else if (event === 'SIGNED_IN' && session?.user) {
+        // User signed in - update state
+        setSession(session);
+        setUser(session.user);
         // Start background refresh for signed-in users
         startBackgroundRefresh();
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Token was refreshed - ensure session state is updated
-        // Cookies are automatically updated by Supabase SSR
-        console.log('🔄 Token refreshed successfully');
+      } else if (event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          // Token refreshed successfully - update state
+          setSession(session);
+          setUser(session.user);
+        }
+        // If session is null, preserve existing state (prevents false logouts)
+      } else if (session?.user) {
+        // Any other event with a valid session - update state
+        setSession(session);
+        setUser(session.user);
       }
-      
-      setSession(session);
-      setUser(session?.user || null);
+      // If event has null session (but not SIGNED_OUT), preserve existing state
+      // This prevents false logouts from transient errors
 
       // Set loading to false if we haven't already
       if (loading) {

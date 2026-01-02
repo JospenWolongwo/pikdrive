@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface RideFilters {
   fromCity: string | null;
@@ -44,6 +44,15 @@ export function useRideFilters(
   const [filters, setFilters] = useState<RideFilters>(DEFAULT_FILTERS);
   const [tempFilters, setTempFilters] = useState<RideFilters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Use ref to track current tempFilters for immediate access in clear functions
+  // This ensures we always work with the latest state, avoiding React batching issues
+  const tempFiltersRef = useRef<RideFilters>(DEFAULT_FILTERS);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    tempFiltersRef.current = tempFilters;
+  }, [tempFilters]);
 
   const handleSearch = useCallback(() => {
     setFilters(tempFilters);
@@ -76,27 +85,39 @@ export function useRideFilters(
   );
 
   const clearFromCity = useCallback(() => {
-    setTempFilters((prev) => {
-      const newFilters = { ...prev, fromCity: null };
-      setFilters(newFilters);
-      if (onPageChange) {
-        onPageChange();
-      }
-      onSearch(newFilters);
-      return newFilters;
-    });
+    // Use ref to get the latest state immediately (avoiding React batching issues)
+    const currentFilters = tempFiltersRef.current;
+    const newFilters = { ...currentFilters, fromCity: null };
+    
+    // Update both state values
+    setTempFilters(newFilters);
+    setFilters(newFilters);
+    
+    // Trigger page change if needed
+    if (onPageChange) {
+      onPageChange();
+    }
+    
+    // Trigger search with the new filters
+    onSearch(newFilters);
   }, [onSearch, onPageChange]);
 
   const clearToCity = useCallback(() => {
-    setTempFilters((prev) => {
-      const newFilters = { ...prev, toCity: null };
-      setFilters(newFilters);
-      if (onPageChange) {
-        onPageChange();
-      }
-      onSearch(newFilters);
-      return newFilters;
-    });
+    // Use ref to get the latest state immediately (avoiding React batching issues)
+    const currentFilters = tempFiltersRef.current;
+    const newFilters = { ...currentFilters, toCity: null };
+    
+    // Update both state values
+    setTempFilters(newFilters);
+    setFilters(newFilters);
+    
+    // Trigger page change if needed
+    if (onPageChange) {
+      onPageChange();
+    }
+    
+    // Trigger search with the new filters
+    onSearch(newFilters);
   }, [onSearch, onPageChange]);
 
   return {
