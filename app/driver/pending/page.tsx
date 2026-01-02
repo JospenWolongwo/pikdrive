@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Clock, CheckCircle, AlertCircle, RefreshCw, X, Shield } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
+import { useLocale } from '@/hooks'
 
 interface DriverStatus {
   driver_status: string
@@ -18,6 +19,7 @@ interface DriverStatus {
 
 export default function DriverPendingPage() {
   const { user, supabase } = useSupabase()
+  const { t } = useLocale()
   const router = useRouter()
   const [driverStatus, setDriverStatus] = useState<DriverStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -56,7 +58,7 @@ export default function DriverPendingPage() {
       <div className="container py-10">
         <div className="max-w-2xl mx-auto text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Chargement...</p>
+          <p className="mt-4 text-muted-foreground">{t("pages.driver.pending.loading")}</p>
         </div>
       </div>
     )
@@ -66,12 +68,12 @@ export default function DriverPendingPage() {
     return (
       <div className="container py-10">
         <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-3xl font-bold mb-4">Aucune candidature trouvée</h1>
+          <h1 className="text-3xl font-bold mb-4">{t("pages.driver.pending.noApplication.title")}</h1>
           <p className="text-muted-foreground mb-6">
-            Vous n'avez pas encore soumis de candidature pour devenir conducteur.
+            {t("pages.driver.pending.noApplication.description")}
           </p>
           <Button onClick={() => router.push('/become-driver')}>
-            Devenir conducteur
+            {t("pages.driver.pending.noApplication.button")}
           </Button>
         </div>
       </div>
@@ -116,18 +118,18 @@ export default function DriverPendingPage() {
           
           <h1 className="text-3xl font-bold mb-4">
             {isRejected 
-              ? 'Candidature Refusée' 
+              ? t('pages.driver.pending.rejectedTitle')
               : isApproved 
-              ? 'Candidature Approuvée'
-              : 'Candidature en Cours d\'Examen'
+              ? t('pages.driver.pending.approvedTitle')
+              : t('pages.driver.pending.title')
             }
           </h1>
           <p className="text-muted-foreground text-lg">
             {isRejected 
-              ? 'Votre candidature pour devenir conducteur PikDrive n\'a pas été approuvée.'
+              ? t('pages.driver.pending.rejectedDescription')
               : isApproved 
-              ? 'Félicitations ! Votre candidature a été approuvée.'
-              : 'Votre candidature pour devenir conducteur PikDrive est actuellement en cours d\'examen.'
+              ? t('pages.driver.pending.approvedDescription')
+              : t('pages.driver.pending.description')
             }
           </p>
 
@@ -141,10 +143,10 @@ export default function DriverPendingPage() {
                 : 'bg-yellow-100 text-yellow-800 border-yellow-200'
             }`}>
               {isRejected 
-                ? 'Refusé' 
+                ? t("pages.driver.pending.status.rejected")
                 : isApproved 
-                ? 'Approuvé'
-                : 'En attente'
+                ? t("pages.driver.pending.status.approved")
+                : t("pages.driver.pending.status.pending")
               }
             </Badge>
           </div>
@@ -179,14 +181,14 @@ export default function DriverPendingPage() {
                 ) : (
                   <Clock className="w-5 h-5" />
                 )}
-                Statut de votre candidature
+                {t("pages.driver.pending.statusCard.title")}
               </CardTitle>
               <CardDescription>
                 {isRejected 
-                  ? 'Votre candidature n\'a pas été approuvée pour les raisons suivantes'
+                  ? t("pages.driver.pending.statusCard.rejectedDescription")
                   : isApproved 
-                  ? 'Votre candidature a été approuvée avec succès'
-                  : 'Notre équipe examine vos documents et vérifie vos informations'
+                  ? t("pages.driver.pending.statusCard.approvedDescription")
+                  : t("pages.driver.pending.statusCard.pendingDescription")
                 }
               </CardDescription>
             </CardHeader>
@@ -195,39 +197,39 @@ export default function DriverPendingPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 bg-red-100 rounded-lg">
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="font-medium text-red-800">Candidature refusée</span>
+                    <span className="font-medium text-red-800">{t("pages.driver.pending.rejected.badge")}</span>
                   </div>
                   <div className="bg-white p-4 rounded-lg border border-red-200">
-                    <h4 className="font-semibold text-red-800 mb-2">Raisons possibles :</h4>
+                    <h4 className="font-semibold text-red-800 mb-2">{t("pages.driver.pending.rejected.possibleReasons")}</h4>
                     <ul className="text-sm text-red-700 space-y-1">
-                      <li>• Documents incomplets ou illisibles</li>
-                      <li>• Informations personnelles incorrectes</li>
-                      <li>• Documents de véhicule expirés</li>
-                      <li>• Antécédents de conduite problématiques</li>
+                      <li>• {t("pages.driver.pending.rejected.reasons.incompleteDocuments")}</li>
+                      <li>• {t("pages.driver.pending.rejected.reasons.incorrectInfo")}</li>
+                      <li>• {t("pages.driver.pending.rejected.reasons.expiredDocuments")}</li>
+                      <li>• {t("pages.driver.pending.rejected.reasons.drivingHistory")}</li>
                     </ul>
                   </div>
                   <p className="text-sm text-red-700">
-                    <strong>Note :</strong> Vous pouvez soumettre une nouvelle candidature après avoir corrigé les problèmes identifiés.
+                    <strong>{t("pages.driver.pending.rejected.note")}</strong>
                   </p>
                 </div>
               ) : isApproved ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="font-medium text-green-800">Candidature approuvée</span>
+                    <span className="font-medium text-green-800">{t("pages.driver.pending.approved.badge")}</span>
                   </div>
                   <p className="text-sm text-green-700">
-                    Félicitations ! Vous pouvez maintenant commencer à publier des trajets.
+                    {t("pages.driver.pending.approved.congratulations")}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
-                    <span className="font-medium">En cours d'examen</span>
+                    <span className="font-medium">{t("pages.driver.pending.pendingStatus.badge")}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Temps d'examen typique : 24-48 heures
+                    {t("pages.driver.pending.pendingStatus.typicalTime")}
                   </p>
                 </div>
               )}
@@ -240,7 +242,7 @@ export default function DriverPendingPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  Prochaines étapes
+                  {t("pages.driver.pending.nextSteps.title")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -252,9 +254,9 @@ export default function DriverPendingPage() {
                           1
                         </div>
                         <div>
-                          <p className="font-medium">Examen des documents</p>
+                          <p className="font-medium">{t("pages.driver.pending.nextSteps.pending.step1.title")}</p>
                           <p className="text-sm text-muted-foreground">
-                            Vérification de vos pièces d'identité et documents de véhicule
+                            {t("pages.driver.pending.nextSteps.pending.step1.description")}
                           </p>
                         </div>
                       </div>
@@ -264,9 +266,9 @@ export default function DriverPendingPage() {
                           2
                         </div>
                         <div>
-                          <p className="font-medium">Notification par email</p>
+                          <p className="font-medium">{t("pages.driver.pending.nextSteps.pending.step2.title")}</p>
                           <p className="text-sm text-muted-foreground">
-                            Vous recevrez un email avec le résultat de votre candidature
+                            {t("pages.driver.pending.nextSteps.pending.step2.description")}
                           </p>
                         </div>
                       </div>
@@ -276,9 +278,9 @@ export default function DriverPendingPage() {
                           3
                         </div>
                         <div>
-                          <p className="font-medium">Commencer à conduire</p>
+                          <p className="font-medium">{t("pages.driver.pending.nextSteps.pending.step3.title")}</p>
                           <p className="text-sm text-muted-foreground">
-                            Après approbation, vous pourrez publier des trajets
+                            {t("pages.driver.pending.nextSteps.pending.step3.description")}
                           </p>
                         </div>
                       </div>
@@ -290,9 +292,9 @@ export default function DriverPendingPage() {
                           1
                         </div>
                         <div>
-                          <p className="font-medium">Accéder au tableau de bord</p>
+                          <p className="font-medium">{t("pages.driver.pending.nextSteps.approved.step1.title")}</p>
                           <p className="text-sm text-muted-foreground">
-                            Utilisez le bouton ci-dessous pour accéder à votre espace conducteur
+                            {t("pages.driver.pending.nextSteps.approved.step1.description")}
                           </p>
                         </div>
                       </div>
@@ -302,9 +304,9 @@ export default function DriverPendingPage() {
                           2
                         </div>
                         <div>
-                          <p className="font-medium">Publier votre premier trajet</p>
+                          <p className="font-medium">{t("pages.driver.pending.nextSteps.approved.step2.title")}</p>
                           <p className="text-sm text-muted-foreground">
-                            Créez et gérez vos trajets depuis votre tableau de bord
+                            {t("pages.driver.pending.nextSteps.approved.step2.description")}
                           </p>
                         </div>
                       </div>
@@ -326,35 +328,35 @@ export default function DriverPendingPage() {
                 isRejected ? 'text-red-800' : 'text-amber-800'
               }`}>
                 <AlertCircle className="w-5 h-5" />
-                {isRejected ? 'Informations importantes' : 'Important'}
+                {isRejected ? t("pages.driver.pending.important.titleRejected") : t("pages.driver.pending.important.titlePending")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {isRejected ? (
                 <>
                   <p className="text-sm text-red-700">
-                    • Vérifiez que tous vos documents sont clairs et lisibles
+                    • {t("pages.driver.pending.important.rejected.checkDocuments")}
                   </p>
                   <p className="text-sm text-red-700">
-                    • Assurez-vous que vos informations personnelles sont correctes
+                    • {t("pages.driver.pending.important.rejected.checkInfo")}
                   </p>
                   <p className="text-sm text-red-700">
-                    • Vérifiez que vos documents de véhicule sont à jour
+                    • {t("pages.driver.pending.important.rejected.checkVehicle")}
                   </p>
                   <p className="text-sm text-red-700">
-                    • En cas de question, contactez notre support
+                    • {t("pages.driver.pending.important.rejected.contactSupport")}
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-sm text-amber-700">
-                    • Assurez-vous que tous vos documents sont clairs et lisibles
+                    • {t("pages.driver.pending.important.pending.checkDocuments")}
                   </p>
                   <p className="text-sm text-amber-700">
-                    • Vérifiez que votre adresse email est correcte pour recevoir les notifications
+                    • {t("pages.driver.pending.important.pending.checkEmail")}
                   </p>
                   <p className="text-sm text-amber-700">
-                    • En cas de problème, contactez notre support
+                    • {t("pages.driver.pending.important.pending.contactSupport")}
                   </p>
                 </>
               )}
@@ -370,14 +372,14 @@ export default function DriverPendingPage() {
                   className="flex-1"
                 >
                   <Shield className="w-4 h-4 mr-2" />
-                  Postuler à nouveau
+                  {t("pages.driver.pending.actions.applyAgain")}
                 </Button>
                 <Button
                   onClick={() => router.push('/contact')}
                   variant="outline"
                   className="flex-1"
                 >
-                  Contacter le support
+                  {t("pages.driver.pending.actions.contactSupport")}
                 </Button>
               </>
             ) : isApproved ? (
@@ -387,14 +389,14 @@ export default function DriverPendingPage() {
                   className="flex-1"
                 >
                   <Shield className="w-4 h-4 mr-2" />
-                  Accéder au tableau de bord
+                  {t("pages.driver.pending.actions.accessDashboard")}
                 </Button>
                 <Button
                   onClick={() => router.push('/')}
                   variant="outline"
                   className="flex-1"
                 >
-                  Retour à l'accueil
+                  {t("pages.driver.pending.actions.goHome")}
                 </Button>
               </>
             ) : (
@@ -404,13 +406,13 @@ export default function DriverPendingPage() {
                   variant="outline"
                   className="flex-1"
                 >
-                  Retour à l'accueil
+                  {t("pages.driver.pending.actions.goHome")}
                 </Button>
                 <Button
                   onClick={() => router.push('/contact')}
                   className="flex-1"
                 >
-                  Contacter le support
+                  {t("pages.driver.pending.actions.contactSupport")}
                 </Button>
               </>
             )}

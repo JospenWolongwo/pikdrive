@@ -5,6 +5,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Search, Filter } from "lucide-react";
 import { allCameroonCities } from "@/app/data/cities";
 import type { RideFilters } from "@/hooks/passenger/use-ride-filters";
+import { useLocale } from "@/hooks";
 
 interface RideFiltersProps {
   tempFilters: RideFilters;
@@ -34,6 +35,7 @@ export function RideFiltersComponent({
   onClear,
   onToggleFilters,
 }: RideFiltersProps) {
+  const { t } = useLocale();
   return (
     <div className="space-y-4">
       {/* Main search row */}
@@ -41,30 +43,30 @@ export function RideFiltersComponent({
         {/* Departure city */}
         <div className="flex-1 space-y-2">
           <Label htmlFor="from-city" className="text-sm font-medium">
-            De
+            {t("pages.rides.filters.from")}
           </Label>
           <SearchableSelect
             options={allCameroonCities}
             value={tempFilters.fromCity || ""}
             onValueChange={onFilterChange.setFromCity}
             onClearWithApply={onClearCityFilter.clearFromCity}
-            placeholder="Sélectionnez la ville de départ"
-            searchPlaceholder="Rechercher une ville de départ..."
+            placeholder={t("pages.rides.filters.fromPlaceholder")}
+            searchPlaceholder={t("pages.rides.filters.fromSearch")}
           />
         </div>
 
         {/* Destination city */}
         <div className="flex-1 space-y-2">
           <Label htmlFor="to-city" className="text-sm font-medium">
-            À
+            {t("pages.rides.filters.to")}
           </Label>
           <SearchableSelect
             options={allCameroonCities}
             value={tempFilters.toCity || ""}
             onValueChange={onFilterChange.setToCity}
             onClearWithApply={onClearCityFilter.clearToCity}
-            placeholder="Sélectionnez la ville de destination"
-            searchPlaceholder="Rechercher une ville de destination..."
+            placeholder={t("pages.rides.filters.toPlaceholder")}
+            searchPlaceholder={t("pages.rides.filters.toSearch")}
           />
         </div>
       </div>
@@ -76,7 +78,7 @@ export function RideFiltersComponent({
           className="flex-1 bg-primary hover:bg-primary/90"
         >
           <Search className="h-4 w-4 mr-2" />
-          Rechercher
+          {t("pages.rides.filters.search")}
         </Button>
 
         <div className="flex gap-2">
@@ -90,7 +92,7 @@ export function RideFiltersComponent({
           </Button>
 
           <Button variant="outline" onClick={onClear} className="hover:bg-secondary">
-            Effacer
+            {t("pages.rides.filters.clear")}
           </Button>
         </div>
       </div>
@@ -100,7 +102,7 @@ export function RideFiltersComponent({
         <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
           <div className="space-y-2">
             <Label className="text-sm font-medium">
-              Fourchette de Prix (FCFA)
+              {t("pages.rides.filters.priceRange")}
             </Label>
             <div className="flex items-center gap-3">
               <Input
@@ -112,9 +114,9 @@ export function RideFiltersComponent({
                 className="flex-1"
                 min={0}
                 max={tempFilters.maxPrice}
-                placeholder="Min"
+                placeholder={t("pages.rides.filters.minPrice")}
               />
-              <span className="text-muted-foreground">à</span>
+              <span className="text-muted-foreground">{t("pages.rides.filters.to")}</span>
               <Input
                 type="number"
                 value={tempFilters.maxPrice}
@@ -124,13 +126,13 @@ export function RideFiltersComponent({
                 className="flex-1"
                 min={tempFilters.minPrice}
                 max={20000}
-                placeholder="Max"
+                placeholder={t("pages.rides.filters.maxPrice")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Places Minimum</Label>
+            <Label className="text-sm font-medium">{t("pages.rides.filters.minSeats")}</Label>
             <Input
               type="number"
               value={tempFilters.minSeats}

@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
-import { useUserRides } from "@/hooks/rides";
-import { useToast } from "@/hooks/ui";
 import type { UIConversation } from "@/types";
 import { getAvatarUrl } from "@/lib/utils/avatar-url";
 import { Button } from "@/components/ui/button";
@@ -23,18 +21,19 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react";
-import { useServiceWorker } from "@/hooks/common";
 import { ChatDialog } from "@/components/chat/chat-dialog";
 import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useUserRides, useToast, useServiceWorker, useLocale } from "@/hooks";
 
 // Use UIConversation type from types/chat.ts
 
 export default function MessagesPage() {
   const router = useRouter();
   const { user, supabase } = useSupabase();
+  const { t } = useLocale();
   const {
     conversations,
     conversationsLoading,
@@ -85,9 +84,8 @@ export default function MessagesPage() {
       conversationsLoadedRef.current = true;
     } catch (error) {
       toast({
-        title: "Erreur de chargement",
-        description:
-          "Impossible de charger vos conversations. Veuillez réessayer.",
+        title: t("pages.messages.errorLoading"),
+        description: t("pages.messages.errorDescription"),
         variant: "destructive",
       });
     }
@@ -248,7 +246,7 @@ export default function MessagesPage() {
     <div className="container mx-auto py-6 max-w-5xl">
       <div className="flex flex-col space-y-8">
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Messages</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t("pages.messages.title")}</h1>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
@@ -258,7 +256,7 @@ export default function MessagesPage() {
               className="flex items-center gap-1 sm:gap-2"
             >
               <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Actualiser</span>
+              <span className="hidden sm:inline">{t("pages.messages.refresh")}</span>
             </Button>
           </div>
         </div>
@@ -267,7 +265,7 @@ export default function MessagesPage() {
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Rechercher des messages..."
+              placeholder={t("pages.messages.searchPlaceholder")}
               value={searchQuery}
               onChange={handleSearchChange}
               className="pl-10"
@@ -277,9 +275,9 @@ export default function MessagesPage() {
 
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="mb-4">
-            <TabsTrigger value="all">Tous</TabsTrigger>
+            <TabsTrigger value="all">{t("pages.messages.tabs.all")}</TabsTrigger>
             <TabsTrigger value="unread">
-              Non lus
+              {t("pages.messages.tabs.unread")}
               {unreadCounts.length > 0 && (
                 <Badge variant="destructive" className="ml-2">
                   {unreadCounts.reduce((sum, item) => sum + item.count, 0)}
@@ -351,7 +349,7 @@ export default function MessagesPage() {
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" className="ml-auto">
-                        Ouvrir
+                        {t("pages.messages.open")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -364,25 +362,25 @@ export default function MessagesPage() {
                   {searchQuery ? (
                     <>
                       <h3 className="text-lg font-medium">
-                        Aucun résultat trouvé
+                        {t("pages.messages.noResults")}
                       </h3>
                       <p className="text-muted-foreground text-center mt-2">
-                        Aucune conversation ne correspond à votre recherche.
+                        {t("pages.messages.noResultsDescription")}
                       </p>
                     </>
                   ) : (
                     <>
                       <h3 className="text-lg font-medium">
-                        Aucune conversation
+                        {t("pages.messages.noConversations")}
                       </h3>
                       <p className="text-muted-foreground text-center mt-2">
-                        Vous n'avez pas encore démarré de conversation.
+                        {t("pages.messages.noConversationsDescription")}
                       </p>
                       <Button
                         className="mt-4"
                         onClick={() => router.push("/rides")}
                       >
-                        Trouver des trajets
+                        {t("pages.messages.findRides")}
                       </Button>
                     </>
                   )}
@@ -451,7 +449,7 @@ export default function MessagesPage() {
                           </div>
                         </div>
                         <Button variant="ghost" size="sm" className="ml-auto">
-                          Ouvrir
+                          {t("pages.messages.open")}
                         </Button>
                       </CardContent>
                     </Card>
@@ -462,10 +460,10 @@ export default function MessagesPage() {
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium">
-                    Pas de messages non lus
+                    {t("pages.messages.noUnread")}
                   </h3>
                   <p className="text-muted-foreground text-center mt-2">
-                    Vous avez lu tous vos messages.
+                    {t("pages.messages.noUnreadDescription")}
                   </p>
                 </CardContent>
               </Card>

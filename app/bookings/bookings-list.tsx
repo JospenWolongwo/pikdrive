@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { BookingCard } from "./booking-card";
 import { useBookingStore } from "@/stores";
+import { useLocale } from "@/hooks";
 import {
   Pagination,
   PaginationContent,
@@ -107,6 +108,7 @@ export function BookingsList({ page }: { page: number }) {
   const { user } = useSupabase();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLocale();
   const { 
     userBookings, 
     userBookingsLoading, 
@@ -171,8 +173,8 @@ export function BookingsList({ page }: { page: number }) {
         console.error("Error loading bookings:", err);
         toast({
           variant: "destructive",
-          title: "Erreur lors du chargement des réservations",
-          description: "Veuillez réessayer plus tard.",
+          title: t("pages.bookings.errorLoading"),
+          description: t("pages.bookings.errorLoadingDescription"),
         });
       }
     },
@@ -188,7 +190,7 @@ export function BookingsList({ page }: { page: number }) {
       <div className="flex flex-col items-center justify-center py-8 space-y-4">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         <p className="text-sm text-muted-foreground">
-          Chargement de vos réservations...
+          {t("pages.bookings.loading")}...
         </p>
       </div>
     );
@@ -198,7 +200,7 @@ export function BookingsList({ page }: { page: number }) {
     return (
       <div className="text-center py-8 text-red-600">
         <h3 className="font-semibold mb-2">
-          Erreur lors du chargement des réservations
+          {t("pages.bookings.errorLoading")}
         </h3>
         <p className="text-sm text-muted-foreground">
           {userBookingsError}
@@ -215,7 +217,7 @@ export function BookingsList({ page }: { page: number }) {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Rechercher par ville, chauffeur ou statut..."
+            placeholder={t("pages.bookings.searchPlaceholder")}
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -223,7 +225,7 @@ export function BookingsList({ page }: { page: number }) {
         </div>
         {searchQuery && (
           <Badge variant="outline" className="flex items-center gap-1">
-            <span>{filteredBookings.length} résultats</span>
+            <span>{filteredBookings.length} {t("pages.bookings.results")}</span>
             <Button
               variant="ghost"
               size="icon"
@@ -246,17 +248,17 @@ export function BookingsList({ page }: { page: number }) {
           className="flex items-center gap-1"
         >
           <RefreshCw className={`h-4 w-4 ${userBookingsLoading ? "animate-spin" : ""}`} />
-          Actualiser
+          {t("pages.bookings.refresh")}
         </Button>
       </div>
 
       {!filteredBookings.length ? (
         <div className="text-center py-8">
-          <h3 className="font-semibold mb-2">Aucune réservation trouvée</h3>
+          <h3 className="font-semibold mb-2">{t("pages.bookings.noBookings")}</h3>
           <p className="text-sm text-muted-foreground">
             {searchQuery
-              ? "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés."
-              : "Vous n'avez pas encore fait de réservations"}
+              ? t("pages.bookings.noSearchResults")
+              : t("pages.bookings.noBookingsDesc")}
           </p>
         </div>
       ) : (
@@ -284,10 +286,10 @@ export function BookingsList({ page }: { page: number }) {
           {/* Pagination with results info */}
           <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Affichage de{" "}
+              {t("pages.bookings.pagination.showing")}{" "}
               {Math.min(filteredBookings.length, (page - 1) * itemsPerPage + 1)}
-              -{Math.min(filteredBookings.length, page * itemsPerPage)} sur{" "}
-              {filteredBookings.length} réservations
+              -{Math.min(filteredBookings.length, page * itemsPerPage)} {t("pages.bookings.pagination.of")}{" "}
+              {filteredBookings.length} {t("pages.bookings.pagination.bookings")}
             </div>
 
             {totalPages > 1 && (

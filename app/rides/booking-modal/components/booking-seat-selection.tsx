@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Users, Clock, Car, ArrowRight, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import type { RideWithDriver } from "@/types";
+import { useLocale } from "@/hooks";
 
 interface BookingSeatSelectionProps {
   ride: RideWithDriver;
@@ -28,6 +29,7 @@ export function BookingSeatSelection({
   onCreateBooking,
   onClose,
 }: BookingSeatSelectionProps) {
+  const { t } = useLocale();
   return (
     <>
       <div className="space-y-6">
@@ -39,13 +41,11 @@ export function BookingSeatSelection({
           }`}>
             {existingBooking.payment_status === 'completed' ? (
               <p className="text-sm text-green-800">
-                <strong>Réservation déjà payée :</strong> Vous avez déjà payé pour {existingBooking.seats} {existingBooking.seats > 1 ? 'places' : 'place'}. 
-                Vous pouvez ajouter des places supplémentaires ci-dessous.
+                <strong>{t("pages.rides.booking.seatSelection.alreadyPaid")}</strong> {t("pages.rides.booking.seatSelection.alreadyPaidDesc", { seats: existingBooking.seats })}
               </p>
             ) : (
               <p className="text-sm text-blue-800">
-                <strong>Modification de réservation :</strong> Vous avez déjà une réservation pour ce trajet. 
-                Vous pouvez modifier le nombre de places ou procéder au paiement.
+                <strong>{t("pages.rides.booking.seatSelection.modifyBooking")}</strong> {t("pages.rides.booking.seatSelection.modifyBookingDesc")}
               </p>
             )}
           </div>
@@ -70,14 +70,14 @@ export function BookingSeatSelection({
               </div>
               <div className="flex items-center">
                 <Users className="mr-1 h-4 w-4" />
-                {ride.seats_available} places disponibles
+                {ride.seats_available} {t("pages.rides.booking.seatSelection.seatsAvailable")}
               </div>
             </div>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="seats">Nombre de places</Label>
+          <Label htmlFor="seats">{t("pages.rides.booking.seatSelection.seats")}</Label>
           <Input
             id="seats"
             type="number"
@@ -90,7 +90,7 @@ export function BookingSeatSelection({
           />
           {existingBooking && existingBooking.payment_status === 'completed' && (
             <p className="text-xs text-muted-foreground">
-              Vous ne pouvez pas réduire le nombre de places d'une réservation déjà payée
+              {t("pages.rides.booking.seatSelection.cannotReduce")}
             </p>
           )}
         </div>
@@ -98,8 +98,8 @@ export function BookingSeatSelection({
         <div className="flex justify-between items-center text-lg font-semibold">
           <span>
             {existingBooking && existingBooking.payment_status === 'completed'
-              ? 'Montant à payer (places supplémentaires) :'
-              : 'Prix total :'}
+              ? t("pages.rides.booking.seatSelection.additionalPrice")
+              : t("pages.rides.booking.seatSelection.totalPrice")}
           </span>
           <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
         </div>
@@ -107,7 +107,7 @@ export function BookingSeatSelection({
 
       <div className="flex justify-end space-x-2 mt-6">
         <Button onClick={onClose} variant="outline">
-          Annuler
+          {t("pages.rides.booking.seatSelection.cancel")}
         </Button>
         <Button
           onClick={onCreateBooking}
@@ -116,11 +116,11 @@ export function BookingSeatSelection({
           {isCreatingBooking ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {existingBooking ? "Mise à jour..." : "Création..."}
+              {existingBooking ? t("pages.rides.booking.seatSelection.updating") : t("pages.rides.booking.seatSelection.creating")}
             </>
           ) : (
             <>
-              {existingBooking ? "Mettre à jour et continuer au paiement" : "Continuer au paiement"}
+              {existingBooking ? t("pages.rides.booking.seatSelection.updateAndContinue") : t("pages.rides.booking.seatSelection.continueToPayment")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </>
           )}

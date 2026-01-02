@@ -1,10 +1,12 @@
 import { MapPin } from "lucide-react";
+import { useLocale } from "@/hooks";
 
 interface RidesEmptyStateProps {
   hasFilters: boolean;
 }
 
 export function RidesEmptyState({ hasFilters }: RidesEmptyStateProps) {
+  const { t } = useLocale();
   return (
     <div className="text-center py-20">
       <div className="max-w-lg mx-auto">
@@ -17,12 +19,12 @@ export function RidesEmptyState({ hasFilters }: RidesEmptyStateProps) {
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary rounded-full animate-ping"></div>
         </div>
         <h3 className="text-2xl font-bold mb-3 text-foreground">
-          Aucun voyage trouvé
+          {t("pages.rides.emptyState.title")}
         </h3>
         <p className="text-muted-foreground text-lg">
           {hasFilters
-            ? "Modifiez vos critères pour découvrir plus de trajets."
-            : "Aucun trajet disponible pour le moment. Revenez bientôt !"}
+            ? t("pages.rides.emptyState.withFilters")
+            : t("pages.rides.emptyState.withoutFilters")}
         </p>
       </div>
     </div>

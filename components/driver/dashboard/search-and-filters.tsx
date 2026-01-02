@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLocale } from "@/hooks";
 
 interface SearchAndFiltersProps {
   searchQuery: string;
@@ -21,13 +22,14 @@ export function SearchAndFilters({
   sortOrder,
   onSortChange,
 }: SearchAndFiltersProps) {
+  const { t } = useLocale();
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 items-stretch sm:items-center">
       <div className="relative flex-1">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Rechercher par ville, passager ou modèle de voiture..."
+          placeholder={t("pages.driver.dashboard.searchPlaceholder")}
           className="pl-8 text-sm sm:text-base"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -44,20 +46,20 @@ export function SearchAndFilters({
             >
               <SlidersHorizontal className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">
-                Trier{" "}
-                {sortOrder === "asc" ? "Plus tôt d'abord" : "Plus tard d'abord"}
+                {t("pages.driver.dashboard.sort.label")}{" "}
+                {sortOrder === "asc" ? t("pages.driver.dashboard.sort.earliest") : t("pages.driver.dashboard.sort.latest")}
               </span>
               <span className="sm:hidden">
-                {sortOrder === "asc" ? "↑ Plus tôt" : "↓ Plus tard"}
+                {sortOrder === "asc" ? t("pages.driver.dashboard.sort.earliestShort") : t("pages.driver.dashboard.sort.latestShort")}
               </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={() => onSortChange("asc")}>
-              Plus tôt d'abord
+              {t("pages.driver.dashboard.sort.earliest")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onSortChange("desc")}>
-              Plus tard d'abord
+              {t("pages.driver.dashboard.sort.latest")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

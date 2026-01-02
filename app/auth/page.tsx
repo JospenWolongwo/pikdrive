@@ -9,10 +9,16 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLocale } from "@/hooks";
+
+function LoadingFallback() {
+  const { t } = useLocale();
+  return <div>{t("common.loading")}</div>;
+}
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div>Chargement...</div>}>
+    <Suspense fallback={<LoadingFallback />}>
       <AuthPageContent />
     </Suspense>
   );
@@ -22,6 +28,7 @@ function AuthPageContent() {
   const { user, loading } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLocale();
 
   // Redirect authenticated users
   useEffect(() => {
@@ -37,7 +44,7 @@ function AuthPageContent() {
       <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Vérification de l'authentification...</span>
+          <span>{t("pages.auth.checkingAuth")}</span>
         </div>
       </div>
     );
@@ -49,7 +56,7 @@ function AuthPageContent() {
   }
 
   return (
-    <Suspense fallback={<div>Chargement...</div>}>
+    <Suspense fallback={<div>{t("common.loading")}</div>}>
       <AuthContent />
     </Suspense>
   );
@@ -69,6 +76,7 @@ function AuthContent() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLocale();
 
   useEffect(() => {
     // Check for saved phone number
@@ -113,9 +121,8 @@ function AuthContent() {
 
       setShowVerification(true);
       toast({
-        title: "Code envoyé !",
-        description:
-          "Veuillez consulter votre téléphone pour le code de vérification",
+        title: t("pages.auth.toast.codeSent"),
+        description: t("pages.auth.codeSentDescription"),
       });
     } catch (error: any) {
       setError(error.message);
@@ -128,7 +135,7 @@ function AuthContent() {
     setError("");
 
     if (!code) {
-      setError("Veuillez entrer le code de vérification");
+      setError(t("pages.auth.enterCodeError"));
       return;
     }
 
@@ -152,8 +159,8 @@ function AuthContent() {
       setResendCooldown(0);
 
       toast({
-        title: "Bienvenue !",
-        description: "Vous vous êtes connecté avec succès",
+        title: t("pages.auth.toast.welcome"),
+        description: t("pages.auth.toast.welcomeDescription"),
       });
 
       // Ensure long-lived session by forcing a refresh cycle once after sign-in
@@ -196,7 +203,7 @@ function AuthContent() {
     try {
       const phoneToUse = phone || savedPhone || "";
       if (!phoneToUse) {
-        setError("Numéro de téléphone non trouvé");
+        setError(t("pages.auth.phoneNotFound"));
         return;
       }
 
@@ -214,9 +221,8 @@ function AuthContent() {
       setResendCooldown(60);
 
       toast({
-        title: "Code renvoyé !",
-        description:
-          "Un nouveau code de vérification a été envoyé à votre téléphone",
+        title: t("pages.auth.toast.codeResent"),
+        description: t("pages.auth.codeResentDescription"),
       });
     } catch (error: any) {
       setError(error.message);
@@ -244,14 +250,14 @@ function AuthContent() {
       >
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold tracking-tight">
-            Bienvenue sur PikDrive
+            {t("pages.auth.welcome")}
           </h1>
           <p className="text-muted-foreground">
             {showVerification
-              ? "Entrez le code de vérification envoyé à votre téléphone"
+              ? t("pages.auth.enterCode")
               : savedPhone
-              ? "Content de vous revoir ! Envoyons-nous un code à votre téléphone ?"
-              : "Entrez votre numéro de téléphone pour continuer"}
+              ? t("pages.auth.welcomeBack")
+              : t("pages.auth.enterPhone")}
           </p>
         </div>
 
@@ -267,7 +273,7 @@ function AuthContent() {
               <div className="relative">
                 <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Entrez votre numéro de téléphone"
+                  placeholder={t("pages.auth.phonePlaceholder")}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="pl-9"
@@ -280,7 +286,7 @@ function AuthContent() {
           {!showVerification && savedPhone && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-center">
-                Envoyer le code au {maskPhoneNumber(savedPhone)}
+                {t("pages.auth.sendTo", { phone: maskPhoneNumber(savedPhone) })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -288,7 +294,7 @@ function AuthContent() {
                   className="w-full text-xs sm:text-sm"
                   onClick={() => setSavedPhone(null)}
                 >
-                  Utiliser un autre numéro
+                  {t("pages.auth.useAnotherNumber")}
                 </Button>
                 <Button
                   className="w-full"
@@ -298,7 +304,7 @@ function AuthContent() {
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    "Envoyer le code"
+                    t("pages.auth.sendCode")
                   )}
                 </Button>
               </div>
@@ -309,7 +315,7 @@ function AuthContent() {
             <div className="space-y-4">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
-                  Code envoyé au {maskPhoneNumber(phone || savedPhone || "")}
+                  {t("pages.auth.codeSentTo", { phone: maskPhoneNumber(phone || savedPhone || "") })}
                 </p>
               </div>
 
@@ -317,7 +323,7 @@ function AuthContent() {
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Entrez le code de vérification"
+                    placeholder={t("pages.auth.codePlaceholder")}
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     className="pl-9"
@@ -336,7 +342,7 @@ function AuthContent() {
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    "Vérifier"
+                    t("pages.auth.verify")
                   )}
                 </Button>
 
@@ -349,18 +355,18 @@ function AuthContent() {
                   {isResending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : resendCooldown > 0 ? (
-                    `Renvoyer dans ${resendCooldown}s`
+                    t("pages.auth.resendIn", { seconds: resendCooldown })
                   ) : (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Renvoyer le code
+                      {t("pages.auth.resendCode")}
                     </>
                   )}
                 </Button>
 
                 {resendCooldown > 0 && (
                   <p className="text-xs text-center text-muted-foreground">
-                    Attendez un moment avant de demander un nouveau code
+                    {t("pages.auth.waitBeforeResend")}
                   </p>
                 )}
               </div>
@@ -377,7 +383,7 @@ function AuthContent() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  Continuer
+                  {t("pages.auth.continue")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}

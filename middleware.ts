@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getVersionedStorageKey } from "@/lib/storage-version";
+import { defaultLocale } from "@/i18n/config";
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
@@ -26,6 +27,18 @@ export async function middleware(req: NextRequest) {
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 365,
+    });
+  }
+
+  // Handle locale cookie - set default to 'fr' if not present
+  const localeCookie = req.cookies.get('locale');
+  if (!localeCookie) {
+    res.cookies.set('locale', defaultLocale, {
+      path: '/',
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 365, // 1 year
     });
   }
 

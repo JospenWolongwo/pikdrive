@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 // Removed useAuthStore - using useSupabase for auth state
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { useLocale } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/ui";
+import { useToast } from "@/hooks";
 import {
   Camera,
   Loader2,
@@ -82,6 +83,7 @@ export default function ProfilePage() {
   const { user, supabase } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useLocale();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingVehicleImages, setIsEditingVehicleImages] = useState(false);
@@ -387,8 +389,8 @@ export default function ProfilePage() {
       setIsEditing(false);
 
       toast({
-        title: "Succès",
-        description: "Profil mis à jour avec succès",
+        title: t("pages.profile.toast.success"),
+        description: t("pages.profile.toast.profileUpdated"),
       });
     } catch (error: any) {
       toast({
@@ -723,16 +725,16 @@ export default function ProfilePage() {
           <div className="w-24 h-24 mx-auto bg-muted rounded-full flex items-center justify-center">
             <User className="w-12 h-12 text-muted-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">Profil non trouvé</h1>
+          <h1 className="text-2xl font-bold">{t("pages.profile.notFound")}</h1>
           <p className="text-muted-foreground">
-            Impossible de charger les informations de votre profil.
+            {t("pages.profile.notFoundDescription")}
           </p>
           <div className="flex gap-4 justify-center">
             <Button onClick={refreshProfile} variant="outline">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Réessayer
+              {t("pages.profile.retry")}
             </Button>
-            <Button onClick={() => router.push("/")}>Retour à l'accueil</Button>
+            <Button onClick={() => router.push("/")}>{t("pages.profile.goHome")}</Button>
           </div>
         </div>
       </div>
@@ -751,11 +753,11 @@ export default function ProfilePage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">
               {profileData.is_driver_applicant
-                ? "Profil de Chauffeur"
-                : "Profil Utilisateur"}
+                ? t("pages.profile.driverProfile")
+                : t("pages.profile.userProfile")}
             </h1>
             <p className="text-muted-foreground mt-2">
-              Gérez vos informations personnelles et vos préférences
+              {t("pages.profile.description")}
             </p>
           </div>
 
@@ -768,8 +770,7 @@ export default function ProfilePage() {
                   className="flex items-center justify-center gap-2"
                 >
                   <Car className="w-4 h-4" />
-                  <span className="hidden sm:inline">Tableau de bord</span>
-                  <span className="sm:hidden">Tableau de bord</span>
+                  <span>{t("pages.profile.dashboard")}</span>
                 </Button>
               )}
 
@@ -782,9 +783,9 @@ export default function ProfilePage() {
                 >
                   <Clock className="h-4 w-4" />
                   <span className="hidden sm:inline">
-                    Statut de Candidature
+                    {t("pages.profile.applicationStatus")}
                   </span>
-                  <span className="sm:hidden">Statut</span>
+                  <span className="sm:hidden">{t("pages.profile.status")}</span>
                 </Button>
               )}
 
@@ -797,9 +798,9 @@ export default function ProfilePage() {
                 >
                   <AlertCircle className="h-4 w-4" />
                   <span className="hidden sm:inline">
-                    Voir le Statut Refusé
+                    {t("pages.profile.viewRejectedStatus")}
                   </span>
-                  <span className="sm:hidden">Statut</span>
+                  <span className="sm:hidden">{t("pages.profile.status")}</span>
                 </Button>
               )}
 
@@ -812,8 +813,7 @@ export default function ProfilePage() {
               <RefreshCw
                 className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
               />
-              <span className="hidden sm:inline">Actualiser</span>
-              <span className="sm:hidden">Actualiser</span>
+              <span>{t("pages.profile.refresh")}</span>
             </Button>
 
             <Button
@@ -874,7 +874,7 @@ export default function ProfilePage() {
               <div className="flex-1 space-y-4">
                 <div>
                   <h2 className="text-2xl font-bold">
-                    {profileData.full_name || "Nom non défini"}
+                    {profileData.full_name || t("pages.profile.personalInfo.nameNotDefined")}
                   </h2>
                   <p className="text-sm text-muted-foreground break-all">
                     {profileData.email || user.phone}
@@ -885,7 +885,7 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {profileData.city || "Ville non définie"}
+                      {profileData.city || t("pages.profile.cityNotDefined")}
                     </span>
                   </div>
 
@@ -902,7 +902,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4" />
                       <span>
-                        Candidature soumise le{" "}
+                        {t("pages.profile.applicationSubmitted")}{" "}
                         {format(
                           new Date(profileData.driver_application_date),
                           "dd MMMM yyyy",
@@ -931,10 +931,10 @@ export default function ProfilePage() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <User className="w-5 h-5" />
-                    Informations Personnelles
+                    {t("pages.profile.personalInfo.title")}
                   </CardTitle>
                   <CardDescription>
-                    Mettez à jour vos informations de base
+                    {t("pages.profile.personalInfo.description")}
                   </CardDescription>
                 </div>
 
@@ -949,7 +949,7 @@ export default function ProfilePage() {
                   ) : (
                     <Edit3 className="w-4 h-4" />
                   )}
-                  {isEditing ? "Annuler" : "Modifier"}
+                  {isEditing ? t("pages.profile.personalInfo.cancel") : t("pages.profile.personalInfo.edit")}
                 </Button>
               </CardHeader>
 
@@ -961,7 +961,7 @@ export default function ProfilePage() {
                         htmlFor="fullName"
                         className="flex items-center gap-2"
                       >
-                        <User className="h-4 w-4" /> Nom Complet
+                        <User className="h-4 w-4" /> {t("pages.profile.personalInfo.fullName")}
                       </Label>
                       <Input
                         id="fullName"
@@ -982,7 +982,7 @@ export default function ProfilePage() {
                         htmlFor="email"
                         className="flex items-center gap-2"
                       >
-                        <Mail className="h-4 w-4" /> Email
+                        <Mail className="h-4 w-4" /> {t("pages.profile.personalInfo.email")}
                       </Label>
                       <Input
                         id="email"
@@ -1004,7 +1004,7 @@ export default function ProfilePage() {
                         htmlFor="phone"
                         className="flex items-center gap-2"
                       >
-                        <Phone className="h-4 w-4" /> Numéro de Téléphone
+                        <Phone className="h-4 w-4" /> {t("pages.profile.personalInfo.phone")}
                       </Label>
                       <Input
                         id="phone"
@@ -1020,7 +1020,7 @@ export default function ProfilePage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="city" className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" /> Ville
+                        <MapPin className="h-4 w-4" /> {t("pages.profile.personalInfo.city")}
                       </Label>
                       <SearchableSelect
                         options={[...allCameroonCities]}
@@ -1028,8 +1028,8 @@ export default function ProfilePage() {
                         onValueChange={(value) =>
                           setFormData((prev) => ({ ...prev, city: value }))
                         }
-                        placeholder="Sélectionnez votre ville"
-                        searchPlaceholder="Rechercher une ville..."
+                        placeholder={t("pages.profile.selectCity")}
+                        searchPlaceholder={t("pages.profile.searchCity")}
                         disabled={!isEditing || isLoading}
                       />
                     </div>
@@ -1053,12 +1053,12 @@ export default function ProfilePage() {
                         {isLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Sauvegarde...
+                            {t("pages.profile.personalInfo.saving")}
                           </>
                         ) : (
                           <>
                             <Save className="w-4 h-4" />
-                            Sauvegarder
+                            {t("pages.profile.personalInfo.save")}
                           </>
                         )}
                       </Button>
@@ -1080,7 +1080,7 @@ export default function ProfilePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="w-5 h-5" />
-                    Documents de Chauffeur
+                    {t("pages.profile.driverDocuments")}
                   </CardTitle>
                   <CardDescription>
                     Vos documents soumis pour la candidature de chauffeur
@@ -1446,7 +1446,7 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Badge className="w-5 h-5" />
-                  Statut du Compte
+                  {t("pages.profile.accountStatus")}
                 </CardTitle>
               </CardHeader>
 
@@ -1458,15 +1458,15 @@ export default function ProfilePage() {
                     </span>
                     <BadgeComponent variant="outline">
                       {profileData.is_driver_applicant
-                        ? "Chauffeur"
-                        : "Utilisateur"}
+                        ? t("pages.profile.driver")
+                        : t("pages.profile.user")}
                     </BadgeComponent>
                   </div>
 
                   {profileData.is_driver_applicant && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">
-                        Statut chauffeur:
+                        {t("pages.profile.driverStatus")}
                       </span>
                       {getStatusBadge(profileData.driver_status)}
                     </div>
@@ -1478,8 +1478,8 @@ export default function ProfilePage() {
                       {profileData.role === "admin"
                         ? "Administrateur"
                         : profileData.role === "driver"
-                        ? "Chauffeur"
-                        : "Utilisateur"}
+                        ? t("pages.profile.driver")
+                        : t("pages.profile.user")}
                     </BadgeComponent>
                   </div>
                 </div>
@@ -1541,7 +1541,7 @@ export default function ProfilePage() {
                     variant="outline"
                   >
                     <Car className="w-4 h-4 mr-2" />
-                    Devenir Chauffeur
+                    {t("pages.profile.becomeDriver")}
                   </Button>
                 )}
 
@@ -1564,7 +1564,7 @@ export default function ProfilePage() {
                       variant="outline"
                     >
                       <Clock className="w-4 h-4 mr-2" />
-                      Voir le Statut
+                      {t("pages.profile.viewStatus")}
                     </Button>
                   )}
 

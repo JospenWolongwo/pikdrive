@@ -1,7 +1,10 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { PaymentStatus } from '@/lib/payment/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLocale } from '@/hooks';
 
 interface PaymentStatusCheckerProps {
   transactionId: string;
@@ -20,10 +23,11 @@ export function PaymentStatusChecker({
   pollingInterval = 5000, // 5 seconds
   maxAttempts = 60 // 5 minutes total
 }: PaymentStatusCheckerProps) {
+  const { t } = useLocale();
   const [status, setStatus] = useState<PaymentStatus>('pending');
   const [attempts, setAttempts] = useState(0);
   const [isPolling, setIsPolling] = useState(true);
-  const [message, setMessage] = useState('Waiting for payment approval...');
+  const [message, setMessage] = useState(t("payment.status.checking"));
   const [lastUpdated, setLastUpdated] = useState(Date.now()); // Add timestamp for forcing re-renders
 
   useEffect(() => {
@@ -88,7 +92,7 @@ export function PaymentStatusChecker({
         }
 
         if (paymentStatus === 'processing') {
-          setMessage('Processing payment...');
+          setMessage(t("payment.status.checking"));
         }
 
         // Continue polling if still pending or processing
@@ -98,9 +102,9 @@ export function PaymentStatusChecker({
             timeoutId = setTimeout(checkStatus, pollingInterval);
           } else {
             setIsPolling(false);
-            setMessage('Payment verification timed out');
-            toast.error('Payment verification timed out. Please contact support.');
-            onPaymentComplete?.('failed', 'Payment verification timed out. Please contact support.');
+            setMessage(t("payment.status.verificationTimeout"));
+            toast.error(t("payment.status.verificationTimeout"));
+            onPaymentComplete?.('failed', t("payment.status.verificationTimeout"));
           }
         }
       } catch (error) {
@@ -124,10 +128,10 @@ export function PaymentStatusChecker({
           timeoutId = setTimeout(checkStatus, backoffTime);
         } else {
           setIsPolling(false);
-          setMessage('Failed to verify payment status');
+          setMessage(t("payment.status.failedToVerify"));
           setLastUpdated(Date.now());
-          toast.error('Failed to verify payment status. Please contact support.');
-          onPaymentComplete?.('failed', 'Failed to verify payment status. Please contact support.');
+          toast.error(t("payment.status.failedToVerify"));
+          onPaymentComplete?.('failed', t("payment.status.failedToVerify"));
         }
       }
     };
@@ -169,7 +173,7 @@ export function PaymentStatusChecker({
       </div>
       {isPolling && (
         <p className="text-sm text-gray-500">
-          Please check your phone for the payment request
+          {t("payment.status.pleaseCheckPhone")}
         </p>
       )}
     </div>

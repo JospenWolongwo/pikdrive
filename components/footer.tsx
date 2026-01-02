@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { Car, Facebook, Instagram, Twitter } from 'lucide-react'
+import { Car, Facebook, Instagram, X } from 'lucide-react'
+import { useLocale } from "@/hooks";
 
 export function Footer() {
-  const currentYear = 2023
+  const currentYear = new Date().getFullYear()
+  const { t } = useLocale()
 
   return (
     <footer className="w-full border-t bg-background">
@@ -16,59 +18,59 @@ export function Footer() {
               <span className="font-bold">PikDrive</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Découvrez le Cameroun, Ensemble
+              {t("footer.tagline")}
             </p>
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Liens Rapides</h3>
+            <h3 className="mb-4 text-sm font-semibold">{t("navigation.quickLinks")}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/rides" className="text-muted-foreground hover:text-primary">
-                  Trouver un Trajet
+                  {t("navigation.findRide")}
                 </Link>
               </li>
               <li>
                 <Link href="/become-driver" className="text-muted-foreground hover:text-primary">
-                  Devenir Chauffeur
+                  {t("navigation.becomeDriver")}
                 </Link>
               </li>
               <li>
                 <Link href="/about" className="text-muted-foreground hover:text-primary">
-                  À Propos de Nous
+                  {t("navigation.aboutUs")}
                 </Link>
               </li>
               <li>
                 <Link href="/contact" className="text-muted-foreground hover:text-primary">
-                  Contact
+                  {t("navigation.contact")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Mentions Légales</h3>
+            <h3 className="mb-4 text-sm font-semibold">{t("navigation.legal")}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/privacy" className="text-muted-foreground hover:text-primary">
-                  Politique de Confidentialité
+                  {t("navigation.privacyPolicy")}
                 </Link>
               </li>
               <li>
                 <Link href="/terms" className="text-muted-foreground hover:text-primary">
-                  Conditions d&apos;Utilisation
+                  {t("navigation.termsOfUse")}
                 </Link>
               </li>
               <li>
                 <Link href="/cookies" className="text-muted-foreground hover:text-primary">
-                  Politique des Cookies
+                  {t("navigation.cookiePolicy")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Suivez-Nous</h3>
+            <h3 className="mb-4 text-sm font-semibold">{t("navigation.followUs")}</h3>
             <div className="flex space-x-4">
               <Link
                 href="https://facebook.com"
@@ -85,8 +87,8 @@ export function Footer() {
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
               >
-                <Twitter className="h-5 w-5" />
-                <span className="sr-only">Twitter</span>
+                <X className="h-5 w-5" />
+                <span className="sr-only">X</span>
               </Link>
               <Link
                 href="https://instagram.com"
@@ -103,7 +105,7 @@ export function Footer() {
 
         <div className="mt-8 border-t pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            {currentYear} PikDrive. Tous droits réservés.
+            {t("footer.copyright", { year: currentYear })}
           </p>
         </div>
       </div>

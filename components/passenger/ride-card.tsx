@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import Link from "next/link";
+import { useLocale } from "@/hooks";
 import {
   MapPin,
   Users,
@@ -36,6 +37,7 @@ export function PassengerRideCard({
   onBookingClick,
   onChatClick,
 }: PassengerRideCardProps) {
+  const { t } = useLocale();
   return (
     <motion.div
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -80,7 +82,7 @@ export function PassengerRideCard({
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-primary" />
                       <Badge className="bg-primary text-primary-foreground font-semibold">
-                        {ride.seats_available} places
+                        {ride.seats_available} {t("pages.rides.rideCard.places")}
                       </Badge>
                     </div>
                   </div>
@@ -101,16 +103,16 @@ export function PassengerRideCard({
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-accent rounded-full animate-ping"></div>
                 </div>
                 <p className="text-lg font-bold text-foreground">
-                  {ride.car_model || "Véhicule"}
+                  {ride.car_model || t("pages.rides.rideCard.vehicle")}
                 </p>
                 <p className="text-muted-foreground capitalize">
-                  {ride.car_color || "Non spécifié"}
+                  {ride.car_color || t("pages.rides.rideCard.notSpecified")}
                 </p>
                 <Badge className="mt-2 bg-primary text-primary-foreground">
-                  {ride.seats_available} places
+                  {ride.seats_available} {t("pages.rides.rideCard.places")}
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Photo du véhicule non disponible
+                  {t("pages.rides.rideCard.photoNotAvailable")}
                 </p>
               </div>
             </div>
@@ -136,16 +138,16 @@ export function PassengerRideCard({
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-foreground text-lg hover:text-primary transition-colors">
-                  {ride.driver?.full_name || "Chauffeur"}
+                  {ride.driver?.full_name || t("pages.rides.rideCard.driver")}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                   <p className="text-muted-foreground text-sm font-medium">
-                    Conducteur certifié PikDrive
+                    {t("pages.rides.rideCard.certifiedDriver")}
                   </p>
                 </div>
                 <p className="text-xs text-primary mt-1 font-medium">
-                  Voir le profil
+                  {t("pages.rides.rideCard.viewProfile")}
                 </p>
               </div>
             </Link>
@@ -161,16 +163,16 @@ export function PassengerRideCard({
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-foreground text-lg">
-                  Conducteur PikDrive
+                  {t("pages.rides.rideCard.driver")} PikDrive
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                   <p className="text-muted-foreground text-sm font-medium">
-                    Conducteur certifié
+                    {t("pages.rides.rideCard.certified")}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Connectez-vous pour voir les détails du conducteur
+                  {t("pages.rides.rideCard.loginToSeeDetails")}
                 </p>
               </div>
             </div>
@@ -191,7 +193,7 @@ export function PassengerRideCard({
                       {ride.from_city}
                     </p>
                     <p className="text-muted-foreground text-sm font-medium">
-                      Point de départ
+                      {t("pages.rides.rideCard.departurePoint")}
                     </p>
                   </div>
                   <div className="group/city">
@@ -199,7 +201,7 @@ export function PassengerRideCard({
                       {ride.to_city}
                     </p>
                     <p className="text-muted-foreground text-sm font-medium">
-                      Destination finale
+                      {t("pages.rides.rideCard.destinationPoint")}
                     </p>
                   </div>
                 </div>
@@ -221,7 +223,7 @@ export function PassengerRideCard({
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">
-                    Départ prévu
+                    {t("pages.rides.rideCard.scheduledDeparture")}
                   </p>
                   <p className="font-bold text-foreground">
                     {format(new Date(ride.departure_time), "dd MMM à HH:mm")}
@@ -230,7 +232,7 @@ export function PassengerRideCard({
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground font-medium">
-                  Prix par place
+                  {t("pages.rides.rideCard.pricePerSeat")}
                 </p>
                 <div className="flex items-baseline gap-1">
                   <p className="text-3xl font-black text-primary">
@@ -255,7 +257,7 @@ export function PassengerRideCard({
               className="flex-1 relative group/btn border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-300"
             >
               <MessageCircle className="h-5 w-5 mr-2 group-hover/btn:animate-bounce" />
-              <span className="font-semibold">Contacter</span>
+              <span className="font-semibold">{t("pages.rides.rideCard.contact")}</span>
               {unreadCount > 0 && (
                 <Badge
                   variant="destructive"
@@ -274,12 +276,12 @@ export function PassengerRideCard({
               {ride.seats_available === 0 ? (
                 <>
                   <Users className="h-5 w-5 mr-2" />
-                  Complet
+                  {t("pages.rides.rideCard.full")}
                 </>
               ) : (
                 <>
                   <MapPin className="h-5 w-5 mr-2" />
-                  Réserver
+                  {t("pages.rides.rideCard.book")}
                 </>
               )}
             </Button>

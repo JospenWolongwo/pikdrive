@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useLocale } from "@/hooks";
 
 import type { BookingWithPayments } from '@/types';
 import type { RideWithDriver } from '@/types/ride';
@@ -39,6 +40,7 @@ interface BookingCardProps {
 }
 
 export function BookingCard({ booking }: BookingCardProps) {
+  const { t } = useLocale();
   const payment = booking.payments?.[0];
   const isCompleted =
     payment?.payment_time && payment?.metadata?.financialTransactionId;
@@ -118,7 +120,7 @@ export function BookingCard({ booking }: BookingCardProps) {
       }
 
       toast({
-        title: "Réservation annulée",
+        title: t("pages.bookings.card.cancelled"),
         description:
           "Votre réservation a été annulée avec succès et les places ont été libérées.",
       });
@@ -192,17 +194,17 @@ export function BookingCard({ booking }: BookingCardProps) {
       <CardContent>
         <div className="grid gap-2">
           <div>
-            <strong>Chauffeur :</strong> {booking.ride.driver?.full_name || 'Non disponible'}
+            <strong>{t("pages.bookings.card.driver")}</strong> {booking.ride.driver?.full_name || t("pages.bookings.card.notAvailable")}
           </div>
           <div>
-            <strong>Voiture :</strong> {booking.ride.car_model || 'Non spécifié'} (
-            {booking.ride.car_color || 'Non spécifié'})
+            <strong>{t("pages.bookings.card.car")}</strong> {booking.ride.car_model || t("pages.bookings.card.notSpecified")} (
+            {booking.ride.car_color || t("pages.bookings.card.notSpecified")})
           </div>
           <div>
-            <strong>Places :</strong> {booking.seats}
+            <strong>{t("pages.bookings.card.seats")}</strong> {booking.seats}
           </div>
           <div>
-            <strong>Total :</strong>{" "}
+            <strong>{t("pages.bookings.card.total")}</strong>{" "}
             {payment 
               ? `${payment.amount} ${payment.currency}` 
               : booking.ride?.price 
@@ -210,7 +212,7 @@ export function BookingCard({ booking }: BookingCardProps) {
                 : "N/A"}
           </div>
           <div>
-            <strong>Statut :</strong>{" "}
+            <strong>{t("pages.bookings.card.status")}</strong>{" "}
             <span
               className={`inline-block px-2 py-1 text-sm rounded-full ${
                 booking.status === "confirmed"
@@ -221,19 +223,19 @@ export function BookingCard({ booking }: BookingCardProps) {
               }`}
             >
               {booking.status === "confirmed"
-                ? "Confirmé"
+                ? t("pages.bookings.card.statusConfirmed")
                 : booking.status === "pending"
-                ? "En attente"
+                ? t("pages.bookings.card.statusPending")
                 : booking.status === "cancelled"
-                ? "Annulé"
+                ? t("pages.bookings.card.statusCancelled")
                 : booking.status === "pending_verification"
-                ? "En attente de vérification"
+                ? t("pages.bookings.card.statusPendingVerification")
                 : booking.status}
             </span>
           </div>
           {payment && (
             <div>
-              <strong>Paiement :</strong>{" "}
+              <strong>{t("pages.bookings.card.payment")}</strong>{" "}
               <span
                 className={`inline-block px-2 py-1 text-sm rounded-full ${
                   isCompleted
@@ -241,7 +243,7 @@ export function BookingCard({ booking }: BookingCardProps) {
                     : "bg-yellow-100 text-yellow-800"
                 }`}
               >
-                {isCompleted ? "Terminé" : "En attente"}
+                {isCompleted ? t("pages.bookings.card.paymentCompleted") : t("pages.bookings.card.paymentPending")}
               </span>
             </div>
           )}
@@ -255,8 +257,7 @@ export function BookingCard({ booking }: BookingCardProps) {
                 onClick={() => setShowVerification(!showVerification)}
               >
                 <span>
-                  {showVerification ? "Masquer" : "Afficher"} le code de
-                  vérification du chauffeur
+                  {showVerification ? t("pages.bookings.card.hideCode") : t("pages.bookings.card.showCode")}
                 </span>
                 {showVerification ? (
                   <ChevronUp className="h-4 w-4" />
@@ -283,7 +284,7 @@ export function BookingCard({ booking }: BookingCardProps) {
             className="flex items-center gap-2"
           >
             <MessageCircle className="h-4 w-4" />
-            Contacter
+            {t("pages.bookings.card.contact")}
           </Button>
         )}
 
@@ -297,27 +298,25 @@ export function BookingCard({ booking }: BookingCardProps) {
                 className="flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
-                {isCancelling ? "Annulation..." : "Annuler la réservation"}
+                {isCancelling ? t("pages.bookings.card.cancelling") : t("pages.bookings.card.cancel")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Annuler la réservation</AlertDialogTitle>
+                <AlertDialogTitle>{t("pages.bookings.card.cancelTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Êtes-vous sûr de vouloir annuler cette réservation ? Cette
-                  action est irréversible et libérera {booking.seats} place
-                  {booking.seats > 1 ? "s" : ""} sur le trajet.
+                  {t("pages.bookings.card.cancelDescription", { seats: booking.seats })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>
-                  Non, garder la réservation
+                  {t("pages.bookings.card.keepBooking")}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleCancelBooking}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Oui, annuler
+                  {t("pages.bookings.card.confirmCancel")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -331,7 +330,7 @@ export function BookingCard({ booking }: BookingCardProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Voir le reçu
+              {t("pages.bookings.card.viewReceipt")}
             </a>
           </Button>
         )}
@@ -344,7 +343,7 @@ export function BookingCard({ booking }: BookingCardProps) {
           rideId={selectedChatRide.ride.id}
           conversationId={selectedChatRide.conversationId}
           otherUserId={selectedChatRide.ride.driver_id}
-          otherUserName={selectedChatRide.ride.driver?.full_name || "Chauffeur"}
+          otherUserName={selectedChatRide.ride.driver?.full_name || t("pages.bookings.card.driver").replace(":", "")}
           otherUserAvatar={selectedChatRide.ride.driver?.avatar_url}
         />
       )}

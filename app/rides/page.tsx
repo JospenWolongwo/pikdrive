@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { useLocale } from "@/hooks";
 import {
   Pagination,
   PaginationContent,
@@ -26,6 +27,7 @@ import {
 
 export default function RidesPage() {
   const { user } = useSupabase();
+  const { t } = useLocale();
 
   // Data loading hook
   const { 
@@ -90,7 +92,7 @@ export default function RidesPage() {
       <div className="container py-10">
         <div className="flex flex-col justify-center items-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-          <p className="text-muted-foreground">Chargement des trajets...</p>
+          <p className="text-muted-foreground">{t("pages.rides.loading")}</p>
         </div>
       </div>
     );
@@ -110,10 +112,10 @@ export default function RidesPage() {
       <div className="flex flex-col gap-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Trajets Disponibles
+            {t("pages.rides.title")}
           </h1>
           <p className="text-muted-foreground">
-            Trouvez et réservez votre prochain trajet
+            {t("pages.rides.subtitle")}
           </p>
         </div>
 

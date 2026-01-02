@@ -1,0 +1,954 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "noResults": "Aucun résultat",
+    "retry": "Réessayer",
+    "options": "Options",
+    "messages": "Messages",
+    "toggleMenu": "Ouvrir le menu"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "findRide": "Trouver un Trajet",
+    "about": "À Propos",
+    "safety": "Sécurité & FAQ",
+    "contact": "Contact",
+    "myBookings": "Mes Réservations",
+    "search": "Rechercher",
+    "publishRide": "Publier Trajet",
+    "myRides": "Vos Trajets",
+    "applicationStatus": "Statut de Candidature",
+    "profile": "Profil",
+    "driverProfile": "Profil de Chauffeur",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "becomeDriver": "Devenir Chauffeur",
+    "aboutUs": "À Propos de Nous",
+    "privacyPolicy": "Politique de Confidentialité",
+    "termsOfUse": "Conditions d'Utilisation",
+    "cookiePolicy": "Politique des Cookies",
+    "followUs": "Suivez-Nous",
+    "quickLinks": "Liens Rapides",
+    "legal": "Mentions Légales"
+  },
+  "theme": {
+    "toggleTheme": "Changer de thème",
+    "darkMode": "Mode sombre",
+    "lightMode": "Mode clair",
+    "system": "Système",
+    "light": "Clair",
+    "dark": "Sombre"
+  },
+  "language": {
+    "french": "Français",
+    "english": "English",
+    "switchLanguage": "Changer de langue"
+  },
+  "pwa": {
+    "installApp": "Installer l'App",
+    "installTitle": "Installer l'Application PikDrive",
+    "installDescription": "Accédez rapidement et profitez d'une meilleure expérience en installant PikDrive sur votre appareil.",
+    "benefits": {
+      "fastAccess": "Accès rapide depuis votre écran d'accueil",
+      "offlineFunctionality": "Fonctionnalité hors ligne",
+      "betterPerformance": "Meilleures performances",
+      "appLikeExperience": "Expérience similaire à une application"
+    },
+    "later": "Plus tard",
+    "addToHomeScreen": "Ajouter à l'Écran d'Accueil",
+    "installNow": "Installer Maintenant",
+    "maybeLater": "Peut-être Plus Tard",
+    "ios": {
+      "title": "Installer l'Application PikDrive",
+      "description": "Suivez ces étapes pour ajouter PikDrive à votre écran d'accueil",
+      "step1": "Appuyez sur le bouton de partage",
+      "step2": "Faites défiler et sélectionnez \"Ajouter à l'Écran d'Accueil\"",
+      "step3": "Appuyez sur \"Ajouter\" dans le coin supérieur droit",
+      "gotIt": "Compris"
+    },
+    "android": {
+      "title": "Installer PikDrive",
+      "description": "Installez PikDrive sur votre appareil pour la meilleure expérience :",
+      "step1": "Appuyez sur \"Ajouter à l'Écran d'Accueil\" lorsque vous y êtes invité",
+      "step2": "Ou cliquez sur \"Installer\" dans le menu de votre navigateur",
+      "step3": "Accédez à PikDrive directement depuis votre écran d'accueil",
+      "step4": "Profitez d'une expérience plus rapide, similaire à une application"
+    }
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "title1": "Découvrez",
+        "title2": "le Cameroun, Ensemble",
+        "subtitle": "Connectez-vous avec des chauffeurs de confiance et explorez les merveilles du Cameroun en toute sécurité",
+        "findRide": "Trouver un Trajet",
+        "publishRide": "Publier un trajet",
+        "contactWhatsApp": "Contactez-nous sur WhatsApp",
+        "whatsApp": "WhatsApp",
+        "needHelp": "Besoin d'aide ?",
+        "help": "Aide"
+      },
+      "howItWorks": {
+        "title": "Comment Ça Marche",
+        "subtitle": "Simplifiez vos déplacements intercités en quatre étapes simples",
+        "step1": {
+          "title": "Choisissez Votre Destination",
+          "description": "Sélectionnez votre destination et trouvez un chauffeur disponible"
+        },
+        "step2": {
+          "title": "Effectuez le Paiement",
+          "description": "Réservez votre trajet en payant de manière sécurisée"
+        },
+        "step3": {
+          "title": "Recevez le Code",
+          "description": "Un code de vérification vous est envoyé après le paiement"
+        },
+        "step4": {
+          "title": "Validez le Trajet",
+          "description": "Présentez le code au chauffeur pour valider le paiement"
+        }
+      },
+      "popularRoutes": {
+        "title": "Itinéraires Populaires",
+        "subtitle": "Découvrez nos itinéraires intercités les plus fréquentés",
+        "popularRoute": "Itinéraire Populaire",
+        "duration": "Durée",
+        "averagePrice": "Prix moyen"
+      },
+      "testimonials": {
+        "title": "Ce Que Disent Nos Utilisateurs",
+        "subtitle": "Approuvé par des milliers de voyageurs à travers le Cameroun"
+      },
+      "cta": {
+        "title": "Rejoignez la Communauté PikDrive Dès Aujourd'hui",
+        "subtitle": "Déjà plus de {count} utilisateurs font confiance à PikDrive pour leurs voyages intercités chaque mois. Soyez des nôtres!",
+        "createAccount": "Créer un Compte",
+        "findRide": "Trouver un Trajet",
+        "joinUsers": "Rejoignez {count} utilisateurs satisfaits",
+        "features": {
+          "booking": "Plateforme de réservation simple et rapide",
+          "payment": "Système de paiement sécurisé",
+          "verification": "Vérification des chauffeurs en temps réel",
+          "support": "Assistance client disponible 24/7"
+        },
+        "comingSoon": "Bientôt disponible sur mobile",
+        "appInDevelopment": "Application en développement"
+      }
+    },
+    "about": {
+      "mission": {
+        "title": "Notre Mission",
+        "description": "Rendre les voyages intercités au Cameroun sûrs, fiables et accessibles pour tous.",
+        "meetTeam": "Rencontrer Notre Équipe",
+        "contactUs": "Nous Contacter"
+      },
+      "stats": {
+        "satisfiedTravelers": "Voyageurs Satisfaits",
+        "verifiedDrivers": "Chauffeurs Vérifiés",
+        "cities": "Villes",
+        "support": "Assistance"
+      },
+      "values": {
+        "title": "Nos Valeurs",
+        "safety": {
+          "title": "La Sécurité Avant Tout",
+          "description": "Nous priorisons la sécurité de nos voyageurs et chauffeurs avant tout."
+        },
+        "community": {
+          "title": "Communauté",
+          "description": "Créer des liens et favoriser un sentiment de communauté dans chaque ville que nous desservons."
+        },
+        "innovation": {
+          "title": "Innovation",
+          "description": "Améliorer continuellement notre plateforme pour offrir la meilleure expérience de voyage."
+        }
+      },
+      "cta": {
+        "title": "Rejoignez Notre Aventure",
+        "description": "Faites partie de la révolution des transports au Cameroun",
+        "contact": "Contactez-Nous"
+      }
+    },
+    "contact": {
+      "title": "Contactez-Nous",
+      "subtitle": "Des questions ? Nous aimerions avoir de vos nouvelles. Envoyez-nous un message et nous vous répondrons dès que possible.",
+      "phone": "Téléphone",
+      "email": "Email",
+      "office": "Bureau",
+      "hours": {
+        "title": "Heures d'Ouverture",
+        "weekdays": "Lundi - Vendredi: 8h00 - 18h00",
+        "saturday": "Samedi: 9h00 - 16h00",
+        "sunday": "Dimanche: Fermé"
+      },
+      "form": {
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "email": "Email",
+        "phone": "Numéro de Téléphone",
+        "message": "Message",
+        "messagePlaceholder": "Comment pouvons-nous vous aider ?",
+        "send": "Envoyer le Message",
+        "sending": "Envoi en cours..."
+      },
+      "toast": {
+        "sent": "Message Envoyé !",
+        "sentDescription": "Nous vous répondrons dès que possible."
+      }
+    },
+    "advice": {
+      "howItWorks": {
+        "title": "Comment Ça Marche",
+        "subtitle": "Découvrez comment utiliser PikDrive en quelques étapes simples",
+        "step1": {
+          "title": "1. Choisissez Votre Destination",
+          "description": "Sélectionnez votre ville de départ, destination et date. Parcourez les options disponibles et choisissez un chauffeur qui vous convient."
+        },
+        "step2": {
+          "title": "2. Effectuez le Paiement",
+          "description": "Réservez votre place en payant via Mobile Money, carte bancaire ou en espèces chez nos partenaires. Le paiement est temporairement bloqué."
+        },
+        "step3": {
+          "title": "3. Recevez Votre Code",
+          "description": "Après paiement, vous recevez un code de vérification unique par SMS et dans l'application. Gardez-le précieusement."
+        },
+        "step4": {
+          "title": "4. Validez le Trajet",
+          "description": "Présentez votre code au chauffeur lors de votre embarquement. Ce code débloque le paiement et confirme votre trajet."
+        }
+      },
+      "whyCode": {
+        "title": "Pourquoi utiliser le système de code ?",
+        "description": "Notre système de code unique assure que vous ne payez que pour les services que vous recevez réellement. Le chauffeur ne reçoit le paiement qu'après que vous ayez validé votre présence dans le véhicule en présentant le code.",
+        "securePayment": "Paiement Sécurisé",
+        "securePaymentDesc": "Votre argent est protégé jusqu'à ce que vous confirmiez le service",
+        "antiFraud": "Anti-Fraude",
+        "antiFraudDesc": "Prévient les réservations factices et garantit la présence des voyageurs",
+        "offline": "Fonctionne Hors-ligne",
+        "offlineDesc": "Le code fonctionne même sans connexion internet permanente"
+      },
+      "safetyTips": {
+        "title": "Conseils de Sécurité",
+        "verifyDriver": {
+          "title": "Vérifiez l'Identité du Chauffeur",
+          "content": "Vérifiez toujours que la photo de profil du chauffeur et les détails du véhicule correspondent à ce que vous voyez en personne. Demandez à voir sa carte d'identification PikDrive."
+        },
+        "shareTrip": {
+          "title": "Partagez Votre Trajet",
+          "content": "Utilisez notre fonction 'Partager le Trajet' pour permettre à vos amis ou à votre famille de suivre votre voyage en temps réel. Cette fonctionnalité fonctionne même en zone de faible connexion."
+        },
+        "stayPublic": {
+          "title": "Restez dans les Lieux Publics",
+          "content": "Pour les prises en charge et les déposes, tenez-vous-en à des endroits publics bien éclairés dans la mesure du possible. Évitez les points de ramassage isolés, surtout la nuit."
+        },
+        "keepCodeSecret": {
+          "title": "Gardez Votre Code Confidentiel",
+          "content": "Ne partagez jamais votre code de vérification avant d'être dans le véhicule et prêt à partir. Le code est la garantie que vous recevrez le service réservé."
+        }
+      },
+      "faq": {
+        "title": "Questions Fréquentes",
+        "howWorks": {
+          "question": "Comment fonctionne PikDrive exactement ?",
+          "answer": "PikDrive est une plateforme de covoiturage intercités au Cameroun qui fonctionne en 4 étapes simples : 1) Vous choisissez votre destination et un chauffeur vérifié. 2) Vous payez pour réserver votre place via Mobile Money, carte bancaire ou en espèces chez nos partenaires. 3) Vous recevez un code de vérification unique après paiement. 4) Vous montrez ce code au chauffeur au moment du départ, ce qui valide le trajet et libère le paiement au chauffeur."
+        },
+        "howBook": {
+          "question": "Comment réserver un trajet ?",
+          "answer": "Rendez-vous sur la page 'Trouver un Trajet', sélectionnez votre ville de départ et votre destination. Choisissez parmi les chauffeurs disponibles en fonction des horaires et prix qui vous conviennent. Procédez au paiement via notre plateforme sécurisée et vous recevrez un code de confirmation et les détails du trajet par SMS et dans l'application."
+        },
+        "verificationCode": {
+          "question": "Comment fonctionne le système de code de vérification ?",
+          "answer": "Après avoir effectué votre paiement, vous recevez un code unique de 6 chiffres par SMS et dans l'application. Ce code doit être présenté au chauffeur uniquement lorsque vous êtes prêt à commencer votre voyage. Le chauffeur saisit ce code dans son application, ce qui confirme votre présence et autorise le déblocage du paiement. Sans ce code, le chauffeur ne reçoit pas son paiement."
+        },
+        "offline": {
+          "question": "Que se passe-t-il si je perds ma connexion internet ?",
+          "answer": "PikDrive fonctionne même en cas de connexion internet limitée. Votre code de vérification est envoyé par SMS et peut être présenté hors ligne. Les chauffeurs peuvent également valider les codes en mode hors ligne, et la synchronisation se fera automatiquement dès que la connexion est rétablie."
+        },
+        "driverCancel": {
+          "question": "Que se passe-t-il si mon chauffeur annule ?",
+          "answer": "Si votre chauffeur annule, vous serez notifié immédiatement par SMS et notification dans l'application. Vous pouvez alors soit choisir un autre chauffeur disponible (nous vous proposerons des alternatives), soit demander un remboursement intégral qui sera traité sous 24 heures vers votre moyen de paiement d'origine."
+        },
+        "becomeDriver": {
+          "question": "Comment devenir chauffeur ?",
+          "answer": "Visitez notre page 'Devenir Chauffeur' pour commencer le processus. Vous devrez fournir : une pièce d'identité valide, votre permis de conduire, les documents du véhicule (carte grise, assurance, contrôle technique), et une photo professionnelle. Nos équipes vérifient ces documents et organisent une formation rapide sur l'utilisation de l'application. Le processus prend généralement 48-72 heures."
+        },
+        "paymentSecure": {
+          "question": "Mon paiement est-il sécurisé ?",
+          "answer": "Oui, nous utilisons un cryptage aux normes internationales pour toutes les transactions. Les paiements sont sécurisés par notre système de code de vérification : l'argent n'est libéré au chauffeur qu'après validation de votre code, garantissant que vous recevez bien le service réservé. En cas de problème, notre équipe d'assistance est disponible 24/7."
+        }
+      }
+    },
+    "auth": {
+      "welcome": "Bienvenue sur PikDrive",
+      "enterCode": "Entrez le code de vérification envoyé à votre téléphone",
+      "welcomeBack": "Content de vous revoir ! Envoyons-nous un code à votre téléphone ?",
+      "enterPhone": "Entrez votre numéro de téléphone pour continuer",
+      "phonePlaceholder": "Entrez votre numéro de téléphone",
+      "codePlaceholder": "Entrez le code de vérification",
+      "sendCode": "Envoyer le code",
+      "sendTo": "Envoyer le code au {phone}",
+      "codeSentTo": "Code envoyé au {phone}",
+      "useAnotherNumber": "Utiliser un autre numéro",
+      "verify": "Vérifier",
+      "resendCode": "Renvoyer le code",
+      "resendIn": "Renvoyer dans {seconds}s",
+      "continue": "Continuer",
+      "codeSentDescription": "Veuillez consulter votre téléphone pour le code de vérification",
+      "codeResentDescription": "Un nouveau code de vérification a été envoyé à votre téléphone",
+      "waitBeforeResend": "Attendez un moment avant de demander un nouveau code",
+      "enterCodeError": "Veuillez entrer le code de vérification",
+      "phoneNotFound": "Numéro de téléphone non trouvé",
+      "checkingAuth": "Vérification de l'authentification...",
+      "toast": {
+        "codeSent": "Code envoyé !",
+        "welcome": "Bienvenue !",
+        "welcomeDescription": "Vous vous êtes connecté avec succès",
+        "codeResent": "Code renvoyé !"
+      }
+    },
+    "settings": {
+      "title": "Paramètres",
+      "notifications": {
+        "title": "Préférences de Notifications",
+        "email": "Notifications par Email",
+        "sms": "Notifications par SMS",
+        "whatsapp": "Notifications WhatsApp",
+        "emailDesc": "Recevoir les mises à jour sur vos trajets par email",
+        "smsDesc": "Recevoir des mises à jour instantanées par SMS",
+        "whatsappDesc": "Recevoir des mises à jour via WhatsApp"
+      },
+      "preferences": {
+        "title": "Préférences Générales",
+        "language": "Langue",
+        "timezone": "Fuseau Horaire",
+        "theme": "Thème",
+        "themeDescription": "Choisissez votre préférence d'apparence"
+      },
+      "privacy": {
+        "title": "Paramètres de Confidentialité",
+        "phone": "Numéro de Téléphone",
+        "emailVisibility": "Visibilité de l'Email",
+        "emailVisibilityDesc": "Afficher mon email aux autres utilisateurs",
+        "verify": "Vérifier"
+      },
+      "tabs": {
+        "notifications": "Notifications",
+        "privacy": "Confidentialité",
+        "preferences": "Préférences"
+      },
+      "toast": {
+        "saved": "Paramètres sauvegardés avec succès",
+        "error": "Échec de la sauvegarde des paramètres"
+      },
+      "saveChanges": "Sauvegarder les Modifications"
+    },
+    "profile": {
+      "title": "Profil",
+      "driverProfile": "Profil de Chauffeur",
+      "userProfile": "Profil Utilisateur",
+      "description": "Gérez vos informations personnelles et vos préférences",
+      "notFound": "Profil non trouvé",
+      "notFoundDescription": "Impossible de charger les informations de votre profil.",
+      "refresh": "Actualiser",
+      "retry": "Réessayer",
+      "goHome": "Retour à l'accueil",
+      "dashboard": "Tableau de bord",
+      "applicationStatus": "Statut de Candidature",
+      "status": "Statut",
+      "viewRejectedStatus": "Voir le Statut Refusé",
+      "personalInfo": {
+        "title": "Informations Personnelles",
+        "description": "Mettez à jour vos informations de base",
+        "fullName": "Nom Complet",
+        "email": "Email",
+        "phone": "Numéro de Téléphone",
+        "city": "Ville",
+        "edit": "Modifier",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Sauvegarde...",
+        "nameNotDefined": "Nom non défini"
+      },
+      "toast": {
+        "success": "Succès",
+        "profileUpdated": "Profil mis à jour avec succès",
+        "error": "Erreur",
+        "updateFailed": "Échec de la mise à jour du profil"
+      },
+      "accountStatus": "Statut du Compte",
+      "driverStatus": "Statut chauffeur:",
+      "viewStatus": "Voir le Statut",
+      "applicationSubmitted": "Candidature soumise le",
+      "accountType": "Type de compte:",
+      "driver": "Chauffeur",
+      "user": "Utilisateur",
+      "cityNotDefined": "Ville non définie",
+      "city": "Ville",
+      "selectCity": "Sélectionnez votre ville",
+      "searchCity": "Rechercher une ville...",
+      "driverDocuments": "Documents de Chauffeur",
+      "becomeDriver": "Devenir Chauffeur"
+    },
+    "errors": {
+      "title": "Quelque chose s'est mal passé",
+      "description": "Nous avons rencontré une erreur inattendue. Veuillez réessayer ou retourner à la page d'accueil.",
+      "tryAgain": "Réessayer",
+      "goHome": "Retour à l'accueil",
+      "persistContact": "Si ce problème persiste, veuillez contacter le support avec les détails de l'erreur ci-dessus.",
+      "errorDetails": "Détails de l'Erreur (Développement uniquement) :",
+      "errorId": "ID d'erreur"
+    },
+    "rides": {
+      "title": "Trajets Disponibles",
+      "subtitle": "Trouvez et réservez votre prochain trajet",
+      "loading": "Chargement des trajets...",
+      "booking": {
+        "loadingInfo": "Chargement des informations de réservation...",
+        "modalTitles": {
+          "passengerInfo": "Informations personnelles",
+          "seatSelection": "Réserver votre trajet",
+          "payment": "Détails du paiement",
+          "success": "Confirmation de réservation"
+        },
+        "passengerInfo": {
+          "title": "Informations personnelles",
+          "description": "Veuillez remplir vos informations pour compléter votre réservation",
+          "fullName": "Nom complet",
+          "fullNamePlaceholder": "Votre nom complet",
+          "clickToUpload": "Cliquez pour télécharger",
+          "saving": "Enregistrement...",
+          "cancel": "Annuler",
+          "idCard": "Carte d'Identité",
+          "idRecto": "Carte d'identité - Recto (Avant)",
+          "idVerso": "Carte d'identité - Verso (Arrière)",
+          "upload": "Télécharger",
+          "remove": "Retirer",
+          "continue": "Continuer",
+          "errors": {
+            "selectImage": "Veuillez sélectionner une image",
+            "enterName": "Veuillez entrer votre nom complet",
+            "uploadBoth": "Veuillez télécharger les deux côtés de votre carte d'identité",
+            "mustBeLoggedIn": "Vous devez être connecté",
+            "uploadError": "Erreur lors de l'upload",
+            "saveError": "Erreur lors de l'enregistrement",
+            "success": "Informations enregistrées avec succès"
+          }
+        },
+        "seatSelection": {
+          "title": "Sélection des Places",
+          "alreadyPaid": "Réservation déjà payée :",
+          "alreadyPaidDesc": "Vous avez déjà payé pour {seats} {seats, plural, =1 {place} other {places}}. Vous pouvez ajouter des places supplémentaires ci-dessous.",
+          "modifyBooking": "Modification de réservation :",
+          "modifyBookingDesc": "Vous avez déjà une réservation pour ce trajet. Vous pouvez modifier le nombre de places ou procéder au paiement.",
+          "seats": "Nombre de places",
+          "seatsAvailable": "places disponibles",
+          "totalPrice": "Prix total :",
+          "additionalPrice": "Montant à payer (places supplémentaires) :",
+          "createBooking": "Créer la Réservation",
+          "cancel": "Annuler",
+          "updateAndContinue": "Mettre à jour et continuer au paiement",
+          "continueToPayment": "Continuer au paiement",
+          "updating": "Mise à jour...",
+          "creating": "Création...",
+          "cannotReduce": "Vous ne pouvez pas réduire le nombre de places d'une réservation déjà payée",
+          "place": "place",
+          "places": "places"
+        },
+        "payment": {
+          "title": "Sélectionner le mode de paiement",
+          "alreadyPaidSeats": "Places déjà payées :",
+          "additionalSeats": "Places supplémentaires :",
+          "amountToPay": "Montant à payer :",
+          "total": "Total",
+          "back": "Retour",
+          "pay": "Payer maintenant",
+          "processing": "Traitement...",
+          "initiating": "Initiation du paiement...",
+          "waiting": "En attente...",
+          "paymentError": "Erreur de paiement",
+          "retry": "Réessayer",
+          "place": "place",
+          "places": "places"
+        },
+        "success": {
+          "title": "Réservation réussie !",
+          "description": "Votre réservation a été confirmée. Vous recevrez un message de confirmation sous peu.",
+          "redirecting": "Redirection vers vos réservations dans quelques instants...",
+          "done": "Terminé"
+        }
+      },
+      "chat": {
+        "title": "Chat avec le Chauffeur",
+        "description": "Envoyez des messages pour coordonner votre trajet. Ne partagez pas vos informations de contact personnelles.",
+        "loading": "Chargement des messages...",
+        "noMessages": "Aucun message pour le moment",
+        "send": "Envoyer",
+        "typeMessage": "Tapez votre message...",
+        "unknown": "Inconnu"
+      },
+      "filters": {
+        "from": "De",
+        "to": "À",
+        "fromPlaceholder": "Sélectionnez la ville de départ",
+        "fromSearch": "Rechercher une ville de départ...",
+        "toPlaceholder": "Sélectionnez la ville de destination",
+        "toSearch": "Rechercher une ville de destination...",
+        "search": "Rechercher",
+        "clear": "Effacer",
+        "priceRange": "Fourchette de Prix (FCFA)",
+        "minPrice": "Min",
+        "maxPrice": "Max",
+        "minSeats": "Places Minimum"
+      },
+      "emptyState": {
+        "title": "Aucun voyage trouvé",
+        "withFilters": "Modifiez vos critères pour découvrir plus de trajets.",
+        "withoutFilters": "Aucun trajet disponible pour le moment. Revenez bientôt !"
+      },
+      "rideCard": {
+        "vehicle": "Véhicule",
+        "notSpecified": "Non spécifié",
+        "places": "places",
+        "photoNotAvailable": "Photo du véhicule non disponible",
+        "driver": "Chauffeur",
+        "certifiedDriver": "Conducteur certifié PikDrive",
+        "certified": "Conducteur certifié",
+        "viewProfile": "Voir le profil",
+        "loginToSeeDetails": "Connectez-vous pour voir les détails du conducteur",
+        "departurePoint": "Point de départ",
+        "destinationPoint": "Point d'arrivée",
+        "scheduledDeparture": "Départ prévu",
+        "pricePerSeat": "Prix par place",
+        "book": "Réserver",
+        "chat": "Chat",
+        "contact": "Contacter",
+        "full": "Complet"
+      }
+    },
+    "bookings": {
+      "title": "Mes Réservations",
+      "loading": "Chargement de vos réservations",
+      "description": "Toutes vos réservations de trajets, que vous soyez passager ou conducteur.",
+      "searchPlaceholder": "Rechercher par ville, chauffeur ou statut...",
+      "results": "résultats",
+      "refresh": "Actualiser",
+      "noBookings": "Aucune réservation trouvée",
+      "noBookingsDesc": "Vous n'avez pas encore fait de réservations",
+      "noSearchResults": "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés.",
+      "errorLoading": "Erreur lors du chargement des réservations",
+      "errorLoadingDescription": "Veuillez réessayer plus tard.",
+      "pagination": {
+        "showing": "Affichage de",
+        "of": "sur",
+        "bookings": "réservations"
+      },
+      "card": {
+        "driver": "Chauffeur :",
+        "car": "Voiture :",
+        "seats": "Places :",
+        "total": "Total :",
+        "status": "Statut :",
+        "payment": "Paiement :",
+        "notAvailable": "Non disponible",
+        "notSpecified": "Non spécifié",
+        "statusConfirmed": "Confirmé",
+        "statusPending": "En attente",
+        "statusCancelled": "Annulé",
+        "statusPendingVerification": "En attente de vérification",
+        "paymentCompleted": "Terminé",
+        "paymentPending": "En attente",
+        "showCode": "Afficher le code de vérification du chauffeur",
+        "hideCode": "Masquer le code de vérification du chauffeur",
+        "contact": "Contacter",
+        "cancel": "Annuler la réservation",
+        "cancelling": "Annulation...",
+        "cancelTitle": "Annuler la réservation",
+        "cancelDescription": "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible et libérera {seats} {seats, plural, =1 {place} other {places}} sur le trajet.",
+        "keepBooking": "Non, garder la réservation",
+        "confirmCancel": "Oui, annuler",
+        "viewReceipt": "Voir le reçu",
+        "cancelled": "Réservation annulée"
+      }
+    },
+    "messages": {
+      "title": "Messages",
+      "refresh": "Actualiser",
+      "searchPlaceholder": "Rechercher des messages...",
+      "tabs": {
+        "all": "Tous",
+        "unread": "Non lus"
+      },
+      "open": "Ouvrir",
+      "errorLoading": "Erreur de chargement",
+      "errorDescription": "Impossible de charger vos conversations. Veuillez réessayer.",
+      "noResults": "Aucun résultat trouvé",
+      "noResultsDescription": "Aucune conversation ne correspond à votre recherche.",
+      "noConversations": "Aucune conversation",
+      "noConversationsDescription": "Vous n'avez pas encore démarré de conversation.",
+      "findRides": "Trouver des trajets",
+      "noUnread": "Pas de messages non lus",
+      "noUnreadDescription": "Vous avez lu tous vos messages"
+    },
+    "chat": {
+      "loading": "Chargement des messages...",
+      "error": "Erreur lors du chargement des messages",
+      "noMessages": "Aucun message pour le moment. Commencez la conversation !",
+      "typeMessage": "Tapez un message...",
+      "send": "Envoyer",
+      "errorSending": "Erreur lors de l'envoi",
+      "errorSendingDescription": "Veuillez réessayer plus tard.",
+      "failedToLoad": "Échec du chargement des messages",
+      "failedToSend": "Échec de l'envoi du message",
+      "tryAgain": "Réessayer",
+      "sendMessage": "Envoyer un message",
+      "helperText": "Appuyez sur Entrée pour envoyer. Maj + Entrée pour une nouvelle ligne. Les informations de contact seront automatiquement supprimées."
+    },
+    "driver": {
+      "newRide": {
+        "title": "Créer un Nouveau Trajet",
+        "description": "Remplissez les détails ci-dessous pour créer un nouveau trajet.",
+        "fromCity": "Ville de Départ",
+        "fromCityPlaceholder": "Sélectionner la ville de départ",
+        "toCity": "Ville de Destination",
+        "toCityPlaceholder": "Sélectionner la ville de destination",
+        "departureTime": "Heure de Départ",
+        "departureTimePlaceholder": "Choisir une date et heure",
+        "price": "Prix (FCFA)",
+        "pricePlaceholder": "ex: 5000",
+        "seatsAvailable": "Places Disponibles",
+        "seatsDescription": "Nombre de places disponibles pour ce trajet",
+        "seatsPlaceholder": "ex: 4",
+        "carModel": "Modèle de Voiture",
+        "carModelPlaceholder": "ex: Toyota Camry",
+        "carColor": "Couleur de la Voiture",
+        "carColorPlaceholder": "ex: Noir",
+        "cancel": "Annuler",
+        "create": "Créer le Trajet",
+        "creating": "Création...",
+        "successTitle": "Trajet Créé avec Succès !",
+        "successDescription": "Votre trajet a été créé avec succès. Vous pouvez maintenant gérer vos trajets depuis le tableau de bord.",
+        "goToDashboard": "Aller au Tableau de Bord",
+        "redirecting": "Redirection...",
+        "invalidTime": "Heure de Départ Invalide",
+        "invalidTimeDescription": "L'heure de départ doit être dans le futur.",
+        "validation": {
+          "fromCityRequired": "La ville de départ est requise",
+          "toCityRequired": "La ville de destination est requise",
+          "departureTimeRequired": "L'heure de départ est requise",
+          "priceRequired": "Le prix est requis",
+          "seatsRequired": "Le nombre de places disponibles est requis",
+          "seatsMax": "Ne peut pas dépasser 100 places",
+          "carModelRequired": "Le modèle de voiture est requis",
+          "carColorRequired": "La couleur de la voiture est requise"
+        },
+        "errors": {
+          "authRequired": "Authentification Requise",
+          "authRequiredDescription": "Veuillez vous connecter pour créer un trajet.",
+          "fieldsRequired": "Champs Requis",
+          "fieldsRequiredDescription": "Le prix et le nombre de places sont requis.",
+          "error": "Erreur",
+          "errorDescription": "Une erreur s'est produite lors de la création de votre trajet. Veuillez réessayer."
+        }
+      },
+      "dashboard": {
+        "title": "Vos trajets",
+        "description": "Gérez vos trajets et réservations",
+        "createRide": "Créer un trajet",
+        "newRide": "Nouveau trajet",
+        "tabs": {
+          "upcoming": "À venir",
+          "past": "Passés",
+          "payments": "Paiements"
+        },
+        "searchPlaceholder": "Rechercher par ville, passager ou modèle de voiture...",
+        "sort": {
+          "label": "Trier",
+          "earliest": "Plus tôt d'abord",
+          "latest": "Plus tard d'abord",
+          "earliestShort": "↑ Plus tôt",
+          "latestShort": "↓ Plus tard"
+        },
+        "noRides": {
+          "upcoming": "Vous n'avez pas encore de trajets à venir.",
+          "past": "Vous n'avez pas encore de trajets passés.",
+          "search": "Aucun trajet {type} ne correspond à votre recherche.",
+          "upcomingType": "à venir",
+          "pastType": "passé"
+        },
+        "payments": {
+          "all": "Tous",
+          "pending": "En attente",
+          "processing": "En cours",
+          "completed": "Terminés",
+          "failed": "Échoués",
+          "noPayments": "Aucun paiement enregistré",
+          "noPaymentsFiltered": "Aucun paiement {status}",
+          "pendingStatus": "en attente",
+          "processingStatus": "en cours",
+          "completedStatus": "terminé",
+          "failedStatus": "échoué",
+          "date": "Date",
+          "ride": "Trajet",
+          "amount": "Montant",
+          "fees": "Frais",
+          "status": "Statut",
+          "transaction": "Transaction",
+          "fee": "Frais",
+          "commission": "Commission",
+          "place": "place",
+          "places": "places",
+          "statistics": {
+            "loading": "Chargement des statistiques de paiement...",
+            "retry": "Réessayer",
+            "totalEarnings": "Gains Totaux",
+            "completedPayments": "{count} paiement(s) complété(s)",
+            "pending": "En Attente",
+            "awaitingProcessing": "En attente de traitement",
+            "thisMonth": "Ce Mois",
+            "currentMonthEarnings": "Gains du mois en cours",
+            "totalPayments": "Total Paiements",
+            "completedAndFailed": "{completed} complété(s), {failed} échoué(s)",
+            "paymentHistory": "Historique des Paiements",
+            "refresh": "Actualiser",
+            "statusLabels": {
+              "pending": "En attente",
+              "processing": "En cours",
+              "completed": "Terminé",
+              "failed": "Échoué"
+            },
+            "notAvailable": "N/A"
+          }
+        },
+        "rideCard": {
+          "passengers": "passagers",
+          "availableSeats": "places disponibles",
+          "edit": "Modifier",
+          "editShort": "Modif",
+          "delete": "Supprimer",
+          "deleteShort": "Suppr",
+          "deleteTitle": "Êtes-vous sûr de vouloir supprimer ce trajet ?",
+          "deleteDescription": "Cette action est irréversible et supprimera définitivement ce trajet.",
+          "deleteWarning": "Ce trajet a {count} réservation(s) et ne peut pas être supprimé.",
+          "cancel": "Annuler",
+          "confirm": "Confirmer",
+          "reservations": "réserv.",
+          "contact": "Contacter",
+          "bookings": "Réservations",
+          "noBookings": "Aucune réservation pour ce trajet",
+          "passengersLabel": "Passagers",
+          "deleting": "Suppression...",
+          "paid": "payé(s)",
+          "passenger": "Passager",
+          "statusPending": "En attente",
+          "statusPendingVerification": "Vérif.",
+          "statusConfirmed": "Confirmé",
+          "statusCancelled": "Annulé",
+          "verified": "Vérifié",
+          "paidStatus": "Payé",
+          "pendingPayment": "En attente",
+          "checkPayment": "Vérifier paiement",
+          "checkPaymentShort": "Vérif. paiement",
+          "verifyCode": "Vérifier code",
+          "verifyCodeShort": "Vérif. code",
+          "chat": "Chat"
+        }
+      },
+      "pending": {
+        "title": "Candidature en Cours d'Examen",
+        "approvedTitle": "Candidature Approuvée",
+        "rejectedTitle": "Candidature Refusée",
+        "description": "Votre candidature pour devenir conducteur PikDrive est actuellement en cours d'examen.",
+        "approvedDescription": "Félicitations ! Votre candidature a été approuvée.",
+        "rejectedDescription": "Votre candidature pour devenir conducteur PikDrive n'a pas été approuvée.",
+        "loading": "Chargement...",
+        "noApplication": {
+          "title": "Aucune candidature trouvée",
+          "description": "Vous n'avez pas encore soumis de candidature pour devenir conducteur.",
+          "button": "Devenir conducteur"
+        },
+        "status": {
+          "rejected": "Refusé",
+          "approved": "Approuvé",
+          "pending": "En attente"
+        },
+        "statusCard": {
+          "title": "Statut de votre candidature",
+          "rejectedDescription": "Votre candidature n'a pas été approuvée pour les raisons suivantes",
+          "approvedDescription": "Votre candidature a été approuvée avec succès",
+          "pendingDescription": "Notre équipe examine vos documents et vérifie vos informations"
+        },
+        "rejected": {
+          "badge": "Candidature refusée",
+          "possibleReasons": "Raisons possibles :",
+          "reasons": {
+            "incompleteDocuments": "Documents incomplets ou illisibles",
+            "incorrectInfo": "Informations personnelles incorrectes",
+            "expiredDocuments": "Documents de véhicule expirés",
+            "drivingHistory": "Antécédents de conduite problématiques"
+          },
+          "note": "Note : Vous pouvez soumettre une nouvelle candidature après avoir corrigé les problèmes identifiés."
+        },
+        "approved": {
+          "badge": "Candidature approuvée",
+          "congratulations": "Félicitations ! Vous pouvez maintenant commencer à publier des trajets."
+        },
+        "pendingStatus": {
+          "badge": "En cours d'examen",
+          "typicalTime": "Temps d'examen typique : 24-48 heures"
+        },
+        "nextSteps": {
+          "title": "Prochaines étapes",
+          "pending": {
+            "step1": {
+              "title": "Examen des documents",
+              "description": "Vérification de vos pièces d'identité et documents de véhicule"
+            },
+            "step2": {
+              "title": "Notification par email",
+              "description": "Vous recevrez un email avec le résultat de votre candidature"
+            },
+            "step3": {
+              "title": "Commencer à conduire",
+              "description": "Après approbation, vous pourrez publier des trajets"
+            }
+          },
+          "approved": {
+            "step1": {
+              "title": "Accéder au tableau de bord",
+              "description": "Utilisez le bouton ci-dessous pour accéder à votre espace conducteur"
+            },
+            "step2": {
+              "title": "Publier votre premier trajet",
+              "description": "Créez et gérez vos trajets depuis votre tableau de bord"
+            }
+          }
+        },
+        "important": {
+          "titleRejected": "Informations importantes",
+          "titlePending": "Important",
+          "rejected": {
+            "checkDocuments": "Vérifiez que tous vos documents sont clairs et lisibles",
+            "checkInfo": "Assurez-vous que vos informations personnelles sont correctes",
+            "checkVehicle": "Vérifiez que vos documents de véhicule sont à jour",
+            "contactSupport": "En cas de question, contactez notre support"
+          },
+          "pending": {
+            "checkDocuments": "Assurez-vous que tous vos documents sont clairs et lisibles",
+            "checkEmail": "Vérifiez que votre adresse email est correcte pour recevoir les notifications",
+            "contactSupport": "En cas de problème, contactez notre support"
+          }
+        },
+        "actions": {
+          "applyAgain": "Postuler à nouveau",
+          "contactSupport": "Contacter le support",
+          "accessDashboard": "Accéder au tableau de bord",
+          "goHome": "Retour à l'accueil"
+        }
+      },
+      "codeVerification": {
+        "enterCode": "Veuillez entrer le code de vérification complet à 6 caractères",
+        "verificationFailed": "Échec de la vérification",
+        "invalidCode": "Code de vérification invalide",
+        "failedToVerify": "Échec de la vérification du code du passager",
+        "passengerVerified": "Passager Vérifié",
+        "passengerVerifiedDescription": "Le passager a été vérifié avec succès. Vous pouvez procéder au trajet.",
+        "verifyPassenger": "Vérifier le Passager",
+        "description": "Entrez le code à 6 caractères fourni par votre passager",
+        "placeholder": "Entrez le code (ex: AB12C3)",
+        "verifyCode": "Vérifier le Code"
+      }
+    }
+  },
+  "offline": {
+    "title": "Vous êtes Hors Ligne",
+    "description": "Veuillez vérifier votre connexion internet et réessayer",
+    "tryAgain": "Réessayer"
+  },
+  "phone": {
+    "label": "Numéro de Téléphone",
+    "placeholder": "+237 6 XX XX XX XX",
+    "validNumber": "Numéro de téléphone valide",
+    "errors": {
+      "invalidMTN": "Veuillez entrer un numéro MTN valide (650-654, 677-683)",
+      "invalidOrange": "Veuillez entrer un numéro Orange valide (655-659, 679, 690-699)",
+      "invalidCameroon": "Veuillez entrer un numéro de téléphone camerounais valide"
+    }
+  },
+  "payment": {
+    "status": {
+      "checking": "Vérification du statut du paiement...",
+      "pleaseCheckPhone": "Veuillez vérifier votre téléphone pour la demande de paiement",
+      "verificationTimeout": "Le délai de vérification du paiement a expiré. Veuillez contacter le support.",
+      "failedToVerify": "Échec de la vérification du statut du paiement. Veuillez contacter le support.",
+      "failed": "Paiement échoué",
+      "checkingBackground": "Vérification en arrière-plan...",
+      "statusWillUpdate": "Le statut sera mis à jour automatiquement",
+      "invalidReference": "Référence de paiement invalide",
+      "completedSuccess": "Paiement complété avec succès!",
+      "temporaryFailure": "Échec temporaire - Nouvelle tentative en cours...",
+      "paymentFailed": "Paiement échoué",
+      "processing": "Traitement du paiement en cours...",
+      "awaitingProcessing": "En attente de traitement...",
+      "autoVerification": "Vérification automatique en cours..."
+    }
+  },
+  "avatar": {
+    "uploading": "Téléchargement...",
+    "error": "Erreur",
+    "uploadError": "Erreur lors du téléchargement de l'avatar",
+    "mustSelectImage": "Vous devez sélectionner une image à télécharger."
+  },
+  "notifications": {
+    "prompt": {
+      "titleBlocked": "🔒 Notifications bloquées",
+      "titleEnable": "🔔 Activez les notifications",
+      "descriptionBlocked": "Réactivez les notifications dans les paramètres de votre navigateur",
+      "descriptionEnable": "Ne manquez jamais les mises à jour importantes de vos trajets",
+      "howToReenable": "Comment réactiver les notifications :",
+      "step1": "Cliquez sur l'icône 🔒 dans la barre d'adresse",
+      "step2": "Choisissez \"Notifications\"",
+      "step3": "Changez de \"Bloquer\" à \"Autoriser\"",
+      "step4": "Actualisez la page",
+      "benefits": {
+        "realtimeMessages": {
+          "title": "Messages en temps réel",
+          "description": "Recevez instantanément les messages de votre conducteur ou passager"
+        },
+        "rideUpdates": {
+          "title": "Mises à jour de trajet",
+          "description": "Soyez informé des changements de statut de votre réservation"
+        },
+        "paymentConfirmations": {
+          "title": "Confirmations de paiement",
+          "description": "Recevez immédiatement la confirmation de vos paiements"
+        }
+      },
+      "permissionDenied": "Permission refusée. Vous pouvez réessayer plus tard.",
+      "errorOccurred": "Une erreur s'est produite. Veuillez réessayer.",
+      "understood": "Compris",
+      "later": "Plus tard",
+      "activating": "Activation...",
+      "enableNotifications": "Activer les notifications",
+      "privacyNote": "Nous respectons votre vie privée. Vous pouvez désactiver les notifications à tout moment."
+    }
+  },
+  "footer": {
+    "tagline": "Découvrez le Cameroun, Ensemble",
+    "copyright": "{year} PikDrive. Tous droits réservés."
+  },
+  "metadata": {
+    "title": "PikDrive - Votre Plateforme de Covoiturage Intercités de Confiance",
+    "description": "Connectez-vous avec des chauffeurs de confiance pour des voyages intercités sûrs et abordables au Cameroun."
+  }
+}

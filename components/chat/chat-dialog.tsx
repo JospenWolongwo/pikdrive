@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAvatarUrl } from "@/lib/utils/avatar-url";
+import { useLocale } from "@/hooks";
 
 interface Message {
   id: string;
@@ -52,6 +53,7 @@ export function ChatDialog({
   otherUserAvatar,
 }: ChatDialogProps) {
   const { user, supabase } = useSupabase();
+  const { t } = useLocale();
   const {
     messages,
     messagesLoading,
@@ -190,8 +192,8 @@ export function ChatDialog({
       setNewMessage(messageContent); // Restore message if failed
       toast({
         variant: "destructive",
-        title: "Error sending message",
-        description: "Please try again later.",
+        title: t("pages.chat.errorSending"),
+        description: t("pages.chat.errorSendingDescription"),
       });
     }
   };
@@ -236,11 +238,11 @@ export function ChatDialog({
               </div>
             ) : shouldShowError ? (
               <div className="text-center py-4 text-red-500">
-                <p>Error loading messages: {error}</p>
+                <p>{t("pages.chat.error")}: {error}</p>
               </div>
             ) : conversationMessages.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                <p>Aucun message pour l'instant. Lancez la conversation !</p>
+                <p>{t("pages.chat.noMessages")}</p>
               </div>
             ) : (
               conversationMessages.map((message) => (
@@ -290,7 +292,7 @@ export function ChatDialog({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
+              placeholder={t("pages.chat.typeMessage")}
               className="resize-none"
               rows={1}
             />

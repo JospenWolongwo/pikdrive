@@ -11,6 +11,7 @@ import Image from 'next/image'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { handleDriverAction } from '@/lib/driver-routing-utils'
 import { toast } from '@/components/ui/use-toast'
+import { useLocale } from "@/hooks";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -43,6 +44,7 @@ const getRouteIcon = (iconType: string) => {
 export default function Home() {
   const { user, supabase } = useSupabase()
   const router = useRouter()
+  const { t } = useLocale()
 
   return (
     <main className="min-h-screen">
@@ -66,11 +68,11 @@ export default function Home() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="block">Découvrez</span> 
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-yellow-200">le Cameroun, Ensemble</span>
+            <span className="block">{t("pages.home.hero.title1")}</span> 
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-yellow-200">{t("pages.home.hero.title2")}</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed">
-            Connectez-vous avec des chauffeurs de confiance et explorez les merveilles du Cameroun en toute sécurité
+            {t("pages.home.hero.subtitle")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -78,7 +80,7 @@ export default function Home() {
               onClick={() => router.push('/rides')}
               className="bg-primary hover:bg-primary/90"
             >
-              Trouver un Trajet
+              {t("pages.home.hero.findRide")}
             </Button>
             <Button 
               size="lg" 
@@ -103,7 +105,7 @@ export default function Home() {
                 }
               }}
             >
-              Publier un trajet
+              {t("pages.home.hero.publishRide")}
             </Button>
           </div>
           
@@ -116,8 +118,8 @@ export default function Home() {
             >
               <a href="https://wa.me/+237698805890" target="_blank" rel="noopener noreferrer">
                 <BsWhatsapp className="h-5 w-5" />
-                <span className="hidden sm:inline">Contactez-nous sur WhatsApp</span>
-                <span className="sm:hidden">WhatsApp</span>
+                <span className="hidden sm:inline">{t("pages.home.hero.contactWhatsApp")}</span>
+                <span className="sm:hidden">{t("pages.home.hero.whatsApp")}</span>
               </a>
             </Button>
             <Button 
@@ -127,8 +129,8 @@ export default function Home() {
               onClick={() => router.push('/contact')}
             >
               <HelpCircle className="h-5 w-5" />
-              <span className="hidden sm:inline">Besoin d&apos;aide ?</span>
-              <span className="sm:hidden">Aide</span>
+              <span className="hidden sm:inline">{t("pages.home.hero.needHelp")}</span>
+              <span className="sm:hidden">{t("pages.home.hero.help")}</span>
             </Button>
           </div>
         </motion.div>
@@ -155,7 +157,7 @@ export default function Home() {
               variants={fadeIn}
               className="text-muted-foreground max-w-2xl mx-auto mt-6 text-lg"
             >
-              Simplifiez vos déplacements intercités en quatre étapes simples
+              {t("pages.home.howItWorks.subtitle")}
             </motion.p>
           </motion.div>
 
@@ -169,23 +171,23 @@ export default function Home() {
             {[
               {
                 icon: <MapPin className="w-12 h-12" />,
-                title: "Choisissez Votre Destination",
-                description: "Sélectionnez votre destination et trouvez un chauffeur disponible"
+                title: t("pages.home.howItWorks.step1.title"),
+                description: t("pages.home.howItWorks.step1.description")
               },
               {
                 icon: <CreditCard className="w-12 h-12" />,
-                title: "Effectuez le Paiement",
-                description: "Réservez votre trajet en payant de manière sécurisée"
+                title: t("pages.home.howItWorks.step2.title"),
+                description: t("pages.home.howItWorks.step2.description")
               },
               {
                 icon: <Shield className="w-12 h-12" />,
-                title: "Recevez le Code",
-                description: "Un code de vérification vous est envoyé après le paiement"
+                title: t("pages.home.howItWorks.step3.title"),
+                description: t("pages.home.howItWorks.step3.description")
               },
               {
                 icon: <Check className="w-12 h-12" />,
-                title: "Validez le Trajet",
-                description: "Présentez le code au chauffeur pour valider le paiement"
+                title: t("pages.home.howItWorks.step4.title"),
+                description: t("pages.home.howItWorks.step4.description")
               }
             ].map((step, index) => (
               <motion.div
@@ -218,13 +220,13 @@ export default function Home() {
               variants={fadeIn}
               className="text-3xl md:text-4xl font-bold mb-4"
             >
-              Itinéraires Populaires
+              {t("pages.home.popularRoutes.title")}
             </motion.h2>
             <motion.p 
               variants={fadeIn}
               className="text-muted-foreground max-w-2xl mx-auto"
             >
-              Découvrez nos itinéraires intercités les plus fréquentés
+              {t("pages.home.popularRoutes.subtitle")}
             </motion.p>
           </motion.div>
 
@@ -282,7 +284,7 @@ export default function Home() {
                           {getRouteIcon(route.icon)}
                         </div>
                     <div>
-                          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Itinéraire Populaire</p>
+                          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t("pages.home.popularRoutes.popularRoute")}</p>
                           <h3 className="text-lg font-bold text-foreground">{route.from} → {route.to}</h3>
                         </div>
                       </div>
@@ -301,13 +303,13 @@ export default function Home() {
                             <Clock className="w-4 h-4 text-primary-foreground" />
                           </div>
                     <div>
-                            <p className="text-xs text-muted-foreground font-medium">Durée</p>
+                            <p className="text-xs text-muted-foreground font-medium">{t("pages.home.popularRoutes.duration")}</p>
                             <p className="font-bold text-foreground">{route.duration}</p>
                           </div>
                         </div>
                         
                         <div className="text-right">
-                          <p className="text-xs text-muted-foreground font-medium">Prix moyen</p>
+                          <p className="text-xs text-muted-foreground font-medium">{t("pages.home.popularRoutes.averagePrice")}</p>
                           <div className="flex items-baseline gap-1">
                             <p className="text-xl font-black text-primary">{route.price}</p>
                             <p className="text-xs font-bold text-muted-foreground">FCFA</p>
@@ -340,13 +342,13 @@ export default function Home() {
               variants={fadeIn}
               className="text-3xl md:text-4xl font-bold mb-4"
             >
-              Ce Que Disent Nos Utilisateurs
+              {t("pages.home.testimonials.title")}
             </motion.h2>
             <motion.p 
               variants={fadeIn}
               className="text-muted-foreground max-w-2xl mx-auto"
             >
-              Approuvé par des milliers de voyageurs à travers le Cameroun
+              {t("pages.home.testimonials.subtitle")}
             </motion.p>
           </motion.div>
 
@@ -463,10 +465,10 @@ export default function Home() {
               className="md:w-1/2 text-left"
             >
               <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-                Rejoignez la Communauté PikDrive Dès Aujourd&apos;hui
+                {t("pages.home.cta.title")}
               </h2>
               <p className="text-lg mb-8 text-white/90">
-                Déjà plus de <span className="font-bold">15,000+</span> utilisateurs font confiance à PikDrive pour leurs voyages intercités chaque mois. Soyez des nôtres!
+                {t("pages.home.cta.subtitle", { count: "15,000+" })}
               </p>
               <div className="flex flex-wrap gap-4">
                 {!user && (
@@ -476,7 +478,7 @@ export default function Home() {
                     onClick={() => router.push('/auth')}
                     className="whitespace-nowrap"
                   >
-                    Créer un Compte
+                    {t("pages.home.cta.createAccount")}
                   </Button>
                 )}
                 <Button 
@@ -485,7 +487,7 @@ export default function Home() {
                   className="text-primary border-primary dark:text-white dark:border-white hover:bg-primary hover:text-white dark:hover:bg-white dark:hover:text-primary"
                   onClick={() => router.push('/rides')}
                 >
-                  Trouver un Trajet
+                  {t("pages.home.cta.findRide")}
                 </Button>
               </div>
             </motion.div>
@@ -506,15 +508,15 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  <div className="text-sm">Rejoignez <span className="font-bold">15K+</span> utilisateurs satisfaits</div>
+                  <div className="text-sm">{t("pages.home.cta.joinUsers", { count: "15K+" })}</div>
                 </div>
                 
                 <div className="space-y-3 mb-4">
                   {[
-                    "Plateforme de réservation simple et rapide",
-                    "Système de paiement sécurisé",
-                    "Vérification des chauffeurs en temps réel",
-                    "Assistance client disponible 24/7"
+                    t("pages.home.cta.features.booking"),
+                    t("pages.home.cta.features.payment"),
+                    t("pages.home.cta.features.verification"),
+                    t("pages.home.cta.features.support")
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <div className="bg-green-500 rounded-full p-1 mt-0.5">
@@ -526,10 +528,10 @@ export default function Home() {
                 </div>
                 
                 <div className="mt-6 pt-4 border-t border-white/20">
-                  <div className="text-sm mb-1">Bientôt disponible sur mobile</div>
+                  <div className="text-sm mb-1">{t("pages.home.cta.comingSoon")}</div>
                   <div className="flex gap-3">
                     <Button variant="outline" size="sm" className="border-primary/50 text-primary dark:border-white/30 dark:text-white hover:bg-primary/10 hover:text-primary dark:hover:bg-white/10 dark:hover:text-white">
-                      Application en développement
+                      {t("pages.home.cta.appInDevelopment")}
                     </Button>
                   </div>
                 </div>

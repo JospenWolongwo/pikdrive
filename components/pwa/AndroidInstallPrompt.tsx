@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useLocale } from '@/hooks';
 
 export interface AndroidInstallPromptProps {
   show: boolean;
@@ -16,28 +17,30 @@ export interface AndroidInstallPromptProps {
 }
 
 export function AndroidInstallPrompt({ show, onClose, onInstall }: AndroidInstallPromptProps) {
+  const { t } = useLocale();
+  
   return (
     <Dialog open={show} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Install PikDrive</DialogTitle>
+          <DialogTitle>{t("pwa.android.title")}</DialogTitle>
           <DialogDescription>
-            Install PikDrive on your device for the best experience:
+            {t("pwa.android.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-sm">
-            <li>Tap &quot;Add to Home Screen&quot; when prompted</li>
-            <li>Or click &quot;Install&quot; in your browser menu</li>
-            <li>Access PikDrive directly from your home screen</li>
-            <li>Get a faster, app-like experience</li>
+            <li>{t("pwa.android.step1")}</li>
+            <li>{t("pwa.android.step2")}</li>
+            <li>{t("pwa.android.step3")}</li>
+            <li>{t("pwa.android.step4")}</li>
           </ul>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onClose}>
-              Later
+              {t("pwa.later")}
             </Button>
             <Button onClick={onInstall}>
-              Install Now
+              {t("pwa.installNow")}
             </Button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { isMTNPhoneNumber, isOrangePhoneNumber } from '@/lib/payment/phone-utils';
+import { useLocale } from '@/hooks';
 
 interface PhoneNumberInputProps {
   value: string;
@@ -21,6 +22,7 @@ export function PhoneNumberInput({
   provider,
   disabled
 }: PhoneNumberInputProps) {
+  const { t } = useLocale();
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,12 +44,12 @@ export function PhoneNumberInput({
     if (provider) {
       if (provider === 'mtn') {
         if (!isMTNPhoneNumber(actualNumber)) {
-          providerError = 'Please enter a valid MTN number (650-654, 677-683)';
+          providerError = t("phone.errors.invalidMTN");
           isValidProvider = false;
         }
       } else if (provider === 'orange') {
         if (!isOrangePhoneNumber(actualNumber)) {
-          providerError = 'Please enter a valid Orange number (655-659, 679, 690-699)';
+          providerError = t("phone.errors.invalidOrange");
           isValidProvider = false;
         }
       }
@@ -59,11 +61,11 @@ export function PhoneNumberInput({
     if (providerError) {
       setError(providerError);
     } else if (!isValidNumber && isValidFormat) {
-      setError('Please enter a valid Cameroon phone number');
+      setError(t("phone.errors.invalidCameroon"));
     } else if (isValidNumber) {
       setError(null);
     } else {
-      setError('Please enter a valid Cameroon phone number');
+      setError(t("phone.errors.invalidCameroon"));
     }
 
     setIsValid(isValidNumber);
@@ -112,13 +114,13 @@ export function PhoneNumberInput({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="phone-number">Phone Number</Label>
+      <Label htmlFor="phone-number">{t("phone.label")}</Label>
       <div className="relative">
         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           id="phone-number"
           type="tel"
-          placeholder="+237 6 XX XX XX XX"
+          placeholder={t("phone.placeholder")}
           value={value}
           onChange={handleChange}
           disabled={disabled}
@@ -129,7 +131,7 @@ export function PhoneNumberInput({
         <p className="text-sm text-red-500">{error}</p>
       )}
       {isValid && (
-        <p className="text-sm text-green-500">Valid phone number</p>
+        <p className="text-sm text-green-500">{t("phone.validNumber")}</p>
       )}
     </div>
   );

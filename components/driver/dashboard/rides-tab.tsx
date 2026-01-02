@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RideCard } from "./ride-card";
 import { PaginationComponent } from "./pagination";
 import type { RideWithDetails } from "@/types";
+import { useLocale } from "@/hooks";
 
 interface RidesTabProps {
   rides: RideWithDetails[];
@@ -35,18 +36,15 @@ export function RidesTab({
   isPastRide = false,
   searchQuery,
 }: RidesTabProps) {
+  const { t } = useLocale();
   if (rides.length === 0) {
     return (
       <Card>
         <CardContent className="text-center py-12">
           <p className="text-muted-foreground">
             {searchQuery
-              ? `Aucun trajet ${
-                  isPastRide ? "passé" : "à venir"
-                } ne correspond à votre recherche.`
-              : `Vous n'avez pas encore de trajets ${
-                  isPastRide ? "passés" : "à venir"
-                }.`}
+              ? t("pages.driver.dashboard.noRides.search", { type: isPastRide ? t("pages.driver.dashboard.noRides.pastType") : t("pages.driver.dashboard.noRides.upcomingType") })
+              : isPastRide ? t("pages.driver.dashboard.noRides.past") : t("pages.driver.dashboard.noRides.upcoming")}
           </p>
         </CardContent>
       </Card>

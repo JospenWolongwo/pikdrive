@@ -12,10 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Bell, Shield, Globe, Phone, Mail, Sun, Moon, Monitor } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
+import { useLocale } from "@/hooks";
 
 export default function SettingsPage() {
   const { supabase, user } = useSupabase()
   const { theme: currentTheme, setTheme: setCurrentTheme } = useTheme()
+  const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState({
     email_notifications: true,
@@ -65,10 +67,10 @@ export default function SettingsPage() {
         })
 
       if (error) throw error
-      toast.success('Paramètres sauvegardés avec succès')
+      toast.success(t('pages.settings.toast.saved'))
     } catch (error) {
       console.error('Error saving settings:', error)
-      toast.error('Échec de la sauvegarde des paramètres')
+      toast.error(t('pages.settings.toast.error'))
     }
   }
 
@@ -80,7 +82,7 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Chargement...</div>
+    return <div className="flex items-center justify-center min-h-screen">{t("common.loading")}</div>
   }
 
   return (
@@ -90,34 +92,34 @@ export default function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-4xl mx-auto"
       >
-        <h1 className="text-3xl font-bold mb-8">Paramètres</h1>
+        <h1 className="text-3xl font-bold mb-8">{t("pages.settings.title")}</h1>
 
         <Tabs defaultValue="notifications" className="space-y-6">
           <TabsList>
             <TabsTrigger value="notifications">
               <Bell className="w-4 h-4 mr-2" />
-              Notifications
+              {t("pages.settings.tabs.notifications")}
             </TabsTrigger>
             <TabsTrigger value="privacy">
               <Shield className="w-4 h-4 mr-2" />
-              Confidentialité
+              {t("pages.settings.tabs.privacy")}
             </TabsTrigger>
             <TabsTrigger value="preferences">
               <Globe className="w-4 h-4 mr-2" />
-              Préférences
+              {t("pages.settings.tabs.preferences")}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="notifications" className="space-y-4">
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Préférences de Notifications</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("pages.settings.notifications.title")}</h2>
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Notifications par Email</Label>
+                    <Label>{t("pages.settings.notifications.email")}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Recevoir les mises à jour sur vos trajets par email
+                      {t("pages.settings.notifications.emailDesc")}
                     </p>
                   </div>
                   <Switch
@@ -128,9 +130,9 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Notifications SMS</Label>
+                    <Label>{t("pages.settings.notifications.sms")}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Recevoir des mises à jour instantanées par SMS
+                      {t("pages.settings.notifications.smsDesc")}
                     </p>
                   </div>
                   <Switch
@@ -141,9 +143,9 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Notifications WhatsApp</Label>
+                    <Label>{t("pages.settings.notifications.whatsapp")}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Recevoir des mises à jour via WhatsApp
+                      {t("pages.settings.notifications.whatsappDesc")}
                     </p>
                   </div>
                   <Switch
@@ -157,11 +159,11 @@ export default function SettingsPage() {
 
           <TabsContent value="privacy" className="space-y-4">
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Paramètres de Confidentialité</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("pages.settings.privacy.title")}</h2>
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Numéro de Téléphone</Label>
+                  <Label>{t("pages.settings.privacy.phone")}</Label>
                   <div className="flex gap-4">
                     <Input
                       type="tel"
@@ -174,16 +176,16 @@ export default function SettingsPage() {
                     />
                     <Button variant="outline">
                       <Phone className="w-4 h-4 mr-2" />
-                      Vérifier
+                      {t("pages.settings.privacy.verify")}
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Visibilité de l'Email</Label>
+                  <Label>{t("pages.settings.privacy.emailVisibility")}</Label>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      Afficher mon email aux autres utilisateurs
+                      {t("pages.settings.privacy.emailVisibilityDesc")}
                     </p>
                     <Switch
                       checked={settings.email_notifications}
@@ -197,11 +199,11 @@ export default function SettingsPage() {
 
           <TabsContent value="preferences" className="space-y-4">
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Préférences Générales</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("pages.settings.preferences.title")}</h2>
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Langue</Label>
+                  <Label>{t("pages.settings.preferences.language")}</Label>
                   <select
                     className="w-full p-2 border rounded-md"
                     value={settings.language}
@@ -210,13 +212,13 @@ export default function SettingsPage() {
                       language: e.target.value
                     }))}
                   >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
+                    <option value="fr">{t("language.french")}</option>
+                    <option value="en">{t("language.english")}</option>
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fuseau Horaire</Label>
+                  <Label>{t("pages.settings.preferences.timezone")}</Label>
                   <select
                     className="w-full p-2 border rounded-md"
                     value={settings.timezone}
@@ -232,7 +234,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Thème</Label>
+                  <Label>{t("pages.settings.preferences.theme")}</Label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -247,7 +249,7 @@ export default function SettingsPage() {
                       }`}
                     >
                       <Monitor className="w-4 h-4" />
-                      <span className="text-sm">Système</span>
+                      <span className="text-sm">{t("theme.system")}</span>
                     </button>
                     <button
                       type="button"
@@ -262,7 +264,7 @@ export default function SettingsPage() {
                       }`}
                     >
                       <Sun className="w-4 h-4" />
-                      <span className="text-sm">Clair</span>
+                      <span className="text-sm">{t("theme.light")}</span>
                     </button>
                     <button
                       type="button"
@@ -277,11 +279,11 @@ export default function SettingsPage() {
                       }`}
                     >
                       <Moon className="w-4 h-4" />
-                      <span className="text-sm">Sombre</span>
+                      <span className="text-sm">{t("theme.dark")}</span>
                     </button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Choisissez votre préférence d'apparence
+                    {t("pages.settings.preferences.themeDescription")}
                   </p>
                 </div>
               </div>
@@ -291,7 +293,7 @@ export default function SettingsPage() {
 
         <div className="mt-6 flex justify-end">
           <Button onClick={handleSaveSettings}>
-            Sauvegarder les Modifications
+            {t("pages.settings.saveChanges")}
           </Button>
         </div>
       </motion.div>

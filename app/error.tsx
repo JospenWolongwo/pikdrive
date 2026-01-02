@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
+import { useLocale } from "@/hooks";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -16,6 +17,8 @@ interface ErrorProps {
  * Shows user-friendly error message instead of generic "Application error"
  */
 export default function Error({ error, reset }: ErrorProps) {
+  const { t } = useLocale()
+  
   useEffect(() => {
     // Log error details for debugging
     // Include device/browser information for mobile debugging
@@ -46,24 +49,24 @@ export default function Error({ error, reset }: ErrorProps) {
 
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">
-            Something went wrong
+            {t("pages.errors.title")}
           </h1>
           <p className="text-muted-foreground">
-            We encountered an unexpected error. Please try again or return to the home page.
+            {t("pages.errors.description")}
           </p>
         </div>
 
         {process.env.NODE_ENV === 'development' && (
           <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-left">
             <p className="text-sm font-semibold text-destructive mb-2">
-              Error Details (Development Only):
+              {t("pages.errors.errorDetails")}
             </p>
             <p className="text-xs font-mono text-muted-foreground break-all">
               {error.message}
             </p>
             {error.digest && (
               <p className="text-xs text-muted-foreground mt-2">
-                Error ID: {error.digest}
+                {t("pages.errors.errorId")}: {error.digest}
               </p>
             )}
           </div>
@@ -76,7 +79,7 @@ export default function Error({ error, reset }: ErrorProps) {
             className="w-full sm:w-auto"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            Try Again
+            {t("pages.errors.tryAgain")}
           </Button>
           <Button
             asChild
@@ -85,13 +88,13 @@ export default function Error({ error, reset }: ErrorProps) {
           >
             <Link href="/">
               <Home className="mr-2 h-4 w-4" />
-              Go Home
+              {t("pages.errors.goHome")}
             </Link>
           </Button>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          If this problem persists, please contact support with the error details above.
+          {t("pages.errors.persistContact")}
         </p>
       </div>
     </div>

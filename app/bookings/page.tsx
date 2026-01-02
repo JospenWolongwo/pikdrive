@@ -10,6 +10,7 @@ import { ContentLoader } from '@/components/ui/content-loader';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useRouter } from 'next/navigation';
 import { CalendarCheck } from 'lucide-react';
+import { useLocale } from "@/hooks";
 
 interface BookingsPageProps {
   searchParams: {
@@ -20,6 +21,7 @@ interface BookingsPageProps {
 function BookingsPageContent({ searchParams }: BookingsPageProps) {
   const { user, loading } = useSupabase();
   const router = useRouter();
+  const { t } = useLocale();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -28,7 +30,7 @@ function BookingsPageContent({ searchParams }: BookingsPageProps) {
   }, [user, loading]);
 
   if (loading) {
-    return <PageLoader message="Chargement de vos réservations" />;
+    return <PageLoader message={t("pages.bookings.loading")} />;
   }
 
   return (
@@ -36,17 +38,17 @@ function BookingsPageContent({ searchParams }: BookingsPageProps) {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold flex items-center space-x-3">
           <CalendarCheck className="w-8 h-8 text-blue-600" />
-          <span>Mes Réservations</span>
+          <span>{t("pages.bookings.title")}</span>
         </h1>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <p className="text-sm text-blue-800">
-          <strong>Vos réservations :</strong> Toutes vos réservations de trajets, que vous soyez passager ou conducteur.
+          <strong>{t("pages.bookings.title")} :</strong> {t("pages.bookings.description")}
         </p>
       </div>
 
-      <Suspense fallback={<ContentLoader size="lg" message="Chargement de vos réservations..." />}>
+      <Suspense fallback={<ContentLoader size="lg" message={t("pages.bookings.loading")} />}>
         <BookingsList page={searchParams.page ? parseInt(searchParams.page) : 1} />
       </Suspense>
     </div>

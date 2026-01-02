@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/ui";
 import {
   Dialog,
   DialogContent,
@@ -24,9 +23,8 @@ import { RidesTab } from "@/components/driver/dashboard/rides-tab";
 import { PaymentStatistics } from "@/components/driver/dashboard/payment-statistics";
 
 // Custom hooks - using centralized rides store
-import { useRidesStoreData } from "@/hooks/rides";
-import { useRidesFilteringStore } from "@/hooks/rides";
 import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
+import { useToast, useRidesStoreData, useRidesFilteringStore, useLocale } from "@/hooks";
 
 // Types
 import type {
@@ -37,6 +35,7 @@ import type {
 export default function DriverDashboard() {
   const router = useRouter();
   const { user, supabase } = useSupabase();
+  const { t } = useLocale();
   const { subscribeToRide, conversations } = useChatStore();
   const { toast } = useToast();
   const { triggerPrompt } = useNotificationPromptTrigger();
@@ -238,13 +237,13 @@ export default function DriverDashboard() {
         >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upcoming" className="text-sm sm:text-base">
-              Trajets à venir
+              {t("pages.driver.dashboard.tabs.upcoming")}
             </TabsTrigger>
             <TabsTrigger value="past" className="text-sm sm:text-base">
-              Trajets passés
+              {t("pages.driver.dashboard.tabs.past")}
             </TabsTrigger>
             <TabsTrigger value="payments" className="text-sm sm:text-base">
-              Paiements
+              {t("pages.driver.dashboard.tabs.payments")}
             </TabsTrigger>
           </TabsList>
 

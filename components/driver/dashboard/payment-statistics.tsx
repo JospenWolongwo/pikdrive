@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import {
   DollarSign,
   Clock,
@@ -16,11 +16,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentLoader } from "@/components/ui/content-loader";
-import { usePayoutStatistics } from "@/hooks/driver/use-payout-statistics";
 import { PayoutStatusChecker } from "@/components/payout/payout-status-checker";
 import type { PayoutStatus } from "@/types/payout";
+import { usePayoutStatistics, useLocale } from "@/hooks";
 
 export function PaymentStatistics() {
+  const { t, locale } = useLocale();
   const [statusFilter, setStatusFilter] = useState<PayoutStatus | "all">("all");
   const { payouts, statistics, loading, error, refresh } = usePayoutStatistics({
     status: statusFilter,
@@ -28,7 +29,8 @@ export function PaymentStatistics() {
   });
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("fr-FR", {
+    const localeCode = locale === "fr" ? "fr-FR" : "en-US";
+    return new Intl.NumberFormat(localeCode, {
       style: "currency",
       currency: "XAF",
       minimumFractionDigits: 0,
@@ -59,16 +61,13 @@ export function PaymentStatistics() {
     const config = variants[status];
     return (
       <Badge variant={config.variant} className={config.className}>
-        {status === "pending" && "En attente"}
-        {status === "processing" && "En cours"}
-        {status === "completed" && "Terminé"}
-        {status === "failed" && "Échoué"}
+        {t(`pages.driver.dashboard.payments.statistics.statusLabels.${status}`)}
       </Badge>
     );
   };
 
   if (loading && payouts.length === 0) {
-    return <ContentLoader size="lg" message="Chargement des statistiques de paiement..." />;
+    return <ContentLoader size="lg" message={t("pages.driver.dashboard.payments.statistics.loading")} />;
   }
 
   if (error) {
@@ -79,7 +78,7 @@ export function PaymentStatistics() {
           <p className="text-red-600 mb-4">{error}</p>
           <Button onClick={() => refresh()} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
-            Réessayer
+            {t("pages.driver.dashboard.payments.statistics.retry")}
           </Button>
         </CardContent>
       </Card>
@@ -92,52 +91,52 @@ export function PaymentStatistics() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gains Totaux</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.driver.dashboard.payments.statistics.totalEarnings")}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(statistics.totalEarnings)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {statistics.completedCount} paiement(s) complété(s)
+              {t("pages.driver.dashboard.payments.statistics.completedPayments", { count: statistics.completedCount })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Attente</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.driver.dashboard.payments.statistics.pending")}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(statistics.pendingAmount)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              En attente de traitement
+              {t("pages.driver.dashboard.payments.statistics.awaitingProcessing")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ce Mois</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.driver.dashboard.payments.statistics.thisMonth")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(statistics.thisMonthEarnings)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Gains du mois en cours
+              {t("pages.driver.dashboard.payments.statistics.currentMonthEarnings")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Paiements</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.driver.dashboard.payments.statistics.totalPayments")}</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.totalCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {statistics.completedCount} complété(s), {statistics.failedCount} échoué(s)
+              {t("pages.driver.dashboard.payments.statistics.completedAndFailed", { completed: statistics.completedCount, failed: statistics.failedCount })}
             </p>
           </CardContent>
         </Card>
@@ -147,7 +146,7 @@ export function PaymentStatistics() {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>Historique des Paiements</CardTitle>
+            <CardTitle>{t("pages.driver.dashboard.payments.statistics.paymentHistory")}</CardTitle>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -156,7 +155,7 @@ export function PaymentStatistics() {
                 disabled={loading}
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                Actualiser
+                {t("pages.driver.dashboard.payments.statistics.refresh")}
               </Button>
             </div>
           </div>
@@ -165,11 +164,11 @@ export function PaymentStatistics() {
           <Tabs defaultValue="all" value={statusFilter} onValueChange={(v) => setStatusFilter(v as PayoutStatus | "all")}>
             <div className="overflow-x-auto mb-4 -mx-4 px-4">
               <TabsList className="mb-0 inline-flex min-w-full sm:min-w-0">
-                <TabsTrigger value="all" className="whitespace-nowrap">Tous</TabsTrigger>
-                <TabsTrigger value="pending" className="whitespace-nowrap">En attente</TabsTrigger>
-                <TabsTrigger value="processing" className="whitespace-nowrap">En cours</TabsTrigger>
-                <TabsTrigger value="completed" className="whitespace-nowrap">Terminés</TabsTrigger>
-                <TabsTrigger value="failed" className="whitespace-nowrap">Échoués</TabsTrigger>
+                <TabsTrigger value="all" className="whitespace-nowrap">{t("pages.driver.dashboard.payments.all")}</TabsTrigger>
+                <TabsTrigger value="pending" className="whitespace-nowrap">{t("pages.driver.dashboard.payments.pending")}</TabsTrigger>
+                <TabsTrigger value="processing" className="whitespace-nowrap">{t("pages.driver.dashboard.payments.processing")}</TabsTrigger>
+                <TabsTrigger value="completed" className="whitespace-nowrap">{t("pages.driver.dashboard.payments.completed")}</TabsTrigger>
+                <TabsTrigger value="failed" className="whitespace-nowrap">{t("pages.driver.dashboard.payments.failed")}</TabsTrigger>
               </TabsList>
             </div>
 
@@ -178,8 +177,13 @@ export function PaymentStatistics() {
                 <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">
                   {statusFilter === "all"
-                    ? "Aucun paiement enregistré"
-                    : `Aucun paiement ${statusFilter === "pending" ? "en attente" : statusFilter === "processing" ? "en cours" : statusFilter === "completed" ? "terminé" : "échoué"}`}
+                    ? t("pages.driver.dashboard.payments.noPayments")
+                    : t("pages.driver.dashboard.payments.noPaymentsFiltered", {
+                        status: statusFilter === "pending" ? t("pages.driver.dashboard.payments.pendingStatus")
+                          : statusFilter === "processing" ? t("pages.driver.dashboard.payments.processingStatus")
+                          : statusFilter === "completed" ? t("pages.driver.dashboard.payments.completedStatus")
+                          : t("pages.driver.dashboard.payments.failedStatus")
+                      })}
                 </p>
               </div>
             ) : (
@@ -187,12 +191,12 @@ export function PaymentStatistics() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-3 text-sm font-medium">Date</th>
-                      <th className="text-left p-3 text-sm font-medium">Trajet</th>
-                      <th className="text-left p-3 text-sm font-medium">Montant</th>
-                      <th className="text-left p-3 text-sm font-medium">Frais</th>
-                      <th className="text-left p-3 text-sm font-medium">Statut</th>
-                      <th className="text-left p-3 text-sm font-medium">Transaction</th>
+                      <th className="text-left p-3 text-sm font-medium">{t("pages.driver.dashboard.payments.date")}</th>
+                      <th className="text-left p-3 text-sm font-medium">{t("pages.driver.dashboard.payments.ride")}</th>
+                      <th className="text-left p-3 text-sm font-medium">{t("pages.driver.dashboard.payments.amount")}</th>
+                      <th className="text-left p-3 text-sm font-medium">{t("pages.driver.dashboard.payments.fees")}</th>
+                      <th className="text-left p-3 text-sm font-medium">{t("pages.driver.dashboard.payments.status")}</th>
+                      <th className="text-left p-3 text-sm font-medium">{t("pages.driver.dashboard.payments.transaction")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -205,7 +209,7 @@ export function PaymentStatistics() {
                         <tr key={payout.id} className="border-b hover:bg-muted/50">
                           <td className="p-3 text-sm">
                             {format(new Date(payout.created_at), "dd MMM yyyy, HH:mm", {
-                              locale: fr,
+                              locale: locale === "fr" ? fr : enUS,
                             })}
                           </td>
                           <td className="p-3 text-sm">
@@ -215,11 +219,11 @@ export function PaymentStatistics() {
                                   {payout.booking.ride.from_city} → {payout.booking.ride.to_city}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {payout.booking.seats} place(s)
+                                  {payout.booking.seats} {payout.booking.seats > 1 ? t("pages.driver.dashboard.payments.places") : t("pages.driver.dashboard.payments.place")}
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground">N/A</span>
+                              <span className="text-muted-foreground">{t("pages.driver.dashboard.payments.statistics.notAvailable")}</span>
                             )}
                           </td>
                           <td className="p-3 text-sm font-medium">
@@ -227,8 +231,8 @@ export function PaymentStatistics() {
                           </td>
                           <td className="p-3 text-sm text-muted-foreground">
                             <div className="text-xs">
-                              <div>Frais: {formatCurrency(payout.transaction_fee)}</div>
-                              <div>Commission: {formatCurrency(payout.commission)}</div>
+                              <div>{t("pages.driver.dashboard.payments.fee")}: {formatCurrency(payout.transaction_fee)}</div>
+                              <div>{t("pages.driver.dashboard.payments.commission")}: {formatCurrency(payout.commission)}</div>
                             </div>
                           </td>
                           <td className="p-3 text-sm">

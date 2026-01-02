@@ -36,6 +36,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { RideWithDetails, DashboardBooking } from "@/types";
+import { useLocale } from "@/hooks";
 
 interface RideCardProps {
   ride: RideWithDetails;
@@ -77,6 +78,7 @@ export function RideCard({
   onDeleteRide,
   isPastRide = false,
 }: RideCardProps) {
+  const { t } = useLocale();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const confirmedPassengers = ride.bookings
@@ -104,7 +106,7 @@ export function RideCard({
         await onDeleteRide(rideId);
       } else {
         // Fallback: redirect to delete page
-        if (confirm("Êtes-vous sûr de vouloir supprimer ce trajet ?")) {
+        if (confirm(t("pages.driver.dashboard.rideCard.deleteTitle"))) {
           window.location.href = `/driver/rides/${rideId}`;
         }
       }
@@ -143,8 +145,8 @@ export function RideCard({
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {isPastRide
-                    ? `${confirmedPassengers} passagers`
-                    : `${ride.seats_available} places disponibles`}
+                    ? `${confirmedPassengers} ${t("pages.driver.dashboard.rideCard.passengers")}`
+                    : `${ride.seats_available} ${t("pages.driver.dashboard.rideCard.availableSeats")}`}
                 </div>
               </div>
 
@@ -169,15 +171,15 @@ export function RideCard({
                   className="flex items-center gap-1 text-xs sm:text-sm"
                 >
                   <Edit className="h-3 w-3" />
-                  <span className="hidden sm:inline">Modifier</span>
-                  <span className="sm:hidden">Modif</span>
+                  <span className="hidden sm:inline">{t("pages.driver.dashboard.rideCard.edit")}</span>
+                  <span className="sm:hidden">{t("pages.driver.dashboard.rideCard.editShort")}</span>
                 </Button>
 
                 {/* Show warning if ride cannot be deleted */}
                 {!canDeleteRide() && (
                   <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
-                    {ride.bookings.length} réserv.
+                    {ride.bookings.length} {t("pages.driver.dashboard.rideCard.reservations")}
                   </div>
                 )}
 
@@ -188,31 +190,30 @@ export function RideCard({
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm"
-                        title="Supprimer ce trajet"
+                        title={t("pages.driver.dashboard.rideCard.delete")}
                       >
                         <Trash2 className="h-3 w-3" />
-                        <span className="hidden sm:inline">Supprimer</span>
-                        <span className="sm:hidden">Suppr</span>
+                        <span className="hidden sm:inline">{t("pages.driver.dashboard.rideCard.delete")}</span>
+                        <span className="sm:hidden">{t("pages.driver.dashboard.rideCard.deleteShort")}</span>
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
                       <AlertDialogHeader>
                         <AlertDialogTitle>
-                          Êtes-vous sûr de vouloir supprimer ce trajet ?
+                          {t("pages.driver.dashboard.rideCard.deleteTitle")}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                          Cette action est irréversible et supprimera
-                          définitivement ce trajet.
+                          {t("pages.driver.dashboard.rideCard.deleteDescription")}
                           {!canDeleteRide() && (
                             <span className="flex items-center gap-1 mt-2">
                               <AlertTriangle className="h-4 w-4" />
-                              Ce trajet a {ride.bookings.length} réservation(s) et ne peut pas être supprimé.
+                              {t("pages.driver.dashboard.rideCard.deleteWarning", { count: ride.bookings.length })}
                             </span>
                           )}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogCancel>{t("pages.driver.dashboard.rideCard.cancel")}</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDeleteRide(ride.id)}
                           disabled={!canDeleteRide() || isDeleting}
@@ -221,10 +222,10 @@ export function RideCard({
                           {isDeleting ? (
                             <>
                               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                              Suppression...
+                              {t("pages.driver.dashboard.rideCard.deleting")}
                             </>
                           ) : (
-                            "Supprimer"
+                            t("pages.driver.dashboard.rideCard.delete")
                           )}
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -242,7 +243,7 @@ export function RideCard({
             {/* Header with payment status */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <h4 className="font-semibold text-base">
-                {isPastRide ? "Passagers" : "Réservations"} (
+                {isPastRide ? t("pages.driver.dashboard.rideCard.passengersLabel") : t("pages.driver.dashboard.rideCard.bookings")} (
                 {ride.bookings.length})
               </h4>
 
@@ -257,7 +258,7 @@ export function RideCard({
                       variant="outline"
                       className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200 text-xs"
                     >
-                      <CreditCard className="h-3 w-3" /> {paidBookings.length} payé(s)
+                      <CreditCard className="h-3 w-3" /> {paidBookings.length} {t("pages.driver.dashboard.rideCard.paid")}
                     </Badge>
                   );
                 }
@@ -311,7 +312,7 @@ export function RideCard({
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <p className="font-medium text-sm truncate">
-                              {booking.user?.full_name || "Passager"}
+                              {booking.user?.full_name || t("pages.driver.dashboard.rideCard.passenger")}
                             </p>
 
                             {/* Status badges - compact on mobile */}
@@ -321,11 +322,11 @@ export function RideCard({
                                   booking.status
                                 )}`}
                               >
-                                {booking.status === "pending" && "En attente"}
+                                {booking.status === "pending" && t("pages.driver.dashboard.rideCard.statusPending")}
                                 {booking.status === "pending_verification" &&
-                                  "Vérif."}
-                                {booking.status === "confirmed" && "Confirmé"}
-                                {booking.status === "cancelled" && "Annulé"}
+                                  t("pages.driver.dashboard.rideCard.statusPendingVerification")}
+                                {booking.status === "confirmed" && t("pages.driver.dashboard.rideCard.statusConfirmed")}
+                                {booking.status === "cancelled" && t("pages.driver.dashboard.rideCard.statusCancelled")}
                               </Badge>
                             )}
 
@@ -336,7 +337,7 @@ export function RideCard({
                               >
                                 <Check className="h-3 w-3 text-green-500" />
                                 <span className="text-green-700 hidden sm:inline">
-                                  Vérifié
+                                  {t("pages.driver.dashboard.rideCard.verified")}
                                 </span>
                                 <Check className="h-3 w-3 text-green-500 sm:hidden" />
                               </Badge>
@@ -346,8 +347,7 @@ export function RideCard({
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Users className="w-3 h-3" />
-                              {booking.seats} place
-                              {booking.seats > 1 ? "s" : ""}
+                              {booking.seats} {booking.seats > 1 ? t("pages.driver.dashboard.payments.places") : t("pages.driver.dashboard.payments.place")}
                             </span>
 
                             {!isPastRide && booking.payment_status && (
@@ -362,12 +362,12 @@ export function RideCard({
                                 {booking.payment_status === "completed" ? (
                                   <>
                                     <CreditCard className="h-3 w-3" />
-                                    Payé
+                                    {t("pages.driver.dashboard.rideCard.paidStatus")}
                                   </>
                                 ) : (
                                   <>
                                     <Clock className="h-3 w-3" />
-                                    En attente
+                                    {t("pages.driver.dashboard.rideCard.pendingPayment")}
                                   </>
                                 )}
                               </Badge>
@@ -397,10 +397,10 @@ export function RideCard({
                               >
                                 <RefreshCw className="h-3 w-3 mr-1" />
                                 <span className="hidden sm:inline">
-                                  Vérifier paiement
+                                  {t("pages.driver.dashboard.rideCard.checkPayment")}
                                 </span>
                                 <span className="sm:hidden">
-                                  Vérif. paiement
+                                  {t("pages.driver.dashboard.rideCard.checkPaymentShort")}
                                 </span>
                               </Button>
                             )}
@@ -418,9 +418,9 @@ export function RideCard({
                               >
                                 <Shield className="h-3 w-3 mr-1" />
                                 <span className="hidden sm:inline">
-                                  Vérifier code
+                                  {t("pages.driver.dashboard.rideCard.verifyCode")}
                                 </span>
-                                <span className="sm:hidden">Vérif. code</span>
+                                <span className="sm:hidden">{t("pages.driver.dashboard.rideCard.verifyCodeShort")}</span>
                               </Button>
                             )}
 
@@ -432,7 +432,7 @@ export function RideCard({
                             className="text-xs h-8 px-3"
                           >
                             <MessageCircle className="h-5 w-5 mr-1" />
-                            <span className="hidden sm:inline">Chat</span>
+                            <span className="hidden sm:inline">{t("pages.driver.dashboard.rideCard.chat")}</span>
                           </Button>
                         </div>
                       )}

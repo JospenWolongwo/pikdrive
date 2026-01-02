@@ -8,6 +8,7 @@ import { PaymentStatusChecker } from "@/components/payment/payment-status-checke
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { PaymentProviderType } from "@/lib/payment/types";
 import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/types";
+import { useLocale } from "@/hooks";
 
 interface BookingPaymentStepProps {
   totalPrice: number;
@@ -61,6 +62,7 @@ export function BookingPaymentStep({
   onPaymentComplete,
   onRetry,
 }: BookingPaymentStepProps) {
+  const { t } = useLocale();
   const isPartialPayment = existingBooking && 
     existingBooking.payment_status === 'completed' &&
     seats && seats > existingBooking.seats;
@@ -68,7 +70,7 @@ export function BookingPaymentStep({
     <>
       <div className="space-y-6">
         <div className="space-y-2">
-          <h3 className="font-medium">Sélectionner le mode de paiement</h3>
+          <h3 className="font-medium">{t("pages.rides.booking.payment.title")}</h3>
           <PaymentMethodSelector
             providers={providers}
             selectedProvider={selectedProvider}
@@ -88,21 +90,21 @@ export function BookingPaymentStep({
         {isPartialPayment && ride ? (
           <div className="space-y-2 border rounded-lg p-4 bg-muted/50">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Places déjà payées :</span>
-              <span>{existingBooking.seats} {existingBooking.seats > 1 ? 'places' : 'place'}</span>
+              <span className="text-muted-foreground">{t("pages.rides.booking.payment.alreadyPaidSeats")}</span>
+              <span>{existingBooking.seats} {existingBooking.seats > 1 ? t("pages.rides.booking.payment.places") : t("pages.rides.booking.payment.place")}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Places supplémentaires :</span>
-              <span>{seats! - existingBooking.seats} {(seats! - existingBooking.seats) > 1 ? 'places' : 'place'}</span>
+              <span className="text-muted-foreground">{t("pages.rides.booking.payment.additionalSeats")}</span>
+              <span>{seats! - existingBooking.seats} {(seats! - existingBooking.seats) > 1 ? t("pages.rides.booking.payment.places") : t("pages.rides.booking.payment.place")}</span>
             </div>
             <div className="flex justify-between items-center text-lg font-semibold pt-2 border-t">
-              <span>Montant à payer :</span>
+              <span>{t("pages.rides.booking.payment.amountToPay")}</span>
               <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
             </div>
           </div>
         ) : (
           <div className="flex justify-between items-center text-lg font-semibold">
-            <span>Montant à payer :</span>
+            <span>{t("pages.rides.booking.payment.amountToPay")}</span>
             <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
           </div>
         )}
@@ -110,7 +112,7 @@ export function BookingPaymentStep({
         {paymentError ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Erreur de paiement</AlertTitle>
+            <AlertTitle>{t("pages.rides.booking.payment.paymentError")}</AlertTitle>
             <AlertDescription>
               <p className="mb-3">{paymentError}</p>
               {onRetry && (
@@ -119,7 +121,7 @@ export function BookingPaymentStep({
                   variant="outline"
                   size="sm"
                 >
-                  Réessayer
+                  {t("pages.rides.booking.payment.retry")}
                 </Button>
               )}
             </AlertDescription>
@@ -134,7 +136,7 @@ export function BookingPaymentStep({
         ) : loading ? (
           <div className="flex items-center justify-center p-4">
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            <span>Initiation du paiement...</span>
+            <span>{t("pages.rides.booking.payment.initiating")}</span>
           </div>
         ) : null}
       </div>
@@ -145,7 +147,7 @@ export function BookingPaymentStep({
           variant="outline"
           disabled={loading || paymentTransactionId !== null}
         >
-          Retour
+          {t("pages.rides.booking.payment.back")}
         </Button>
         <Button
           onClick={onPayment}
@@ -159,15 +161,15 @@ export function BookingPaymentStep({
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Traitement...
+              {t("pages.rides.booking.payment.processing")}
             </>
           ) : paymentTransactionId ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              En attente...
+              {t("pages.rides.booking.payment.waiting")}
             </>
           ) : (
-            "Payer maintenant"
+            t("pages.rides.booking.payment.pay")
           )}
         </Button>
       </div>

@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { Send } from "lucide-react";
+import { useLocale } from "@/hooks";
 
 interface ChatWindowProps {
   conversationId: string;
@@ -22,6 +23,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({ conversationId, className }: ChatWindowProps) {
   const { user } = useSupabase();
+  const { t } = useLocale();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +42,7 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
         setMessages(initialMessages);
         scrollToBottom();
       } catch (error) {
-        setError("Failed to load messages");
+        setError(t("pages.chat.failedToLoad"));
       }
     };
 
@@ -73,10 +75,10 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
       if (message) {
         setNewMessage("");
       } else {
-        setError("Failed to send message");
+        setError(t("pages.chat.failedToSend"));
       }
     } catch (error) {
-      setError("Failed to send message");
+      setError(t("pages.chat.failedToSend"));
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +96,7 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <p className="text-red-500 mb-2">{error}</p>
-          <Button onClick={() => setError(null)}>Try Again</Button>
+          <Button onClick={() => setError(null)}>{t("pages.chat.tryAgain")}</Button>
         </div>
       </div>
     );
@@ -149,7 +151,7 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
-            placeholder="Type a message..."
+            placeholder={t("pages.chat.typeMessage")}
             className="min-h-[80px]"
             disabled={isLoading}
           />
@@ -159,13 +161,12 @@ export function ChatWindow({ conversationId, className }: ChatWindowProps) {
             className="self-end"
           >
             <Send className="h-4 w-4" />
-            <span className="sr-only">Send message</span>
+            <span className="sr-only">{t("pages.chat.sendMessage")}</span>
           </Button>
         </div>
         {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
         <p className="text-xs text-muted-foreground mt-2">
-          Press Enter to send. Shift + Enter for new line. Contact information
-          will be automatically removed.
+          {t("pages.chat.helperText")}
         </p>
       </div>
     </div>

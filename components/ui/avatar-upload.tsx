@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
 import { Camera } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
+import { useLocale } from "@/hooks"
 
 interface AvatarUploadProps {
   uid: string
@@ -17,6 +18,7 @@ interface AvatarUploadProps {
 
 export function AvatarUpload({ uid, url, size = 150, onUpload }: AvatarUploadProps) {
   const { supabase } = useSupabase()
+  const { t } = useLocale()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
 
@@ -45,7 +47,7 @@ export function AvatarUpload({ uid, url, size = 150, onUpload }: AvatarUploadPro
       setUploading(true)
 
       if (!event.target.files || event.target.files.length === 0) {
-        throw new Error("You must select an image to upload.")
+        throw new Error(t("avatar.mustSelectImage"))
       }
 
       const file = event.target.files[0]
@@ -69,13 +71,13 @@ export function AvatarUpload({ uid, url, size = 150, onUpload }: AvatarUploadPro
       onUpload(filePath)
       
       toast({
-        title: "Success",
-        description: "Avatar updated successfully",
+        title: t("common.success"),
+        description: t("common.success"),
       })
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Error uploading avatar",
+        title: t("avatar.error"),
+        description: t("avatar.uploadError"),
         variant: "destructive",
       })
     } finally {
@@ -115,7 +117,7 @@ export function AvatarUpload({ uid, url, size = 150, onUpload }: AvatarUploadPro
         />
       </div>
       {uploading && (
-        <div className="text-sm text-muted-foreground">Uploading...</div>
+        <div className="text-sm text-muted-foreground">{t("avatar.uploading")}</div>
       )}
     </div>
   )

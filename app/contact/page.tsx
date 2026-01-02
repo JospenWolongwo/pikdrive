@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { Phone, Mail, MapPin, Send, Loader2 } from 'lucide-react'
+import { useLocale } from "@/hooks";
 
 export default function ContactPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const { t } = useLocale()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,8 +23,8 @@ export default function ContactPage() {
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     toast({
-      title: "Message Envoyé !",
-      description: "Nous vous répondrons dès que possible.",
+      title: t("pages.contact.toast.sent"),
+      description: t("pages.contact.toast.sentDescription"),
     })
 
     setIsLoading(false)
@@ -32,17 +34,17 @@ export default function ContactPage() {
   const contactInfo = [
     {
       icon: Phone,
-      title: "Téléphone",
+      title: t("pages.contact.phone"),
       details: ["+237 698 805 890", "+237 674 123 456"],
     },
     {
       icon: Mail,
-      title: "Email",
+      title: t("pages.contact.email"),
       details: ["support@pikdrive.com", "info@pikdrive.com"],
     },
     {
       icon: MapPin,
-      title: "Bureau",
+      title: t("pages.contact.office"),
       details: ["Silicon Mountain", "Buea, Cameroun"],
     },
   ]
@@ -56,10 +58,10 @@ export default function ContactPage() {
           className="text-center max-w-3xl mx-auto mb-16"
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Contactez-Nous
+            {t("pages.contact.title")}
           </h1>
           <p className="text-xl text-muted-foreground">
-            Des questions ? Nous aimerions avoir de vos nouvelles. Envoyez-nous un message et nous vous répondrons dès que possible.
+            {t("pages.contact.subtitle")}
           </p>
         </motion.div>
 
@@ -92,11 +94,11 @@ export default function ContactPage() {
             </div>
 
             <Card className="p-6">
-              <h3 className="font-semibold mb-4">Heures d&apos;Ouverture</h3>
+              <h3 className="font-semibold mb-4">{t("pages.contact.hours.title")}</h3>
               <div className="space-y-2 text-muted-foreground">
-                <p>Lundi - Vendredi: 8h00 - 18h00</p>
-                <p>Samedi: 9h00 - 16h00</p>
-                <p>Dimanche: Fermé</p>
+                <p>{t("pages.contact.hours.weekdays")}</p>
+                <p>{t("pages.contact.hours.saturday")}</p>
+                <p>{t("pages.contact.hours.sunday")}</p>
               </div>
             </Card>
           </motion.div>
@@ -112,7 +114,7 @@ export default function ContactPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="firstName" className="text-sm font-medium">
-                      Prénom
+                      {t("pages.contact.form.firstName")}
                     </label>
                     <Input
                       id="firstName"
@@ -123,7 +125,7 @@ export default function ContactPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="lastName" className="text-sm font-medium">
-                      Nom
+                      {t("pages.contact.form.lastName")}
                     </label>
                     <Input
                       id="lastName"
@@ -136,7 +138,7 @@ export default function ContactPage() {
 
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium">
-                    Email
+                    {t("pages.contact.form.email")}
                   </label>
                   <Input
                     id="email"
@@ -149,7 +151,7 @@ export default function ContactPage() {
 
                 <div className="space-y-2">
                   <label htmlFor="phone" className="text-sm font-medium">
-                    Numéro de Téléphone
+                    {t("pages.contact.form.phone")}
                   </label>
                   <Input
                     id="phone"
@@ -162,11 +164,11 @@ export default function ContactPage() {
 
                 <div className="space-y-2">
                   <label htmlFor="message" className="text-sm font-medium">
-                    Message
+                    {t("pages.contact.form.message")}
                   </label>
                   <Textarea
                     id="message"
-                    placeholder="Comment pouvons-nous vous aider ?"
+                    placeholder={t("pages.contact.form.messagePlaceholder")}
                     required
                     disabled={isLoading}
                     className="min-h-[150px]"
@@ -181,12 +183,12 @@ export default function ContactPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Envoi en cours...
+                      {t("pages.contact.form.sending")}
                     </>
                   ) : (
                     <>
                       <Send className="mr-2 h-4 w-4" />
-                      Envoyer le Message
+                      {t("pages.contact.form.send")}
                     </>
                   )}
                 </Button>

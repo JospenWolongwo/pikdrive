@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { KeyRound, Loader2, CheckCircle } from 'lucide-react'
+import { useLocale } from '@/hooks'
 
 interface CodeVerificationFormProps {
   bookingId: string
@@ -21,6 +22,7 @@ interface VerificationState {
 }
 
 export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationFormProps) {
+  const { t } = useLocale();
   const [state, setState] = useState<VerificationState>({
     code: '',
     loading: false,
@@ -40,7 +42,7 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
   const verifyCode = useCallback(async () => {
     // Validate code length
     if (state.code.length !== 6) {
-      toast.error('Veuillez entrer le code de vérification complet à 6 caractères')
+      toast.error(t("pages.driver.codeVerification.enterCode"))
       return
     }
 
@@ -66,17 +68,17 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Échec de la vérification du code')
+        throw new Error(data.error || t("pages.driver.codeVerification.verificationFailed"))
       }
 
       if (!data.success) {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: data.message || 'Code de vérification invalide',
+          error: data.message || t("pages.driver.codeVerification.invalidCode"),
           lastUpdated: Date.now()
         }))
-        toast.error(data.message || 'Code de vérification invalide')
+        toast.error(data.message || t("pages.driver.codeVerification.invalidCode"))
         return
       }
 
@@ -89,7 +91,7 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       }))
       
       console.log('🟢 Verification successful for booking:', bookingId)
-      toast.success('Passager vérifié avec succès !')
+      toast.success(t("common.success"))
       
       if (onSuccess) {
         setTimeout(() => onSuccess(), 1500)
@@ -99,12 +101,12 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : 'Échec de la vérification du code',
+        error: error instanceof Error ? error.message : t("pages.driver.codeVerification.failedToVerify"),
         lastUpdated: Date.now()
       }))
-      toast.error('Échec de la vérification du code du passager')
+      toast.error(t("pages.driver.codeVerification.failedToVerify"))
     }
-  }, [bookingId, state.code, onSuccess])
+  }, [bookingId, state.code, onSuccess, t])
 
   // If already verified
   if (state.verified) {
@@ -113,12 +115,12 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
         <CardHeader className="pb-2">
           <CardTitle className="text-lg text-green-800 flex items-center">
             <CheckCircle className="mr-2 h-5 w-5" />
-            Passager Vérifié
+            {t("pages.driver.codeVerification.passengerVerified")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-green-700">
-            Le passager a été vérifié avec succès. Vous pouvez procéder au trajet.
+            {t("pages.driver.codeVerification.passengerVerifiedDescription")}
           </p>
         </CardContent>
       </Card>
@@ -130,17 +132,17 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
       <CardHeader>
         <CardTitle className="text-xl flex items-center">
           <KeyRound className="mr-2 h-5 w-5 text-primary" />
-          Vérifier le Passager
+          {t("pages.driver.codeVerification.verifyPassenger")}
         </CardTitle>
         <CardDescription>
-          Entrez le code à 6 caractères fourni par votre passager
+          {t("pages.driver.codeVerification.description")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <Input
             id="verification-code"
-            placeholder="Entrez le code (ex: AB12C3)"
+            placeholder={t("pages.driver.codeVerification.placeholder")}
             value={state.code}
             onChange={handleCodeChange}
             className="text-center tracking-wider font-mono text-lg uppercase"
@@ -163,7 +165,7 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
           className="w-full"
         >
           {state.loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Vérifier le Code
+          {t("pages.driver.codeVerification.verifyCode")}
         </Button>
       </CardFooter>
     </Card>

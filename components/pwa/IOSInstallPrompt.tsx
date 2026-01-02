@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLocale } from '@/hooks';
 import Image from 'next/image';
 
 export interface IOSInstallPromptProps {
@@ -16,6 +17,8 @@ export interface IOSInstallPromptProps {
 }
 
 export function IOSInstallPrompt({ show, onClose }: IOSInstallPromptProps) {
+  const { t } = useLocale();
+  
   const handleDismiss = () => {
     // Store the dismissal in localStorage
     if (typeof window !== 'undefined') {
@@ -28,9 +31,9 @@ export function IOSInstallPrompt({ show, onClose }: IOSInstallPromptProps) {
     <Dialog open={show} onOpenChange={handleDismiss}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Install PikDrive App</DialogTitle>
+          <DialogTitle>{t("pwa.ios.title")}</DialogTitle>
           <DialogDescription>
-            Follow these steps to add PikDrive to your Home Screen
+            {t("pwa.ios.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 text-sm">
@@ -38,25 +41,25 @@ export function IOSInstallPrompt({ show, onClose }: IOSInstallPromptProps) {
             <div className="bg-gray-100 rounded-full p-2 flex-shrink-0">
               <span className="text-xl">1</span>
             </div>
-            <p>Tap the share button <Image src="/images/share-ios.png" alt="iOS Share button" width={20} height={20} className="inline-block" /></p>
+            <p>{t("pwa.ios.step1")} <Image src="/images/share-ios.png" alt="iOS Share button" width={20} height={20} className="inline-block" /></p>
           </div>
           
           <div className="flex items-center gap-2">
             <div className="bg-gray-100 rounded-full p-2 flex-shrink-0">
               <span className="text-xl">2</span>
             </div>
-            <p>Scroll and select &quot;Add to Home Screen&quot;</p>
+            <p>{t("pwa.ios.step2")}</p>
           </div>
           
           <div className="flex items-center gap-2">
             <div className="bg-gray-100 rounded-full p-2 flex-shrink-0">
               <span className="text-xl">3</span>
             </div>
-            <p>Tap &quot;Add&quot; in the top right corner</p>
+            <p>{t("pwa.ios.step3")}</p>
           </div>
           
           <Button onClick={handleDismiss} className="w-full mt-4">
-            Got it
+            {t("pwa.ios.gotIt")}
           </Button>
         </div>
       </DialogContent>

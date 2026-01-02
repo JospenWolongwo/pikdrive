@@ -1,0 +1,956 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "noResults": "No results",
+    "retry": "Retry",
+    "options": "Options",
+    "messages": "Messages",
+    "toggleMenu": "Toggle menu"
+  },
+  "navigation": {
+    "home": "Home",
+    "findRide": "Find a Ride",
+    "about": "About",
+    "safety": "Safety & FAQ",
+    "contact": "Contact",
+    "myBookings": "My Bookings",
+    "search": "Search",
+    "publishRide": "Publish Ride",
+    "myRides": "My Rides",
+    "applicationStatus": "Application Status",
+    "profile": "Profile",
+    "driverProfile": "Driver Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "becomeDriver": "Become a Driver",
+    "aboutUs": "About Us",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "cookiePolicy": "Cookie Policy",
+    "followUs": "Follow Us",
+    "quickLinks": "Quick Links",
+    "legal": "Legal"
+  },
+  "theme": {
+    "toggleTheme": "Toggle theme",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "language": {
+    "french": "Français",
+    "english": "English",
+    "switchLanguage": "Switch language"
+  },
+  "pwa": {
+    "installApp": "Install App",
+    "installTitle": "Install PikDrive App",
+    "installDescription": "Get quick access and a better experience by installing PikDrive on your device.",
+    "benefits": {
+      "fastAccess": "Fast access from your home screen",
+      "offlineFunctionality": "Offline functionality",
+      "betterPerformance": "Better performance",
+      "appLikeExperience": "App-like experience"
+    },
+    "later": "Later",
+    "addToHomeScreen": "Add to Home Screen",
+    "installNow": "Install Now",
+    "maybeLater": "Maybe Later",
+    "ios": {
+      "title": "Install PikDrive App",
+      "description": "Follow these steps to add PikDrive to your Home Screen",
+      "step1": "Tap the share button",
+      "step2": "Scroll and select \"Add to Home Screen\"",
+      "step3": "Tap \"Add\" in the top right corner",
+      "gotIt": "Got it"
+    },
+    "android": {
+      "title": "Install PikDrive",
+      "description": "Install PikDrive on your device for the best experience:",
+      "step1": "Tap \"Add to Home Screen\" when prompted",
+      "step2": "Or click \"Install\" in your browser menu",
+      "step3": "Access PikDrive directly from your home screen",
+      "step4": "Get a faster, app-like experience"
+    }
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "title1": "Discover",
+        "title2": "Cameroon, Together",
+        "subtitle": "Connect with trusted drivers and explore the wonders of Cameroon safely",
+        "findRide": "Find a Ride",
+        "publishRide": "Publish a Ride",
+        "contactWhatsApp": "Contact us on WhatsApp",
+        "whatsApp": "WhatsApp",
+        "needHelp": "Need help?",
+        "help": "Help"
+      },
+      "howItWorks": {
+        "title": "How It Works",
+        "subtitle": "Simplify your intercity travel in four simple steps",
+        "step1": {
+          "title": "Choose Your Destination",
+          "description": "Select your destination and find an available driver"
+        },
+        "step2": {
+          "title": "Make Payment",
+          "description": "Book your ride by paying securely"
+        },
+        "step3": {
+          "title": "Receive Code",
+          "description": "A verification code is sent to you after payment"
+        },
+        "step4": {
+          "title": "Validate Ride",
+          "description": "Present the code to the driver to validate payment"
+        }
+      },
+      "popularRoutes": {
+        "title": "Popular Routes",
+        "subtitle": "Discover our most frequented intercity routes",
+        "popularRoute": "Popular Route",
+        "duration": "Duration",
+        "averagePrice": "Average Price"
+      },
+      "testimonials": {
+        "title": "What Our Users Say",
+        "subtitle": "Approved by thousands of travelers across Cameroon"
+      },
+      "cta": {
+        "title": "Join the PikDrive Community Today",
+        "subtitle": "Already more than {count} users trust PikDrive for their intercity travel every month. Join us!",
+        "createAccount": "Create Account",
+        "findRide": "Find a Ride",
+        "joinUsers": "Join {count} satisfied users",
+        "features": {
+          "booking": "Simple and fast booking platform",
+          "payment": "Secure payment system",
+          "verification": "Real-time driver verification",
+          "support": "24/7 customer support available"
+        },
+        "comingSoon": "Coming soon on mobile",
+        "appInDevelopment": "App in development"
+      }
+    },
+    "about": {
+      "mission": {
+        "title": "Our Mission",
+        "description": "Make intercity travel in Cameroon safe, reliable and accessible to all.",
+        "meetTeam": "Meet Our Team",
+        "contactUs": "Contact Us"
+      },
+      "stats": {
+        "satisfiedTravelers": "Satisfied Travelers",
+        "verifiedDrivers": "Verified Drivers",
+        "cities": "Cities",
+        "support": "Support"
+      },
+      "values": {
+        "title": "Our Values",
+        "safety": {
+          "title": "Safety First",
+          "description": "We prioritize the safety of our travelers and drivers above all else."
+        },
+        "community": {
+          "title": "Community",
+          "description": "Building connections and fostering a sense of community in every city we serve."
+        },
+        "innovation": {
+          "title": "Innovation",
+          "description": "Continuously improving our platform to provide the best travel experience."
+        }
+      },
+      "cta": {
+        "title": "Join Our Adventure",
+        "description": "Be part of the transportation revolution in Cameroon",
+        "contact": "Contact Us"
+      }
+    },
+    "contact": {
+      "title": "Contact Us",
+      "subtitle": "Questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+      "phone": "Phone",
+      "email": "Email",
+      "office": "Office",
+      "hours": {
+        "title": "Opening Hours",
+        "weekdays": "Monday - Friday: 8:00 AM - 6:00 PM",
+        "saturday": "Saturday: 9:00 AM - 4:00 PM",
+        "sunday": "Sunday: Closed"
+      },
+      "form": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email",
+        "phone": "Phone Number",
+        "message": "Message",
+        "messagePlaceholder": "How can we help you?",
+        "send": "Send Message",
+        "sending": "Sending..."
+      },
+      "toast": {
+        "sent": "Message Sent!",
+        "sentDescription": "We'll get back to you as soon as possible."
+      }
+    },
+    "advice": {
+      "howItWorks": {
+        "title": "How It Works",
+        "subtitle": "Learn how to use PikDrive in a few simple steps",
+        "step1": {
+          "title": "1. Choose Your Destination",
+          "description": "Select your departure city, destination and date. Browse available options and choose a driver that suits you."
+        },
+        "step2": {
+          "title": "2. Make Payment",
+          "description": "Reserve your seat by paying via Mobile Money, bank card or cash at our partners. Payment is temporarily blocked."
+        },
+        "step3": {
+          "title": "3. Receive Your Code",
+          "description": "After payment, you receive a unique verification code by SMS and in the app. Keep it safe."
+        },
+        "step4": {
+          "title": "4. Validate Ride",
+          "description": "Present your code to the driver when you board. This code unlocks payment and confirms your ride."
+        }
+      },
+      "whyCode": {
+        "title": "Why use the code system?",
+        "description": "Our unique code system ensures you only pay for services you actually receive. The driver only receives payment after you validate your presence in the vehicle by presenting the code.",
+        "securePayment": "Secure Payment",
+        "securePaymentDesc": "Your money is protected until you confirm the service",
+        "antiFraud": "Anti-Fraud",
+        "antiFraudDesc": "Prevents fake bookings and guarantees passenger presence",
+        "offline": "Works Offline",
+        "offlineDesc": "The code works even without permanent internet connection"
+      },
+      "safetyTips": {
+        "title": "Safety Tips",
+        "verifyDriver": {
+          "title": "Verify Driver Identity",
+          "content": "Always verify that the driver's profile photo and vehicle details match what you see in person. Ask to see their PikDrive identification card."
+        },
+        "shareTrip": {
+          "title": "Share Your Trip",
+          "content": "Use our 'Share Trip' feature to allow friends or family to track your journey in real-time. This feature works even in low connectivity areas."
+        },
+        "stayPublic": {
+          "title": "Stay in Public Places",
+          "content": "For pickups and drop-offs, stick to well-lit public places whenever possible. Avoid isolated pickup points, especially at night."
+        },
+        "keepCodeSecret": {
+          "title": "Keep Your Code Confidential",
+          "content": "Never share your verification code before being in the vehicle and ready to leave. The code is your guarantee that you will receive the booked service."
+        }
+      },
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "howWorks": {
+          "question": "How does PikDrive work exactly?",
+          "answer": "PikDrive is an intercity ride-sharing platform in Cameroon that works in 4 simple steps: 1) You choose your destination and a verified driver. 2) You pay to reserve your seat via Mobile Money, bank card or cash at our partners. 3) You receive a unique verification code after payment. 4) You show this code to the driver at departure time, which validates the ride and releases payment to the driver."
+        },
+        "howBook": {
+          "question": "How do I book a ride?",
+          "answer": "Go to the 'Find a Ride' page, select your departure city and destination. Choose from available drivers based on schedules and prices that suit you. Proceed to payment via our secure platform and you'll receive a confirmation code and ride details by SMS and in the app."
+        },
+        "verificationCode": {
+          "question": "How does the verification code system work?",
+          "answer": "After making your payment, you receive a unique 6-digit code by SMS and in the app. This code should only be presented to the driver when you're ready to begin your journey. The driver enters this code in their app, which confirms your presence and authorizes payment release. Without this code, the driver does not receive payment."
+        },
+        "offline": {
+          "question": "What happens if I lose internet connection?",
+          "answer": "PikDrive works even with limited internet connection. Your verification code is sent by SMS and can be presented offline. Drivers can also validate codes offline, and synchronization will occur automatically once connection is restored."
+        },
+        "driverCancel": {
+          "question": "What happens if my driver cancels?",
+          "answer": "If your driver cancels, you'll be notified immediately by SMS and notification in the app. You can then either choose another available driver (we'll suggest alternatives), or request a full refund which will be processed within 24 hours to your original payment method."
+        },
+        "becomeDriver": {
+          "question": "How do I become a driver?",
+          "answer": "Visit our 'Become a Driver' page to start the process. You'll need to provide: a valid ID, your driver's license, vehicle documents (registration card, insurance, technical inspection), and a professional photo. Our teams verify these documents and organize a quick training on using the app. The process usually takes 48-72 hours."
+        },
+        "paymentSecure": {
+          "question": "Is my payment secure?",
+          "answer": "Yes, we use international standard encryption for all transactions. Payments are secured by our verification code system: money is only released to the driver after your code validation, ensuring you receive the booked service. If you have any issues, our support team is available 24/7."
+        }
+      },
+      "safetyTipsTitle": "Safety Tips",
+      "faqTitle": "Frequently Asked Questions"
+    },
+    "auth": {
+      "welcome": "Welcome to PikDrive",
+      "enterCode": "Enter the verification code sent to your phone",
+      "welcomeBack": "Welcome back! Should we send you a code to your phone?",
+      "enterPhone": "Enter your phone number to continue",
+      "phonePlaceholder": "Enter your phone number",
+      "codePlaceholder": "Enter verification code",
+      "sendCode": "Send code",
+      "sendTo": "Send code to {phone}",
+      "codeSentTo": "Code sent to {phone}",
+      "useAnotherNumber": "Use another number",
+      "verify": "Verify",
+      "resendCode": "Resend code",
+      "resendIn": "Resend in {seconds}s",
+      "continue": "Continue",
+      "codeSentDescription": "Please check your phone for the verification code",
+      "codeResentDescription": "A new verification code has been sent to your phone",
+      "waitBeforeResend": "Wait a moment before requesting a new code",
+      "enterCodeError": "Please enter the verification code",
+      "phoneNotFound": "Phone number not found",
+      "checkingAuth": "Checking authentication...",
+      "toast": {
+        "codeSent": "Code sent!",
+        "welcome": "Welcome!",
+        "welcomeDescription": "You have successfully logged in",
+        "codeResent": "Code resent!"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "notifications": {
+        "title": "Notification Preferences",
+        "email": "Email Notifications",
+        "sms": "SMS Notifications",
+        "whatsapp": "WhatsApp Notifications",
+        "emailDesc": "Receive updates about your rides by email",
+        "smsDesc": "Receive instant updates via SMS",
+        "whatsappDesc": "Receive updates via WhatsApp"
+      },
+      "preferences": {
+        "title": "General Preferences",
+        "language": "Language",
+        "timezone": "Timezone",
+        "theme": "Theme",
+        "themeDescription": "Choose your appearance preference"
+      },
+      "privacy": {
+        "title": "Privacy Settings",
+        "phone": "Phone Number",
+        "emailVisibility": "Email Visibility",
+        "emailVisibilityDesc": "Show my email to other users",
+        "verify": "Verify"
+      },
+      "tabs": {
+        "notifications": "Notifications",
+        "privacy": "Privacy",
+        "preferences": "Preferences"
+      },
+      "toast": {
+        "saved": "Settings saved successfully",
+        "error": "Failed to save settings"
+      },
+      "saveChanges": "Save Changes"
+    },
+    "profile": {
+      "title": "Profile",
+      "driverProfile": "Driver Profile",
+      "userProfile": "User Profile",
+      "description": "Manage your personal information and preferences",
+      "notFound": "Profile Not Found",
+      "notFoundDescription": "Unable to load your profile information.",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "goHome": "Go Home",
+      "dashboard": "Dashboard",
+      "applicationStatus": "Application Status",
+      "status": "Status",
+      "viewRejectedStatus": "View Rejected Status",
+      "personalInfo": {
+        "title": "Personal Information",
+        "description": "Update your basic information",
+        "fullName": "Full Name",
+        "email": "Email",
+        "phone": "Phone Number",
+        "city": "City",
+        "edit": "Edit",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving...",
+        "nameNotDefined": "Name not defined"
+      },
+      "toast": {
+        "success": "Success",
+        "profileUpdated": "Profile updated successfully",
+        "error": "Error",
+        "updateFailed": "Failed to update profile"
+      },
+      "accountStatus": "Account Status",
+      "driverStatus": "Driver status:",
+      "viewStatus": "View Status",
+      "applicationSubmitted": "Application submitted on",
+      "accountType": "Account type:",
+      "driver": "Driver",
+      "user": "User",
+      "cityNotDefined": "City not defined",
+      "city": "City",
+      "selectCity": "Select your city",
+      "searchCity": "Search for a city...",
+      "driverDocuments": "Driver Documents",
+      "becomeDriver": "Become a Driver"
+    },
+    "errors": {
+      "title": "Something went wrong",
+      "description": "We encountered an unexpected error. Please try again or return to the home page.",
+      "tryAgain": "Try Again",
+      "goHome": "Go Home",
+      "persistContact": "If this problem persists, please contact support with the error details above.",
+      "errorDetails": "Error Details (Development Only):",
+      "errorId": "Error ID"
+    },
+    "rides": {
+      "title": "Available Rides",
+      "subtitle": "Find and book your next ride",
+      "loading": "Loading rides...",
+      "booking": {
+        "loadingInfo": "Loading booking information...",
+        "modalTitles": {
+          "passengerInfo": "Personal Information",
+          "seatSelection": "Book Your Ride",
+          "payment": "Payment Details",
+          "success": "Booking Confirmation"
+        },
+        "passengerInfo": {
+          "title": "Personal Information",
+          "description": "Please fill in your information to complete your booking",
+          "fullName": "Full Name",
+          "fullNamePlaceholder": "Your full name",
+          "clickToUpload": "Click to upload",
+          "saving": "Saving...",
+          "cancel": "Cancel",
+          "idCard": "ID Card",
+          "idRecto": "ID Card Front",
+          "idVerso": "ID Card Back",
+          "upload": "Upload",
+          "remove": "Remove",
+          "continue": "Continue",
+          "errors": {
+            "selectImage": "Please select an image",
+            "enterName": "Please enter your full name",
+            "uploadBoth": "Please upload both sides of your ID card",
+            "mustBeLoggedIn": "You must be logged in",
+            "uploadError": "Upload error",
+            "saveError": "Error saving information",
+            "success": "Information saved successfully"
+          }
+        },
+        "seatSelection": {
+          "title": "Seat Selection",
+          "alreadyPaid": "Booking already paid:",
+          "alreadyPaidDesc": "You have already paid for {seats} {seats, plural, =1 {seat} other {seats}}. You can add additional seats below.",
+          "modifyBooking": "Booking modification:",
+          "modifyBookingDesc": "You already have a booking for this ride. You can modify the number of seats or proceed to payment.",
+          "seats": "Number of seats",
+          "seatsAvailable": "seats available",
+          "totalPrice": "Total price:",
+          "additionalPrice": "Amount to pay (additional seats):",
+          "createBooking": "Create Booking",
+          "cancel": "Cancel",
+          "updateAndContinue": "Update and continue to payment",
+          "continueToPayment": "Continue to payment",
+          "updating": "Updating...",
+          "creating": "Creating...",
+          "cannotReduce": "You cannot reduce the number of seats for a booking that has already been paid",
+          "place": "seat",
+          "places": "seats"
+        },
+        "payment": {
+          "title": "Select payment method",
+          "alreadyPaidSeats": "Already paid seats:",
+          "additionalSeats": "Additional seats:",
+          "amountToPay": "Amount to pay:",
+          "total": "Total",
+          "back": "Back",
+          "pay": "Pay now",
+          "processing": "Processing...",
+          "initiating": "Initiating payment...",
+          "waiting": "Waiting...",
+          "paymentError": "Payment error",
+          "retry": "Retry",
+          "place": "seat",
+          "places": "seats"
+        },
+        "success": {
+          "title": "Booking Successful!",
+          "description": "Your booking has been confirmed. You will receive a confirmation message shortly.",
+          "redirecting": "Redirecting to your bookings in a few moments...",
+          "done": "Done"
+        }
+      },
+      "chat": {
+        "title": "Chat with Driver",
+        "description": "Send messages to coordinate your ride. Do not share personal contact information.",
+        "loading": "Loading messages...",
+        "noMessages": "No messages yet",
+        "send": "Send",
+        "typeMessage": "Type your message...",
+        "unknown": "Unknown"
+      },
+      "filters": {
+        "from": "From",
+        "to": "To",
+        "fromPlaceholder": "Select departure city",
+        "fromSearch": "Search for a departure city...",
+        "toPlaceholder": "Select destination city",
+        "toSearch": "Search for a destination city...",
+        "search": "Search",
+        "clear": "Clear",
+        "priceRange": "Price Range (FCFA)",
+        "minPrice": "Min",
+        "maxPrice": "Max",
+        "minSeats": "Minimum Seats"
+      },
+      "emptyState": {
+        "title": "No rides found",
+        "withFilters": "Modify your criteria to discover more rides.",
+        "withoutFilters": "No rides available at the moment. Come back soon!"
+      },
+      "rideCard": {
+        "vehicle": "Vehicle",
+        "notSpecified": "Not specified",
+        "places": "seats",
+        "photoNotAvailable": "Vehicle photo not available",
+        "driver": "Driver",
+        "certifiedDriver": "PikDrive Certified Driver",
+        "certified": "Certified Driver",
+        "viewProfile": "View Profile",
+        "loginToSeeDetails": "Log in to see driver details",
+        "departurePoint": "Departure point",
+        "destinationPoint": "Destination point",
+        "scheduledDeparture": "Scheduled departure",
+        "pricePerSeat": "Price per seat",
+        "book": "Book",
+        "chat": "Chat",
+        "contact": "Contact",
+        "full": "Full"
+      }
+    },
+    "bookings": {
+      "title": "My Bookings",
+      "loading": "Loading your bookings",
+      "description": "All your ride bookings, whether you're a passenger or driver.",
+      "searchPlaceholder": "Search by city, driver or status...",
+      "results": "results",
+      "refresh": "Refresh",
+      "noBookings": "No bookings found",
+      "noBookingsDesc": "You haven't made any bookings yet",
+      "noSearchResults": "No bookings match your search. Try other keywords.",
+      "errorLoading": "Error loading bookings",
+      "errorLoadingDescription": "Please try again later.",
+      "pagination": {
+        "showing": "Showing",
+        "of": "of",
+        "bookings": "bookings"
+      },
+      "card": {
+        "driver": "Driver:",
+        "car": "Car:",
+        "seats": "Seats:",
+        "total": "Total:",
+        "status": "Status:",
+        "payment": "Payment:",
+        "notAvailable": "Not available",
+        "notSpecified": "Not specified",
+        "statusConfirmed": "Confirmed",
+        "statusPending": "Pending",
+        "statusCancelled": "Cancelled",
+        "statusPendingVerification": "Pending verification",
+        "paymentCompleted": "Completed",
+        "paymentPending": "Pending",
+        "showCode": "Show driver verification code",
+        "hideCode": "Hide driver verification code",
+        "contact": "Contact",
+        "cancel": "Cancel booking",
+        "cancelling": "Cancelling...",
+        "cancelTitle": "Cancel booking",
+        "cancelDescription": "Are you sure you want to cancel this booking? This action is irreversible and will free up {seats} {seats, plural, =1 {seat} other {seats}} on the ride.",
+        "keepBooking": "No, keep booking",
+        "confirmCancel": "Yes, cancel",
+        "viewReceipt": "View receipt",
+        "cancelled": "Booking cancelled"
+      }
+    },
+    "messages": {
+      "title": "Messages",
+      "refresh": "Refresh",
+      "searchPlaceholder": "Search messages...",
+      "tabs": {
+        "all": "All",
+        "unread": "Unread"
+      },
+      "open": "Open",
+      "errorLoading": "Loading error",
+      "errorDescription": "Unable to load your conversations. Please try again.",
+      "noResults": "No results found",
+      "noResultsDescription": "No conversations match your search.",
+      "noConversations": "No conversations",
+      "noConversationsDescription": "You haven't started any conversations yet.",
+      "findRides": "Find rides",
+      "noUnread": "No unread messages",
+      "noUnreadDescription": "You've read all your messages"
+    },
+    "chat": {
+      "loading": "Loading messages...",
+      "error": "Error loading messages",
+      "noMessages": "No messages yet. Start the conversation!",
+      "typeMessage": "Type a message...",
+      "send": "Send",
+      "errorSending": "Error sending message",
+      "errorSendingDescription": "Please try again later.",
+      "failedToLoad": "Failed to load messages",
+      "failedToSend": "Failed to send message",
+      "tryAgain": "Try Again",
+      "sendMessage": "Send message",
+      "helperText": "Press Enter to send. Shift + Enter for new line. Contact information will be automatically removed."
+    },
+    "driver": {
+      "newRide": {
+        "title": "Create a New Ride",
+        "description": "Fill in the details below to create a new ride.",
+        "fromCity": "Departure City",
+        "fromCityPlaceholder": "Select departure city",
+        "toCity": "Destination City",
+        "toCityPlaceholder": "Select destination city",
+        "departureTime": "Departure Time",
+        "departureTimePlaceholder": "Choose a date and time",
+        "price": "Price (FCFA)",
+        "pricePlaceholder": "e.g: 5000",
+        "seatsAvailable": "Available Seats",
+        "seatsDescription": "Number of available seats for this ride",
+        "seatsPlaceholder": "e.g: 4",
+        "carModel": "Car Model",
+        "carModelPlaceholder": "e.g: Toyota Camry",
+        "carColor": "Car Color",
+        "carColorPlaceholder": "e.g: Black",
+        "cancel": "Cancel",
+        "create": "Create Ride",
+        "creating": "Creating...",
+        "successTitle": "Ride Created Successfully!",
+        "successDescription": "Your ride has been created successfully. You can now manage your rides from the dashboard.",
+        "goToDashboard": "Go to Dashboard",
+        "redirecting": "Redirecting...",
+        "invalidTime": "Invalid Departure Time",
+        "invalidTimeDescription": "The departure time must be in the future.",
+        "validation": {
+          "fromCityRequired": "Departure city is required",
+          "toCityRequired": "Destination city is required",
+          "departureTimeRequired": "Departure time is required",
+          "priceRequired": "Price is required",
+          "seatsRequired": "Number of available seats is required",
+          "seatsMax": "Cannot exceed 100 seats",
+          "carModelRequired": "Car model is required",
+          "carColorRequired": "Car color is required"
+        },
+        "errors": {
+          "authRequired": "Authentication Required",
+          "authRequiredDescription": "Please log in to create a ride.",
+          "fieldsRequired": "Required Fields",
+          "fieldsRequiredDescription": "Price and number of seats are required.",
+          "error": "Error",
+          "errorDescription": "An error occurred while creating your ride. Please try again."
+        }
+      },
+      "dashboard": {
+        "title": "Your Rides",
+        "description": "Manage your rides and bookings",
+        "createRide": "Create a ride",
+        "newRide": "New ride",
+        "tabs": {
+          "upcoming": "Upcoming",
+          "past": "Past",
+          "payments": "Payments"
+        },
+        "searchPlaceholder": "Search by city, passenger or car model...",
+        "sort": {
+          "label": "Sort",
+          "earliest": "Earliest first",
+          "latest": "Latest first",
+          "earliestShort": "↑ Earliest",
+          "latestShort": "↓ Latest"
+        },
+        "noRides": {
+          "upcoming": "You don't have any upcoming rides yet.",
+          "past": "You don't have any past rides yet.",
+          "search": "No {type} rides match your search.",
+          "upcomingType": "upcoming",
+          "pastType": "past"
+        },
+        "payments": {
+          "all": "All",
+          "pending": "Pending",
+          "processing": "Processing",
+          "completed": "Completed",
+          "failed": "Failed",
+          "noPayments": "No payments recorded",
+          "noPaymentsFiltered": "No {status} payments",
+          "pendingStatus": "pending",
+          "processingStatus": "processing",
+          "completedStatus": "completed",
+          "failedStatus": "failed",
+          "date": "Date",
+          "ride": "Ride",
+          "amount": "Amount",
+          "fees": "Fees",
+          "status": "Status",
+          "transaction": "Transaction",
+          "fee": "Fee",
+          "commission": "Commission",
+          "place": "seat",
+          "places": "seats",
+          "statistics": {
+            "loading": "Loading payment statistics...",
+            "retry": "Retry",
+            "totalEarnings": "Total Earnings",
+            "completedPayments": "{count} payment(s) completed",
+            "pending": "Pending",
+            "awaitingProcessing": "Awaiting processing",
+            "thisMonth": "This Month",
+            "currentMonthEarnings": "Current month earnings",
+            "totalPayments": "Total Payments",
+            "completedAndFailed": "{completed} completed, {failed} failed",
+            "paymentHistory": "Payment History",
+            "refresh": "Refresh",
+            "statusLabels": {
+              "pending": "Pending",
+              "processing": "Processing",
+              "completed": "Completed",
+              "failed": "Failed"
+            },
+            "notAvailable": "N/A"
+          }
+        },
+        "rideCard": {
+          "passengers": "passengers",
+          "availableSeats": "available seats",
+          "edit": "Edit",
+          "editShort": "Edit",
+          "delete": "Delete",
+          "deleteShort": "Del",
+          "deleteTitle": "Are you sure you want to delete this ride?",
+          "deleteDescription": "This action is irreversible and will permanently delete this ride.",
+          "deleteWarning": "This ride has {count} booking(s) and cannot be deleted.",
+          "cancel": "Cancel",
+          "confirm": "Confirm",
+          "reservations": "bookings",
+          "contact": "Contact",
+          "bookings": "Bookings",
+          "noBookings": "No bookings for this ride",
+          "passengersLabel": "Passengers",
+          "deleting": "Deleting...",
+          "paid": "paid",
+          "passenger": "Passenger",
+          "statusPending": "Pending",
+          "statusPendingVerification": "Verif.",
+          "statusConfirmed": "Confirmed",
+          "statusCancelled": "Cancelled",
+          "verified": "Verified",
+          "paidStatus": "Paid",
+          "pendingPayment": "Pending",
+          "checkPayment": "Check Payment",
+          "checkPaymentShort": "Check",
+          "verifyCode": "Verify Code",
+          "verifyCodeShort": "Verify",
+          "chat": "Chat"
+        }
+      },
+      "pending": {
+        "title": "Application Under Review",
+        "approvedTitle": "Application Approved",
+        "rejectedTitle": "Application Rejected",
+        "description": "Your application to become a PikDrive driver is currently under review.",
+        "approvedDescription": "Congratulations! Your application has been approved.",
+        "rejectedDescription": "Your application to become a PikDrive driver has not been approved.",
+        "loading": "Loading...",
+        "noApplication": {
+          "title": "No Application Found",
+          "description": "You have not yet submitted an application to become a driver.",
+          "button": "Become a Driver"
+        },
+        "status": {
+          "rejected": "Rejected",
+          "approved": "Approved",
+          "pending": "Pending"
+        },
+        "statusCard": {
+          "title": "Your Application Status",
+          "rejectedDescription": "Your application has not been approved for the following reasons",
+          "approvedDescription": "Your application has been approved successfully",
+          "pendingDescription": "Our team is reviewing your documents and verifying your information"
+        },
+        "rejected": {
+          "badge": "Application Rejected",
+          "possibleReasons": "Possible Reasons:",
+          "reasons": {
+            "incompleteDocuments": "Incomplete or illegible documents",
+            "incorrectInfo": "Incorrect personal information",
+            "expiredDocuments": "Expired vehicle documents",
+            "drivingHistory": "Problematic driving history"
+          },
+          "note": "Note: You can submit a new application after correcting the identified issues."
+        },
+        "approved": {
+          "badge": "Application Approved",
+          "congratulations": "Congratulations! You can now start publishing rides."
+        },
+        "pendingStatus": {
+          "badge": "Under Review",
+          "typicalTime": "Typical review time: 24-48 hours"
+        },
+        "nextSteps": {
+          "title": "Next Steps",
+          "pending": {
+            "step1": {
+              "title": "Document Review",
+              "description": "Verification of your identity documents and vehicle documents"
+            },
+            "step2": {
+              "title": "Email Notification",
+              "description": "You will receive an email with the result of your application"
+            },
+            "step3": {
+              "title": "Start Driving",
+              "description": "After approval, you will be able to publish rides"
+            }
+          },
+          "approved": {
+            "step1": {
+              "title": "Access Dashboard",
+              "description": "Use the button below to access your driver space"
+            },
+            "step2": {
+              "title": "Publish Your First Ride",
+              "description": "Create and manage your rides from your dashboard"
+            }
+          }
+        },
+        "important": {
+          "titleRejected": "Important Information",
+          "titlePending": "Important",
+          "rejected": {
+            "checkDocuments": "Make sure all your documents are clear and readable",
+            "checkInfo": "Ensure your personal information is correct",
+            "checkVehicle": "Verify that your vehicle documents are up to date",
+            "contactSupport": "If you have questions, contact our support"
+          },
+          "pending": {
+            "checkDocuments": "Make sure all your documents are clear and readable",
+            "checkEmail": "Verify that your email address is correct to receive notifications",
+            "contactSupport": "If you have any issues, contact our support"
+          }
+        },
+        "actions": {
+          "applyAgain": "Apply Again",
+          "contactSupport": "Contact Support",
+          "accessDashboard": "Access Dashboard",
+          "goHome": "Go Home"
+        }
+      },
+      "codeVerification": {
+        "enterCode": "Please enter the complete 6-character verification code",
+        "verificationFailed": "Verification failed",
+        "invalidCode": "Invalid verification code",
+        "failedToVerify": "Failed to verify passenger code",
+        "passengerVerified": "Passenger Verified",
+        "passengerVerifiedDescription": "The passenger has been verified successfully. You can proceed with the ride.",
+        "verifyPassenger": "Verify Passenger",
+        "description": "Enter the 6-character code provided by your passenger",
+        "placeholder": "Enter the code (e.g., AB12C3)",
+        "verifyCode": "Verify Code"
+      }
+    }
+  },
+  "offline": {
+    "title": "You're Offline",
+    "description": "Please check your internet connection and try again",
+    "tryAgain": "Try Again"
+  },
+  "phone": {
+    "label": "Phone Number",
+    "placeholder": "+237 6 XX XX XX XX",
+    "validNumber": "Valid phone number",
+    "errors": {
+      "invalidMTN": "Please enter a valid MTN number (650-654, 677-683)",
+      "invalidOrange": "Please enter a valid Orange number (655-659, 679, 690-699)",
+      "invalidCameroon": "Please enter a valid Cameroon phone number"
+    }
+  },
+  "payment": {
+    "status": {
+      "checking": "Checking payment status...",
+      "pleaseCheckPhone": "Please check your phone for the payment request",
+      "verificationTimeout": "Payment verification timed out. Please contact support.",
+      "failedToVerify": "Failed to verify payment status. Please contact support.",
+      "failed": "Payment failed",
+      "checkingBackground": "Checking in background...",
+      "statusWillUpdate": "The status will be updated automatically",
+      "invalidReference": "Invalid payment reference",
+      "completedSuccess": "Payment completed successfully!",
+      "temporaryFailure": "Temporary failure - Retrying...",
+      "paymentFailed": "Payment failed",
+      "processing": "Processing payment...",
+      "awaitingProcessing": "Awaiting processing...",
+      "autoVerification": "Automatic verification in progress..."
+    }
+  },
+  "avatar": {
+    "uploading": "Uploading...",
+    "error": "Error",
+    "uploadError": "Error uploading avatar",
+    "mustSelectImage": "You must select an image to upload."
+  },
+  "notifications": {
+    "prompt": {
+      "titleBlocked": "🔒 Notifications blocked",
+      "titleEnable": "🔔 Enable notifications",
+      "descriptionBlocked": "Re-enable notifications in your browser settings",
+      "descriptionEnable": "Never miss important updates about your rides",
+      "howToReenable": "How to re-enable notifications:",
+      "step1": "Click the 🔒 icon in the address bar",
+      "step2": "Choose \"Notifications\"",
+      "step3": "Change from \"Block\" to \"Allow\"",
+      "step4": "Refresh the page",
+      "benefits": {
+        "realtimeMessages": {
+          "title": "Real-time messages",
+          "description": "Receive messages from your driver or passenger instantly"
+        },
+        "rideUpdates": {
+          "title": "Ride updates",
+          "description": "Be informed of changes to your booking status"
+        },
+        "paymentConfirmations": {
+          "title": "Payment confirmations",
+          "description": "Receive immediate confirmation of your payments"
+        }
+      },
+      "permissionDenied": "Permission denied. You can try again later.",
+      "errorOccurred": "An error occurred. Please try again.",
+      "understood": "Understood",
+      "later": "Later",
+      "activating": "Activating...",
+      "enableNotifications": "Enable notifications",
+      "privacyNote": "We respect your privacy. You can disable notifications at any time."
+    }
+  },
+  "footer": {
+    "tagline": "Discover Cameroon, Together",
+    "copyright": "{year} PikDrive. All rights reserved."
+  },
+  "metadata": {
+    "title": "PikDrive - Your Trusted Intercity Ride-Sharing Platform",
+    "description": "Connect with trusted drivers for safe and affordable intercity travel in Cameroon."
+  }
+}

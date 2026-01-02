@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { useLocale } from '@/hooks';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -10,6 +11,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function InstallPrompt() {
+  const { t } = useLocale();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -72,9 +74,9 @@ export function InstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-[360px] bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50 border border-gray-200 dark:border-gray-700">
       <div className="flex items-start justify-between">
         <div className="flex-1 mr-4">
-          <h3 className="font-semibold text-lg mb-1">Install PikDrive</h3>
+          <h3 className="font-semibold text-lg mb-1">{t("pwa.installTitle")}</h3>
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            Install our app for a better experience with quick access and offline features
+            {t("pwa.installDescription")}
           </p>
         </div>
         <button
@@ -91,14 +93,14 @@ export function InstallPrompt() {
           className="flex-1"
           variant="default"
         >
-          Install Now
+          {t("pwa.installNow")}
         </Button>
         <Button
           onClick={handleDismiss}
           variant="outline"
           className="flex-1"
         >
-          Maybe Later
+          {t("pwa.maybeLater")}
         </Button>
       </div>
     </div>

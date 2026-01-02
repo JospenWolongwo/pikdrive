@@ -2,6 +2,7 @@
 
 import { useState, createContext, useContext, useEffect, useCallback } from 'react';
 import { usePWA, useDeviceDetect } from '@/hooks/common';
+import { useLocale } from '@/hooks';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +29,7 @@ export function useShowAndroidPrompt() {
 
 export default function PWAPrompts() {
   const { isInstallable, hasPrompt, install, isInstalled, dismissPrompt } = usePWA();
+  const { t } = useLocale();
   const [showAndroid, setShowAndroid] = useState(false);
   const [showIOS, setShowIOS] = useState(false);
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
@@ -81,24 +83,24 @@ export default function PWAPrompts() {
         }}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Install PikDrive App</DialogTitle>
+              <DialogTitle>{t("pwa.installTitle")}</DialogTitle>
               <DialogDescription>
-                Get quick access and a better experience by installing PikDrive on your device.
+                {t("pwa.installDescription")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <ul className="list-disc list-inside space-y-2 text-sm">
-                <li>Fast access from your home screen</li>
-                <li>Offline functionality</li>
-                <li>Better performance</li>
-                <li>App-like experience</li>
+                <li>{t("pwa.benefits.fastAccess")}</li>
+                <li>{t("pwa.benefits.offlineFunctionality")}</li>
+                <li>{t("pwa.benefits.betterPerformance")}</li>
+                <li>{t("pwa.benefits.appLikeExperience")}</li>
               </ul>
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={handleDismiss}>
-                  Later
+                  {t("pwa.later")}
                 </Button>
                 <Button onClick={handleInstall} variant="default">
-                  Add to Home Screen
+                  {t("pwa.addToHomeScreen")}
                 </Button>
               </div>
             </div>

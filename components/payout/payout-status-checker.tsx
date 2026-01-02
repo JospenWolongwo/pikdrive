@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLocale } from '@/hooks';
 
 type PayoutStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
@@ -45,9 +46,10 @@ export function PayoutStatusChecker({
   onStatusChange,
   onComplete,
 }: PayoutStatusCheckerProps) {
+  const { t } = useLocale();
   const [status, setStatus] = useState<PayoutStatus>('processing');
   const [isPolling, setIsPolling] = useState(true);
-  const [message, setMessage] = useState('Vérification du statut du paiement...');
+  const [message, setMessage] = useState(t("payment.status.checking"));
   const [startTime] = useState(Date.now());
   const [lastCheck, setLastCheck] = useState(Date.now());
 
@@ -63,14 +65,14 @@ export function PayoutStatusChecker({
       // Stop polling after max time
       if (elapsed >= MAX_POLLING_TIME) {
         setIsPolling(false);
-        setMessage('Vérification en arrière-plan...');
-        toast.info('Le statut sera mis à jour automatiquement');
+        setMessage(t("payment.status.checkingBackground"));
+        toast.info(t("payment.status.statusWillUpdate"));
         return;
       }
 
       if (!transactionId && !payoutId) {
         setStatus('failed');
-        setMessage('Référence de paiement invalide');
+        setMessage(t("payment.status.invalidReference"));
         setIsPolling(false);
         onComplete?.('failed');
         return;
@@ -114,20 +116,21 @@ export function PayoutStatusChecker({
         // Handle final statuses
         if (payoutStatus === 'completed') {
           setIsPolling(false);
-          setMessage('Paiement complété avec succès!');
-          toast.success(payoutMessage || 'Paiement complété avec succès!');
+          const successMessage = t("payment.status.completedSuccess");
+          setMessage(successMessage);
+          toast.success(payoutMessage || successMessage);
           onComplete?.(payoutStatus);
           return;
         }
 
         if (payoutStatus === 'failed') {
           setIsPolling(false);
-          setMessage(shouldRetry 
-            ? 'Échec temporaire - Nouvelle tentative en cours...'
-            : 'Paiement échoué'
-          );
+          const failureMessage = shouldRetry 
+            ? t("payment.status.temporaryFailure")
+            : t("payment.status.paymentFailed");
+          setMessage(failureMessage);
           if (!shouldRetry) {
-            toast.error(payoutMessage || 'Paiement échoué');
+            toast.error(payoutMessage || t("payment.status.paymentFailed"));
           }
           onComplete?.(payoutStatus);
           return;
@@ -135,9 +138,9 @@ export function PayoutStatusChecker({
 
         // Update message based on status
         if (payoutStatus === 'processing') {
-          setMessage('Traitement du paiement en cours...');
+          setMessage(t("payment.status.processing"));
         } else if (payoutStatus === 'pending') {
-          setMessage('En attente de traitement...');
+          setMessage(t("payment.status.awaitingProcessing"));
         }
 
         // Continue polling if still pending or processing
@@ -159,8 +162,8 @@ export function PayoutStatusChecker({
           timeoutId = setTimeout(checkStatus, backoffTime);
         } else {
           setIsPolling(false);
-          setMessage('Erreur de vérification');
-          toast.error('Erreur lors de la vérification du statut. Veuillez rafraîchir la page.');
+          setMessage(t("payment.status.failedToVerify"));
+          toast.error(t("payment.status.failedToVerify"));
         }
       }
     };
@@ -220,7 +223,7 @@ export function PayoutStatusChecker({
       </div>
       {isPolling && (
         <p className="text-sm text-gray-500">
-          Vérification automatique en cours...
+          {t("payment.status.autoVerification")}
         </p>
       )}
     </div>

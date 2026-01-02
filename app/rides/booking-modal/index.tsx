@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { RideWithDriver } from "@/types";
 import { useBookingModal } from "./hooks/use-booking-modal";
+import { useLocale } from "@/hooks";
 import { BookingPassengerInfoStep } from "./components/booking-passenger-info-step";
 import { BookingSeatSelection } from "./components/booking-seat-selection";
 import { BookingPaymentStep } from "./components/booking-payment-step";
@@ -21,6 +22,7 @@ export function BookingModal({
   ride,
   onBookingComplete,
 }: BookingModalProps) {
+  const { t } = useLocale();
   const {
     step,
     seats,
@@ -73,7 +75,7 @@ export function BookingModal({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Chargement des informations de réservation...</DialogTitle>
+            <DialogTitle>{t("pages.rides.booking.loadingInfo")}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -148,15 +150,15 @@ export function BookingModal({
   const getTitle = () => {
     switch (step) {
       case 0:
-        return "Informations personnelles";
+        return t("pages.rides.booking.modalTitles.passengerInfo");
       case 1:
-        return "Réserver votre trajet";
+        return t("pages.rides.booking.modalTitles.seatSelection");
       case 2:
-        return "Détails du paiement";
+        return t("pages.rides.booking.modalTitles.payment");
       case 3:
-        return "Confirmation de réservation";
+        return t("pages.rides.booking.modalTitles.success");
       default:
-        return "Réserver votre trajet";
+        return t("pages.rides.booking.modalTitles.seatSelection");
     }
   };
 

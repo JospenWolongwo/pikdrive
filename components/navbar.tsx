@@ -9,7 +9,6 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { usePWA } from "@/hooks/common";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +37,14 @@ import {
 import { cn } from "@/lib/utils";
 import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
 import { useShowAndroidPrompt } from "@/components/pwa/PWAPrompts";
-import { useDeviceDetect } from "@/hooks/common";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useLocale, usePWA, useDeviceDetect } from "@/hooks";
 
 export function Navbar() {
   const { supabase, user, loading } = useSupabase();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const { t } = useLocale();
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isDriver, setIsDriver] = useState(false);
@@ -239,11 +240,11 @@ export function Navbar() {
   };
 
   const menuItems = [
-    { href: "/", label: "Accueil" },
-    { href: "/rides", label: "Trouver un Trajet" },
-    { href: "/about", label: "À Propos" },
-    { href: "/advice", label: "Sécurité & FAQ" },
-    { href: "/contact", label: "Contact" },
+    { href: "/", label: t("navigation.home") },
+    { href: "/rides", label: t("navigation.findRide") },
+    { href: "/about", label: t("navigation.about") },
+    { href: "/advice", label: t("navigation.safety") },
+    { href: "/contact", label: t("navigation.contact") },
   ];
 
   const NavItems = ({ className }: { className?: string }) => (
@@ -301,7 +302,7 @@ export function Navbar() {
           className="flex w-full items-center gap-2"
         >
           <Download className="h-4 w-4" />
-          <span>Installer l&apos;App</span>
+          <span>{t("pwa.installApp")}</span>
         </Button>
       );
     }
@@ -316,7 +317,7 @@ export function Navbar() {
           className="flex w-full items-center gap-2"
         >
           <Download className="h-4 w-4" />
-          <span>Installer l&apos;App</span>
+          <span>{t("pwa.installApp")}</span>
         </Button>
       );
     }
@@ -340,7 +341,7 @@ export function Navbar() {
               className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
             >
               <Menu className="h-6 w-6" />
-              <span className="sr-only">Toggle Menu</span>
+              <span className="sr-only">{t("common.toggleMenu")}</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="pr-0">
@@ -387,7 +388,7 @@ export function Navbar() {
                     {unreadCounts.reduce((sum, item) => sum + item.count, 0)}
                   </span>
                 )}
-                <span className="sr-only">Messages</span>
+                <span className="sr-only">{t("common.messages")}</span>
               </Button>
             </Link>
           )}
@@ -401,7 +402,7 @@ export function Navbar() {
                   size="sm"
                   className="flex items-center gap-2 rounded-full"
                 >
-                  <span className="hidden sm:inline">Options</span>
+                  <span className="hidden sm:inline">{t("common.options")}</span>
                   <Menu className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -409,13 +410,13 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/bookings" className="flex items-center">
                     <CalendarCheck className="mr-2 h-4 w-4" />
-                    <span>Mes Réservations</span>
+                    <span>{t("navigation.myBookings")}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/rides" className="flex items-center">
                     <Search className="mr-2 h-4 w-4" />
-                    <span>Rechercher</span>
+                    <span>{t("navigation.search")}</span>
                   </Link>
                 </DropdownMenuItem>
                 {isDriver && driverStatus === "approved" && (
@@ -426,7 +427,7 @@ export function Navbar() {
                         className="flex items-center"
                       >
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        <span>Publier Trajet</span>
+                        <span>{t("navigation.publishRide")}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -435,7 +436,7 @@ export function Navbar() {
                         className="flex items-center"
                       >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>Vos Trajets</span>
+                        <span>{t("navigation.myRides")}</span>
                       </Link>
                     </DropdownMenuItem>
                   </>
@@ -444,13 +445,16 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href="/driver/pending" className="flex items-center">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Statut de Candidature</span>
+                      <span>{t("navigation.applicationStatus")}</span>
                     </Link>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {/* Language Switcher */}
+          <LanguageSwitcher />
 
           {/* Theme Toggle */}
           <Button
@@ -468,9 +472,9 @@ export function Navbar() {
             <span className="sr-only">
               {mounted
                 ? theme === "light"
-                  ? "Mode sombre"
-                  : "Mode clair"
-                : "Changer de thème"}
+                  ? t("theme.darkMode")
+                  : t("theme.lightMode")
+                : t("theme.toggleTheme")}
             </span>
           </Button>
 
@@ -496,13 +500,13 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="flex items-center">
                     <User className="mr-2 h-4 w-4" />
-                    <span>{isDriver ? "Profil de Chauffeur" : "Profil"}</span>
+                    <span>{isDriver ? t("navigation.driverProfile") : t("navigation.profile")}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/settings" className="flex items-center">
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>Paramètres</span>
+                    <span>{t("navigation.settings")}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -511,13 +515,13 @@ export function Navbar() {
                   onSelect={handleSignOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Déconnexion</span>
+                  <span>{t("navigation.logout")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : !loading ? (
             <Button onClick={() => router.replace('/auth')}>
-              Connexion
+              {t("navigation.login")}
             </Button>
           ) : (
             <Button disabled size="sm">

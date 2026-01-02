@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { MessageSquare, Bell, CheckCircle, X } from 'lucide-react';
 import { useNotificationPermission } from '@/hooks/notifications/useNotificationPermission';
 import { detectDevice, getNotificationSupportMessage } from '@/lib/utils/device-detection';
+import { useLocale } from '@/hooks';
 
 interface NotificationPromptProps {
   readonly isOpen: boolean;
@@ -19,6 +20,7 @@ interface NotificationPromptProps {
  */
 export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPromptProps) {
   const { requestPermission, isLoading } = useNotificationPermission();
+  const { t } = useLocale();
   const [deviceInfo] = useState(() => detectDevice());
   const [error, setError] = useState<string | null>(null);
   
@@ -50,10 +52,10 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
         onEnable();
         onClose(); // Only close on success
       } else {
-        setError('Permission refusée. Vous pouvez réessayer plus tard.');
+        setError(t("notifications.prompt.permissionDenied"));
       }
     } catch (error) {
-      setError('Une erreur s\'est produite. Veuillez réessayer.');
+      setError(t("notifications.prompt.errorOccurred"));
       console.error('Permission request failed:', error);
     }
   };
@@ -71,7 +73,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold text-[#28C496]">
-              {isPermissionDenied ? '🔒 Notifications bloquées' : '🔔 Activez les notifications'}
+              {isPermissionDenied ? t("notifications.prompt.titleBlocked") : t("notifications.prompt.titleEnable")}
             </DialogTitle>
             <Button
               variant="ghost"
@@ -84,8 +86,8 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
           </div>
           <DialogDescription className="text-base">
             {isPermissionDenied 
-              ? 'Réactivez les notifications dans les paramètres de votre navigateur'
-              : 'Ne manquez jamais les mises à jour importantes de vos trajets'
+              ? t("notifications.prompt.descriptionBlocked")
+              : t("notifications.prompt.descriptionEnable")
             }
           </DialogDescription>
         </DialogHeader>
@@ -95,13 +97,13 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
           {isPermissionDenied && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm font-medium text-blue-800 mb-2">
-                📍 Comment réactiver les notifications :
+                📍 {t("notifications.prompt.howToReenable")}
               </p>
               <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-                <li>Cliquez sur l'icône 🔒 dans la barre d'adresse</li>
-                <li>Choisissez "Notifications"</li>
-                <li>Changez de "Bloquer" à "Autoriser"</li>
-                <li>Actualisez la page</li>
+                <li>{t("notifications.prompt.step1")}</li>
+                <li>{t("notifications.prompt.step2")}</li>
+                <li>{t("notifications.prompt.step3")}</li>
+                <li>{t("notifications.prompt.step4")}</li>
               </ol>
             </div>
           )}
@@ -111,9 +113,9 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
             <div className="flex items-start space-x-3">
               <MessageSquare className="h-5 w-5 text-[#28C496] mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-sm">Messages en temps réel</p>
+                <p className="font-medium text-sm">{t("notifications.prompt.benefits.realtimeMessages.title")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Recevez instantanément les messages de votre conducteur ou passager
+                  {t("notifications.prompt.benefits.realtimeMessages.description")}
                 </p>
               </div>
             </div>
@@ -121,9 +123,9 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
             <div className="flex items-start space-x-3">
               <Bell className="h-5 w-5 text-[#28C496] mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-sm">Mises à jour de trajet</p>
+                <p className="font-medium text-sm">{t("notifications.prompt.benefits.rideUpdates.title")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Soyez informé des changements de statut de votre réservation
+                  {t("notifications.prompt.benefits.rideUpdates.description")}
                 </p>
               </div>
             </div>
@@ -131,9 +133,9 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
             <div className="flex items-start space-x-3">
               <CheckCircle className="h-5 w-5 text-[#28C496] mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-sm">Confirmations de paiement</p>
+                <p className="font-medium text-sm">{t("notifications.prompt.benefits.paymentConfirmations.title")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Recevez immédiatement la confirmation de vos paiements
+                  {t("notifications.prompt.benefits.paymentConfirmations.description")}
                 </p>
               </div>
             </div>
@@ -165,8 +167,8 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
                 }
               })() && (
                 <p className="text-xs text-red-700 mt-2">
-                  💡 Pour réactiver les notifications :<br />
-                  Cliquez sur 🔒 dans la barre d'adresse → Notifications → Autoriser
+                  💡 {t("notifications.prompt.howToReenable")}<br />
+                  {t("notifications.prompt.step1")} → {t("notifications.prompt.step2")} → {t("notifications.prompt.step3")}
                 </p>
               )}
             </div>
@@ -181,7 +183,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
                 variant="outline"
                 className="flex-1"
               >
-                Compris
+                {t("notifications.prompt.understood")}
               </Button>
             ) : (
               <>
@@ -190,14 +192,14 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
                   variant="outline"
                   className="flex-1"
                 >
-                  Plus tard
+                  {t("notifications.prompt.later")}
                 </Button>
                 <Button
                   onClick={handleEnableNotifications}
                   disabled={!canEnable || isLoading}
                   className="flex-1 bg-[#28C496] hover:bg-[#22a085]"
                 >
-                  {isLoading ? 'Activation...' : 'Activer les notifications'}
+                  {isLoading ? t("notifications.prompt.activating") : t("notifications.prompt.enableNotifications")}
                 </Button>
               </>
             )}
@@ -205,7 +207,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
 
           {/* Privacy note */}
           <p className="text-xs text-muted-foreground text-center">
-            Nous respectons votre vie privée. Vous pouvez désactiver les notifications à tout moment.
+            {t("notifications.prompt.privacyNote")}
           </p>
         </div>
       </DialogContent>

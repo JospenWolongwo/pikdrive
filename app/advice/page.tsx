@@ -6,59 +6,61 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Shield, AlertTriangle, HelpCircle, PhoneCall, Mail, Clock, MapPin, CreditCard, CheckCircle, Smartphone, AlertCircle, WifiOff, Truck, Network } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
+import { useLocale } from "@/hooks";
 
 export default function AdvicePage() {
+  const { t } = useLocale()
   const safetyTips = [
     {
-      title: "Vérifiez l'Identité du Chauffeur",
-      content: "Vérifiez toujours que la photo de profil du chauffeur et les détails du véhicule correspondent à ce que vous voyez en personne. Demandez à voir sa carte d&apos;identification PikDrive.",
+      title: t("pages.advice.safetyTips.verifyDriver.title"),
+      content: t("pages.advice.safetyTips.verifyDriver.content"),
       icon: Shield,
     },
     {
-      title: "Partagez Votre Trajet",
-      content: "Utilisez notre fonction &apos;Partager le Trajet&apos; pour permettre à vos amis ou à votre famille de suivre votre voyage en temps réel. Cette fonctionnalité fonctionne même en zone de faible connexion.",
+      title: t("pages.advice.safetyTips.shareTrip.title"),
+      content: t("pages.advice.safetyTips.shareTrip.content"),
       icon: AlertTriangle,
     },
     {
-      title: "Restez dans les Lieux Publics",
-      content: "Pour les prises en charge et les déposes, tenez-vous-en à des endroits publics bien éclairés dans la mesure du possible. Évitez les points de ramassage isolés, surtout la nuit.",
+      title: t("pages.advice.safetyTips.stayPublic.title"),
+      content: t("pages.advice.safetyTips.stayPublic.content"),
       icon: Shield,
     },
     {
-      title: "Gardez Votre Code Confidentiel",
-      content: "Ne partagez jamais votre code de vérification avant d'être dans le véhicule et prêt à partir. Le code est la garantie que vous recevrez le service réservé.",
+      title: t("pages.advice.safetyTips.keepCodeSecret.title"),
+      content: t("pages.advice.safetyTips.keepCodeSecret.content"),
       icon: AlertCircle,
     },
   ]
 
   const faqs = [
     {
-      question: "Comment fonctionne PikDrive exactement ?",
-      answer: "PikDrive est une plateforme de covoiturage intercités au Cameroun qui fonctionne en 4 étapes simples : 1) Vous choisissez votre destination et un chauffeur vérifié. 2) Vous payez pour réserver votre place via Mobile Money, carte bancaire ou en espèces chez nos partenaires. 3) Vous recevez un code de vérification unique après paiement. 4) Vous montrez ce code au chauffeur au moment du départ, ce qui valide le trajet et libère le paiement au chauffeur."
+      question: t("pages.advice.faq.howWorks.question"),
+      answer: t("pages.advice.faq.howWorks.answer"),
     },
     {
-      question: "Comment réserver un trajet ?",
-      answer: "Rendez-vous sur la page 'Trouver un Trajet', sélectionnez votre ville de départ et votre destination. Choisissez parmi les chauffeurs disponibles en fonction des horaires et prix qui vous conviennent. Procédez au paiement via notre plateforme sécurisée et vous recevrez un code de confirmation et les détails du trajet par SMS et dans l'application."
+      question: t("pages.advice.faq.howBook.question"),
+      answer: t("pages.advice.faq.howBook.answer"),
     },
     {
-      question: "Comment fonctionne le système de code de vérification ?",
-      answer: "Après avoir effectué votre paiement, vous recevez un code unique de 6 chiffres par SMS et dans l'application. Ce code doit être présenté au chauffeur uniquement lorsque vous êtes prêt à commencer votre voyage. Le chauffeur saisit ce code dans son application, ce qui confirme votre présence et autorise le déblocage du paiement. Sans ce code, le chauffeur ne reçoit pas son paiement."
+      question: t("pages.advice.faq.verificationCode.question"),
+      answer: t("pages.advice.faq.verificationCode.answer"),
     },
     {
-      question: "Que se passe-t-il si je perds ma connexion internet ?",
-      answer: "PikDrive fonctionne même en cas de connexion internet limitée. Votre code de vérification est envoyé par SMS et peut être présenté hors ligne. Les chauffeurs peuvent également valider les codes en mode hors ligne, et la synchronisation se fera automatiquement dès que la connexion est rétablie."
+      question: t("pages.advice.faq.offline.question"),
+      answer: t("pages.advice.faq.offline.answer"),
     },
     {
-      question: "Que se passe-t-il si mon chauffeur annule ?",
-      answer: "Si votre chauffeur annule, vous serez notifié immédiatement par SMS et notification dans l'application. Vous pouvez alors soit choisir un autre chauffeur disponible (nous vous proposerons des alternatives), soit demander un remboursement intégral qui sera traité sous 24 heures vers votre moyen de paiement d'origine."
+      question: t("pages.advice.faq.driverCancel.question"),
+      answer: t("pages.advice.faq.driverCancel.answer"),
     },
     {
-      question: "Comment devenir chauffeur ?",
-      answer: "Visitez notre page 'Devenir Chauffeur' pour commencer le processus. Vous devrez fournir : une pièce d'identité valide, votre permis de conduire, les documents du véhicule (carte grise, assurance, contrôle technique), et une photo professionnelle. Nos équipes vérifient ces documents et organisent une formation rapide sur l'utilisation de l'application. Le processus prend généralement 48-72 heures."
+      question: t("pages.advice.faq.becomeDriver.question"),
+      answer: t("pages.advice.faq.becomeDriver.answer"),
     },
     {
-      question: "Mon paiement est-il sécurisé ?",
-      answer: "Oui, nous utilisons un cryptage aux normes internationales pour toutes les transactions. Les paiements sont sécurisés par notre système de code de vérification : l'argent n'est libéré au chauffeur qu'après validation de votre code, garantissant que vous recevez bien le service réservé. En cas de problème, notre équipe d'assistance est disponible 24/7."
+      question: t("pages.advice.faq.paymentSecure.question"),
+      answer: t("pages.advice.faq.paymentSecure.answer"),
     },
   ]
 
@@ -71,31 +73,31 @@ export default function AdvicePage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold mb-4">Comment Ça Marche</h1>
-          <p className="text-muted-foreground text-lg">Découvrez comment utiliser PikDrive en quelques étapes simples</p>
+          <h1 className="text-4xl font-bold mb-4">{t("pages.advice.howItWorks.title")}</h1>
+          <p className="text-muted-foreground text-lg">{t("pages.advice.howItWorks.subtitle")}</p>
         </motion.div>
 
         <div className="grid md:grid-cols-4 gap-6 mb-12">
           {[
             {
               icon: <MapPin className="w-12 h-12" />,
-              title: "1. Choisissez Votre Destination",
-              description: "Sélectionnez votre ville de départ, destination et date. Parcourez les options disponibles et choisissez un chauffeur qui vous convient."
+              title: t("pages.advice.howItWorks.step1.title"),
+              description: t("pages.advice.howItWorks.step1.description"),
             },
             {
               icon: <CreditCard className="w-12 h-12" />,
-              title: "2. Effectuez le Paiement",
-              description: "Réservez votre place en payant via Mobile Money, carte bancaire ou en espèces chez nos partenaires. Le paiement est temporairement bloqué."
+              title: t("pages.advice.howItWorks.step2.title"),
+              description: t("pages.advice.howItWorks.step2.description"),
             },
             {
               icon: <Smartphone className="w-12 h-12" />,
-              title: "3. Recevez Votre Code",
-              description: "Après paiement, vous recevez un code de vérification unique par SMS et dans l'application. Gardez-le précieusement."
+              title: t("pages.advice.howItWorks.step3.title"),
+              description: t("pages.advice.howItWorks.step3.description"),
             },
             {
               icon: <CheckCircle className="w-12 h-12" />,
-              title: "4. Validez le Trajet",
-              description: "Présentez votre code au chauffeur lors de votre embarquement. Ce code débloque le paiement et confirme votre trajet."
+              title: t("pages.advice.howItWorks.step4.title"),
+              description: t("pages.advice.howItWorks.step4.description"),
             }
           ].map((step, index) => (
             <motion.div
@@ -116,31 +118,30 @@ export default function AdvicePage() {
         </div>
         
         <div className="bg-primary/10 rounded-lg p-6 mb-12">
-          <h2 className="text-2xl font-semibold mb-4 text-center">Pourquoi utiliser le système de code ?</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-center">{t("pages.advice.whyCode.title")}</h2>
           <p className="text-center max-w-3xl mx-auto mb-6">
-            Notre système de code unique assure que vous ne payez que pour les services que vous recevez réellement.
-            Le chauffeur ne reçoit le paiement qu&apos;après que vous ayez validé votre présence dans le véhicule en présentant le code.
+            {t("pages.advice.whyCode.description")}
           </p>
           <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
             <div className="bg-background rounded p-4 text-center">
               <Shield className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium mb-1">Paiement Sécurisé</h3>
-              <p className="text-sm text-muted-foreground">Votre argent est protégé jusqu&apos;à ce que vous confirmiez le service</p>
+              <h3 className="font-medium mb-1">{t("pages.advice.whyCode.securePayment")}</h3>
+              <p className="text-sm text-muted-foreground">{t("pages.advice.whyCode.securePaymentDesc")}</p>
             </div>
             <div className="bg-background rounded p-4 text-center">
               <AlertTriangle className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium mb-1">Anti-Fraude</h3>
-              <p className="text-sm text-muted-foreground">Prévient les réservations factices et garantit la présence des voyageurs</p>
+              <h3 className="font-medium mb-1">{t("pages.advice.whyCode.antiFraud")}</h3>
+              <p className="text-sm text-muted-foreground">{t("pages.advice.whyCode.antiFraudDesc")}</p>
             </div>
             <div className="bg-background rounded p-4 text-center">
               <Network className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium mb-1">Fonctionne Hors-ligne</h3>
-              <p className="text-sm text-muted-foreground">Le code fonctionne même sans connexion internet permanente</p>
+              <h3 className="font-medium mb-1">{t("pages.advice.whyCode.offline")}</h3>
+              <p className="text-sm text-muted-foreground">{t("pages.advice.whyCode.offlineDesc")}</p>
             </div>
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold mb-6">Conseils de Sécurité</h2>
+        <h2 className="text-2xl font-bold mb-6">{t("pages.advice.safetyTipsTitle")}</h2>
         <div className="grid md:grid-cols-2 gap-6">
           {safetyTips.map((tip, index) => (
             <motion.div
@@ -225,7 +226,7 @@ export default function AdvicePage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl font-bold mb-4">Questions Fréquemment Posées</h2>
+          <h2 className="text-3xl font-bold mb-4">{t("pages.advice.faqTitle")}</h2>
           <p className="text-muted-foreground text-lg">Trouvez des réponses aux questions courantes sur l&apos;utilisation de PikDrive</p>
         </motion.div>
 
