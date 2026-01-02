@@ -365,7 +365,6 @@
       "goHome": "Retour à l'accueil",
       "dashboard": "Tableau de bord",
       "applicationStatus": "Statut de Candidature",
-      "status": "Statut",
       "viewRejectedStatus": "Voir le Statut Refusé",
       "personalInfo": {
         "title": "Informations Personnelles",
@@ -378,7 +377,10 @@
         "cancel": "Annuler",
         "save": "Enregistrer",
         "saving": "Sauvegarde...",
-        "nameNotDefined": "Nom non défini"
+        "nameNotDefined": "Nom non défini",
+        "fullNamePlaceholder": "Entrez votre nom complet",
+        "emailPlaceholder": "Entrez votre email",
+        "phoneCannotBeChanged": "Le numéro de téléphone ne peut pas être modifié car il sert d'identifiant"
       },
       "toast": {
         "success": "Succès",
@@ -386,7 +388,6 @@
         "error": "Erreur",
         "updateFailed": "Échec de la mise à jour du profil"
       },
-      "accountStatus": "Statut du Compte",
       "driverStatus": "Statut chauffeur:",
       "viewStatus": "Voir le Statut",
       "applicationSubmitted": "Candidature soumise le",
@@ -397,8 +398,75 @@
       "city": "Ville",
       "selectCity": "Sélectionnez votre ville",
       "searchCity": "Rechercher une ville...",
-      "driverDocuments": "Documents de Chauffeur",
-      "becomeDriver": "Devenir Chauffeur"
+      "becomeDriver": "Devenir Chauffeur",
+      "logout": "Déconnexion",
+      "loadingProfile": "Chargement du profil...",
+      "error": "Erreur",
+      "avatar": {
+        "alt": "Photo de profil",
+        "uploadSuccess": "Photo de profil mise à jour avec succès",
+        "uploadError": "Impossible de télécharger la photo de profil",
+        "fileSizeError": "La taille du fichier doit être inférieure à 5MB"
+      },
+      "driverDocuments": {
+        "description": "Vos documents soumis pour la candidature de chauffeur",
+        "submittedDocuments": "Documents Soumis",
+        "nationalId": "Carte Nationale d'Identité",
+        "nationalIdRecto": "CNI Recto",
+        "nationalIdVerso": "CNI Verso",
+        "drivingLicense": "Permis de Conduire",
+        "licenseRecto": "Permis Recto",
+        "licenseVerso": "Permis Verso",
+        "registrationCard": "Carte Grise",
+        "registrationRecto": "Carte Grise Recto",
+        "registrationVerso": "Carte Grise Verso",
+        "insurance": "Assurance",
+        "insuranceRecto": "Assurance Recto",
+        "insuranceVerso": "Assurance Verso",
+        "noDocuments": "Aucun document soumis pour le moment",
+        "noDocumentsDescription": "Vous pouvez commencer par ajouter des photos de votre véhicule ci-dessous"
+      },
+      "vehicleImages": {
+        "title": "Photos du Véhicule",
+        "edit": "Modifier",
+        "cancel": "Annuler",
+        "addPhotos": "Ajouter des photos",
+        "fileFormats": "JPG, PNG, GIF, WebP (max 5MB chacun)",
+        "newPhotosToAdd": "Nouvelles photos à ajouter",
+        "newPhoto": "Nouvelle photo",
+        "saving": "Sauvegarde...",
+        "save": "Sauvegarder",
+        "savingPhotos": "Sauvegarde des photos...",
+        "noPhotos": "Aucune photo de véhicule",
+        "remove": "Supprimer",
+        "uploadSuccess": "photo(s) ajoutée(s) avec succès",
+        "uploadError": "Impossible de télécharger les photos du véhicule",
+        "removeSuccess": "Photo supprimée avec succès",
+        "removeError": "Impossible de supprimer la photo",
+        "fileSizeError": "Chaque fichier doit faire moins de 5MB"
+      },
+      "status": {
+        "title": "Statut",
+        "approved": "Approuvé",
+        "pending": "En attente",
+        "rejected": "Refusé",
+        "inactive": "Inactif"
+      },
+      "accountStatus": {
+        "title": "Statut du Compte",
+        "accountType": "Type de compte:",
+        "role": "Rôle:",
+        "memberSince": "Membre depuis:",
+        "lastUpdate": "Dernière mise à jour:",
+        "notAvailable": "Non disponible",
+        "admin": "Administrateur"
+      },
+      "quickActions": {
+        "title": "Actions Rapides",
+        "publishRide": "Publier un Trajet",
+        "viewRides": "Voir les Trajets",
+        "myBookings": "Mes Réservations"
+      }
     },
     "errors": {
       "title": "Quelque chose s'est mal passé",

@@ -17,3 +17,6 @@ export * from './driver';
 
 // Passenger hooks (to be added)
 export * from './passenger';
+
+// Profile hooks
+export * from './profile';

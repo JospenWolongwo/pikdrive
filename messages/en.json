@@ -367,7 +367,6 @@
       "goHome": "Go Home",
       "dashboard": "Dashboard",
       "applicationStatus": "Application Status",
-      "status": "Status",
       "viewRejectedStatus": "View Rejected Status",
       "personalInfo": {
         "title": "Personal Information",
@@ -380,7 +379,10 @@
         "cancel": "Cancel",
         "save": "Save",
         "saving": "Saving...",
-        "nameNotDefined": "Name not defined"
+        "nameNotDefined": "Name not defined",
+        "fullNamePlaceholder": "Enter your full name",
+        "emailPlaceholder": "Enter your email",
+        "phoneCannotBeChanged": "Phone number cannot be modified as it serves as identifier"
       },
       "toast": {
         "success": "Success",
@@ -388,7 +390,6 @@
         "error": "Error",
         "updateFailed": "Failed to update profile"
       },
-      "accountStatus": "Account Status",
       "driverStatus": "Driver status:",
       "viewStatus": "View Status",
       "applicationSubmitted": "Application submitted on",
@@ -399,8 +400,75 @@
       "city": "City",
       "selectCity": "Select your city",
       "searchCity": "Search for a city...",
-      "driverDocuments": "Driver Documents",
-      "becomeDriver": "Become a Driver"
+      "becomeDriver": "Become a Driver",
+      "logout": "Logout",
+      "loadingProfile": "Loading profile...",
+      "error": "Error",
+      "avatar": {
+        "alt": "Profile photo",
+        "uploadSuccess": "Profile photo updated successfully",
+        "uploadError": "Unable to upload profile photo",
+        "fileSizeError": "File size must be less than 5MB"
+      },
+      "driverDocuments": {
+        "description": "Your submitted documents for driver application",
+        "submittedDocuments": "Submitted Documents",
+        "nationalId": "National Identity Card",
+        "nationalIdRecto": "ID Card Front",
+        "nationalIdVerso": "ID Card Back",
+        "drivingLicense": "Driving License",
+        "licenseRecto": "License Front",
+        "licenseVerso": "License Back",
+        "registrationCard": "Registration Card",
+        "registrationRecto": "Registration Front",
+        "registrationVerso": "Registration Back",
+        "insurance": "Insurance",
+        "insuranceRecto": "Insurance Front",
+        "insuranceVerso": "Insurance Back",
+        "noDocuments": "No documents submitted yet",
+        "noDocumentsDescription": "You can start by adding photos of your vehicle below"
+      },
+      "vehicleImages": {
+        "title": "Vehicle Photos",
+        "edit": "Edit",
+        "cancel": "Cancel",
+        "addPhotos": "Add photos",
+        "fileFormats": "JPG, PNG, GIF, WebP (max 5MB each)",
+        "newPhotosToAdd": "New photos to add",
+        "newPhoto": "New photo",
+        "saving": "Saving...",
+        "save": "Save",
+        "savingPhotos": "Saving photos...",
+        "noPhotos": "No vehicle photos",
+        "remove": "Remove",
+        "uploadSuccess": "photo(s) added successfully",
+        "uploadError": "Unable to upload vehicle photos",
+        "removeSuccess": "Photo removed successfully",
+        "removeError": "Unable to remove photo",
+        "fileSizeError": "Each file must be less than 5MB"
+      },
+      "status": {
+        "title": "Status",
+        "approved": "Approved",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "inactive": "Inactive"
+      },
+      "accountStatus": {
+        "title": "Account Status",
+        "accountType": "Account type:",
+        "role": "Role:",
+        "memberSince": "Member since:",
+        "lastUpdate": "Last update:",
+        "notAvailable": "Not available",
+        "admin": "Administrator"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "publishRide": "Publish a Ride",
+        "viewRides": "View Rides",
+        "myBookings": "My Bookings"
+      }
     },
     "errors": {
       "title": "Something went wrong",
