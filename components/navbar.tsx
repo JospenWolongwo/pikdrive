@@ -366,9 +366,9 @@ export function Navbar() {
         </Sheet>
 
         <div className="flex items-center gap-2 md:gap-6 flex-1">
-          <Link href="/" className="flex items-center space-x-2">
-            <Car className="h-6 w-6" />
-            <span className="font-bold">PikDrive</span>
+          <Link href="/" className="flex flex-col md:flex-row items-start md:items-center space-y-0.5 md:space-y-0 md:space-x-2">
+            <Car className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="font-bold text-sm md:text-base">PikDrive</span>
           </Link>
           <NavItems className="hidden md:flex" />
         </div>
@@ -392,6 +392,31 @@ export function Navbar() {
               </Button>
             </Link>
           )}
+
+          {/* Language Switcher */}
+          <LanguageSwitcher />
+
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="rounded-full"
+          >
+            {mounted &&
+              (theme === "light" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              ))}
+            <span className="sr-only">
+              {mounted
+                ? theme === "light"
+                  ? t("theme.darkMode")
+                  : t("theme.lightMode")
+                : t("theme.toggleTheme")}
+            </span>
+          </Button>
 
           {/* Quick Actions Dropdown for all users */}
           {!loading && user && (
@@ -452,31 +477,6 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-
-          {/* Language Switcher */}
-          <LanguageSwitcher />
-
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            className="rounded-full"
-          >
-            {mounted &&
-              (theme === "light" ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              ))}
-            <span className="sr-only">
-              {mounted
-                ? theme === "light"
-                  ? t("theme.darkMode")
-                  : t("theme.lightMode")
-                : t("theme.toggleTheme")}
-            </span>
-          </Button>
 
           {/* User Menu */}
           {!loading && user ? (

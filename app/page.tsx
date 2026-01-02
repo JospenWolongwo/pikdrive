@@ -96,7 +96,7 @@ export default function Home() {
                   const result = await handleDriverAction(supabase, user.id, router)
                   if (result.message) {
                     toast({
-                      title: "Information",
+                      title: t("pages.home.toast.information"),
                       description: result.message,
                     })
                   }
@@ -150,7 +150,7 @@ export default function Home() {
               variants={fadeIn}
               className="text-3xl md:text-4xl font-bold mb-4 relative inline-block"
             >
-              Comment Ça Marche
+              {t("pages.home.howItWorks.title")}
               <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-primary rounded-full"></span>
             </motion.h2>
             <motion.p 
@@ -239,28 +239,28 @@ export default function Home() {
           >
             {[
               {
-                from: "Douala",
-                to: "Yaoundé",
+                from: t("pages.home.popularRoutes.routes.route1.from"),
+                to: t("pages.home.popularRoutes.routes.route1.to"),
                 price: "5000",
                 duration: "4h",
                 icon: "city",
-                description: "Route économique vers la capitale"
+                description: t("pages.home.popularRoutes.routes.route1.description")
               },
               {
-                from: "Yaoundé",
-                to: "Bafoussam",
+                from: t("pages.home.popularRoutes.routes.route2.from"),
+                to: t("pages.home.popularRoutes.routes.route2.to"),
                 price: "4000",
                 duration: "3h",
                 icon: "mountain",
-                description: "Trajet vers l'Ouest du pays"
+                description: t("pages.home.popularRoutes.routes.route2.description")
               },
               {
-                from: "Douala",
-                to: "Kribi",
+                from: t("pages.home.popularRoutes.routes.route3.from"),
+                to: t("pages.home.popularRoutes.routes.route3.to"),
                 price: "3500",
                 duration: "3h",
                 icon: "beach",
-                description: "Destination balnéaire populaire"
+                description: t("pages.home.popularRoutes.routes.route3.description")
               }
             ].map((route, index) => (
               <motion.div
@@ -312,7 +312,7 @@ export default function Home() {
                           <p className="text-xs text-muted-foreground font-medium">{t("pages.home.popularRoutes.averagePrice")}</p>
                           <div className="flex items-baseline gap-1">
                             <p className="text-xl font-black text-primary">{route.price}</p>
-                            <p className="text-xs font-bold text-muted-foreground">FCFA</p>
+                            <p className="text-xs font-bold text-muted-foreground">{t("pages.home.popularRoutes.currency")}</p>
                           </div>
                         </div>
                       </div>
@@ -361,26 +361,26 @@ export default function Home() {
           >
             {[
               {
-                name: "Jean Paul Nana",
-                role: "Professionnel des Affaires",
+                name: t("pages.home.testimonials.testimonial1.name"),
+                role: t("pages.home.testimonials.testimonial1.role"),
                 image: "/testimonials/user1.jpg",
-                comment: "En tant que personne qui voyage fréquemment pour affaires entre Douala et Yaoundé, PikDrive a changé la donne. Les chauffeurs sont professionnels et le processus de réservation est simple et rapide.",
+                comment: t("pages.home.testimonials.testimonial1.comment"),
                 rating: 5,
                 verified: true
               },
               {
-                name: "Marie Claire Foka",
-                role: "Médecin",
+                name: t("pages.home.testimonials.testimonial2.name"),
+                role: t("pages.home.testimonials.testimonial2.role"),
                 image: "/testimonials/user2.jpg",
-                comment: "Les fonctionnalités de sécurité et le processus de vérification des chauffeurs me rassurent. J'utilise PikDrive pour mes visites hospitalières hebdomadaires dans différentes villes, et c'est excellent.",
+                comment: t("pages.home.testimonials.testimonial2.comment"),
                 rating: 5,
                 verified: true
               },
               {
-                name: "Emmanuel Tamba",
-                role: "Étudiant Universitaire",
+                name: t("pages.home.testimonials.testimonial3.name"),
+                role: t("pages.home.testimonials.testimonial3.role"),
                 image: "/testimonials/user3.jpg",
-                comment: "Parfait pour les étudiants ! Des prix abordables et la possibilité de partager des trajets avec d'autres étudiants rendent les voyages pendant les vacances beaucoup plus faciles. L'application est aussi très conviviale !",
+                comment: t("pages.home.testimonials.testimonial3.comment"),
                 rating: 5,
                 verified: true
               }
@@ -504,7 +504,7 @@ export default function Home() {
                   <div className="flex -space-x-2">
                     {["/testimonials/user1.jpg", "/testimonials/user2.jpg", "/testimonials/user3.jpg"].map((src, i) => (
                       <div key={i} className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
-                        <Image src={src} alt="User" width={40} height={40} className="object-cover" />
+                        <Image src={src} alt={t("pages.home.cta.user")} width={40} height={40} className="object-cover" />
                       </div>
                     ))}
                   </div>

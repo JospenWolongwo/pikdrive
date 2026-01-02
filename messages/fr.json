@@ -124,11 +124,44 @@
         "subtitle": "Découvrez nos itinéraires intercités les plus fréquentés",
         "popularRoute": "Itinéraire Populaire",
         "duration": "Durée",
-        "averagePrice": "Prix moyen"
+        "averagePrice": "Prix moyen",
+        "currency": "FCFA",
+        "routes": {
+          "route1": {
+            "from": "Douala",
+            "to": "Yaoundé",
+            "description": "Route économique vers la capitale"
+          },
+          "route2": {
+            "from": "Yaoundé",
+            "to": "Bafoussam",
+            "description": "Trajet vers l'Ouest du pays"
+          },
+          "route3": {
+            "from": "Douala",
+            "to": "Kribi",
+            "description": "Destination balnéaire populaire"
+          }
+        }
       },
       "testimonials": {
         "title": "Ce Que Disent Nos Utilisateurs",
-        "subtitle": "Approuvé par des milliers de voyageurs à travers le Cameroun"
+        "subtitle": "Approuvé par des milliers de voyageurs à travers le Cameroun",
+        "testimonial1": {
+          "name": "Jean Paul Nana",
+          "role": "Professionnel des Affaires",
+          "comment": "En tant que personne qui voyage fréquemment pour affaires entre Douala et Yaoundé, PikDrive a changé la donne. Les chauffeurs sont professionnels et le processus de réservation est simple et rapide."
+        },
+        "testimonial2": {
+          "name": "Marie Claire Foka",
+          "role": "Médecin",
+          "comment": "Les fonctionnalités de sécurité et le processus de vérification des chauffeurs me rassurent. J'utilise PikDrive pour mes visites hospitalières hebdomadaires dans différentes villes, et c'est excellent."
+        },
+        "testimonial3": {
+          "name": "Emmanuel Tamba",
+          "role": "Étudiant Universitaire",
+          "comment": "Parfait pour les étudiants ! Des prix abordables et la possibilité de partager des trajets avec d'autres étudiants rendent les voyages pendant les vacances beaucoup plus faciles. L'application est aussi très conviviale !"
+        }
       },
       "cta": {
         "title": "Rejoignez la Communauté PikDrive Dès Aujourd'hui",
@@ -143,7 +176,11 @@
           "support": "Assistance client disponible 24/7"
         },
         "comingSoon": "Bientôt disponible sur mobile",
-        "appInDevelopment": "Application en développement"
+        "appInDevelopment": "Application en développement",
+        "user": "Utilisateur"
+      },
+      "toast": {
+        "information": "Information"
       }
     },
     "about": {

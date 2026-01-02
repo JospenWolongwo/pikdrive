@@ -124,11 +124,44 @@
         "subtitle": "Discover our most frequented intercity routes",
         "popularRoute": "Popular Route",
         "duration": "Duration",
-        "averagePrice": "Average Price"
+        "averagePrice": "Average Price",
+        "currency": "FCFA",
+        "routes": {
+          "route1": {
+            "from": "Douala",
+            "to": "Yaoundé",
+            "description": "Economical route to the capital"
+          },
+          "route2": {
+            "from": "Yaoundé",
+            "to": "Bafoussam",
+            "description": "Journey to the West of the country"
+          },
+          "route3": {
+            "from": "Douala",
+            "to": "Kribi",
+            "description": "Popular beach destination"
+          }
+        }
       },
       "testimonials": {
         "title": "What Our Users Say",
-        "subtitle": "Approved by thousands of travelers across Cameroon"
+        "subtitle": "Approved by thousands of travelers across Cameroon",
+        "testimonial1": {
+          "name": "Jean Paul Nana",
+          "role": "Business Professional",
+          "comment": "As someone who frequently travels for business between Douala and Yaoundé, PikDrive has been a game-changer. The drivers are professional and the booking process is simple and fast."
+        },
+        "testimonial2": {
+          "name": "Marie Claire Foka",
+          "role": "Doctor",
+          "comment": "The safety features and driver verification process give me peace of mind. I use PikDrive for my weekly hospital visits in different cities, and it's excellent."
+        },
+        "testimonial3": {
+          "name": "Emmanuel Tamba",
+          "role": "University Student",
+          "comment": "Perfect for students! Affordable prices and the ability to share rides with other students make traveling during holidays much easier. The app is also very user-friendly!"
+        }
       },
       "cta": {
         "title": "Join the PikDrive Community Today",
@@ -143,7 +176,11 @@
           "support": "24/7 customer support available"
         },
         "comingSoon": "Coming soon on mobile",
-        "appInDevelopment": "App in development"
+        "appInDevelopment": "App in development",
+        "user": "User"
+      },
+      "toast": {
+        "information": "Information"
       }
     },
     "about": {
