@@ -467,6 +467,7 @@
       "accountType": "Account type:",
       "driver": "Driver",
       "user": "User",
+      "passenger": "Passenger",
       "cityNotDefined": "City not defined",
       "city": "City",
       "selectCity": "Select your city",
@@ -603,10 +604,10 @@
         "advantages": {
           "title": "Benefits",
           "items": {
-            "earnMore": "Earn more with long-distance trips",
-            "weeklyPayments": "Weekly payments",
-            "flexibleHours": "Flexible hours",
-            "support247": "24/7 support"
+            "instantPayouts": "Instant payouts upon code validation",
+            "reducedRisk": "Reduced risk - passengers pay upfront",
+            "flexibleHours": "Flexible hours - work on your schedule",
+            "support247": "24/7 support - always available"
           }
         }
       },
@@ -697,6 +698,28 @@
         }
       }
     },
+    "passenger": {
+      "advantages": {
+        "title": "Passenger Benefits",
+        "subtitle": "Travel with confidence knowing your money and experience are protected",
+        "items": {
+          "badges": {
+            "instant": "Instant",
+            "flexible": "Flexible",
+            "secure": "Secure",
+            "protected": "Protected"
+          },
+          "instantRefunds": "Instant Refunds",
+          "instantRefundsDescription": "Cancel anytime, get refunded instantly",
+          "flexibleSeats": "Flexible Seats",
+          "flexibleSeatsDescription": "Reduce seats anytime, refund processed immediately",
+          "securePayment": "Secure Payment",
+          "securePaymentDescription": "Your money is protected until you validate the ride",
+          "antiFraud": "Anti-Fraud Protection",
+          "antiFraudDescription": "Code system prevents fake bookings and guarantees service"
+        }
+      }
+    },
     "driver": {
       "manageRide": {
         "title": "Manage Ride",
@@ -781,223 +804,7 @@
           "pricePositive": "Price must be a positive number",
           "seatsRange": "Number of seats must be between 1 and 8"
         }
-      }
-    },
-    "errors": {
-      "title": "Something went wrong",
-      "description": "We encountered an unexpected error. Please try again or return to the home page.",
-      "tryAgain": "Try Again",
-      "goHome": "Go Home",
-      "persistContact": "If this problem persists, please contact support with the error details above.",
-      "errorDetails": "Error Details (Development Only):",
-      "errorId": "Error ID"
-    },
-    "rides": {
-      "title": "Available Rides",
-      "subtitle": "Find and book your next ride",
-      "loading": "Loading rides...",
-      "booking": {
-        "loadingInfo": "Loading booking information...",
-        "modalTitles": {
-          "passengerInfo": "Personal Information",
-          "seatSelection": "Book Your Ride",
-          "payment": "Payment Details",
-          "success": "Booking Confirmation"
-        },
-        "passengerInfo": {
-          "title": "Personal Information",
-          "description": "Please fill in your information to complete your booking",
-          "fullName": "Full Name",
-          "fullNamePlaceholder": "Your full name",
-          "clickToUpload": "Click to upload",
-          "saving": "Saving...",
-          "cancel": "Cancel",
-          "idCard": "ID Card",
-          "idRecto": "ID Card Front",
-          "idVerso": "ID Card Back",
-          "upload": "Upload",
-          "remove": "Remove",
-          "continue": "Continue",
-          "errors": {
-            "selectImage": "Please select an image",
-            "enterName": "Please enter your full name",
-            "uploadBoth": "Please upload both sides of your ID card",
-            "mustBeLoggedIn": "You must be logged in",
-            "uploadError": "Upload error",
-            "saveError": "Error saving information",
-            "success": "Information saved successfully"
-          }
-        },
-        "seatSelection": {
-          "title": "Seat Selection",
-          "alreadyPaid": "Booking already paid:",
-          "alreadyPaidDesc": "You have already paid for {seats} {seats, plural, =1 {seat} other {seats}}. You can add additional seats below.",
-          "modifyBooking": "Booking modification:",
-          "modifyBookingDesc": "You already have a booking for this ride. You can modify the number of seats or proceed to payment.",
-          "seats": "Number of seats",
-          "seatsAvailable": "seats available",
-          "totalPrice": "Total price:",
-          "additionalPrice": "Amount to pay (additional seats):",
-          "createBooking": "Create Booking",
-          "cancel": "Cancel",
-          "updateAndContinue": "Update and continue to payment",
-          "continueToPayment": "Continue to payment",
-          "updating": "Updating...",
-          "creating": "Creating...",
-          "cannotReduce": "You cannot reduce the number of seats for a booking that has already been paid",
-          "place": "seat",
-          "places": "seats"
-        },
-        "payment": {
-          "title": "Select payment method",
-          "alreadyPaidSeats": "Already paid seats:",
-          "additionalSeats": "Additional seats:",
-          "amountToPay": "Amount to pay:",
-          "total": "Total",
-          "back": "Back",
-          "pay": "Pay now",
-          "processing": "Processing...",
-          "initiating": "Initiating payment...",
-          "waiting": "Waiting...",
-          "paymentError": "Payment error",
-          "retry": "Retry",
-          "place": "seat",
-          "places": "seats"
-        },
-        "success": {
-          "title": "Booking Successful!",
-          "description": "Your booking has been confirmed. You will receive a confirmation message shortly.",
-          "redirecting": "Redirecting to your bookings in a few moments...",
-          "done": "Done"
-        }
       },
-      "chat": {
-        "title": "Chat with Driver",
-        "description": "Send messages to coordinate your ride. Do not share personal contact information.",
-        "loading": "Loading messages...",
-        "noMessages": "No messages yet",
-        "send": "Send",
-        "typeMessage": "Type your message...",
-        "unknown": "Unknown"
-      },
-      "filters": {
-        "from": "From",
-        "to": "To",
-        "fromPlaceholder": "Select departure city",
-        "fromSearch": "Search for a departure city...",
-        "toPlaceholder": "Select destination city",
-        "toSearch": "Search for a destination city...",
-        "search": "Search",
-        "clear": "Clear",
-        "priceRange": "Price Range (FCFA)",
-        "minPrice": "Min",
-        "maxPrice": "Max",
-        "minSeats": "Minimum Seats"
-      },
-      "emptyState": {
-        "title": "No rides found",
-        "withFilters": "Modify your criteria to discover more rides.",
-        "withoutFilters": "No rides available at the moment. Come back soon!"
-      },
-      "rideCard": {
-        "vehicle": "Vehicle",
-        "notSpecified": "Not specified",
-        "places": "seats",
-        "photoNotAvailable": "Vehicle photo not available",
-        "driver": "Driver",
-        "certifiedDriver": "PikDrive Certified Driver",
-        "certified": "Certified Driver",
-        "viewProfile": "View Profile",
-        "loginToSeeDetails": "Log in to see driver details",
-        "departurePoint": "Departure point",
-        "destinationPoint": "Destination point",
-        "scheduledDeparture": "Scheduled departure",
-        "pricePerSeat": "Price per seat",
-        "book": "Book",
-        "chat": "Chat",
-        "contact": "Contact",
-        "full": "Full"
-      }
-    },
-    "bookings": {
-      "title": "My Bookings",
-      "loading": "Loading your bookings",
-      "description": "All your ride bookings, whether you're a passenger or driver.",
-      "searchPlaceholder": "Search by city, driver or status...",
-      "results": "results",
-      "refresh": "Refresh",
-      "noBookings": "No bookings found",
-      "noBookingsDesc": "You haven't made any bookings yet",
-      "noSearchResults": "No bookings match your search. Try other keywords.",
-      "errorLoading": "Error loading bookings",
-      "errorLoadingDescription": "Please try again later.",
-      "pagination": {
-        "showing": "Showing",
-        "of": "of",
-        "bookings": "bookings"
-      },
-      "card": {
-        "driver": "Driver:",
-        "car": "Car:",
-        "seats": "Seats:",
-        "total": "Total:",
-        "status": "Status:",
-        "payment": "Payment:",
-        "notAvailable": "Not available",
-        "notSpecified": "Not specified",
-        "statusConfirmed": "Confirmed",
-        "statusPending": "Pending",
-        "statusCancelled": "Cancelled",
-        "statusPendingVerification": "Pending verification",
-        "paymentCompleted": "Completed",
-        "paymentPending": "Pending",
-        "showCode": "Show driver verification code",
-        "hideCode": "Hide driver verification code",
-        "contact": "Contact",
-        "cancel": "Cancel booking",
-        "cancelling": "Cancelling...",
-        "cancelTitle": "Cancel booking",
-        "cancelDescription": "Are you sure you want to cancel this booking? This action is irreversible and will free up {seats} {seats, plural, =1 {seat} other {seats}} on the ride.",
-        "keepBooking": "No, keep booking",
-        "confirmCancel": "Yes, cancel",
-        "viewReceipt": "View receipt",
-        "cancelled": "Booking cancelled"
-      }
-    },
-    "messages": {
-      "title": "Messages",
-      "refresh": "Refresh",
-      "searchPlaceholder": "Search messages...",
-      "tabs": {
-        "all": "All",
-        "unread": "Unread"
-      },
-      "open": "Open",
-      "errorLoading": "Loading error",
-      "errorDescription": "Unable to load your conversations. Please try again.",
-      "noResults": "No results found",
-      "noResultsDescription": "No conversations match your search.",
-      "noConversations": "No conversations",
-      "noConversationsDescription": "You haven't started any conversations yet.",
-      "findRides": "Find rides",
-      "noUnread": "No unread messages",
-      "noUnreadDescription": "You've read all your messages"
-    },
-    "chat": {
-      "loading": "Loading messages...",
-      "error": "Error loading messages",
-      "noMessages": "No messages yet. Start the conversation!",
-      "typeMessage": "Type a message...",
-      "send": "Send",
-      "errorSending": "Error sending message",
-      "errorSendingDescription": "Please try again later.",
-      "failedToLoad": "Failed to load messages",
-      "failedToSend": "Failed to send message",
-      "tryAgain": "Try Again",
-      "sendMessage": "Send message",
-      "helperText": "Press Enter to send. Shift + Enter for new line. Contact information will be automatically removed."
-    },
-    "driver": {
       "newRide": {
         "title": "Create a New Ride",
         "description": "Fill in the details below to create a new ride.",
@@ -1251,6 +1058,240 @@
         "placeholder": "Enter the code (e.g., AB12C3)",
         "verifyCode": "Verify Code"
       }
+    },
+    "errors": {
+      "title": "Something went wrong",
+      "description": "We encountered an unexpected error. Please try again or return to the home page.",
+      "tryAgain": "Try Again",
+      "goHome": "Go Home",
+      "persistContact": "If this problem persists, please contact support with the error details above.",
+      "errorDetails": "Error Details (Development Only):",
+      "errorId": "Error ID"
+    },
+    "rides": {
+      "title": "Available Rides",
+      "subtitle": "Find and book your next ride",
+      "loading": "Loading rides...",
+      "booking": {
+        "loadingInfo": "Loading booking information...",
+        "modalTitles": {
+          "passengerInfo": "Personal Information",
+          "seatSelection": "Book Your Ride",
+          "payment": "Payment Details",
+          "success": "Booking Confirmation"
+        },
+        "passengerInfo": {
+          "title": "Personal Information",
+          "description": "Please fill in your information to complete your booking",
+          "fullName": "Full Name",
+          "fullNamePlaceholder": "Your full name",
+          "clickToUpload": "Click to upload",
+          "saving": "Saving...",
+          "cancel": "Cancel",
+          "idCard": "ID Card",
+          "idRecto": "ID Card Front",
+          "idVerso": "ID Card Back",
+          "upload": "Upload",
+          "remove": "Remove",
+          "continue": "Continue",
+          "errors": {
+            "selectImage": "Please select an image",
+            "enterName": "Please enter your full name",
+            "uploadBoth": "Please upload both sides of your ID card",
+            "mustBeLoggedIn": "You must be logged in",
+            "uploadError": "Upload error",
+            "saveError": "Error saving information",
+            "success": "Information saved successfully"
+          }
+        },
+        "seatSelection": {
+          "title": "Seat Selection",
+          "alreadyPaid": "Booking already paid:",
+          "alreadyPaidDesc": "You have already paid for {seats} {seats, plural, =1 {seat} other {seats}}. You can add additional seats below.",
+          "modifyBooking": "Booking modification:",
+          "modifyBookingDesc": "You already have a booking for this ride. You can modify the number of seats or proceed to payment.",
+          "seats": "Number of seats",
+          "seatsAvailable": "seats available",
+          "totalPrice": "Total price:",
+          "additionalPrice": "Amount to pay (additional seats):",
+          "createBooking": "Create Booking",
+          "cancel": "Cancel",
+          "updateAndContinue": "Update and continue to payment",
+          "continueToPayment": "Continue to payment",
+          "updating": "Updating...",
+          "creating": "Creating...",
+          "cannotReduce": "You cannot reduce the number of seats for a booking that has already been paid",
+          "place": "seat",
+          "places": "seats"
+        },
+        "payment": {
+          "title": "Select payment method",
+          "alreadyPaidSeats": "Already paid seats:",
+          "additionalSeats": "Additional seats:",
+          "amountToPay": "Amount to pay:",
+          "total": "Total",
+          "back": "Back",
+          "pay": "Pay now",
+          "processing": "Processing...",
+          "initiating": "Initiating payment...",
+          "waiting": "Waiting...",
+          "paymentError": "Payment error",
+          "retry": "Retry",
+          "place": "seat",
+          "places": "seats"
+        },
+        "success": {
+          "title": "Booking Successful!",
+          "description": "Your booking has been confirmed. You will receive a confirmation message shortly.",
+          "redirecting": "Redirecting to your bookings in a few moments...",
+          "done": "Done"
+        }
+      },
+      "chat": {
+        "title": "Chat with Driver",
+        "description": "Send messages to coordinate your ride. Do not share personal contact information.",
+        "loading": "Loading messages...",
+        "noMessages": "No messages yet",
+        "send": "Send",
+        "typeMessage": "Type your message...",
+        "unknown": "Unknown"
+      },
+      "filters": {
+        "from": "From",
+        "to": "To",
+        "fromPlaceholder": "Select departure city",
+        "fromSearch": "Search for a departure city...",
+        "toPlaceholder": "Select destination city",
+        "toSearch": "Search for a destination city...",
+        "search": "Search",
+        "clear": "Clear",
+        "priceRange": "Price Range (FCFA)",
+        "minPrice": "Min",
+        "maxPrice": "Max",
+        "minSeats": "Minimum Seats"
+      },
+      "emptyState": {
+        "title": "No rides found",
+        "withFilters": "Modify your criteria to discover more rides.",
+        "withoutFilters": "No rides available at the moment. Come back soon!"
+      },
+      "rideCard": {
+        "vehicle": "Vehicle",
+        "notSpecified": "Not specified",
+        "places": "seats",
+        "photoNotAvailable": "Vehicle photo not available",
+        "driver": "Driver",
+        "certifiedDriver": "PikDrive Certified Driver",
+        "certified": "Certified Driver",
+        "viewProfile": "View Profile",
+        "loginToSeeDetails": "Log in to see driver details",
+        "departurePoint": "Departure point",
+        "destinationPoint": "Destination point",
+        "scheduledDeparture": "Scheduled departure",
+        "pricePerSeat": "Price per seat",
+        "book": "Book",
+        "chat": "Chat",
+        "contact": "Contact",
+        "full": "Full"
+      }
+    },
+    "bookings": {
+      "title": "My Bookings",
+      "loading": "Loading your bookings",
+      "description": "All your ride bookings, whether you're a passenger or driver.",
+      "searchPlaceholder": "Search by city, driver or status...",
+      "results": "results",
+      "refresh": "Refresh",
+      "noBookings": "No bookings found",
+      "noBookingsDesc": "You haven't made any bookings yet",
+      "noSearchResults": "No bookings match your search. Try other keywords.",
+      "errorLoading": "Error loading bookings",
+      "errorLoadingDescription": "Please try again later.",
+      "pagination": {
+        "showing": "Showing",
+        "of": "of",
+        "bookings": "bookings"
+      },
+      "card": {
+        "driver": "Driver:",
+        "car": "Car:",
+        "seats": "Seats:",
+        "total": "Total:",
+        "status": "Status:",
+        "payment": "Payment:",
+        "notAvailable": "Not available",
+        "notSpecified": "Not specified",
+        "statusConfirmed": "Confirmed",
+        "statusPending": "Pending",
+        "statusCancelled": "Cancelled",
+        "statusPendingVerification": "Pending verification",
+        "paymentCompleted": "Completed",
+        "paymentPending": "Pending",
+        "showCode": "Show driver verification code",
+        "hideCode": "Hide driver verification code",
+        "contact": "Contact",
+        "cancel": "Cancel booking",
+        "cancelling": "Cancelling...",
+        "cancelTitle": "Cancel booking",
+        "cancelDescription": "Are you sure you want to cancel this booking? This action is irreversible and will free up {seats} {seats, plural, =1 {seat} other {seats}} on the ride.",
+        "keepBooking": "No, keep booking",
+        "confirmCancel": "Yes, cancel",
+        "viewReceipt": "View receipt",
+        "cancelled": "Booking cancelled"
+      },
+      "verificationCode": {
+        "title": "Verification Code",
+        "description": "Show this code to your driver in person to verify your booking. The driver will enter this code in their application to confirm that you are present together.",
+        "loading": "Loading...",
+        "validFor": "Valid for 24 hours",
+        "showToDriver": "Show this code to your driver to verify your booking",
+        "refreshCode": "Refresh code",
+        "copiedToClipboard": "Verification code copied to clipboard",
+        "verified": {
+          "title": "Verification Complete",
+          "description": "Your ride has been verified by the driver"
+        },
+        "errors": {
+          "title": "Error loading verification code",
+          "failedToLoad": "Failed to load verification code",
+          "failedToGenerate": "Unable to generate code. Please try again later.",
+          "retry": "Retry",
+          "useDirectMethod": "Use direct method"
+        }
+      }
+    },
+    "messages": {
+      "title": "Messages",
+      "refresh": "Refresh",
+      "searchPlaceholder": "Search messages...",
+      "tabs": {
+        "all": "All",
+        "unread": "Unread"
+      },
+      "open": "Open",
+      "errorLoading": "Loading error",
+      "errorDescription": "Unable to load your conversations. Please try again.",
+      "noResults": "No results found",
+      "noResultsDescription": "No conversations match your search.",
+      "noConversations": "No conversations",
+      "noConversationsDescription": "You haven't started any conversations yet.",
+      "findRides": "Find rides",
+      "noUnread": "No unread messages",
+      "noUnreadDescription": "You've read all your messages"
+    },
+    "chat": {
+      "loading": "Loading messages...",
+      "error": "Error loading messages",
+      "noMessages": "No messages yet. Start the conversation!",
+      "typeMessage": "Type a message...",
+      "send": "Send",
+      "errorSending": "Error sending message",
+      "errorSendingDescription": "Please try again later.",
+      "failedToLoad": "Failed to load messages",
+      "failedToSend": "Failed to send message",
+      "tryAgain": "Try Again",
+      "sendMessage": "Send message",
+      "helperText": "Press Enter to send. Shift + Enter for new line. Contact information will be automatically removed."
     }
   },
   "components": {

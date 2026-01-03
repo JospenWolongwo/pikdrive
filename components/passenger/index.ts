@@ -7,4 +7,5 @@ export { DriverStatistics } from "./driver-statistics";
 export { VehicleGallery } from "./vehicle-gallery";
 export { TrustBadges } from "./trust-badges";
 export { DriverRecentRides } from "./driver-recent-rides";
+export { PassengerAdvantages } from "./passenger-advantages";
 

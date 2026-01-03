@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RefreshCcw, Copy, CheckCircle, Clock } from 'lucide-react'
+import { useLocale } from '@/hooks'
 
 interface VerificationCodeDisplayProps {
   bookingId: string
@@ -24,6 +25,7 @@ interface VerificationState {
 
 export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayProps) {
   const { supabase } = useSupabase()
+  const { t } = useLocale()
   const [state, setState] = useState<VerificationState>({
     code: null,
     loading: true,
@@ -119,7 +121,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
       console.error('Error fetching verification code:', error);
       setState(prev => ({ 
         ...prev, 
-        error: error instanceof Error ? error.message : 'Failed to load verification code',
+        error: error instanceof Error ? error.message : t("pages.bookings.verificationCode.errors.failedToLoad"),
         loading: false,
         regenerating: false,
         lastUpdated: Date.now()
@@ -132,7 +134,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     if (state.code) {
       navigator.clipboard.writeText(state.code)
       setState(prev => ({ ...prev, copied: true }))
-      toast.success('Code de vérification copié dans le presse-papiers')
+      toast.success(t("pages.bookings.verificationCode.copiedToClipboard"))
       
       // Reset copied state after 3 seconds
       setTimeout(() => {
@@ -229,9 +231,9 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
         <CardContent className="p-6">
           <div className="text-center space-y-2">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
-            <h3 className="text-lg font-medium text-green-800">Vérification Terminée</h3>
+            <h3 className="text-lg font-medium text-green-800">{t("pages.bookings.verificationCode.verified.title")}</h3>
             <p className="text-sm text-green-600">
-              Votre trajet a été vérifié par le chauffeur
+              {t("pages.bookings.verificationCode.verified.description")}
             </p>
           </div>
         </CardContent>
@@ -245,7 +247,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
       <Card className="bg-red-50 border border-red-200 shadow-sm">
         <CardContent className="p-6">
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-medium text-red-800">Erreur lors du chargement du code de vérification</h3>
+            <h3 className="text-lg font-medium text-red-800">{t("pages.bookings.verificationCode.errors.title")}</h3>
             <p className="text-sm text-red-600">{state.error}</p>
             <div className="mt-4 text-center space-y-3">
               <Button 
@@ -256,7 +258,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
                 className="bg-red-50 hover:bg-red-100 text-red-800"
               >
                 {state.regenerating && <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />}
-                Réessayer
+                {t("pages.bookings.verificationCode.errors.retry")}
               </Button>
               <Button 
                 variant="outline" 
@@ -274,12 +276,12 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
                     setState(prev => ({ ...prev, code: data, loading: false }));
                   } catch (err) {
                     console.error('Direct RPC fallback failed:', err);
-                    setState(prev => ({ ...prev, error: 'Impossible de générer le code. Veuillez réessayer plus tard.', loading: false }));
+                    setState(prev => ({ ...prev, error: t("pages.bookings.verificationCode.errors.failedToGenerate"), loading: false }));
                   }
                 }}
                 className="ml-2 bg-blue-50 hover:bg-blue-100 text-blue-800"
               >
-                Utiliser la méthode directe
+                {t("pages.bookings.verificationCode.errors.useDirectMethod")}
               </Button>
             </div>
           </div>
@@ -294,23 +296,22 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
       <CardContent className="p-6">
         <div className="text-center space-y-4">
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-foreground">Code de Vérification</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t("pages.bookings.verificationCode.title")}</h3>
             <p className="text-sm text-foreground px-2">
-              Montrez ce code à votre chauffeur <strong className="text-foreground">en personne</strong> pour vérifier votre réservation. 
-              Le chauffeur entrera ce code dans son application pour confirmer que vous êtes bien présents ensemble.
+              {t("pages.bookings.verificationCode.description")}
             </p>
             <div className="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-4 rounded-md shadow-md">
               <div className="flex justify-center">
                 <span className="font-mono text-2xl font-bold tracking-wider">
-                  {state.code ? state.code.split('').join(' ') : 'Chargement...'}
+                  {state.code ? state.code.split('').join(' ') : t("pages.bookings.verificationCode.loading")}
                 </span>
               </div>
               <div className="mt-3 text-xs text-blue-100 text-center">
-                Valide pendant 24 heures
+                {t("pages.bookings.verificationCode.validFor")}
               </div>
             </div>
             <p className="text-sm text-gray-600 mt-2 text-center">
-              Montrez ce code à votre chauffeur pour vérifier votre réservation
+              {t("pages.bookings.verificationCode.showToDriver")}
             </p>
             <Button 
               variant="outline" 
@@ -320,7 +321,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
               className="w-full mt-2"
             >
               {state.regenerating && <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />}
-              Actualiser le code
+              {t("pages.bookings.verificationCode.refreshCode")}
             </Button>
           </div>
         </div>

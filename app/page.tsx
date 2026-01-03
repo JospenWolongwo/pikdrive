@@ -12,6 +12,7 @@ import { useSupabase } from '@/providers/SupabaseProvider'
 import { handleDriverAction } from '@/lib/driver-routing-utils'
 import { toast } from '@/components/ui/use-toast'
 import { useLocale } from "@/hooks";
+import { PassengerAdvantages } from '@/components/passenger/passenger-advantages';
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -205,6 +206,9 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* Passenger Advantages Section */}
+      <PassengerAdvantages />
 
       {/* Popular Routes Section */}
       <section className="py-20">

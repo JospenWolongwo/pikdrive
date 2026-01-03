@@ -29,8 +29,8 @@ export function DriverRequirements() {
       icon: <DollarSign className="w-6 h-6 text-primary" />,
       title: t("pages.becomeDriver.requirements.advantages.title"),
       items: [
-        t("pages.becomeDriver.requirements.advantages.items.earnMore"),
-        t("pages.becomeDriver.requirements.advantages.items.weeklyPayments"),
+        t("pages.becomeDriver.requirements.advantages.items.instantPayouts"),
+        t("pages.becomeDriver.requirements.advantages.items.reducedRisk"),
         t("pages.becomeDriver.requirements.advantages.items.flexibleHours"),
         t("pages.becomeDriver.requirements.advantages.items.support247")
       ]

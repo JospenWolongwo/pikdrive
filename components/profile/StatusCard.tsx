@@ -38,7 +38,7 @@ export function StatusCard({ profileData }: StatusCardProps) {
             <BadgeComponent variant="outline">
               {profileData.is_driver_applicant
                 ? t("pages.profile.driver")
-                : t("pages.profile.user")}
+                : t("pages.profile.passenger")}
             </BadgeComponent>
           </div>
 

@@ -467,6 +467,7 @@
       "accountType": "Type de compte:",
       "driver": "Chauffeur",
       "user": "Utilisateur",
+      "passenger": "Passager",
       "cityNotDefined": "Ville non définie",
       "city": "Ville",
       "selectCity": "Sélectionnez votre ville",
@@ -603,10 +604,10 @@
         "advantages": {
           "title": "Avantages",
           "items": {
-            "earnMore": "Gagnez plus avec les trajets longue distance",
-            "weeklyPayments": "Paiements hebdomadaires",
-            "flexibleHours": "Horaires flexibles",
-            "support247": "Assistance 24/7"
+            "instantPayouts": "Paiements instantanés après validation du code",
+            "reducedRisk": "Risque réduit - les passagers paient à l'avance",
+            "flexibleHours": "Horaires flexibles - travaillez à votre rythme",
+            "support247": "Assistance 24/7 - toujours disponible"
           }
         }
       },
@@ -697,6 +698,28 @@
         }
       }
     },
+    "passenger": {
+      "advantages": {
+        "title": "Avantages Passagers",
+        "subtitle": "Voyagez en toute confiance, sachant que votre argent et votre expérience sont protégés",
+        "items": {
+          "badges": {
+            "instant": "Instantané",
+            "flexible": "Flexible",
+            "secure": "Sécurisé",
+            "protected": "Protégé"
+          },
+          "instantRefunds": "Remboursements Instantanés",
+          "instantRefundsDescription": "Annulez à tout moment, obtenez un remboursement instantané",
+          "flexibleSeats": "Places Flexibles",
+          "flexibleSeatsDescription": "Réduisez les places à tout moment, remboursement traité immédiatement",
+          "securePayment": "Paiement Sécurisé",
+          "securePaymentDescription": "Votre argent est protégé jusqu'à la validation du trajet",
+          "antiFraud": "Protection Anti-Fraude",
+          "antiFraudDescription": "Le système de code empêche les réservations frauduleuses et garantit le service"
+        }
+      }
+    },
     "driver": {
       "manageRide": {
         "title": "Gérer le Trajet",
@@ -781,223 +804,7 @@
           "pricePositive": "Le prix doit être un nombre positif",
           "seatsRange": "Le nombre de places doit être entre 1 et 8"
         }
-      }
-    },
-    "errors": {
-      "title": "Quelque chose s'est mal passé",
-      "description": "Nous avons rencontré une erreur inattendue. Veuillez réessayer ou retourner à la page d'accueil.",
-      "tryAgain": "Réessayer",
-      "goHome": "Retour à l'accueil",
-      "persistContact": "Si ce problème persiste, veuillez contacter le support avec les détails de l'erreur ci-dessus.",
-      "errorDetails": "Détails de l'Erreur (Développement uniquement) :",
-      "errorId": "ID d'erreur"
-    },
-    "rides": {
-      "title": "Trajets Disponibles",
-      "subtitle": "Trouvez et réservez votre prochain trajet",
-      "loading": "Chargement des trajets...",
-      "booking": {
-        "loadingInfo": "Chargement des informations de réservation...",
-        "modalTitles": {
-          "passengerInfo": "Informations personnelles",
-          "seatSelection": "Réserver votre trajet",
-          "payment": "Détails du paiement",
-          "success": "Confirmation de réservation"
-        },
-        "passengerInfo": {
-          "title": "Informations personnelles",
-          "description": "Veuillez remplir vos informations pour compléter votre réservation",
-          "fullName": "Nom complet",
-          "fullNamePlaceholder": "Votre nom complet",
-          "clickToUpload": "Cliquez pour télécharger",
-          "saving": "Enregistrement...",
-          "cancel": "Annuler",
-          "idCard": "Carte d'Identité",
-          "idRecto": "Carte d'identité - Recto (Avant)",
-          "idVerso": "Carte d'identité - Verso (Arrière)",
-          "upload": "Télécharger",
-          "remove": "Retirer",
-          "continue": "Continuer",
-          "errors": {
-            "selectImage": "Veuillez sélectionner une image",
-            "enterName": "Veuillez entrer votre nom complet",
-            "uploadBoth": "Veuillez télécharger les deux côtés de votre carte d'identité",
-            "mustBeLoggedIn": "Vous devez être connecté",
-            "uploadError": "Erreur lors de l'upload",
-            "saveError": "Erreur lors de l'enregistrement",
-            "success": "Informations enregistrées avec succès"
-          }
-        },
-        "seatSelection": {
-          "title": "Sélection des Places",
-          "alreadyPaid": "Réservation déjà payée :",
-          "alreadyPaidDesc": "Vous avez déjà payé pour {seats} {seats, plural, =1 {place} other {places}}. Vous pouvez ajouter des places supplémentaires ci-dessous.",
-          "modifyBooking": "Modification de réservation :",
-          "modifyBookingDesc": "Vous avez déjà une réservation pour ce trajet. Vous pouvez modifier le nombre de places ou procéder au paiement.",
-          "seats": "Nombre de places",
-          "seatsAvailable": "places disponibles",
-          "totalPrice": "Prix total :",
-          "additionalPrice": "Montant à payer (places supplémentaires) :",
-          "createBooking": "Créer la Réservation",
-          "cancel": "Annuler",
-          "updateAndContinue": "Mettre à jour et continuer au paiement",
-          "continueToPayment": "Continuer au paiement",
-          "updating": "Mise à jour...",
-          "creating": "Création...",
-          "cannotReduce": "Vous ne pouvez pas réduire le nombre de places d'une réservation déjà payée",
-          "place": "place",
-          "places": "places"
-        },
-        "payment": {
-          "title": "Sélectionner le mode de paiement",
-          "alreadyPaidSeats": "Places déjà payées :",
-          "additionalSeats": "Places supplémentaires :",
-          "amountToPay": "Montant à payer :",
-          "total": "Total",
-          "back": "Retour",
-          "pay": "Payer maintenant",
-          "processing": "Traitement...",
-          "initiating": "Initiation du paiement...",
-          "waiting": "En attente...",
-          "paymentError": "Erreur de paiement",
-          "retry": "Réessayer",
-          "place": "place",
-          "places": "places"
-        },
-        "success": {
-          "title": "Réservation réussie !",
-          "description": "Votre réservation a été confirmée. Vous recevrez un message de confirmation sous peu.",
-          "redirecting": "Redirection vers vos réservations dans quelques instants...",
-          "done": "Terminé"
-        }
       },
-      "chat": {
-        "title": "Chat avec le Chauffeur",
-        "description": "Envoyez des messages pour coordonner votre trajet. Ne partagez pas vos informations de contact personnelles.",
-        "loading": "Chargement des messages...",
-        "noMessages": "Aucun message pour le moment",
-        "send": "Envoyer",
-        "typeMessage": "Tapez votre message...",
-        "unknown": "Inconnu"
-      },
-      "filters": {
-        "from": "De",
-        "to": "À",
-        "fromPlaceholder": "Sélectionnez la ville de départ",
-        "fromSearch": "Rechercher une ville de départ...",
-        "toPlaceholder": "Sélectionnez la ville de destination",
-        "toSearch": "Rechercher une ville de destination...",
-        "search": "Rechercher",
-        "clear": "Effacer",
-        "priceRange": "Fourchette de Prix (FCFA)",
-        "minPrice": "Min",
-        "maxPrice": "Max",
-        "minSeats": "Places Minimum"
-      },
-      "emptyState": {
-        "title": "Aucun voyage trouvé",
-        "withFilters": "Modifiez vos critères pour découvrir plus de trajets.",
-        "withoutFilters": "Aucun trajet disponible pour le moment. Revenez bientôt !"
-      },
-      "rideCard": {
-        "vehicle": "Véhicule",
-        "notSpecified": "Non spécifié",
-        "places": "places",
-        "photoNotAvailable": "Photo du véhicule non disponible",
-        "driver": "Chauffeur",
-        "certifiedDriver": "Conducteur certifié PikDrive",
-        "certified": "Conducteur certifié",
-        "viewProfile": "Voir le profil",
-        "loginToSeeDetails": "Connectez-vous pour voir les détails du conducteur",
-        "departurePoint": "Point de départ",
-        "destinationPoint": "Point d'arrivée",
-        "scheduledDeparture": "Départ prévu",
-        "pricePerSeat": "Prix par place",
-        "book": "Réserver",
-        "chat": "Chat",
-        "contact": "Contacter",
-        "full": "Complet"
-      }
-    },
-    "bookings": {
-      "title": "Mes Réservations",
-      "loading": "Chargement de vos réservations",
-      "description": "Toutes vos réservations de trajets, que vous soyez passager ou conducteur.",
-      "searchPlaceholder": "Rechercher par ville, chauffeur ou statut...",
-      "results": "résultats",
-      "refresh": "Actualiser",
-      "noBookings": "Aucune réservation trouvée",
-      "noBookingsDesc": "Vous n'avez pas encore fait de réservations",
-      "noSearchResults": "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés.",
-      "errorLoading": "Erreur lors du chargement des réservations",
-      "errorLoadingDescription": "Veuillez réessayer plus tard.",
-      "pagination": {
-        "showing": "Affichage de",
-        "of": "sur",
-        "bookings": "réservations"
-      },
-      "card": {
-        "driver": "Chauffeur :",
-        "car": "Voiture :",
-        "seats": "Places :",
-        "total": "Total :",
-        "status": "Statut :",
-        "payment": "Paiement :",
-        "notAvailable": "Non disponible",
-        "notSpecified": "Non spécifié",
-        "statusConfirmed": "Confirmé",
-        "statusPending": "En attente",
-        "statusCancelled": "Annulé",
-        "statusPendingVerification": "En attente de vérification",
-        "paymentCompleted": "Terminé",
-        "paymentPending": "En attente",
-        "showCode": "Afficher le code de vérification du chauffeur",
-        "hideCode": "Masquer le code de vérification du chauffeur",
-        "contact": "Contacter",
-        "cancel": "Annuler la réservation",
-        "cancelling": "Annulation...",
-        "cancelTitle": "Annuler la réservation",
-        "cancelDescription": "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible et libérera {seats} {seats, plural, =1 {place} other {places}} sur le trajet.",
-        "keepBooking": "Non, garder la réservation",
-        "confirmCancel": "Oui, annuler",
-        "viewReceipt": "Voir le reçu",
-        "cancelled": "Réservation annulée"
-      }
-    },
-    "messages": {
-      "title": "Messages",
-      "refresh": "Actualiser",
-      "searchPlaceholder": "Rechercher des messages...",
-      "tabs": {
-        "all": "Tous",
-        "unread": "Non lus"
-      },
-      "open": "Ouvrir",
-      "errorLoading": "Erreur de chargement",
-      "errorDescription": "Impossible de charger vos conversations. Veuillez réessayer.",
-      "noResults": "Aucun résultat trouvé",
-      "noResultsDescription": "Aucune conversation ne correspond à votre recherche.",
-      "noConversations": "Aucune conversation",
-      "noConversationsDescription": "Vous n'avez pas encore démarré de conversation.",
-      "findRides": "Trouver des trajets",
-      "noUnread": "Pas de messages non lus",
-      "noUnreadDescription": "Vous avez lu tous vos messages"
-    },
-    "chat": {
-      "loading": "Chargement des messages...",
-      "error": "Erreur lors du chargement des messages",
-      "noMessages": "Aucun message pour le moment. Commencez la conversation !",
-      "typeMessage": "Tapez un message...",
-      "send": "Envoyer",
-      "errorSending": "Erreur lors de l'envoi",
-      "errorSendingDescription": "Veuillez réessayer plus tard.",
-      "failedToLoad": "Échec du chargement des messages",
-      "failedToSend": "Échec de l'envoi du message",
-      "tryAgain": "Réessayer",
-      "sendMessage": "Envoyer un message",
-      "helperText": "Appuyez sur Entrée pour envoyer. Maj + Entrée pour une nouvelle ligne. Les informations de contact seront automatiquement supprimées."
-    },
-    "driver": {
       "newRide": {
         "title": "Créer un Nouveau Trajet",
         "description": "Remplissez les détails ci-dessous pour créer un nouveau trajet.",
@@ -1251,6 +1058,240 @@
         "placeholder": "Entrez le code (ex: AB12C3)",
         "verifyCode": "Vérifier le Code"
       }
+    },
+    "errors": {
+      "title": "Quelque chose s'est mal passé",
+      "description": "Nous avons rencontré une erreur inattendue. Veuillez réessayer ou retourner à la page d'accueil.",
+      "tryAgain": "Réessayer",
+      "goHome": "Retour à l'accueil",
+      "persistContact": "Si ce problème persiste, veuillez contacter le support avec les détails de l'erreur ci-dessus.",
+      "errorDetails": "Détails de l'Erreur (Développement uniquement) :",
+      "errorId": "ID d'erreur"
+    },
+    "rides": {
+      "title": "Trajets Disponibles",
+      "subtitle": "Trouvez et réservez votre prochain trajet",
+      "loading": "Chargement des trajets...",
+      "booking": {
+        "loadingInfo": "Chargement des informations de réservation...",
+        "modalTitles": {
+          "passengerInfo": "Informations personnelles",
+          "seatSelection": "Réserver votre trajet",
+          "payment": "Détails du paiement",
+          "success": "Confirmation de réservation"
+        },
+        "passengerInfo": {
+          "title": "Informations personnelles",
+          "description": "Veuillez remplir vos informations pour compléter votre réservation",
+          "fullName": "Nom complet",
+          "fullNamePlaceholder": "Votre nom complet",
+          "clickToUpload": "Cliquez pour télécharger",
+          "saving": "Enregistrement...",
+          "cancel": "Annuler",
+          "idCard": "Carte d'Identité",
+          "idRecto": "Carte d'identité - Recto (Avant)",
+          "idVerso": "Carte d'identité - Verso (Arrière)",
+          "upload": "Télécharger",
+          "remove": "Retirer",
+          "continue": "Continuer",
+          "errors": {
+            "selectImage": "Veuillez sélectionner une image",
+            "enterName": "Veuillez entrer votre nom complet",
+            "uploadBoth": "Veuillez télécharger les deux côtés de votre carte d'identité",
+            "mustBeLoggedIn": "Vous devez être connecté",
+            "uploadError": "Erreur lors de l'upload",
+            "saveError": "Erreur lors de l'enregistrement",
+            "success": "Informations enregistrées avec succès"
+          }
+        },
+        "seatSelection": {
+          "title": "Sélection des Places",
+          "alreadyPaid": "Réservation déjà payée :",
+          "alreadyPaidDesc": "Vous avez déjà payé pour {seats} {seats, plural, =1 {place} other {places}}. Vous pouvez ajouter des places supplémentaires ci-dessous.",
+          "modifyBooking": "Modification de réservation :",
+          "modifyBookingDesc": "Vous avez déjà une réservation pour ce trajet. Vous pouvez modifier le nombre de places ou procéder au paiement.",
+          "seats": "Nombre de places",
+          "seatsAvailable": "places disponibles",
+          "totalPrice": "Prix total :",
+          "additionalPrice": "Montant à payer (places supplémentaires) :",
+          "createBooking": "Créer la Réservation",
+          "cancel": "Annuler",
+          "updateAndContinue": "Mettre à jour et continuer au paiement",
+          "continueToPayment": "Continuer au paiement",
+          "updating": "Mise à jour...",
+          "creating": "Création...",
+          "cannotReduce": "Vous ne pouvez pas réduire le nombre de places d'une réservation déjà payée",
+          "place": "place",
+          "places": "places"
+        },
+        "payment": {
+          "title": "Sélectionner le mode de paiement",
+          "alreadyPaidSeats": "Places déjà payées :",
+          "additionalSeats": "Places supplémentaires :",
+          "amountToPay": "Montant à payer :",
+          "total": "Total",
+          "back": "Retour",
+          "pay": "Payer maintenant",
+          "processing": "Traitement...",
+          "initiating": "Initiation du paiement...",
+          "waiting": "En attente...",
+          "paymentError": "Erreur de paiement",
+          "retry": "Réessayer",
+          "place": "place",
+          "places": "places"
+        },
+        "success": {
+          "title": "Réservation réussie !",
+          "description": "Votre réservation a été confirmée. Vous recevrez un message de confirmation sous peu.",
+          "redirecting": "Redirection vers vos réservations dans quelques instants...",
+          "done": "Terminé"
+        }
+      },
+      "chat": {
+        "title": "Chat avec le Chauffeur",
+        "description": "Envoyez des messages pour coordonner votre trajet. Ne partagez pas vos informations de contact personnelles.",
+        "loading": "Chargement des messages...",
+        "noMessages": "Aucun message pour le moment",
+        "send": "Envoyer",
+        "typeMessage": "Tapez votre message...",
+        "unknown": "Inconnu"
+      },
+      "filters": {
+        "from": "De",
+        "to": "À",
+        "fromPlaceholder": "Sélectionnez la ville de départ",
+        "fromSearch": "Rechercher une ville de départ...",
+        "toPlaceholder": "Sélectionnez la ville de destination",
+        "toSearch": "Rechercher une ville de destination...",
+        "search": "Rechercher",
+        "clear": "Effacer",
+        "priceRange": "Fourchette de Prix (FCFA)",
+        "minPrice": "Min",
+        "maxPrice": "Max",
+        "minSeats": "Places Minimum"
+      },
+      "emptyState": {
+        "title": "Aucun voyage trouvé",
+        "withFilters": "Modifiez vos critères pour découvrir plus de trajets.",
+        "withoutFilters": "Aucun trajet disponible pour le moment. Revenez bientôt !"
+      },
+      "rideCard": {
+        "vehicle": "Véhicule",
+        "notSpecified": "Non spécifié",
+        "places": "places",
+        "photoNotAvailable": "Photo du véhicule non disponible",
+        "driver": "Chauffeur",
+        "certifiedDriver": "Conducteur certifié PikDrive",
+        "certified": "Conducteur certifié",
+        "viewProfile": "Voir le profil",
+        "loginToSeeDetails": "Connectez-vous pour voir les détails du conducteur",
+        "departurePoint": "Point de départ",
+        "destinationPoint": "Point d'arrivée",
+        "scheduledDeparture": "Départ prévu",
+        "pricePerSeat": "Prix par place",
+        "book": "Réserver",
+        "chat": "Chat",
+        "contact": "Contacter",
+        "full": "Complet"
+      }
+    },
+    "bookings": {
+      "title": "Mes Réservations",
+      "loading": "Chargement de vos réservations",
+      "description": "Toutes vos réservations de trajets, que vous soyez passager ou conducteur.",
+      "searchPlaceholder": "Rechercher par ville, chauffeur ou statut...",
+      "results": "résultats",
+      "refresh": "Actualiser",
+      "noBookings": "Aucune réservation trouvée",
+      "noBookingsDesc": "Vous n'avez pas encore fait de réservations",
+      "noSearchResults": "Aucune réservation ne correspond à votre recherche. Essayez d'autres mots-clés.",
+      "errorLoading": "Erreur lors du chargement des réservations",
+      "errorLoadingDescription": "Veuillez réessayer plus tard.",
+      "pagination": {
+        "showing": "Affichage de",
+        "of": "sur",
+        "bookings": "réservations"
+      },
+      "card": {
+        "driver": "Chauffeur :",
+        "car": "Voiture :",
+        "seats": "Places :",
+        "total": "Total :",
+        "status": "Statut :",
+        "payment": "Paiement :",
+        "notAvailable": "Non disponible",
+        "notSpecified": "Non spécifié",
+        "statusConfirmed": "Confirmé",
+        "statusPending": "En attente",
+        "statusCancelled": "Annulé",
+        "statusPendingVerification": "En attente de vérification",
+        "paymentCompleted": "Terminé",
+        "paymentPending": "En attente",
+        "showCode": "Afficher le code de vérification du chauffeur",
+        "hideCode": "Masquer le code de vérification du chauffeur",
+        "contact": "Contacter",
+        "cancel": "Annuler la réservation",
+        "cancelling": "Annulation...",
+        "cancelTitle": "Annuler la réservation",
+        "cancelDescription": "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible et libérera {seats} {seats, plural, =1 {place} other {places}} sur le trajet.",
+        "keepBooking": "Non, garder la réservation",
+        "confirmCancel": "Oui, annuler",
+        "viewReceipt": "Voir le reçu",
+        "cancelled": "Réservation annulée"
+      },
+      "verificationCode": {
+        "title": "Code de Vérification",
+        "description": "Montrez ce code à votre chauffeur en personne pour vérifier votre réservation. Le chauffeur entrera ce code dans son application pour confirmer que vous êtes bien présents ensemble.",
+        "loading": "Chargement...",
+        "validFor": "Valide pendant 24 heures",
+        "showToDriver": "Montrez ce code à votre chauffeur pour vérifier votre réservation",
+        "refreshCode": "Actualiser le code",
+        "copiedToClipboard": "Code de vérification copié dans le presse-papiers",
+        "verified": {
+          "title": "Vérification Terminée",
+          "description": "Votre trajet a été vérifié par le chauffeur"
+        },
+        "errors": {
+          "title": "Erreur lors du chargement du code de vérification",
+          "failedToLoad": "Échec du chargement du code de vérification",
+          "failedToGenerate": "Impossible de générer le code. Veuillez réessayer plus tard.",
+          "retry": "Réessayer",
+          "useDirectMethod": "Utiliser la méthode directe"
+        }
+      }
+    },
+    "messages": {
+      "title": "Messages",
+      "refresh": "Actualiser",
+      "searchPlaceholder": "Rechercher des messages...",
+      "tabs": {
+        "all": "Tous",
+        "unread": "Non lus"
+      },
+      "open": "Ouvrir",
+      "errorLoading": "Erreur de chargement",
+      "errorDescription": "Impossible de charger vos conversations. Veuillez réessayer.",
+      "noResults": "Aucun résultat trouvé",
+      "noResultsDescription": "Aucune conversation ne correspond à votre recherche.",
+      "noConversations": "Aucune conversation",
+      "noConversationsDescription": "Vous n'avez pas encore démarré de conversation.",
+      "findRides": "Trouver des trajets",
+      "noUnread": "Pas de messages non lus",
+      "noUnreadDescription": "Vous avez lu tous vos messages"
+    },
+    "chat": {
+      "loading": "Chargement des messages...",
+      "error": "Erreur lors du chargement des messages",
+      "noMessages": "Aucun message pour le moment. Commencez la conversation !",
+      "typeMessage": "Tapez un message...",
+      "send": "Envoyer",
+      "errorSending": "Erreur lors de l'envoi",
+      "errorSendingDescription": "Veuillez réessayer plus tard.",
+      "failedToLoad": "Échec du chargement des messages",
+      "failedToSend": "Échec de l'envoi du message",
+      "tryAgain": "Réessayer",
+      "sendMessage": "Envoyer un message",
+      "helperText": "Appuyez sur Entrée pour envoyer. Maj + Entrée pour une nouvelle ligne. Les informations de contact seront automatiquement supprimées."
     }
   },
   "components": {
