@@ -118,7 +118,17 @@ export async function POST() {
     // 1. Environment changed (URL mismatch)
     // 2. Token issuer doesn't match current project (CRITICAL FIX)
     // REMOVED: hasInvalidSession - too aggressive, clears on transient failures during page refresh
-    const environmentChanged = storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl;
+    
+    // CRITICAL FIX: Normalize URLs before comparison
+    const normalizeUrl = (url: string | null | undefined): string | null => {
+      if (!url) return null;
+      return url.trim().replace(/\/+$/, '').toLowerCase();
+    };
+
+    const normalizedStored = normalizeUrl(storedSupabaseUrl);
+    const normalizedCurrent = normalizeUrl(currentSupabaseUrl);
+    
+    const environmentChanged = normalizedStored && normalizedStored !== normalizedCurrent;
     const tokenFromWrongProject = tokenIssuerMismatch;
 
     let actuallyCleared = false;

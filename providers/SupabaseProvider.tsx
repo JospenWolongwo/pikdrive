@@ -53,6 +53,7 @@ export const SupabaseProvider = ({
     if (typeof window === 'undefined') return;
 
     const currentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!currentSupabaseUrl) return; // Exit if env var not available
     
     // Use cookie instead of localStorage to match server-side logic
     const getCookie = (name: string): string | null => {
@@ -64,8 +65,19 @@ export const SupabaseProvider = ({
     
     const storedSupabaseUrl = getCookie('supabase-project-url');
 
+    // CRITICAL FIX: Normalize URLs before comparison to avoid false positives
+    const normalizeUrl = (url: string | null): string | null => {
+      if (!url) return null;
+      // Remove trailing slashes and normalize
+      return url.trim().replace(/\/+$/, '').toLowerCase();
+    };
+
+    const normalizedStored = normalizeUrl(storedSupabaseUrl);
+    const normalizedCurrent = normalizeUrl(currentSupabaseUrl);
+
     // Only validate if environment changed (not on every load)
-    const environmentChanged = storedSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl;
+    // CRITICAL: Don't trigger if cookie doesn't exist yet (middleware will set it)
+    const environmentChanged = normalizedStored && normalizedStored !== normalizedCurrent;
     
     if (!environmentChanged) {
       // No environment change - just exit (cookie is set by middleware/server)
@@ -75,6 +87,7 @@ export const SupabaseProvider = ({
     // Environment changed - validate and clear
     const validateAndClear = async () => {
       try {
+        // CRITICAL: Double-check with server before clearing
         const response = await fetch('/api/auth/clear-cookies', {
           method: 'POST',
           cache: 'no-store',
@@ -85,12 +98,15 @@ export const SupabaseProvider = ({
         });
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // If API fails, don't clear - might be a network issue
+          console.warn('Failed to validate environment change with server');
+          return;
         }
         
         const data = await response.json();
         
-        // If server cleared cookies, reload
+        // CRITICAL: Only clear if server confirms it's necessary
+        // Don't clear on transient failures
         if (data.cleared) {
           // Sign out client-side as well
           await supabase.auth.signOut();
@@ -119,12 +135,14 @@ export const SupabaseProvider = ({
           return;
         }
       } catch (error) {
-        // Don't reload on error - let user continue
+        // CRITICAL: Don't reload on error - let user continue
+        // Network errors shouldn't cause logouts
+        console.warn('Error validating environment change:', error);
       }
     };
 
     validateAndClear();
-  }, [supabase]);
+  }, []); // CRITICAL FIX: Empty dependency array - only run once on mount
 
   const initializeAuth = useCallback(async () => {
     if (initializedRef.current) return;
