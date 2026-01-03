@@ -164,6 +164,32 @@ export const SupabaseProvider = ({
         setUser(initialSession.user);
         // Start background refresh for signed-in users
         startBackgroundRefresh();
+      } else {
+        // CRITICAL FIX: No session found - try to refresh (handles expired access tokens)
+        // This restores sessions when app resumes after being in background
+        console.log('🔄 No session found on init - attempting refresh...');
+        try {
+          const { data: { session: refreshedSession }, error: refreshError } = 
+            await supabase.auth.refreshSession();
+          
+          if (!refreshError && refreshedSession?.user) {
+            console.log('✅ Session restored via refresh on app start');
+            setSession(refreshedSession);
+            setUser(refreshedSession.user);
+            startBackgroundRefresh();
+          } else if (refreshError) {
+            // Only clear if refresh definitively fails with auth error
+            if (refreshError.message?.includes('refresh_token_not_found') || 
+                refreshError.message?.includes('invalid_grant')) {
+              console.log('❌ Refresh token invalid - user needs to re-login');
+              setSession(null);
+              setUser(null);
+            }
+            // Otherwise preserve state (might be network issue)
+          }
+        } catch (refreshErr) {
+          // Silent fail - network or other transient error
+        }
       }
     } catch (error) {
       // Silently fail - session loading error
@@ -225,6 +251,64 @@ export const SupabaseProvider = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, initializeAuth]);
+
+  // CRITICAL FIX: Restore session when app comes back to foreground (PWA resume)
+  // This handles cases where background refresh stopped while app was suspended
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleVisibilityChange = async () => {
+      // Only check if app became visible (not when it goes to background)
+      if (document.hidden) return;
+
+      // Only restore if we have user state but lost session (indicates expired access token)
+      if (user && !session) {
+        console.log('🔄 App resumed - attempting to restore session...');
+        try {
+          const { data: { session: restoredSession }, error } = await supabase.auth.getSession();
+          
+          if (!error && restoredSession?.user) {
+            console.log('✅ Session restored on app resume');
+            setSession(restoredSession);
+            setUser(restoredSession.user);
+            startBackgroundRefresh();
+            return;
+          }
+
+          // If getSession failed, try refresh as fallback
+          if (error || !restoredSession) {
+            console.log('🔄 getSession failed, trying refresh...');
+            const { data: { session: refreshedSession }, error: refreshError } = 
+              await supabase.auth.refreshSession();
+            
+            if (!refreshError && refreshedSession?.user) {
+              console.log('✅ Session refreshed on app resume');
+              setSession(refreshedSession);
+              setUser(refreshedSession.user);
+              startBackgroundRefresh();
+            } else if (refreshError) {
+              // Only clear if refresh definitively fails
+              if (refreshError.message?.includes('refresh_token_not_found') || 
+                  refreshError.message?.includes('invalid_grant')) {
+                console.log('❌ Refresh token invalid on resume - clearing session');
+                setSession(null);
+                setUser(null);
+              }
+            }
+          }
+        } catch (error) {
+          // Silent fail - don't clear state on unexpected errors
+          console.warn('⚠️ Error during session restoration:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, session, supabase, startBackgroundRefresh]);
 
   return (
     <SupabaseContext.Provider value={{ supabase, user, session, loading }}>
