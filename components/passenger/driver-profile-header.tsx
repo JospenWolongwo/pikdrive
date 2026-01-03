@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Shield } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { useLocale } from "@/hooks";
 import { useEffect, useState } from "react";
 
 interface DriverProfileHeaderProps {
@@ -20,6 +21,7 @@ export function DriverProfileHeader({
   isVerified,
 }: DriverProfileHeaderProps) {
   const { supabase } = useSupabase();
+  const { t } = useLocale();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -74,12 +76,12 @@ export function DriverProfileHeader({
           className="bg-gradient-to-r from-primary to-amber-500 text-primary-foreground px-4 py-1.5 text-sm font-semibold"
         >
           <Shield className="h-4 w-4 mr-2" />
-          Conducteur certifié PikDrive
+          {t("pages.driverProfile.certifiedDriver")}
         </Badge>
 
         {memberSince && (
           <p className="text-sm text-muted-foreground">
-            Membre depuis {memberSince}
+            {t("pages.driverProfile.memberSince")} {memberSince}
           </p>
         )}
       </div>

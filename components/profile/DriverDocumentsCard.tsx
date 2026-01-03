@@ -35,7 +35,7 @@ export function DriverDocumentsCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          {t("pages.profile.driverDocuments")}
+          {t("pages.profile.driverDocuments.title")}
         </CardTitle>
         <CardDescription>
           {t("pages.profile.driverDocuments.description")}

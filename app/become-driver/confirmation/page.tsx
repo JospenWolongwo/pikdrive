@@ -2,8 +2,11 @@
 
 import { useEffect } from "react"
 import { SuccessCard } from "@/components/ui/success-card"
+import { useLocale } from "@/hooks"
 
 export default function ApplicationConfirmationPage() {
+  const { t } = useLocale();
+  
   // Log page view for analytics
   useEffect(() => {
     console.log("📊 Driver Application Confirmation Page Viewed")
@@ -11,47 +14,47 @@ export default function ApplicationConfirmationPage() {
 
   return (
     <SuccessCard
-      title="Candidature Soumise !"
-      subtitle="Merci d'avoir postulé pour devenir conducteur PikDrive."
+      title={t("pages.becomeDriver.confirmation.title")}
+      subtitle={t("pages.becomeDriver.confirmation.subtitle")}
       status={{
-        text: "Votre candidature est en cours d'examen",
-        description: "Notre équipe examine généralement les candidatures sous 24-48 heures",
-        variant: "pending"
+        text: t("pages.becomeDriver.confirmation.status.text"),
+        description: t("pages.becomeDriver.confirmation.status.description"),
+        variant: "pending" as const
       }}
       steps={[
         {
           number: 1,
-          title: "Examen des Documents",
-          description: "Notre équipe examinera vos documents et vérifiera vos informations"
+          title: t("pages.becomeDriver.confirmation.steps.step1.title"),
+          description: t("pages.becomeDriver.confirmation.steps.step1.description")
         },
         {
           number: 2,
-          title: "Notification par Email",
-          description: "Vous recevrez une notification par email une fois votre candidature approuvée"
+          title: t("pages.becomeDriver.confirmation.steps.step2.title"),
+          description: t("pages.becomeDriver.confirmation.steps.step2.description")
         },
         {
           number: 3,
-          title: "Commencer à Conduire",
-          description: "Après approbation, vous pourrez accepter des demandes de trajet via votre tableau de bord"
+          title: t("pages.becomeDriver.confirmation.steps.step3.title"),
+          description: t("pages.becomeDriver.confirmation.steps.step3.description")
         }
       ]}
       contactInfo={{
         email: "support@pikdrive.com",
         phone: "+237 698 805 890",
-        supportText: "Des questions ?"
+        supportText: t("pages.becomeDriver.confirmation.contact.supportText")
       }}
       actions={{
         primary: {
-          text: "Retour à l'Accueil",
+          text: t("pages.becomeDriver.confirmation.actions.primary.text"),
           href: "/"
         },
         secondary: {
-          text: "Mes Réservations",
+          text: t("pages.becomeDriver.confirmation.actions.secondary.text"),
           href: "/bookings"
         }
       }}
       bilingualText={{
-        subtitle: "Votre demande a été soumise avec succès et est en cours d'examen. Nous vous informerons par e-mail une fois qu'elle sera approuvée."
+        subtitle: t("pages.becomeDriver.confirmation.bilingualText.subtitle")
       }}
     />
   )

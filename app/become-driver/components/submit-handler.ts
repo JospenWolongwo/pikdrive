@@ -8,10 +8,12 @@ import { toast } from "@/components/ui/use-toast";
 import { isValidDocumentUrl } from "../upload-utils";
 import { trackSubmissionEvent } from "@/lib/analytics";
 import { formSchema } from "../form-schema";
+import { useLocale } from "@/hooks";
 
 // Custom hook for form submission logic
 export function useFormSubmission(supabase: SupabaseClient, user: any) {
   const router = useRouter();
+  const { t } = useLocale();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form submission handler
@@ -55,10 +57,8 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
 
     if (missingDocs.length > 0) {
       toast({
-        title: "Documents manquants",
-        description: `Veuillez télécharger les documents requis: ${missingDocs
-          .map((d) => d.name)
-          .join(", ")}`,
+        title: t("pages.becomeDriver.form.errors.missingDocuments"),
+        description: t("pages.becomeDriver.form.errors.missingDocumentsDesc", { documents: missingDocs.map((d) => d.name).join(", ") }),
         variant: "destructive",
       });
       return;
@@ -67,8 +67,8 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
     // Validate vehicle images are required
     if (!vehicleImages || vehicleImages.length === 0) {
       toast({
-        title: "Images du véhicule requises",
-        description: "Veuillez télécharger au moins une image de votre véhicule.",
+        title: t("pages.becomeDriver.form.errors.vehicleImagesRequired"),
+        description: t("pages.becomeDriver.form.errors.vehicleImagesRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -160,9 +160,8 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
 
       // Show success toast
       toast({
-        title: "Candidature soumise",
-        description:
-          "Votre candidature de chauffeur a été soumise avec succès. Nous vous contacterons pour la suite.",
+        title: t("pages.becomeDriver.form.errors.submitted"),
+        description: t("pages.becomeDriver.form.errors.submittedDesc"),
       });
 
       // Navigate to success page
@@ -170,9 +169,8 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
     } catch (error) {
       console.error("❌ Error submitting driver application:", error);
       toast({
-        title: "Erreur",
-        description:
-          "Une erreur est survenue lors de la soumission de votre candidature. Veuillez réessayer.",
+        title: t("pages.becomeDriver.form.errors.error"),
+        description: t("pages.becomeDriver.form.errors.errorDesc"),
         variant: "destructive",
       });
     } finally {

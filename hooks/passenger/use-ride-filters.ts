@@ -65,6 +65,7 @@ export function useRideFilters(
   const handleClear = useCallback(() => {
     setTempFilters(DEFAULT_FILTERS);
     setFilters(DEFAULT_FILTERS);
+    tempFiltersRef.current = DEFAULT_FILTERS;
     if (onPageChange) {
       onPageChange();
     }
@@ -85,9 +86,13 @@ export function useRideFilters(
   );
 
   const clearFromCity = useCallback(() => {
-    // Use ref to get the latest state immediately (avoiding React batching issues)
+    // Get the latest state from ref to ensure we work with current data
+    // This prevents race conditions when clearing multiple filters in quick succession
     const currentFilters = tempFiltersRef.current;
     const newFilters = { ...currentFilters, fromCity: null };
+    
+    // Update ref immediately to prevent race conditions
+    tempFiltersRef.current = newFilters;
     
     // Update both state values
     setTempFilters(newFilters);
@@ -99,13 +104,18 @@ export function useRideFilters(
     }
     
     // Trigger search with the new filters
+    // This ensures the search uses the correct filter state
     onSearch(newFilters);
   }, [onSearch, onPageChange]);
 
   const clearToCity = useCallback(() => {
-    // Use ref to get the latest state immediately (avoiding React batching issues)
+    // Get the latest state from ref to ensure we work with current data
+    // This prevents race conditions when clearing multiple filters in quick succession
     const currentFilters = tempFiltersRef.current;
     const newFilters = { ...currentFilters, toCity: null };
+    
+    // Update ref immediately to prevent race conditions
+    tempFiltersRef.current = newFilters;
     
     // Update both state values
     setTempFilters(newFilters);
@@ -117,6 +127,7 @@ export function useRideFilters(
     }
     
     // Trigger search with the new filters
+    // This ensures the search uses the correct filter state
     onSearch(newFilters);
   }, [onSearch, onPageChange]);
 

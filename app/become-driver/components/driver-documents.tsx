@@ -3,6 +3,7 @@
 import { Car, ShieldCheck } from "lucide-react"
 import { DocumentUpload } from "./document-upload"
 import { UseFormReturn } from "react-hook-form"
+import { useLocale } from "@/hooks"
 
 interface DriverDocumentsProps {
   form: UseFormReturn<any>
@@ -64,21 +65,23 @@ export function DriverDocuments({
   handleInsuranceRectoUpload,
   handleInsuranceVersoUpload
 }: DriverDocumentsProps) {
+  const { t } = useLocale();
+  
   return (
     <>
       {/* Driver Documents Section */}
       <div className="space-y-4">
         <h3 className="text-xl font-semibold flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
-          Documents du Conducteur
+          {t("pages.becomeDriver.documents.driverDocuments.title")}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* National ID */}
           <DocumentUpload
-            title="Carte Nationale d'Identité (CNI)"
+            title={t("pages.becomeDriver.documents.nationalId.title")}
             icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-            description="Téléchargez une image claire de votre CNI (recto/verso)"
+            description={t("pages.becomeDriver.documents.nationalId.description")}
             formControl={form.control}
             rectoName="nationalIdFileRecto"
             versoName="nationalIdFileVerso"
@@ -92,9 +95,9 @@ export function DriverDocuments({
           
           {/* Driver License */}
           <DocumentUpload
-            title="Permis de Conduire"
+            title={t("pages.becomeDriver.documents.license.title")}
             icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-            description="Téléchargez une image claire de votre permis de conduire (recto/verso)"
+            description={t("pages.becomeDriver.documents.license.description")}
             formControl={form.control}
             rectoName="licenseFileRecto"
             versoName="licenseFileVerso"
@@ -112,15 +115,15 @@ export function DriverDocuments({
       <div className="space-y-4">
         <h3 className="text-xl font-semibold flex items-center gap-2">
           <Car className="h-5 w-5 text-primary" />
-          Documents du Véhicule
+          {t("pages.becomeDriver.documents.vehicleDocuments.title")}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Vehicle Registration */}
           <DocumentUpload
-            title="Carte Grise du Véhicule"
+            title={t("pages.becomeDriver.documents.registration.title")}
             icon={<Car className="h-4 w-4 text-primary" />}
-            description="Téléchargez une image claire de la carte grise du véhicule (recto/verso)"
+            description={t("pages.becomeDriver.documents.registration.description")}
             formControl={form.control}
             rectoName="registrationFileRecto"
             versoName="registrationFileVerso"
@@ -134,9 +137,9 @@ export function DriverDocuments({
           
           {/* Insurance */}
           <DocumentUpload
-            title="Certificat d'Assurance"
+            title={t("pages.becomeDriver.documents.insurance.title")}
             icon={<Car className="h-4 w-4 text-primary" />}
-            description="Téléchargez une image claire du certificat d'assurance (recto/verso)"
+            description={t("pages.becomeDriver.documents.insurance.description")}
             formControl={form.control}
             rectoName="insuranceFileRecto"
             versoName="insuranceFileVerso"

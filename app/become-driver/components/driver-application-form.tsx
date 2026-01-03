@@ -19,10 +19,12 @@ import { DocumentFieldName } from "./document-types"
 import { uploadDocument } from "../upload-utils"
 import { isValidDocumentUrl } from "../upload-utils"
 import { submitDriverApplication, DriverApplicationData } from "@/lib/driver-application-utils"
+import { useLocale } from "@/hooks"
 
 export default function DriverApplicationForm() {
   const { supabase, user } = useSupabase()
   const router = useRouter()
+  const { t } = useLocale()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   // Document file upload states - recto (front)
@@ -318,8 +320,8 @@ export default function DriverApplicationForm() {
     
     if (missingDocs.length > 0) {
       toast({
-        title: "Documents manquants",
-        description: `Veuillez télécharger les documents requis: ${missingDocs.map(d => d.name).join(', ')}`,
+        title: t("pages.becomeDriver.form.errors.missingDocuments"),
+        description: t("pages.becomeDriver.form.errors.missingDocumentsDesc", { documents: missingDocs.map(d => d.name).join(', ') }),
         variant: "destructive",
       })
       return
@@ -328,8 +330,8 @@ export default function DriverApplicationForm() {
     // Validate vehicle images are required
     if (!vehicleImages || vehicleImages.length === 0) {
       toast({
-        title: "Images du véhicule requises",
-        description: "Veuillez télécharger au moins une image de votre véhicule.",
+        title: t("pages.becomeDriver.form.errors.vehicleImagesRequired"),
+        description: t("pages.becomeDriver.form.errors.vehicleImagesRequiredDesc"),
         variant: "destructive",
       })
       return
@@ -361,8 +363,8 @@ export default function DriverApplicationForm() {
 
       // Show success toast 
       toast({
-        title: "Candidature soumise",
-        description: "Votre candidature de chauffeur a été soumise avec succès. Nous vous contacterons pour la suite.",
+        title: t("pages.becomeDriver.form.errors.submitted"),
+        description: t("pages.becomeDriver.form.errors.submittedDesc"),
       })
       
       // Navigate to success page
@@ -370,8 +372,8 @@ export default function DriverApplicationForm() {
     } catch (error) {
       console.error("Error submitting driver application:", error)
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Une erreur est survenue lors de la soumission de votre candidature. Veuillez réessayer.",
+        title: t("pages.becomeDriver.form.errors.error"),
+        description: error instanceof Error ? error.message : t("pages.becomeDriver.form.errors.errorDesc"),
         variant: "destructive",
       })
     } finally {
@@ -383,7 +385,7 @@ export default function DriverApplicationForm() {
     <>
       {/* Requirements section */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Exigences & Avantages</h2>
+        <h2 className="text-2xl font-bold mb-4">{t("pages.becomeDriver.requirements.title")}</h2>
         <DriverRequirements />
       </div>
 
@@ -425,7 +427,7 @@ export default function DriverApplicationForm() {
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold flex items-center gap-2">
                   <Camera className="h-5 w-5 text-primary" />
-                  Images du Véhicule <span className="text-destructive">*</span>
+                  {t("pages.becomeDriver.vehicleImages.title")} <span className="text-destructive">*</span>
                 </h3>
                 <VehicleImagesUpload
                   images={vehicleImages}
@@ -445,9 +447,9 @@ export default function DriverApplicationForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Soumission en cours...
+                {t("pages.becomeDriver.form.submitting")}
               </>
-            ) : "Soumettre ma candidature"}
+            ) : t("pages.becomeDriver.form.submit")}
           </Button>
         </form>
       </Form>

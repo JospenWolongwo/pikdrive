@@ -58,45 +58,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { format, addDays, parse } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
+import { useLocale } from "@/hooks";
 
-// Define the form schema with validation rules
-const rideFormSchema = z.object({
-  from_city: z.string().min(2, {
-    message: "La ville de départ doit contenir au moins 2 caractères",
-  }),
-  to_city: z.string().min(2, {
-    message: "La ville d'arrivée doit contenir au moins 2 caractères",
-  }),
-  departure_date: z.string({
-    required_error: "La date de départ est requise",
-  }),
-  departure_time: z.string({
-    required_error: "L'heure de départ est requise",
-  }),
-  price: z.string().refine(
-    (val) => {
-      const parsed = parseInt(val);
-      return !isNaN(parsed) && parsed > 0;
-    },
-    {
-      message: "Le prix doit être un nombre positif",
-    }
-  ),
-  seats: z.string().refine(
-    (val) => {
-      const parsed = parseInt(val);
-      return !isNaN(parsed) && parsed > 0 && parsed <= 8;
-    },
-    {
-      message: "Le nombre de places doit être entre 1 et 8",
-    }
-  ),
-  description: z.string().optional(),
-});
-
-// Type for the form values
-type RideFormValues = z.infer<typeof rideFormSchema>;
+// Type for the form values - will be inferred from schema created in component
+type RideFormValues = {
+  from_city: string;
+  to_city: string;
+  departure_date: string;
+  departure_time: string;
+  price: string;
+  seats: string;
+  description?: string;
+};
 
 // Interface for Ride type
 interface Ride {
@@ -121,6 +95,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
+  const { t, locale } = useLocale();
   const { currentRide, currentRideLoading, currentRideError, fetchRideById, updateRide, deleteRide: deleteRideFromStore } = useRidesStore();
   const ride = currentRide;
   const loading = currentRideLoading;
@@ -129,6 +104,41 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const [deleting, setDeleting] = useState(false);
   const [hasBookings, setHasBookings] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+
+  // Define the form schema with validation rules (using translations)
+  const rideFormSchema = z.object({
+    from_city: z.string().min(2, {
+      message: t("pages.driver.manageRide.validation.fromCityMin"),
+    }),
+    to_city: z.string().min(2, {
+      message: t("pages.driver.manageRide.validation.toCityMin"),
+    }),
+    departure_date: z.string({
+      required_error: t("pages.driver.manageRide.validation.departureDateRequired"),
+    }),
+    departure_time: z.string({
+      required_error: t("pages.driver.manageRide.validation.departureTimeRequired"),
+    }),
+    price: z.string().refine(
+      (val) => {
+        const parsed = parseInt(val);
+        return !isNaN(parsed) && parsed > 0;
+      },
+      {
+        message: t("pages.driver.manageRide.validation.pricePositive"),
+      }
+    ),
+    seats: z.string().refine(
+      (val) => {
+        const parsed = parseInt(val);
+        return !isNaN(parsed) && parsed > 0 && parsed <= 8;
+      },
+      {
+        message: t("pages.driver.manageRide.validation.seatsRange"),
+      }
+    ),
+    description: z.string().optional(),
+  });
 
   // Form initialization with default empty values
   const form = useForm<RideFormValues>({
@@ -160,8 +170,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       } catch (error) {
         console.error("❌ Error in loadRide:", error);
         toast({
-          title: "Erreur",
-          description: "Une erreur s'est produite lors du chargement du trajet",
+          title: t("pages.driver.manageRide.errors.title"),
+          description: t("pages.driver.manageRide.errors.loadError"),
           variant: "destructive",
         });
       }
@@ -197,8 +207,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       } catch (formError) {
         console.error("❌ Error populating form:", formError);
         toast({
-          title: "Erreur",
-          description: "Erreur lors du chargement des données du formulaire",
+          title: t("pages.driver.manageRide.errors.title"),
+          description: t("pages.driver.manageRide.errors.formError"),
           variant: "destructive",
         });
       }
@@ -241,8 +251,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         const bookedSeats = ride.bookings?.length || 0;
         if (parseInt(values.seats) < bookedSeats) {
           toast({
-            title: "Impossible de réduire les places",
-            description: `Vous avez déjà ${bookedSeats} réservation(s). Vous ne pouvez pas réduire le nombre de places disponibles en dessous de ce nombre.`,
+            title: t("pages.driver.manageRide.alerts.cannotReduceSeats.title"),
+            description: t("pages.driver.manageRide.alerts.cannotReduceSeats.description", { count: bookedSeats.toString() }),
             variant: "destructive",
           });
           setUpdating(false);
@@ -274,15 +284,14 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       setTimeout(() => setUpdateSuccess(false), 3000);
 
       toast({
-        title: "Trajet mis à jour avec succès",
-        description: `Trajet de ${values.from_city} vers ${values.to_city} mis à jour. Prix: ${values.price} FCFA, Places: ${values.seats}`,
+        title: t("pages.driver.manageRide.toast.updated.title"),
+        description: t("pages.driver.manageRide.toast.updated.description", { from: values.from_city, to: values.to_city, price: values.price, seats: values.seats }),
       });
     } catch (error) {
       console.error("❌ Error in update process:", error);
       toast({
-        title: "Erreur",
-        description:
-          "Impossible de mettre à jour le trajet. Veuillez réessayer.",
+        title: t("pages.driver.manageRide.errors.title"),
+        description: t("pages.driver.manageRide.errors.updateError"),
         variant: "destructive",
       });
     } finally {
@@ -301,9 +310,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       // Check if the ride has active bookings
       if (hasBookings) {
         toast({
-          title: "Suppression impossible",
-          description:
-            "Vous ne pouvez pas supprimer un trajet avec des réservations actives.",
+          title: t("pages.driver.manageRide.alerts.cannotDelete.title"),
+          description: t("pages.driver.manageRide.alerts.cannotDelete.description"),
           variant: "destructive",
         });
         setDeleting(false);
@@ -315,8 +323,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
 
       console.log("✅ Ride deleted successfully");
       toast({
-        title: "Trajet supprimé",
-        description: "Le trajet a été supprimé avec succès",
+        title: t("pages.driver.manageRide.toast.deleted.title"),
+        description: t("pages.driver.manageRide.toast.deleted.description"),
       });
 
       // Redirect back to dashboard
@@ -324,8 +332,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     } catch (error) {
       console.error("❌ Error in delete process:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer le trajet. Veuillez réessayer.",
+        title: t("pages.driver.manageRide.errors.title"),
+        description: t("pages.driver.manageRide.errors.deleteError"),
         variant: "destructive",
       });
     } finally {
@@ -341,10 +349,10 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         onClick={() => router.push("/driver/dashboard")}
       >
         <ArrowLeft className="h-4 w-4" />
-        Retour au tableau de bord
+        {t("pages.driver.manageRide.backToDashboard")}
       </Button>
 
-      <h1 className="text-2xl font-bold mb-6">Gérer le Trajet</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("pages.driver.manageRide.title")}</h1>
 
       {loading ? (
         <div className="text-center py-12">
@@ -352,17 +360,17 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
             className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"
             role="status"
           >
-            <span className="sr-only">Chargement...</span>
+            <span className="sr-only">{t("pages.driver.manageRide.loading.text")}</span>
           </div>
           <p className="mt-4 text-gray-500">
-            Chargement des détails du trajet...
+            {t("pages.driver.manageRide.loading.description")}
           </p>
         </div>
       ) : error ? (
         <div className="text-center py-12">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Erreur</AlertTitle>
+            <AlertTitle>{t("pages.driver.manageRide.errors.title")}</AlertTitle>
             <AlertDescription>
               {error}
             </AlertDescription>
@@ -371,7 +379,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
             className="mt-4"
             onClick={() => router.push("/driver/dashboard")}
           >
-            Retour au tableau de bord
+            {t("pages.driver.manageRide.backToDashboard")}
           </Button>
         </div>
       ) : ride ? (
@@ -379,10 +387,9 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           {hasBookings && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Réservations actives</AlertTitle>
+              <AlertTitle>{t("pages.driver.manageRide.alerts.activeBookings.title")}</AlertTitle>
               <AlertDescription>
-                Ce trajet a des réservations actives. Certaines modifications
-                peuvent être limitées.
+                {t("pages.driver.manageRide.alerts.activeBookings.description")}
               </AlertDescription>
             </Alert>
           )}
@@ -390,16 +397,16 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Détails du Trajet
+                {t("pages.driver.manageRide.form.title")}
                 {updateSuccess && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
                     <Check className="h-3 w-3" />
-                    Mis à jour
+                    {t("pages.driver.manageRide.toast.updateSuccess.text")}
                   </span>
                 )}
               </CardTitle>
               <CardDescription>
-                Modifiez les informations de votre trajet ci-dessous
+                {t("pages.driver.manageRide.form.description")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -414,14 +421,14 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       name="from_city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Ville de départ</FormLabel>
+                          <FormLabel>{t("pages.driver.manageRide.form.fromCity")}</FormLabel>
                           <FormControl>
                             <SearchableSelect
                               options={allCameroonCities}
                               value={field.value}
                               onValueChange={field.onChange}
-                              placeholder="Sélectionnez une ville de départ"
-                              searchPlaceholder="Rechercher une ville..."
+                              placeholder={t("pages.driver.manageRide.form.fromCity")}
+                              searchPlaceholder={t("common.search")}
                             />
                           </FormControl>
                           <FormMessage />
@@ -434,14 +441,14 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       name="to_city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Ville d'arrivée</FormLabel>
+                          <FormLabel>{t("pages.driver.manageRide.form.toCity")}</FormLabel>
                           <FormControl>
                             <SearchableSelect
                               options={allCameroonCities}
                               value={field.value}
                               onValueChange={field.onChange}
-                              placeholder="Sélectionnez une ville d'arrivée"
-                              searchPlaceholder="Rechercher une ville..."
+                              placeholder={t("pages.driver.manageRide.form.toCity")}
+                              searchPlaceholder={t("common.search")}
                             />
                           </FormControl>
                           <FormMessage />
@@ -454,7 +461,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       name="departure_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Date de départ</FormLabel>
+                          <FormLabel>{t("pages.driver.manageRide.form.departureDate")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -476,7 +483,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       name="departure_time"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Heure de départ</FormLabel>
+                          <FormLabel>{t("pages.driver.manageRide.form.departureTime")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Clock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -493,7 +500,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       name="price"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Prix par place (FCFA)</FormLabel>
+                          <FormLabel>{t("pages.driver.manageRide.form.price")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Coins className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -515,7 +522,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       name="seats"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nombre de places</FormLabel>
+                          <FormLabel>{t("pages.driver.manageRide.form.seats")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Users className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -530,7 +537,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                           </FormControl>
                           {hasBookings && (
                             <FormDescription>
-                              Places disponibles pour ce trajet
+                              {t("pages.driver.manageRide.form.seatsDescription")}
                             </FormDescription>
                           )}
                           <FormMessage />
@@ -544,20 +551,19 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description (facultatif)</FormLabel>
+                        <FormLabel>{t("pages.driver.manageRide.form.description")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Info className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                             <Textarea
                               className="pl-10 min-h-[100px]"
-                              placeholder="Informations supplémentaires sur le trajet..."
+                              placeholder={t("pages.driver.manageRide.form.descriptionPlaceholder")}
                               {...field}
                             />
                           </div>
                         </FormControl>
                         <FormDescription>
-                          Ajoutez des détails comme les arrêts prévus, les
-                          règles spécifiques, etc.
+                          {t("pages.driver.manageRide.form.descriptionHelp")}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -573,26 +579,25 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                           disabled={updating || hasBookings}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Supprimer le trajet
+                          {t("pages.driver.manageRide.form.delete")}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>
-                            Êtes-vous sûr de vouloir supprimer ce trajet ?
+                            {t("pages.driver.manageRide.alerts.deleteConfirm.title")}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Cette action est irréversible et supprimera
-                            définitivement ce trajet.
+                            {t("pages.driver.manageRide.alerts.deleteConfirm.description")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogCancel>{t("pages.driver.manageRide.alerts.deleteConfirm.cancel")}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={deleteRide}
                             className="bg-red-500 hover:bg-red-600"
                           >
-                            {deleting ? "Suppression..." : "Supprimer"}
+                            {deleting ? t("pages.driver.manageRide.form.deleting") : t("pages.driver.manageRide.alerts.deleteConfirm.confirm")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -601,8 +606,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                     <Button type="submit" disabled={updating}>
                       <Save className="h-4 w-4 mr-2" />
                       {updating
-                        ? "Enregistrement..."
-                        : "Enregistrer les modifications"}
+                        ? t("pages.driver.manageRide.form.saving")
+                        : t("pages.driver.manageRide.form.save")}
                     </Button>
                   </div>
                 </form>
@@ -615,8 +620,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                   <div className="flex items-center gap-2 text-green-700">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      Trajet mis à jour avec succès ! Les modifications ont été
-                      enregistrées.
+                      {t("pages.driver.manageRide.toast.updateSuccess.text")}
                     </span>
                   </div>
                   <Button
@@ -625,7 +629,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                     onClick={() => setUpdateSuccess(false)}
                     className="text-green-700 border-green-300 hover:bg-green-100"
                   >
-                    Fermer
+                    {t("pages.driver.manageRide.toast.updateSuccess.close")}
                   </Button>
                 </div>
               </CardFooter>
@@ -635,9 +639,9 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           {hasBookings && (
             <Card>
               <CardHeader>
-                <CardTitle>Réservations</CardTitle>
+                <CardTitle>{t("pages.driver.manageRide.bookings.title")}</CardTitle>
                 <CardDescription>
-                  Voici les réservations actuelles pour ce trajet
+                  {t("pages.driver.manageRide.bookings.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -647,10 +651,10 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="font-medium">
-                            Réservation #{booking.id.slice(0, 8)}
+                            {t("pages.driver.manageRide.bookings.bookingId", { id: booking.id.slice(0, 8) })}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Statut: {booking.status}
+                            {t("pages.driver.manageRide.bookings.status", { status: booking.status })}
                           </p>
                         </div>
                         <Button
@@ -660,13 +664,13 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                             router.push(`/driver/bookings/${booking.id}`)
                           }
                         >
-                          Voir détails
+                          {t("pages.driver.manageRide.bookings.viewDetails")}
                         </Button>
                       </div>
                     </div>
                   )) || (
                     <p className="text-gray-500 text-center py-4">
-                      Aucune réservation trouvée
+                      {t("pages.driver.manageRide.bookings.noBookings")}
                     </p>
                   )}
                 </div>
@@ -677,13 +681,13 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       ) : (
         <div className="text-center py-12">
           <p className="text-lg text-gray-500">
-            Trajet introuvable ou inaccessible
+            {t("pages.driver.manageRide.errors.notFound")}
           </p>
           <Button
             className="mt-4"
             onClick={() => router.push("/driver/dashboard")}
           >
-            Retour au tableau de bord
+            {t("pages.driver.manageRide.backToDashboard")}
           </Button>
         </div>
       )}

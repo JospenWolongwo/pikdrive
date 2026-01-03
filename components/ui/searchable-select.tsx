@@ -91,9 +91,9 @@ export function SearchableSelect({
               Clear selection
             </CommandItem>
           )}
-          {filteredOptions.map((option) => (
+          {filteredOptions.map((option, index) => (
             <CommandItem
-              key={option}
+              key={`${option}-${index}`}
               value={option}
               onSelect={() => handleSelect(option)}
               disabled={disabled}

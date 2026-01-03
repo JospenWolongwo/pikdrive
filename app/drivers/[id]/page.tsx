@@ -12,11 +12,13 @@ import { ArrowLeft, AlertCircle, MapPin } from "lucide-react";
 import Link from "next/link";
 import { driverApiClient } from "@/lib/api-client/driver";
 import { ApiError } from "@/lib/api-client/error";
+import { useLocale } from "@/hooks";
 import type { DriverPublicProfile } from "@/types/driver";
 
 export default function DriverProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useLocale();
   const driverId = params.id as string;
   const [profile, setProfile] = useState<DriverPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function DriverProfilePage() {
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <div className="flex flex-col justify-center items-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-          <p className="text-muted-foreground">Chargement du profil...</p>
+          <p className="text-muted-foreground">{t("pages.driverProfile.loading")}</p>
         </div>
       </div>
     );
@@ -69,17 +71,17 @@ export default function DriverProfilePage() {
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <div className="flex flex-col justify-center items-center min-h-[400px] text-center">
           <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Profil non trouvé</h2>
+          <h2 className="text-2xl font-bold mb-2">{t("pages.driverProfile.notFound.title")}</h2>
           <p className="text-muted-foreground mb-6">
-            {error || "Ce conducteur n'existe pas ou n'est pas disponible."}
+            {error || t("pages.driverProfile.notFound.description")}
           </p>
           <div className="flex gap-4">
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
+              {t("pages.driverProfile.actions.back")}
             </Button>
             <Link href="/rides">
-              <Button>Voir les trajets disponibles</Button>
+              <Button>{t("pages.driverProfile.actions.viewRides")}</Button>
             </Link>
           </div>
         </div>
@@ -101,7 +103,7 @@ export default function DriverProfilePage() {
           className="gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour
+          {t("pages.driverProfile.actions.back")}
         </Button>
       </div>
 
@@ -151,7 +153,7 @@ export default function DriverProfilePage() {
         <Link href={`/rides?driver_id=${profile.id}`}>
           <Button size="lg" className="gap-2">
             <MapPin className="h-5 w-5" />
-            Voir les trajets de ce conducteur
+            {t("pages.driverProfile.actions.viewDriverRides")}
           </Button>
         </Link>
       </div>

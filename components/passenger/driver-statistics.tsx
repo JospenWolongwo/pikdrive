@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, MapPin, Calendar } from "lucide-react";
+import { useLocale } from "@/hooks";
 
 interface DriverStatisticsProps {
   totalTrips: number;
@@ -12,24 +13,25 @@ export function DriverStatistics({
   totalPassengers,
   memberSince,
 }: DriverStatisticsProps) {
+  const { t } = useLocale();
   const stats = [
     {
-      label: "Trajets réalisés",
+      label: t("pages.driverProfile.totalTrips"),
       value: totalTrips,
       icon: MapPin,
-      description: "Trajets complétés",
+      description: t("pages.driverProfile.totalTripsDescription"),
     },
     {
-      label: "Passagers transportés",
+      label: t("pages.driverProfile.totalPassengers"),
       value: totalPassengers,
       icon: Users,
-      description: "Passagers au total",
+      description: t("pages.driverProfile.totalPassengersDescription"),
     },
     {
-      label: "Membre depuis",
+      label: t("pages.driverProfile.memberSinceLabel"),
       value: memberSince,
       icon: Calendar,
-      description: "Date d'inscription",
+      description: t("pages.driverProfile.memberSinceDescription"),
     },
   ];
 

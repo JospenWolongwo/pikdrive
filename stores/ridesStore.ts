@@ -59,6 +59,17 @@ interface RidesState {
     page?: number;
     limit?: number;
   }) => Promise<void>;
+  refreshAllRides: (params?: {
+    driver_id?: string;
+    from_city?: string;
+    to_city?: string;
+    min_price?: number;
+    max_price?: number;
+    min_seats?: number;
+    upcoming?: boolean;
+    page?: number;
+    limit?: number;
+  }) => Promise<void>;
   setAllRidesLoading: (loading: boolean) => void;
   setAllRidesError: (error: string | null) => void;
   clearAllRides: () => void;

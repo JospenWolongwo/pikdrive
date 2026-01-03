@@ -323,7 +323,43 @@
         "paymentSecure": {
           "question": "Mon paiement est-il sécurisé ?",
           "answer": "Oui, nous utilisons un cryptage aux normes internationales pour toutes les transactions. Les paiements sont sécurisés par notre système de code de vérification : l'argent n'est libéré au chauffeur qu'après validation de votre code, garantissant que vous recevez bien le service réservé. En cas de problème, notre équipe d'assistance est disponible 24/7."
+        },
+        "subtitle": "Trouvez des réponses aux questions courantes sur l'utilisation de PikDrive"
+      },
+      "safetyTipsTitle": "Conseils de Sécurité",
+      "faqTitle": "Questions Fréquentes",
+      "commonProblems": {
+        "title": "Problèmes Fréquents",
+        "subtitle": "Solutions aux défis courants rencontrés lors des voyages intercités",
+        "connectionIssues": {
+          "title": "Problèmes de Connexion",
+          "content": "PikDrive fonctionne même dans les zones de faible connexion. Les codes de vérification sont envoyés par SMS et l'application synchronise les données lorsque la connexion est rétablie."
+        },
+        "badRoads": {
+          "title": "Routes en Mauvais État",
+          "content": "Nos chauffeurs connaissent les routes alternatives et sont prêts à faire face aux conditions routières difficiles. Les temps de trajet estimés tiennent compte de ces facteurs."
+        },
+        "checkpoints": {
+          "title": "Changeants Points de Contrôle",
+          "content": "Nos chauffeurs sont informés en temps réel des points de contrôle sur les routes. Les documents des véhicules et des chauffeurs sont toujours en règle pour éviter les retards."
+        },
+        "delays": {
+          "title": "Retards et Annulations",
+          "content": "En cas de retard important, vous recevrez une notification. Si un trajet est annulé, vous pouvez facilement choisir une alternative ou obtenir un remboursement complet."
+        },
+        "paymentIssues": {
+          "title": "Difficultés de Paiement",
+          "content": "Nous proposons des options de paiement mobile adaptées au contexte local : Mobile Money (MTN et Orange)."
         }
+      },
+      "contact": {
+        "title": "Besoin d'Aide ?",
+        "subtitle": "Notre équipe d'assistance est toujours prête à vous aider.",
+        "callUs": "Appelez-Nous",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "openingHours": "Heures d'Ouverture",
+        "openingHoursValue": "24/7"
       }
     },
     "auth": {
@@ -446,6 +482,7 @@
         "fileSizeError": "La taille du fichier doit être inférieure à 5MB"
       },
       "driverDocuments": {
+        "title": "Documents du Conducteur",
         "description": "Vos documents soumis pour la candidature de chauffeur",
         "submittedDocuments": "Documents Soumis",
         "nationalId": "Carte Nationale d'Identité",
@@ -503,6 +540,247 @@
         "publishRide": "Publier un Trajet",
         "viewRides": "Voir les Trajets",
         "myBookings": "Mes Réservations"
+      }
+    },
+    "driverProfile": {
+      "certifiedDriver": "Conducteur certifié PikDrive",
+      "memberSince": "Membre depuis",
+      "totalTrips": "Trajets réalisés",
+      "totalTripsDescription": "Trajets complétés",
+      "totalPassengers": "Passagers transportés",
+      "totalPassengersDescription": "Passagers au total",
+      "memberSinceLabel": "Membre depuis",
+      "memberSinceDescription": "Date d'inscription",
+      "recentRides": {
+        "title": "Trajets récents",
+        "viewAllRides": "Voir tous les trajets de ce conducteur"
+      },
+      "trustBadges": {
+        "verifiedBy": "Conducteur vérifié par PikDrive",
+        "allDocumentsVerified": "Tous les documents ont été vérifiés",
+        "badges": {
+          "idVerified": "ID vérifié",
+          "idVerifiedDesc": "Identité vérifiée",
+          "licenseVerified": "Permis vérifié",
+          "licenseVerifiedDesc": "Permis de conduire vérifié",
+          "insuranceVerified": "Assurance vérifiée",
+          "insuranceVerifiedDesc": "Assurance véhicule vérifiée"
+        }
+      },
+      "vehicleGallery": {
+        "title": "Véhicule",
+        "verified": "Véhicule vérifié",
+        "notAvailable": "Photos du véhicule non disponibles"
+      },
+      "loading": "Chargement du profil...",
+      "notFound": {
+        "title": "Profil non trouvé",
+        "description": "Ce conducteur n'existe pas ou n'est pas disponible."
+      },
+      "actions": {
+        "back": "Retour",
+        "viewRides": "Voir les trajets disponibles",
+        "viewDriverRides": "Voir les trajets de ce conducteur"
+      }
+    },
+    "becomeDriver": {
+      "requirements": {
+        "title": "Exigences & Avantages",
+        "vehicleDocuments": {
+          "title": "Documents Véhicule Requis",
+          "items": {
+            "registration": "Carte Grise du Véhicule (Recto/Verso)",
+            "insurance": "Certificat d'Assurance (Recto/Verso)"
+          }
+        },
+        "driverDocuments": {
+          "title": "Documents Conducteur Requis",
+          "items": {
+            "nationalId": "Carte Nationale d'Identité (Recto/Verso)",
+            "license": "Permis de Conduire (Recto/Verso)"
+          }
+        },
+        "advantages": {
+          "title": "Avantages",
+          "items": {
+            "earnMore": "Gagnez plus avec les trajets longue distance",
+            "weeklyPayments": "Paiements hebdomadaires",
+            "flexibleHours": "Horaires flexibles",
+            "support247": "Assistance 24/7"
+          }
+        }
+      },
+      "documents": {
+        "driverDocuments": {
+          "title": "Documents du Conducteur"
+        },
+        "vehicleDocuments": {
+          "title": "Documents du Véhicule"
+        },
+        "nationalId": {
+          "title": "Carte Nationale d'Identité (CNI)",
+          "description": "Téléchargez une image claire de votre CNI (recto/verso)"
+        },
+        "license": {
+          "title": "Permis de Conduire",
+          "description": "Téléchargez une image claire de votre permis de conduire (recto/verso)"
+        },
+        "registration": {
+          "title": "Carte Grise du Véhicule",
+          "description": "Téléchargez une image claire de la carte grise du véhicule (recto/verso)"
+        },
+        "insurance": {
+          "title": "Certificat d'Assurance",
+          "description": "Téléchargez une image claire du certificat d'assurance (recto/verso)"
+        }
+      },
+      "vehicleImages": {
+        "title": "Images du Véhicule",
+        "uploading": "Téléchargement en cours...",
+        "uploadingDesc": "Vous ajoutez des photos de l'intérieur et l'extérieur de votre véhicule",
+        "clickToUpload": "Cliquez ou déposez vos photos ici",
+        "multipleImages": "Vous pouvez sélectionner plusieurs images à la fois. Format accepté: JPG, PNG",
+        "uploaded": "Photos téléchargées",
+        "image": "image",
+        "images": "images",
+        "vehiclePhoto": "Photo du véhicule"
+      },
+      "form": {
+        "submit": "Soumettre ma candidature",
+        "submitting": "Soumission en cours...",
+        "errors": {
+          "missingDocuments": "Documents manquants",
+          "missingDocumentsDesc": "Veuillez télécharger les documents requis: {documents}",
+          "vehicleImagesRequired": "Images du véhicule requises",
+          "vehicleImagesRequiredDesc": "Veuillez télécharger au moins une image de votre véhicule.",
+          "submitted": "Candidature soumise",
+          "submittedDesc": "Votre candidature de chauffeur a été soumise avec succès. Nous vous contacterons pour la suite.",
+          "error": "Erreur",
+          "errorDesc": "Une erreur est survenue lors de la soumission de votre candidature. Veuillez réessayer."
+        }
+      },
+      "confirmation": {
+        "title": "Candidature Soumise !",
+        "subtitle": "Merci d'avoir postulé pour devenir conducteur PikDrive.",
+        "status": {
+          "text": "Votre candidature est en cours d'examen",
+          "description": "Notre équipe examine généralement les candidatures sous 24-48 heures",
+          "variant": "pending"
+        },
+        "steps": {
+          "step1": {
+            "title": "Examen des Documents",
+            "description": "Notre équipe examinera vos documents et vérifiera vos informations"
+          },
+          "step2": {
+            "title": "Notification par Appel ou WhatsApp",
+            "description": "Vous recevrez une notification par appel ou WhatsApp une fois votre candidature approuvée"
+          },
+          "step3": {
+            "title": "Commencer à Conduire",
+            "description": "Après approbation, vous pourrez accepter des demandes de trajet via votre tableau de bord"
+          }
+        },
+        "contact": {
+          "supportText": "Des questions ?"
+        },
+        "actions": {
+          "primary": {
+            "text": "Retour à l'Accueil"
+          },
+          "secondary": {
+            "text": "Mes Réservations"
+          }
+        },
+        "bilingualText": {
+          "subtitle": "Votre demande a été soumise avec succès et est en cours d'examen. Nous vous informerons par e-mail une fois qu'elle sera approuvée."
+        }
+      }
+    },
+    "driver": {
+      "manageRide": {
+        "title": "Gérer le Trajet",
+        "backToDashboard": "Retour au tableau de bord",
+        "loading": {
+          "text": "Chargement...",
+          "description": "Chargement des détails du trajet..."
+        },
+        "errors": {
+          "title": "Erreur",
+          "loadError": "Une erreur s'est produite lors du chargement du trajet",
+          "formError": "Erreur lors du chargement des données du formulaire",
+          "updateError": "Impossible de mettre à jour le trajet. Veuillez réessayer.",
+          "deleteError": "Impossible de supprimer le trajet. Veuillez réessayer.",
+          "notFound": "Trajet introuvable ou inaccessible"
+        },
+        "form": {
+          "title": "Détails du Trajet",
+          "description": "Modifiez les informations de votre trajet ci-dessous",
+          "fromCity": "Ville de départ",
+          "toCity": "Ville d'arrivée",
+          "departureDate": "Date de départ",
+          "departureTime": "Heure de départ",
+          "price": "Prix par place (FCFA)",
+          "seats": "Nombre de places",
+          "seatsDescription": "Places disponibles pour ce trajet",
+          "description": "Description (facultatif)",
+          "descriptionPlaceholder": "Informations supplémentaires sur le trajet...",
+          "descriptionHelp": "Ajoutez des détails comme les arrêts prévus, les règles spécifiques, etc.",
+          "save": "Enregistrer les modifications",
+          "saving": "Enregistrement...",
+          "delete": "Supprimer le trajet",
+          "deleting": "Suppression..."
+        },
+        "alerts": {
+          "activeBookings": {
+            "title": "Réservations actives",
+            "description": "Ce trajet a des réservations actives. Certaines modifications peuvent être limitées."
+          },
+          "cannotReduceSeats": {
+            "title": "Impossible de réduire les places",
+            "description": "Vous avez déjà {count} réservation(s). Vous ne pouvez pas réduire le nombre de places disponibles en dessous de ce nombre."
+          },
+          "cannotDelete": {
+            "title": "Suppression impossible",
+            "description": "Vous ne pouvez pas supprimer un trajet avec des réservations actives."
+          },
+          "deleteConfirm": {
+            "title": "Êtes-vous sûr de vouloir supprimer ce trajet ?",
+            "description": "Cette action est irréversible et supprimera définitivement ce trajet.",
+            "cancel": "Annuler",
+            "confirm": "Supprimer"
+          }
+        },
+        "toast": {
+          "updated": {
+            "title": "Trajet mis à jour avec succès",
+            "description": "Trajet de {from} vers {to} mis à jour. Prix: {price} FCFA, Places: {seats}"
+          },
+          "deleted": {
+            "title": "Trajet supprimé",
+            "description": "Le trajet a été supprimé avec succès"
+          },
+          "updateSuccess": {
+            "text": "Trajet mis à jour avec succès ! Les modifications ont été enregistrées.",
+            "close": "Fermer"
+          }
+        },
+        "bookings": {
+          "title": "Réservations",
+          "description": "Voici les réservations actuelles pour ce trajet",
+          "bookingId": "Réservation #{id}",
+          "status": "Statut: {status}",
+          "viewDetails": "Voir détails",
+          "noBookings": "Aucune réservation trouvée"
+        },
+        "validation": {
+          "fromCityMin": "La ville de départ doit contenir au moins 2 caractères",
+          "toCityMin": "La ville d'arrivée doit contenir au moins 2 caractères",
+          "departureDateRequired": "La date de départ est requise",
+          "departureTimeRequired": "L'heure de départ est requise",
+          "pricePositive": "Le prix doit être un nombre positif",
+          "seatsRange": "Le nombre de places doit être entre 1 et 8"
+        }
       }
     },
     "errors": {
@@ -973,6 +1251,17 @@
         "placeholder": "Entrez le code (ex: AB12C3)",
         "verifyCode": "Vérifier le Code"
       }
+    }
+  },
+  "components": {
+    "successCard": {
+      "whatHappensNext": "Que se passe-t-il ensuite ?",
+      "haveQuestions": "Des questions ?",
+      "contactSupport": "Contactez notre équipe d'assistance à",
+      "orCall": "ou appelez",
+      "vehicleAlt": "Véhicule du conducteur",
+      "yourVehicle": "Votre véhicule",
+      "readyForRides": "Prêt pour les trajets"
     }
   },
   "offline": {

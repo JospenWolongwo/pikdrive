@@ -2,34 +2,37 @@
 
 import { Car, CheckCircle2, DollarSign, ShieldCheck } from "lucide-react"
 import { Card } from "@/components/ui/card"
+import { useLocale } from "@/hooks"
 
 // Requirements section as a separate component
 export function DriverRequirements() {
+  const { t } = useLocale();
+  
   const requirements = [
     {
       icon: <Car className="w-6 h-6 text-primary" />,
-      title: "Documents Véhicule Requis",
+      title: t("pages.becomeDriver.requirements.vehicleDocuments.title"),
       items: [
-        "Carte Grise du Véhicule (Recto/Verso)",
-        "Certificat d'Assurance (Recto/Verso)"
+        t("pages.becomeDriver.requirements.vehicleDocuments.items.registration"),
+        t("pages.becomeDriver.requirements.vehicleDocuments.items.insurance")
       ]
     },
     {
       icon: <ShieldCheck className="w-6 h-6 text-primary" />,
-      title: "Documents Conducteur Requis",
+      title: t("pages.becomeDriver.requirements.driverDocuments.title"),
       items: [
-        "Carte Nationale d'Identité (Recto/Verso)",
-        "Permis de Conduire (Recto/Verso)"
+        t("pages.becomeDriver.requirements.driverDocuments.items.nationalId"),
+        t("pages.becomeDriver.requirements.driverDocuments.items.license")
       ]
     },
     {
       icon: <DollarSign className="w-6 h-6 text-primary" />,
-      title: "Avantages",
+      title: t("pages.becomeDriver.requirements.advantages.title"),
       items: [
-        "Gagnez plus avec les trajets longue distance",
-        "Paiements hebdomadaires",
-        "Horaires flexibles",
-        "Assistance 24/7"
+        t("pages.becomeDriver.requirements.advantages.items.earnMore"),
+        t("pages.becomeDriver.requirements.advantages.items.weeklyPayments"),
+        t("pages.becomeDriver.requirements.advantages.items.flexibleHours"),
+        t("pages.becomeDriver.requirements.advantages.items.support247")
       ]
     }
   ]

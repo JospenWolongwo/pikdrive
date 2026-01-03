@@ -162,43 +162,43 @@ export default function AdvicePage() {
         </div>
       </section>
 
-      {/* Problèmes Fréquents au Cameroun */}
+      {/* Common Problems Section */}
       <section className="container mb-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl font-bold mb-4">Problèmes Fréquents</h2>
-          <p className="text-muted-foreground text-lg">Solutions aux défis courants rencontrés lors des voyages intercités</p>
+          <h2 className="text-3xl font-bold mb-4">{t("pages.advice.commonProblems.title")}</h2>
+          <p className="text-muted-foreground text-lg">{t("pages.advice.commonProblems.subtitle")}</p>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           {[
             {
               icon: <WifiOff className="w-8 h-8" />,
-              title: "Problèmes de Connexion",
-              content: "PikDrive fonctionne même dans les zones de faible connexion. Les codes de vérification sont envoyés par SMS et l'application synchronise les données lorsque la connexion est rétablie."
+              title: t("pages.advice.commonProblems.connectionIssues.title"),
+              content: t("pages.advice.commonProblems.connectionIssues.content")
             },
             {
               icon: <Truck className="w-8 h-8" />,
-              title: "Routes en Mauvais État",
-              content: "Nos chauffeurs connaissent les routes alternatives et sont prêts à faire face aux conditions routières difficiles. Les temps de trajet estimés tiennent compte de ces facteurs."
+              title: t("pages.advice.commonProblems.badRoads.title"),
+              content: t("pages.advice.commonProblems.badRoads.content")
             },
             {
               icon: <AlertCircle className="w-8 h-8" />,
-              title: "Changeants Points de Contrôle",
-              content: "Nos chauffeurs sont informés en temps réel des points de contrôle sur les routes. Les documents des véhicules et des chauffeurs sont toujours en règle pour éviter les retards."
+              title: t("pages.advice.commonProblems.checkpoints.title"),
+              content: t("pages.advice.commonProblems.checkpoints.content")
             },
             {
               icon: <Clock className="w-8 h-8" />,
-              title: "Retards et Annulations",
-              content: "En cas de retard important, vous recevrez une notification. Si un trajet est annulé, vous pouvez facilement choisir une alternative ou obtenir un remboursement complet."
+              title: t("pages.advice.commonProblems.delays.title"),
+              content: t("pages.advice.commonProblems.delays.content")
             },
             {
               icon: <CreditCard className="w-8 h-8" />,
-              title: "Difficultés de Paiement",
-              content: "Nous proposons des options de paiement mobile adaptées au contexte local : Mobile Money (MTN et Orange)."
+              title: t("pages.advice.commonProblems.paymentIssues.title"),
+              content: t("pages.advice.commonProblems.paymentIssues.content")
             }
           ].map((issue, index) => (
             <motion.div
@@ -227,7 +227,7 @@ export default function AdvicePage() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl font-bold mb-4">{t("pages.advice.faqTitle")}</h2>
-          <p className="text-muted-foreground text-lg">Trouvez des réponses aux questions courantes sur l&apos;utilisation de PikDrive</p>
+          <p className="text-muted-foreground text-lg">{t("pages.advice.faq.subtitle")}</p>
         </motion.div>
 
         <Accordion type="single" collapsible className="max-w-3xl mx-auto">
@@ -247,16 +247,15 @@ export default function AdvicePage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl font-bold mb-4">Besoin d&apos;Aide ?</h2>
-          <p className="text-muted-foreground text-lg">Notre équipe d&apos;assistance est toujours prête à vous aider.</p>
+          <h2 className="text-4xl font-bold mb-4">{t("pages.advice.contact.title")}</h2>
+          <p className="text-muted-foreground text-lg">{t("pages.advice.contact.subtitle")}</p>
         </motion.div>
 
         <div className="space-y-8">
-          <h2 className="text-2xl font-semibold text-center">Besoin d&apos;Aide ?</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mx-auto max-w-6xl px-4">
             <Card className="p-6 text-center">
               <PhoneCall className="w-8 h-8 text-primary mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Appelez-Nous</h3>
+              <h3 className="font-semibold mb-2">{t("pages.advice.contact.callUs")}</h3>
               <a 
                 href="tel:+237698805890" 
                 className="text-muted-foreground break-words hover:text-primary transition-colors"
@@ -267,7 +266,7 @@ export default function AdvicePage() {
             
             <Card className="p-6 text-center">
               <BsWhatsapp className="w-8 h-8 text-green-500 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">WhatsApp</h3>
+              <h3 className="font-semibold mb-2">{t("pages.advice.contact.whatsapp")}</h3>
               <a 
                 href="https://wa.me/+237698805890" 
                 target="_blank"
@@ -280,7 +279,7 @@ export default function AdvicePage() {
 
             <Card className="p-6 text-center">
               <Mail className="w-8 h-8 text-primary mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Email</h3>
+              <h3 className="font-semibold mb-2">{t("pages.advice.contact.email")}</h3>
               <a 
                 href="mailto:support@pikdrive.com"
                 className="text-muted-foreground break-words hover:text-primary transition-colors"
@@ -291,8 +290,8 @@ export default function AdvicePage() {
 
             <Card className="p-6 text-center">
               <Clock className="w-8 h-8 text-primary mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Heures d&apos;Ouverture</h3>
-              <p className="text-muted-foreground">24/7</p>
+              <h3 className="font-semibold mb-2">{t("pages.advice.contact.openingHours")}</h3>
+              <p className="text-muted-foreground">{t("pages.advice.contact.openingHoursValue")}</p>
             </Card>
           </div>
         </div>

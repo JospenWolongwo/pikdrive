@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { CheckCircle2, Clock, ClipboardCheck, Mail, Phone } from "lucide-react"
+import { useLocale } from "@/hooks"
 
 export interface SuccessStep {
   number: number
@@ -55,6 +56,7 @@ export function SuccessCard({
   carImage,
   className = ""
 }: SuccessCardProps) {
+  const { t } = useLocale();
   const getStatusStyles = (variant: string = 'pending') => {
     switch (variant) {
       case 'success':
@@ -95,7 +97,7 @@ export function SuccessCard({
                   <div className="aspect-video rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                     <img 
                       src={carImage} 
-                      alt="Véhicule du conducteur"
+                      alt={t("components.successCard.vehicleAlt")}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         e.currentTarget.src = '/defaults/car-placeholder.svg'
@@ -103,8 +105,8 @@ export function SuccessCard({
                     />
                   </div>
                   <div className="mt-3 text-center">
-                    <p className="text-sm font-medium text-gray-700">Votre véhicule</p>
-                    <p className="text-xs text-gray-500">Prêt pour les trajets</p>
+                    <p className="text-sm font-medium text-gray-700">{t("components.successCard.yourVehicle")}</p>
+                    <p className="text-xs text-gray-500">{t("components.successCard.readyForRides")}</p>
                   </div>
                 </div>
               </div>
@@ -135,7 +137,7 @@ export function SuccessCard({
             <div className="w-full text-left space-y-4">
               <h2 className="font-semibold flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-primary" />
-                What happens next?
+                {t("components.successCard.whatHappensNext")}
               </h2>
               
               <ul className="space-y-3">
@@ -158,14 +160,14 @@ export function SuccessCard({
           {contactInfo && (
             <div className="w-full text-left p-4 border rounded-lg bg-gray-50">
               <p className="text-sm">
-                <span className="font-medium">{contactInfo.supportText || "Have questions?"}</span>
+                <span className="font-medium">{contactInfo.supportText || t("components.successCard.haveQuestions")}</span>
                 {contactInfo.email && (
-                  <> Contact our support team at 
+                  <> {t("components.successCard.contactSupport")} 
                     <a href={`mailto:${contactInfo.email}`} className="text-primary hover:underline"> {contactInfo.email}</a>
                   </>
                 )}
                 {contactInfo.phone && (
-                  <> or call 
+                  <> {t("components.successCard.orCall")} 
                     <a href={`tel:${contactInfo.phone}`} className="text-primary hover:underline"> {contactInfo.phone}</a>
                   </>
                 )}

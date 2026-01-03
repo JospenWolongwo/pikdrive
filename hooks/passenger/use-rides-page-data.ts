@@ -33,7 +33,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     allRidesLoading,
     allRidesPagination,
     searchRides,
-    fetchAllRides,
+    refreshAllRides,
     lastAllRidesFetch,
     subscribeToRideUpdates,
     unsubscribeFromRideUpdates,
@@ -52,7 +52,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
       try {
         const pageToUse = page ?? currentPage;
         
-        // Merge partial filters with defaults
+        // Default filters
         const defaultFilters: RideFilters = {
           fromCity: null,
           toCity: null,
@@ -61,6 +61,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
           minSeats: 1,
         };
         
+        // Merge with defaults - if a field is explicitly null, keep it null
         const activeFilters: RideFilters = newFilters
           ? {
               fromCity: newFilters.fromCity ?? defaultFilters.fromCity,
@@ -71,32 +72,27 @@ export function useRidesPageData(): UseRidesPageDataReturn {
             }
           : defaultFilters;
 
+        // Check if any filters are active
         const hasFilters = Boolean(
           (activeFilters.fromCity && activeFilters.fromCity !== "any") ||
-            (activeFilters.toCity && activeFilters.toCity !== "any") ||
-            activeFilters.minPrice !== 0 ||
-            activeFilters.maxPrice !== 20000 ||
-            activeFilters.minSeats !== 1
+          (activeFilters.toCity && activeFilters.toCity !== "any") ||
+          activeFilters.minPrice !== 0 ||
+          activeFilters.maxPrice !== 20000 ||
+          activeFilters.minSeats !== 1
         );
 
         if (hasFilters) {
           await searchRides({
-            from_city:
-              activeFilters.fromCity && activeFilters.fromCity !== "any"
-                ? activeFilters.fromCity
-                : undefined,
-            to_city:
-              activeFilters.toCity && activeFilters.toCity !== "any"
-                ? activeFilters.toCity
-                : undefined,
-            min_price: activeFilters.minPrice,
-            max_price: activeFilters.maxPrice,
-            min_seats: activeFilters.minSeats,
+            from_city: activeFilters.fromCity && activeFilters.fromCity !== "any" ? activeFilters.fromCity : undefined,
+            to_city: activeFilters.toCity && activeFilters.toCity !== "any" ? activeFilters.toCity : undefined,
+            min_price: activeFilters.minPrice !== 0 ? activeFilters.minPrice : undefined,
+            max_price: activeFilters.maxPrice !== 20000 ? activeFilters.maxPrice : undefined,
+            min_seats: activeFilters.minSeats !== 1 ? activeFilters.minSeats : undefined,
             page: pageToUse,
             limit: ITEMS_PER_PAGE,
           });
         } else {
-          await fetchAllRides({
+          await refreshAllRides({
             page: pageToUse,
             limit: ITEMS_PER_PAGE,
             upcoming: true,
@@ -116,7 +112,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
         });
       }
     },
-    [currentPage, searchRides, fetchAllRides, allRidesPagination, toast]
+    [currentPage, searchRides, refreshAllRides, allRidesPagination, toast]
   );
 
   // Load rides on component mount
@@ -145,10 +141,6 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     unsubscribeFromRideUpdates,
   ]);
 
-  // Reload rides when page changes
-  useEffect(() => {
-    loadRides(undefined, currentPage);
-  }, [currentPage, loadRides]);
 
   // Subscribe to each ride's conversation for chat updates
   useEffect(() => {

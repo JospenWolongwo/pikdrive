@@ -323,10 +323,44 @@
         "paymentSecure": {
           "question": "Is my payment secure?",
           "answer": "Yes, we use international standard encryption for all transactions. Payments are secured by our verification code system: money is only released to the driver after your code validation, ensuring you receive the booked service. If you have any issues, our support team is available 24/7."
-        }
+        },
+        "subtitle": "Find answers to common questions about using PikDrive"
       },
       "safetyTipsTitle": "Safety Tips",
-      "faqTitle": "Frequently Asked Questions"
+      "faqTitle": "Frequently Asked Questions",
+      "commonProblems": {
+        "title": "Common Problems",
+        "subtitle": "Solutions to common challenges encountered during intercity travel",
+        "connectionIssues": {
+          "title": "Connection Issues",
+          "content": "PikDrive works even in areas with low connectivity. Verification codes are sent via SMS and the app synchronizes data when connection is restored."
+        },
+        "badRoads": {
+          "title": "Poor Road Conditions",
+          "content": "Our drivers know alternative routes and are prepared to handle difficult road conditions. Estimated travel times take these factors into account."
+        },
+        "checkpoints": {
+          "title": "Changing Checkpoints",
+          "content": "Our drivers are informed in real-time about checkpoints on the roads. Vehicle and driver documents are always in order to avoid delays."
+        },
+        "delays": {
+          "title": "Delays and Cancellations",
+          "content": "In case of significant delay, you will receive a notification. If a ride is cancelled, you can easily choose an alternative or get a full refund."
+        },
+        "paymentIssues": {
+          "title": "Payment Difficulties",
+          "content": "We offer mobile payment options adapted to the local context: Mobile Money (MTN and Orange)."
+        }
+      },
+      "contact": {
+        "title": "Need Help?",
+        "subtitle": "Our support team is always ready to help you.",
+        "callUs": "Call Us",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "openingHours": "Opening Hours",
+        "openingHoursValue": "24/7"
+      }
     },
     "auth": {
       "welcome": "Welcome to PikDrive",
@@ -448,6 +482,7 @@
         "fileSizeError": "File size must be less than 5MB"
       },
       "driverDocuments": {
+        "title": "Driver Documents",
         "description": "Your submitted documents for driver application",
         "submittedDocuments": "Submitted Documents",
         "nationalId": "National Identity Card",
@@ -505,6 +540,247 @@
         "publishRide": "Publish a Ride",
         "viewRides": "View Rides",
         "myBookings": "My Bookings"
+      }
+    },
+    "driverProfile": {
+      "certifiedDriver": "Certified PikDrive Driver",
+      "memberSince": "Member since",
+      "totalTrips": "Total Trips",
+      "totalTripsDescription": "Completed trips",
+      "totalPassengers": "Passengers Transported",
+      "totalPassengersDescription": "Total passengers",
+      "memberSinceLabel": "Member Since",
+      "memberSinceDescription": "Registration date",
+      "recentRides": {
+        "title": "Recent Rides",
+        "viewAllRides": "View all rides from this driver"
+      },
+      "trustBadges": {
+        "verifiedBy": "Driver verified by PikDrive",
+        "allDocumentsVerified": "All documents have been verified",
+        "badges": {
+          "idVerified": "ID verified",
+          "idVerifiedDesc": "Identity verified",
+          "licenseVerified": "License verified",
+          "licenseVerifiedDesc": "Driver's license verified",
+          "insuranceVerified": "Insurance verified",
+          "insuranceVerifiedDesc": "Vehicle insurance verified"
+        }
+      },
+      "vehicleGallery": {
+        "title": "Vehicle",
+        "verified": "Vehicle verified",
+        "notAvailable": "Vehicle photos not available"
+      },
+      "loading": "Loading profile...",
+      "notFound": {
+        "title": "Profile not found",
+        "description": "This driver does not exist or is not available."
+      },
+      "actions": {
+        "back": "Back",
+        "viewRides": "View available rides",
+        "viewDriverRides": "View rides from this driver"
+      }
+    },
+    "becomeDriver": {
+      "requirements": {
+        "title": "Requirements & Benefits",
+        "vehicleDocuments": {
+          "title": "Required Vehicle Documents",
+          "items": {
+            "registration": "Vehicle Registration Card (Front/Back)",
+            "insurance": "Insurance Certificate (Front/Back)"
+          }
+        },
+        "driverDocuments": {
+          "title": "Required Driver Documents",
+          "items": {
+            "nationalId": "National Identity Card (Front/Back)",
+            "license": "Driver's License (Front/Back)"
+          }
+        },
+        "advantages": {
+          "title": "Benefits",
+          "items": {
+            "earnMore": "Earn more with long-distance trips",
+            "weeklyPayments": "Weekly payments",
+            "flexibleHours": "Flexible hours",
+            "support247": "24/7 support"
+          }
+        }
+      },
+      "documents": {
+        "driverDocuments": {
+          "title": "Driver Documents"
+        },
+        "vehicleDocuments": {
+          "title": "Vehicle Documents"
+        },
+        "nationalId": {
+          "title": "National Identity Card (CNI)",
+          "description": "Upload a clear image of your CNI (front/back)"
+        },
+        "license": {
+          "title": "Driver's License",
+          "description": "Upload a clear image of your driver's license (front/back)"
+        },
+        "registration": {
+          "title": "Vehicle Registration Card",
+          "description": "Upload a clear image of the vehicle registration card (front/back)"
+        },
+        "insurance": {
+          "title": "Insurance Certificate",
+          "description": "Upload a clear image of your insurance certificate (front/back)"
+        }
+      },
+      "vehicleImages": {
+        "title": "Vehicle Photos",
+        "uploading": "Uploading...",
+        "uploadingDesc": "You are adding photos of the interior and exterior of your vehicle",
+        "clickToUpload": "Click or drop your photos here",
+        "multipleImages": "You can select multiple images at once. Accepted format: JPG, PNG",
+        "uploaded": "Uploaded photos",
+        "image": "image",
+        "images": "images",
+        "vehiclePhoto": "Vehicle photo"
+      },
+      "form": {
+        "submit": "Submit my application",
+        "submitting": "Submitting...",
+        "errors": {
+          "missingDocuments": "Missing Documents",
+          "missingDocumentsDesc": "Please upload the required documents: {documents}",
+          "vehicleImagesRequired": "Vehicle Images Required",
+          "vehicleImagesRequiredDesc": "Please upload at least one image of your vehicle.",
+          "submitted": "Application Submitted",
+          "submittedDesc": "Your driver application has been submitted successfully. We will contact you for the next steps.",
+          "error": "Error",
+          "errorDesc": "An error occurred while submitting your application. Please try again."
+        }
+      },
+      "confirmation": {
+        "title": "Application Submitted!",
+        "subtitle": "Thank you for applying to become a PikDrive driver.",
+        "status": {
+          "text": "Your application is under review",
+          "description": "Our team typically reviews applications within 24-48 hours",
+          "variant": "pending"
+        },
+        "steps": {
+          "step1": {
+            "title": "Document Review",
+            "description": "Our team will review your documents and verify your information"
+          },
+          "step2": {
+            "title": "Notification by Call or WhatsApp",
+            "description": "You will receive a notification by call or WhatsApp once your application is approved"
+          },
+          "step3": {
+            "title": "Start Driving",
+            "description": "After approval, you can start accepting ride requests via your dashboard"
+          }
+        },
+        "contact": {
+          "supportText": "Have questions?"
+        },
+        "actions": {
+          "primary": {
+            "text": "Back to Home"
+          },
+          "secondary": {
+            "text": "My Bookings"
+          }
+        },
+        "bilingualText": {
+          "subtitle": "Your application has been submitted successfully and is under review. We will notify you by email once it is approved."
+        }
+      }
+    },
+    "driver": {
+      "manageRide": {
+        "title": "Manage Ride",
+        "backToDashboard": "Back to dashboard",
+        "loading": {
+          "text": "Loading...",
+          "description": "Loading ride details..."
+        },
+        "errors": {
+          "title": "Error",
+          "loadError": "An error occurred while loading the ride",
+          "formError": "Error loading form data",
+          "updateError": "Unable to update the ride. Please try again.",
+          "deleteError": "Unable to delete the ride. Please try again.",
+          "notFound": "Ride not found or inaccessible"
+        },
+        "form": {
+          "title": "Ride Details",
+          "description": "Modify your ride information below",
+          "fromCity": "Departure city",
+          "toCity": "Arrival city",
+          "departureDate": "Departure date",
+          "departureTime": "Departure time",
+          "price": "Price per seat (FCFA)",
+          "seats": "Number of seats",
+          "seatsDescription": "Available seats for this ride",
+          "description": "Description (optional)",
+          "descriptionPlaceholder": "Additional information about the ride...",
+          "descriptionHelp": "Add details like planned stops, specific rules, etc.",
+          "save": "Save changes",
+          "saving": "Saving...",
+          "delete": "Delete ride",
+          "deleting": "Deleting..."
+        },
+        "alerts": {
+          "activeBookings": {
+            "title": "Active bookings",
+            "description": "This ride has active bookings. Some modifications may be limited."
+          },
+          "cannotReduceSeats": {
+            "title": "Cannot reduce seats",
+            "description": "You already have {count} booking(s). You cannot reduce the number of available seats below this number."
+          },
+          "cannotDelete": {
+            "title": "Deletion impossible",
+            "description": "You cannot delete a ride with active bookings."
+          },
+          "deleteConfirm": {
+            "title": "Are you sure you want to delete this ride?",
+            "description": "This action is irreversible and will permanently delete this ride.",
+            "cancel": "Cancel",
+            "confirm": "Delete"
+          }
+        },
+        "toast": {
+          "updated": {
+            "title": "Ride updated successfully",
+            "description": "Ride from {from} to {to} updated. Price: {price} FCFA, Seats: {seats}"
+          },
+          "deleted": {
+            "title": "Ride deleted",
+            "description": "The ride has been deleted successfully"
+          },
+          "updateSuccess": {
+            "text": "Ride updated successfully! Changes have been saved.",
+            "close": "Close"
+          }
+        },
+        "bookings": {
+          "title": "Bookings",
+          "description": "Here are the current bookings for this ride",
+          "bookingId": "Booking #{id}",
+          "status": "Status: {status}",
+          "viewDetails": "View details",
+          "noBookings": "No bookings found"
+        },
+        "validation": {
+          "fromCityMin": "Departure city must contain at least 2 characters",
+          "toCityMin": "Arrival city must contain at least 2 characters",
+          "departureDateRequired": "Departure date is required",
+          "departureTimeRequired": "Departure time is required",
+          "pricePositive": "Price must be a positive number",
+          "seatsRange": "Number of seats must be between 1 and 8"
+        }
       }
     },
     "errors": {
@@ -975,6 +1251,17 @@
         "placeholder": "Enter the code (e.g., AB12C3)",
         "verifyCode": "Verify Code"
       }
+    }
+  },
+  "components": {
+    "successCard": {
+      "whatHappensNext": "What happens next?",
+      "haveQuestions": "Have questions?",
+      "contactSupport": "Contact our support team at",
+      "orCall": "or call",
+      "vehicleAlt": "Driver's vehicle",
+      "yourVehicle": "Your vehicle",
+      "readyForRides": "Ready for rides"
     }
   },
   "offline": {

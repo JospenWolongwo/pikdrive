@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, CheckCircle } from "lucide-react";
+import { useLocale } from "@/hooks";
 
 interface TrustBadgesProps {
   verificationStatus: string;
@@ -11,6 +12,7 @@ export function TrustBadges({
   verificationStatus,
   driverStatus,
 }: TrustBadgesProps) {
+  const { t } = useLocale();
   const isVerified = verificationStatus === "approved" && driverStatus === "approved";
 
   if (!isVerified) {
@@ -19,16 +21,16 @@ export function TrustBadges({
 
   const badges = [
     {
-      label: "ID vérifié",
-      description: "Identité vérifiée",
+      label: t("pages.driverProfile.trustBadges.badges.idVerified"),
+      description: t("pages.driverProfile.trustBadges.badges.idVerifiedDesc"),
     },
     {
-      label: "Permis vérifié",
-      description: "Permis de conduire vérifié",
+      label: t("pages.driverProfile.trustBadges.badges.licenseVerified"),
+      description: t("pages.driverProfile.trustBadges.badges.licenseVerifiedDesc"),
     },
     {
-      label: "Assurance vérifiée",
-      description: "Assurance véhicule vérifiée",
+      label: t("pages.driverProfile.trustBadges.badges.insuranceVerified"),
+      description: t("pages.driverProfile.trustBadges.badges.insuranceVerifiedDesc"),
     },
   ];
 
@@ -42,10 +44,10 @@ export function TrustBadges({
             </div>
             <div>
               <h3 className="font-semibold text-foreground">
-                Conducteur vérifié par PikDrive
+                {t("pages.driverProfile.trustBadges.verifiedBy")}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Tous les documents ont été vérifiés
+                {t("pages.driverProfile.trustBadges.allDocumentsVerified")}
               </p>
             </div>
           </div>

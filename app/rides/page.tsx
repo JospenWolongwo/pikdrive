@@ -160,7 +160,9 @@ export default function RidesPage() {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    setCurrentPage(Math.max(1, pagination.page - 1));
+                    const newPage = Math.max(1, pagination.page - 1);
+                    setCurrentPage(newPage);
+                    loadRides(tempFilters, newPage);
                   }}
                 />
               </PaginationItem>
@@ -187,6 +189,7 @@ export default function RidesPage() {
                     onClick={(e) => {
                       e.preventDefault();
                       setCurrentPage(pageNumber);
+                      loadRides(tempFilters, pageNumber);
                     }}
                       isActive={pagination.page === pageNumber}
                   >
@@ -203,9 +206,9 @@ export default function RidesPage() {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    setCurrentPage(
-                      Math.min(pagination.totalPages, pagination.page + 1)
-                    );
+                    const newPage = Math.min(pagination.totalPages, pagination.page + 1);
+                    setCurrentPage(newPage);
+                    loadRides(tempFilters, newPage);
                   }}
                 />
               </PaginationItem>

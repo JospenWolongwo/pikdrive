@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Car, Shield } from "lucide-react";
+import { useLocale } from "@/hooks";
 
 interface VehicleGalleryProps {
   vehicle_images: string[];
@@ -11,13 +12,15 @@ export function VehicleGallery({
   vehicle_images,
   isVerified,
 }: VehicleGalleryProps) {
+  const { t } = useLocale();
+  
   if (!vehicle_images || vehicle_images.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Car className="h-5 w-5" />
-            Véhicule
+            {t("pages.driverProfile.vehicleGallery.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -25,7 +28,7 @@ export function VehicleGallery({
             <div>
               <Car className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <p className="text-muted-foreground">
-                Photos du véhicule non disponibles
+                {t("pages.driverProfile.vehicleGallery.notAvailable")}
               </p>
             </div>
           </div>
@@ -39,12 +42,12 @@ export function VehicleGallery({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <Car className="h-5 w-5" />
-          Véhicule
+          {t("pages.driverProfile.vehicleGallery.title")}
         </CardTitle>
         {isVerified && (
           <Badge variant="outline" className="gap-2">
             <Shield className="h-3 w-3" />
-            Véhicule vérifié
+            {t("pages.driverProfile.vehicleGallery.verified")}
           </Badge>
         )}
       </CardHeader>
@@ -57,7 +60,7 @@ export function VehicleGallery({
             >
               <img
                 src={imageUrl}
-                alt={`Photo du véhicule ${index + 1}`}
+                alt={`${t("pages.becomeDriver.vehicleImages.vehiclePhoto")} ${index + 1}`}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;

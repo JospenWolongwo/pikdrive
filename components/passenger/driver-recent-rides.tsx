@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
+import { useLocale } from "@/hooks";
 import Link from "next/link";
 import type { RidePreview } from "@/types/driver";
 
@@ -11,14 +13,19 @@ interface DriverRecentRidesProps {
 }
 
 export function DriverRecentRides({ rides, driverId }: DriverRecentRidesProps) {
+  const { t, locale } = useLocale();
+  
   if (!rides || rides.length === 0) {
     return null;
   }
 
+  const dateLocale = locale === "fr" ? fr : enUS;
+  const dateFormat = locale === "fr" ? "dd MMM yyyy 'à' HH:mm" : "dd MMM yyyy 'at' HH:mm";
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Trajets récents</CardTitle>
+        <CardTitle>{t("pages.driverProfile.recentRides.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -46,7 +53,8 @@ export function DriverRecentRides({ rides, driverId }: DriverRecentRidesProps) {
                       <span>
                         {format(
                           new Date(ride.departure_time),
-                          "dd MMM yyyy à HH:mm"
+                          dateFormat,
+                          { locale: dateLocale }
                         )}
                       </span>
                     </div>
@@ -63,7 +71,7 @@ export function DriverRecentRides({ rides, driverId }: DriverRecentRidesProps) {
         <div className="mt-6 pt-6 border-t">
           <Link href={`/rides?driver_id=${driverId}`}>
             <Button variant="outline" className="w-full">
-              Voir tous les trajets de ce conducteur
+              {t("pages.driverProfile.recentRides.viewAllRides")}
             </Button>
           </Link>
         </div>
