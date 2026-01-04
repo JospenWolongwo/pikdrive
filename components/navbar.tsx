@@ -246,7 +246,6 @@ export function Navbar() {
     { href: "/about", label: t("navigation.about") },
     { href: "/advice", label: t("navigation.safety") },
     { href: "/contact", label: t("navigation.contact") },
-    { href: "/debug/logs", label: "Debug Logs" },
   ];
 
   const NavItems = ({ className }: { className?: string }) => (

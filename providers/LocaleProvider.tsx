@@ -1,18 +1,9 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { NextIntlClientProvider } from 'next-intl'
 import type { Locale } from '@/i18n/config'
 import { defaultLocale, getLocaleFromStorage, getLocaleFromCookie } from '@/i18n/config'
-
-// CRITICAL FIX: Pre-load messages at build time to avoid dynamic import failures in PWA
-import enMessages from '@/messages/en.json'
-import frMessages from '@/messages/fr.json'
-
-const messagesMap: Record<Locale, Record<string, any>> = {
-  en: enMessages,
-  fr: frMessages,
-}
 
 type LocaleProviderProps = {
   children: React.ReactNode
@@ -32,6 +23,24 @@ const initialState: LocaleProviderState = {
 
 const LocaleProviderContext = createContext<LocaleProviderState>(initialState)
 
+async function getMessages(locale: Locale) {
+  try {
+    return (await import(`@/messages/${locale}.json`)).default
+  } catch (error) {
+    console.error(`Failed to load messages for locale: ${locale}`, error)
+    // Fallback to default locale messages
+    if (locale !== defaultLocale) {
+      try {
+        return (await import(`@/messages/${defaultLocale}.json`)).default
+      } catch (fallbackError) {
+        console.error(`Failed to load fallback messages for locale: ${defaultLocale}`, fallbackError)
+        return {}
+      }
+    }
+    return {}
+  }
+}
+
 export function LocaleProvider({
   children,
   defaultLocaleProp = defaultLocale,
@@ -40,19 +49,23 @@ export function LocaleProvider({
 }: LocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocaleProp)
   const [mounted, setMounted] = useState(false)
-
-  // CRITICAL FIX: Use pre-loaded messages instead of dynamic imports
-  // This prevents PWA caching issues and ensures messages are always available
-  const messages = useMemo(() => {
-    return messagesMap[locale] || messagesMap[defaultLocale]
-  }, [locale])
+  const [messages, setMessages] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState(true)
 
   // Only access localStorage after component is mounted on client
   useEffect(() => {
     setMounted(true)
     
-    // CRITICAL FIX: Use cookie first (matches server), then localStorage
-    // This prevents hydration mismatches between server and client
+    // Try to get locale from localStorage first (user preference)
+    const savedLocaleValue = typeof window !== 'undefined' 
+      ? localStorage?.getItem(storageKey)
+      : null
+    
+    const savedLocale = savedLocaleValue 
+      ? getLocaleFromStorage(savedLocaleValue)
+      : defaultLocale
+    
+    // Then try cookie (for SSR compatibility on first visit)
     let cookieLocale = defaultLocale
     if (typeof document !== 'undefined') {
       const cookieValue = document.cookie
@@ -65,20 +78,27 @@ export function LocaleProvider({
       }
     }
     
-    // Try to get locale from localStorage (user preference)
-    const savedLocaleValue = typeof window !== 'undefined' 
-      ? localStorage?.getItem(storageKey)
-      : null
-    
-    const savedLocale = savedLocaleValue 
-      ? getLocaleFromStorage(savedLocaleValue)
-      : cookieLocale
-    
-    // Use cookie locale first to match server, then localStorage
-    const initialLocale = cookieLocale || savedLocale
+    // Use saved locale if localStorage has a value, otherwise use cookie, otherwise default
+    const initialLocale = savedLocaleValue ? savedLocale : cookieLocale
     
     setLocaleState(initialLocale)
   }, [storageKey])
+
+  // Load messages when locale changes
+  useEffect(() => {
+    if (!mounted) return
+    
+    setLoading(true)
+    getMessages(locale)
+      .then((loadedMessages) => {
+        setMessages(loadedMessages)
+        setLoading(false)
+      })
+      .catch((error) => {
+        console.error('Error loading messages:', error)
+        setLoading(false)
+      })
+  }, [locale, mounted])
 
   // Update document language attribute and cookie when locale changes
   useEffect(() => {
@@ -107,8 +127,7 @@ export function LocaleProvider({
     setLocale,
   }
 
-  // CRITICAL FIX: Always provide messages (no loading state needed)
-  // Messages are pre-loaded, so no async loading required
+  // Always provide NextIntlClientProvider, even during loading (with empty messages as fallback)
   return (
     <LocaleProviderContext.Provider value={value} {...props}>
       <NextIntlClientProvider locale={locale} messages={messages}>
