@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Bell, Shield, Globe, Phone, Mail, Sun, Moon, Monitor } from 'lucide-react'
+import { Bell, Shield, Globe, Phone, Mail, Sun, Moon, Monitor, Bug } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { useLocale } from "@/hooks";
@@ -291,7 +292,13 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-between items-center">
+          <Link href="/debug/logs">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Bug className="w-4 h-4" />
+              Debug Logs
+            </Button>
+          </Link>
           <Button onClick={handleSaveSettings}>
             {t("pages.settings.saveChanges")}
           </Button>

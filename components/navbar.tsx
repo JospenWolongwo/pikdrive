@@ -246,6 +246,7 @@ export function Navbar() {
     { href: "/about", label: t("navigation.about") },
     { href: "/advice", label: t("navigation.safety") },
     { href: "/contact", label: t("navigation.contact") },
+    { href: "/debug/logs", label: "Debug Logs" },
   ];
 
   const NavItems = ({ className }: { className?: string }) => (
@@ -362,19 +363,6 @@ export function Navbar() {
                   {item.label}
                 </Link>
               ))}
-              {user && (
-                <>
-                  <div className="border-t my-2" />
-                  <Link
-                    href="/debug/logs"
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Bug className="h-4 w-4" />
-                    <span>Debug Logs</span>
-                  </Link>
-                </>
-              )}
             </nav>
           </SheetContent>
         </Sheet>
