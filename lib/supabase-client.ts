@@ -4,14 +4,20 @@
  */
 import { createBrowserClient } from "@supabase/ssr";
 import { getVersionedStorageKey } from "@/lib/storage-version";
+import { debugLog } from "@/lib/debug-logger";
 
 // Cookie helper functions
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
+  const result = parts.length === 2 ? parts.pop()?.split(";").shift() || null : null;
+  // #region agent log
+  if (name.includes('sb-') || name.includes('supabase') || name.includes('auth')) {
+    debugLog({location:'supabase-client.ts:14',message:'Cookie read',data:{name,found:!!result,allCookies:document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'});
+  }
+  // #endregion
+  return result;
 };
 
 const setCookie = (name: string, value: string, options?: any): void => {
@@ -37,6 +43,11 @@ const setCookie = (name: string, value: string, options?: any): void => {
   const path = options?.path || '/';
   
   document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=${path}; SameSite=${sameSite}${isSecure ? "; Secure" : ""}`;
+  // #region agent log
+  if (name.includes('sb-') || name.includes('supabase') || name.includes('auth')) {
+    debugLog({location:'supabase-client.ts:40',message:'Cookie set',data:{name,hasValue:!!value,expires:expires.toISOString(),isSecure,path},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'});
+  }
+  // #endregion
 };
 
 const deleteCookie = (name: string): void => {
