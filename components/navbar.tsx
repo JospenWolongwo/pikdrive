@@ -362,6 +362,19 @@ export function Navbar() {
                   {item.label}
                 </Link>
               ))}
+              {user && (
+                <>
+                  <div className="border-t my-2" />
+                  <Link
+                    href="/debug/logs"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Bug className="h-4 w-4" />
+                    <span>Debug Logs</span>
+                  </Link>
+                </>
+              )}
             </nav>
           </SheetContent>
         </Sheet>
