@@ -33,6 +33,7 @@ import {
   PlusCircle,
   CalendarCheck,
   Loader2,
+  Bug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
@@ -507,6 +508,12 @@ export function Navbar() {
                   <Link href="/settings" className="flex items-center">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>{t("navigation.settings")}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/debug/logs" className="flex items-center">
+                    <Bug className="mr-2 h-4 w-4" />
+                    <span>Debug Logs</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

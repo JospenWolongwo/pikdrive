@@ -27,13 +27,55 @@ export const SupabaseProvider = ({
   const backgroundRefreshRef = useRef<NodeJS.Timeout | null>(null);
 
   const startBackgroundRefresh = useCallback(() => {
-    // Clear any existing interval
+    // Clear any existing interval or timeout
     if (backgroundRefreshRef.current) {
-      clearInterval(backgroundRefreshRef.current);
+      try {
+        clearTimeout(backgroundRefreshRef.current);
+      } catch {}
+      try {
+        clearInterval(backgroundRefreshRef.current);
+      } catch {}
+      backgroundRefreshRef.current = null;
     }
 
-    // Refresh session every 5 minutes to keep tokens warm
-    backgroundRefreshRef.current = setInterval(async () => {
+    // CRITICAL FIX: Refresh before token expires, not just every 5 minutes
+    // Check token expiration and refresh 5 minutes before expiry
+    const scheduleRefresh = async () => {
+      if (!user || !session) return;
+      
+      const expiresAt = session.expires_at ? new Date(session.expires_at * 1000) : null;
+      if (!expiresAt) {
+        // No expiration info - use default 5 minute interval
+        backgroundRefreshRef.current = setInterval(async () => {
+          await performRefresh();
+        }, 5 * 60 * 1000);
+        return;
+      }
+      
+      const now = Date.now();
+      const expiryTime = expiresAt.getTime();
+      const timeUntilExpiry = expiryTime - now;
+      const refreshBeforeExpiry = 5 * 60 * 1000; // 5 minutes before expiry
+      
+      // #region agent log
+      debugLog({location:'SupabaseProvider.tsx:36',message:'Scheduling token refresh',data:{userId:user?.id,expiresAt:expiresAt.toISOString(),timeUntilExpiryMs:timeUntilExpiry,timeUntilExpiryMinutes:Math.round(timeUntilExpiry/60000),refreshInMs:Math.max(timeUntilExpiry - refreshBeforeExpiry, 60000)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'});
+      // #endregion
+      
+      // Schedule refresh 5 minutes before expiry, or immediately if less than 5 min remaining
+      const refreshDelay = Math.max(timeUntilExpiry - refreshBeforeExpiry, 60000); // At least 1 minute
+      
+      // #region agent log
+      debugLog({location:'SupabaseProvider.tsx:61',message:'Setting refresh timeout',data:{refreshDelayMs:refreshDelay,refreshDelayMinutes:Math.round(refreshDelay/60000)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'});
+      // #endregion
+      
+      backgroundRefreshRef.current = setTimeout(async () => {
+        await performRefresh();
+        // After refresh, reschedule the next one (session state will be updated by performRefresh)
+        scheduleRefresh();
+      }, refreshDelay) as unknown as NodeJS.Timeout;
+    };
+    
+    const performRefresh = async () => {
       // Only refresh if we have a user - don't refresh if already logged out
       if (!user) {
         // #region agent log
@@ -45,9 +87,11 @@ export const SupabaseProvider = ({
       try {
         console.log('🔄 Background session refresh...');
         // #region agent log
-        debugLog({location:'SupabaseProvider.tsx:42',message:'Background refresh starting',data:{userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
+        const currentExpiresAt = session?.expires_at ? new Date(session.expires_at * 1000) : null;
+        const currentTimeUntilExpiry = currentExpiresAt ? currentExpiresAt.getTime() - Date.now() : null;
+        debugLog({location:'SupabaseProvider.tsx:42',message:'Background refresh starting',data:{userId:user?.id,currentExpiresAt:currentExpiresAt?.toISOString(),currentTimeUntilExpiryMs:currentTimeUntilExpiry,currentTimeUntilExpiryMinutes:currentTimeUntilExpiry ? Math.round(currentTimeUntilExpiry/60000) : null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
         // #endregion
-        const { data: { session }, error } = await supabase.auth.refreshSession();
+        const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
         if (error) {
           // Log error but don't clear state - let onAuthStateChange handle it
           console.warn('⚠️ Background refresh failed:', error.message);
@@ -55,12 +99,16 @@ export const SupabaseProvider = ({
           debugLog({location:'SupabaseProvider.tsx:48',message:'Background refresh failed',data:{error:error.message,errorCode:error.status,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
           // #endregion
           // Silent failure - error will NOT clear user state (onAuthStateChange handler preserves state)
-        } else if (session) {
+        } else if (refreshedSession) {
           // Session refreshed successfully - cookies are automatically updated by Supabase
           console.log('✅ Background refresh successful');
           // #region agent log
-          debugLog({location:'SupabaseProvider.tsx:54',message:'Background refresh success',data:{userId:session.user?.id,expiresAt:session.expires_at},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
+          const expiresAt = refreshedSession.expires_at ? new Date(refreshedSession.expires_at * 1000) : null;
+          const timeUntilExpiry = expiresAt ? expiresAt.getTime() - Date.now() : null;
+          debugLog({location:'SupabaseProvider.tsx:54',message:'Background refresh success',data:{userId:refreshedSession.user?.id,expiresAt:expiresAt?.toISOString(),expiresAtTimestamp:refreshedSession.expires_at,timeUntilExpiryMs:timeUntilExpiry,timeUntilExpiryMinutes:timeUntilExpiry ? Math.round(timeUntilExpiry/60000) : null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
           // #endregion
+          // Update session state so next refresh is scheduled correctly
+          setSession(refreshedSession);
         }
       } catch (error) {
         // Silent failure - error will NOT clear user state (onAuthStateChange handler preserves state)
@@ -69,8 +117,11 @@ export const SupabaseProvider = ({
         debugLog({location:'SupabaseProvider.tsx:59',message:'Background refresh exception',data:{error:error instanceof Error?error.message:String(error),userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
         // #endregion
       }
-    }, 5 * 60 * 1000); // 5 minutes
-  }, [supabase, user, session]); // Add user to dependencies
+    };
+    
+    // Start the refresh scheduling
+    scheduleRefresh();
+  }, [supabase, user, session]); // Add user and session to dependencies
 
   // Validate and clear cookies ONLY when switching environments
   // Don't run on every page load - only when environment actually changes
@@ -194,6 +245,11 @@ export const SupabaseProvider = ({
       if (initialSession?.user) {
         setSession(initialSession);
         setUser(initialSession.user);
+        // #region agent log
+        const expiresAt = initialSession.expires_at ? new Date(initialSession.expires_at * 1000) : null;
+        const timeUntilExpiry = expiresAt ? expiresAt.getTime() - Date.now() : null;
+        debugLog({location:'SupabaseProvider.tsx:195',message:'Session initialized',data:{userId:initialSession.user.id,expiresAt:expiresAt?.toISOString(),timeUntilExpiryMs:timeUntilExpiry,timeUntilExpiryMinutes:timeUntilExpiry ? Math.round(timeUntilExpiry/60000) : null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'});
+        // #endregion
         // Start background refresh for signed-in users
         startBackgroundRefresh();
       } else {
@@ -355,6 +411,7 @@ export const SupabaseProvider = ({
         
         // Clear background refresh
         if (backgroundRefreshRef.current) {
+          clearTimeout(backgroundRefreshRef.current);
           clearInterval(backgroundRefreshRef.current);
           backgroundRefreshRef.current = null;
         }
@@ -365,10 +422,17 @@ export const SupabaseProvider = ({
         // Start background refresh for signed-in users
         startBackgroundRefresh();
       } else if (event === 'TOKEN_REFRESHED') {
+        // #region agent log
+        const expiresAt = session?.expires_at ? new Date(session.expires_at * 1000) : null;
+        const timeUntilExpiry = expiresAt ? expiresAt.getTime() - Date.now() : null;
+        debugLog({location:'SupabaseProvider.tsx:367',message:'TOKEN_REFRESHED event',data:{hasSession:!!session,userId:session?.user?.id,expiresAt:expiresAt?.toISOString(),expiresAtTimestamp:session?.expires_at,timeUntilExpiryMs:timeUntilExpiry,timeUntilExpiryMinutes:timeUntilExpiry ? Math.round(timeUntilExpiry/60000) : null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'});
+        // #endregion
         if (session?.user) {
           // Token refreshed successfully - update state
           setSession(session);
           setUser(session.user);
+          // Reschedule background refresh with new expiration time
+          startBackgroundRefresh();
         }
         // If session is null, preserve existing state (prevents false logouts)
       } else if (session?.user) {
@@ -389,6 +453,7 @@ export const SupabaseProvider = ({
       subscription.unsubscribe();
       // Clear background refresh on unmount
       if (backgroundRefreshRef.current) {
+        clearTimeout(backgroundRefreshRef.current);
         clearInterval(backgroundRefreshRef.current);
         backgroundRefreshRef.current = null;
       }
