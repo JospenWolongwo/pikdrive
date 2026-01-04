@@ -45,7 +45,7 @@ export const SupabaseProvider = ({
       try {
         console.log('🔄 Background session refresh...');
         // #region agent log
-        debugLog({location:'SupabaseProvider.tsx:42',message:'Background refresh starting',data:{userId:user?.id,hasSession:!!session},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
+        debugLog({location:'SupabaseProvider.tsx:42',message:'Background refresh starting',data:{userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'});
         // #endregion
         const { data: { session }, error } = await supabase.auth.refreshSession();
         if (error) {
@@ -176,14 +176,14 @@ export const SupabaseProvider = ({
     try {
       initializedRef.current = true;
       // #region agent log
-      debugLog({location:'SupabaseProvider.tsx:160',message:'Initializing auth',data:{cookies:typeof document!=='undefined'?document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
+      debugLog({location:'SupabaseProvider.tsx:160',message:'Initializing auth',data:{cookies:typeof document!=='undefined'?document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'});
       // #endregion
       const {
         data: { session: initialSession },
         error,
       } = await supabase.auth.getSession();
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:167',message:'Initial getSession result',data:{hasSession:!!initialSession,sessionUserId:initialSession?.user?.id,error:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
+      debugLog({location:'SupabaseProvider.tsx:167',message:'Initial getSession result',data:{hasSession:!!initialSession,sessionUserId:initialSession?.user?.id,error:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'});
       // #endregion
 
       if (error) {
@@ -201,13 +201,13 @@ export const SupabaseProvider = ({
         // This restores sessions when app resumes after being in background
         console.log('🔄 No session found on init - attempting refresh...');
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:182',message:'No session on init - attempting refresh',data:{cookies:typeof document!=='undefined'?document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
+        debugLog({location:'SupabaseProvider.tsx:182',message:'No session on init - attempting refresh',data:{cookies:typeof document!=='undefined'?document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'});
         // #endregion
         try {
           const { data: { session: refreshedSession }, error: refreshError } = 
             await supabase.auth.refreshSession();
           // #region agent log
-          fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:186',message:'Init refreshSession result',data:{hasSession:!!refreshedSession,sessionUserId:refreshedSession?.user?.id,error:refreshError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
+          debugLog({location:'SupabaseProvider.tsx:186',message:'Init refreshSession result',data:{hasSession:!!refreshedSession,sessionUserId:refreshedSession?.user?.id,error:refreshError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'});
           // #endregion
           
           if (!refreshError && refreshedSession?.user) {
@@ -228,14 +228,14 @@ export const SupabaseProvider = ({
         } catch (refreshErr) {
           // Silent fail - network or other transient error
           // #region agent log
-          fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:202',message:'Init refreshSession exception',data:{error:refreshErr instanceof Error?refreshErr.message:String(refreshErr)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
+          debugLog({location:'SupabaseProvider.tsx:202',message:'Init refreshSession exception',data:{error:refreshErr instanceof Error?refreshErr.message:String(refreshErr)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'});
           // #endregion
         }
       }
     } catch (error) {
       // Silently fail - session loading error
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:206',message:'Init auth exception',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
+      debugLog({location:'SupabaseProvider.tsx:206',message:'Init auth exception',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'});
       // #endregion
     } finally {
       setLoading(false);
@@ -250,7 +250,7 @@ export const SupabaseProvider = ({
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔐 Auth state change: ${event}`, session ? `session exists (user: ${session.user?.id})` : 'no session');
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:217',message:'Auth state change event',data:{event,hasSession:!!session,sessionUserId:session?.user?.id,currentUser:!!user,currentUserId:user?.id,currentSession:!!session},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      debugLog({location:'SupabaseProvider.tsx:217',message:'Auth state change event',data:{event,hasSession:!!session,sessionUserId:session?.user?.id,currentUser:!!user,currentUserId:user?.id,currentSession:!!session},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'});
       // #endregion
 
       if (event === 'SIGNED_OUT') {
@@ -258,7 +258,7 @@ export const SupabaseProvider = ({
         // Supabase can emit SIGNED_OUT on network errors or token refresh failures
         // We should attempt to restore the session before clearing state
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:222',message:'SIGNED_OUT event received',data:{hasUser:!!user,userId:user?.id,hasSession:!!session,cookies:document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+        debugLog({location:'SupabaseProvider.tsx:222',message:'SIGNED_OUT event received',data:{hasUser:!!user,userId:user?.id,hasSession:!!session,cookies:document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'});
         // #endregion
         
         // Check if we have a user state that suggests this might be a false logout
@@ -271,19 +271,19 @@ export const SupabaseProvider = ({
           // Try to get the current session
           try {
             // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:234',message:'Attempting getSession for verification',data:{userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            debugLog({location:'SupabaseProvider.tsx:234',message:'Attempting getSession for verification',data:{userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
             // #endregion
             const { data: { session: currentSession }, error: sessionError } = 
               await supabase.auth.getSession();
             // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:237',message:'getSession result',data:{hasSession:!!currentSession,sessionUserId:currentSession?.user?.id,error:sessionError?.message,errorCode:sessionError?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            debugLog({location:'SupabaseProvider.tsx:237',message:'getSession result',data:{hasSession:!!currentSession,sessionUserId:currentSession?.user?.id,error:sessionError?.message,errorCode:sessionError?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
             // #endregion
             
             if (!sessionError && currentSession?.user) {
               // Session still exists - this was a false logout event
               console.log('✅ Session restored - false logout prevented');
               // #region agent log
-              fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:240',message:'False logout prevented - session restored',data:{userId:currentSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+              debugLog({location:'SupabaseProvider.tsx:240',message:'False logout prevented - session restored',data:{userId:currentSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
               // #endregion
               setSession(currentSession);
               setUser(currentSession.user);
@@ -295,19 +295,19 @@ export const SupabaseProvider = ({
             if (sessionError || !currentSession) {
               console.log('🔄 getSession failed, trying refresh...');
               // #region agent log
-              fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:248',message:'Attempting refreshSession for verification',data:{userId:user?.id,getSessionError:sessionError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+              debugLog({location:'SupabaseProvider.tsx:248',message:'Attempting refreshSession for verification',data:{userId:user?.id,getSessionError:sessionError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
               // #endregion
               const { data: { session: refreshedSession }, error: refreshError } = 
                 await supabase.auth.refreshSession();
               // #region agent log
-              fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:252',message:'refreshSession result',data:{hasSession:!!refreshedSession,sessionUserId:refreshedSession?.user?.id,error:refreshError?.message,errorCode:refreshError?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+              debugLog({location:'SupabaseProvider.tsx:252',message:'refreshSession result',data:{hasSession:!!refreshedSession,sessionUserId:refreshedSession?.user?.id,error:refreshError?.message,errorCode:refreshError?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
               // #endregion
               
               if (!refreshError && refreshedSession?.user) {
                 // Session refreshed successfully - false logout prevented
                 console.log('✅ Session refreshed - false logout prevented');
                 // #region agent log
-                fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:256',message:'False logout prevented - session refreshed',data:{userId:refreshedSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+                debugLog({location:'SupabaseProvider.tsx:256',message:'False logout prevented - session refreshed',data:{userId:refreshedSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
                 // #endregion
                 setSession(refreshedSession);
                 setUser(refreshedSession.user);
@@ -323,14 +323,14 @@ export const SupabaseProvider = ({
               )) {
                 console.log('❌ Refresh token invalid - confirming logout');
                 // #region agent log
-                fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:266',message:'Real logout confirmed - auth error',data:{error:refreshError.message,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+                debugLog({location:'SupabaseProvider.tsx:266',message:'Real logout confirmed - auth error',data:{error:refreshError.message,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
                 // #endregion
                 // This is a real logout - clear state
               } else {
                 // Network or other transient error - preserve state
                 console.log('⚠️ Transient error during logout verification - preserving state');
                 // #region agent log
-                fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:270',message:'Transient error - preserving state',data:{error:refreshError?.message,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+                debugLog({location:'SupabaseProvider.tsx:270',message:'Transient error - preserving state',data:{error:refreshError?.message,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
                 // #endregion
                 return; // Don't clear state
               }
@@ -339,7 +339,7 @@ export const SupabaseProvider = ({
             // Error during verification - preserve state to be safe
             console.warn('⚠️ Error verifying logout - preserving state:', error);
             // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:276',message:'Exception during verification - preserving state',data:{error:error instanceof Error?error.message:String(error),userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            debugLog({location:'SupabaseProvider.tsx:276',message:'Exception during verification - preserving state',data:{error:error instanceof Error?error.message:String(error),userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'});
             // #endregion
             return; // Don't clear state
           }
@@ -348,7 +348,7 @@ export const SupabaseProvider = ({
         // Only clear state if we've confirmed this is a real logout
         console.log('🔐 Confirmed logout - clearing state');
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:283',message:'Clearing user state - confirmed logout',data:{hadUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+        debugLog({location:'SupabaseProvider.tsx:283',message:'Clearing user state - confirmed logout',data:{hadUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'});
         // #endregion
         setSession(null);
         setUser(null);
@@ -406,7 +406,7 @@ export const SupabaseProvider = ({
       if (document.hidden) return;
 
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:336',message:'Visibility change - app visible',data:{hasUser:!!user,hasSession:!!session,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      debugLog({location:'SupabaseProvider.tsx:336',message:'Visibility change - app visible',data:{hasUser:!!user,hasSession:!!session,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
       // #endregion
 
       // CRITICAL FIX: Add delay for PWA resume - service worker needs time to sync
@@ -416,19 +416,19 @@ export const SupabaseProvider = ({
       if (user && !session) {
         console.log('🔄 PWA resumed - attempting to restore session...');
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:345',message:'PWA resume - restoring session',data:{userId:user?.id,cookies:document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        debugLog({location:'SupabaseProvider.tsx:345',message:'PWA resume - restoring session',data:{userId:user?.id,cookies:document.cookie.split(';').filter(c=>c.includes('sb-')||c.includes('supabase')).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
         // #endregion
         try {
           // CRITICAL FIX: Try getSession first (faster, uses cookies)
           const { data: { session: restoredSession }, error } = await supabase.auth.getSession();
           // #region agent log
-          fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:348',message:'PWA resume getSession result',data:{hasSession:!!restoredSession,sessionUserId:restoredSession?.user?.id,error:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+          debugLog({location:'SupabaseProvider.tsx:348',message:'PWA resume getSession result',data:{hasSession:!!restoredSession,sessionUserId:restoredSession?.user?.id,error:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
           // #endregion
           
           if (!error && restoredSession?.user) {
             console.log('✅ Session restored on PWA resume');
             // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:352',message:'PWA resume - session restored',data:{userId:restoredSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+            debugLog({location:'SupabaseProvider.tsx:352',message:'PWA resume - session restored',data:{userId:restoredSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
             // #endregion
             setSession(restoredSession);
             setUser(restoredSession.user);
@@ -440,18 +440,18 @@ export const SupabaseProvider = ({
           if (error || !restoredSession) {
             console.log('🔄 getSession failed, trying refresh...');
             // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:360',message:'PWA resume - attempting refresh',data:{userId:user?.id,getSessionError:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+            debugLog({location:'SupabaseProvider.tsx:360',message:'PWA resume - attempting refresh',data:{userId:user?.id,getSessionError:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
             // #endregion
             const { data: { session: refreshedSession }, error: refreshError } = 
               await supabase.auth.refreshSession();
             // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:364',message:'PWA resume refreshSession result',data:{hasSession:!!refreshedSession,sessionUserId:refreshedSession?.user?.id,error:refreshError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+            debugLog({location:'SupabaseProvider.tsx:364',message:'PWA resume refreshSession result',data:{hasSession:!!refreshedSession,sessionUserId:refreshedSession?.user?.id,error:refreshError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
             // #endregion
             
             if (!refreshError && refreshedSession?.user) {
               console.log('✅ Session refreshed on PWA resume');
               // #region agent log
-              fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:368',message:'PWA resume - session refreshed',data:{userId:refreshedSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+              debugLog({location:'SupabaseProvider.tsx:368',message:'PWA resume - session refreshed',data:{userId:refreshedSession.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
               // #endregion
               setSession(refreshedSession);
               setUser(refreshedSession.user);
@@ -462,7 +462,7 @@ export const SupabaseProvider = ({
                   refreshError.message?.includes('invalid_grant')) {
                 console.log('❌ Refresh token invalid on resume - clearing session');
                 // #region agent log
-                fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:375',message:'PWA resume - clearing session (auth error)',data:{error:refreshError.message,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+                debugLog({location:'SupabaseProvider.tsx:375',message:'PWA resume - clearing session (auth error)',data:{error:refreshError.message,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
                 // #endregion
                 setSession(null);
                 setUser(null);
@@ -474,7 +474,7 @@ export const SupabaseProvider = ({
           // Silent fail - don't clear state on unexpected errors
           console.warn('⚠️ Error during PWA session restoration:', error);
           // #region agent log
-          fetch('http://127.0.0.1:7243/ingest/2481bc32-4712-4b5d-b758-9fd81e48ab0e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SupabaseProvider.tsx:382',message:'PWA resume - exception',data:{error:error instanceof Error?error.message:String(error),userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
+          debugLog({location:'SupabaseProvider.tsx:382',message:'PWA resume - exception',data:{error:error instanceof Error?error.message:String(error),userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'});
           // #endregion
         }
       }
