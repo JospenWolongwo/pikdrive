@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { onesigna
     const { searchParams } = new URL(request.url);
     const path = params.onesignal.join('/');
     
-    // CRITICAL: Exclude common root files from OneSignal catch-all
+    // CRITICAL: Exclude common root files and app routes from OneSignal catch-all
     const excludedPaths = [
       'robots.txt',
       'sitemap.xml', 
@@ -22,8 +22,17 @@ export async function GET(request: NextRequest, { params }: { params: { onesigna
       'site.webmanifest'
     ];
     
+    // Exclude app routes (pages) from catch-all
+    const excludedRoutePrefixes = ['debug', 'admin', 'auth', 'profile', 'settings', 'bookings', 'rides', 'drivers', 'messages', 'payments', 'about', 'contact', 'advice', 'become-driver', 'driver', 'receipts', 'privacy', 'terms', 'offline', 'cookies'];
+    
     if (excludedPaths.includes(path)) {
       console.log(`ℹ️ Excluding ${path} from OneSignal catch-all route`);
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    
+    // Check if path starts with any excluded route prefix
+    if (excludedRoutePrefixes.some(prefix => path.startsWith(prefix + '/'))) {
+      console.log(`ℹ️ Excluding app route ${path} from OneSignal catch-all route`);
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
     
