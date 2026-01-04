@@ -13,6 +13,7 @@ import { OneSignalInitializer } from "@/components/notifications/OneSignalInitia
 import { getLocaleFromCookie } from "@/i18n/config";
 import enMessages from "@/messages/en.json";
 import frMessages from "@/messages/fr.json";
+import { TranslationErrorBoundary } from "./error-boundary";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -143,20 +144,22 @@ export default async function RootLayout({
         />
       </head>
       <body className={`h-full ${inter.className}`}>
-        <SupabaseProvider>
-          <Providers>
-            <OneSignalInitializer />
-            <RouteOptimizer>
-              <div className="relative flex min-h-screen flex-col">
-                <PWAPrompts />
-                <Navbar />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <Analytics />
-              </div>
-            </RouteOptimizer>
-          </Providers>
-        </SupabaseProvider>
+        <TranslationErrorBoundary>
+          <SupabaseProvider>
+            <Providers>
+              <OneSignalInitializer />
+              <RouteOptimizer>
+                <div className="relative flex min-h-screen flex-col">
+                  <PWAPrompts />
+                  <Navbar />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <Analytics />
+                </div>
+              </RouteOptimizer>
+            </Providers>
+          </SupabaseProvider>
+        </TranslationErrorBoundary>
       </body>
     </html>
   );

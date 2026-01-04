@@ -33,18 +33,28 @@ export const SupabaseProvider = ({
 
     // Refresh session every 5 minutes to keep tokens warm
     backgroundRefreshRef.current = setInterval(async () => {
+      // Only refresh if we have a user - don't refresh if already logged out
+      if (!user) {
+        return;
+      }
+
       try {
+        console.log('🔄 Background session refresh...');
         const { data: { session }, error } = await supabase.auth.refreshSession();
         if (error) {
+          // Log error but don't clear state - let onAuthStateChange handle it
+          console.warn('⚠️ Background refresh failed:', error.message);
           // Silent failure - error will NOT clear user state (onAuthStateChange handler preserves state)
         } else if (session) {
           // Session refreshed successfully - cookies are automatically updated by Supabase
+          console.log('✅ Background refresh successful');
         }
       } catch (error) {
         // Silent failure - error will NOT clear user state (onAuthStateChange handler preserves state)
+        console.warn('⚠️ Background refresh error:', error);
       }
     }, 5 * 60 * 1000); // 5 minutes
-  }, [supabase]);
+  }, [supabase, user]); // Add user to dependencies
 
   // Validate and clear cookies ONLY when switching environments
   // Don't run on every page load - only when environment actually changes
@@ -203,9 +213,73 @@ export const SupabaseProvider = ({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`🔐 Auth state change: ${event}`, session ? `session exists (user: ${session.user?.id})` : 'no session');
+
       if (event === 'SIGNED_OUT') {
-        // User explicitly signed out - clear state
+        // CRITICAL FIX: Verify this is a real logout, not a transient error
+        // Supabase can emit SIGNED_OUT on network errors or token refresh failures
+        // We should attempt to restore the session before clearing state
+        
+        // Check if we have a user state that suggests this might be a false logout
+        if (user) {
+          console.log('⚠️ SIGNED_OUT event received but user state exists - attempting to restore session...');
+          
+          // Give a brief moment for any in-flight operations to complete
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Try to get the current session
+          try {
+            const { data: { session: currentSession }, error: sessionError } = 
+              await supabase.auth.getSession();
+            
+            if (!sessionError && currentSession?.user) {
+              // Session still exists - this was a false logout event
+              console.log('✅ Session restored - false logout prevented');
+              setSession(currentSession);
+              setUser(currentSession.user);
+              startBackgroundRefresh();
+              return; // Don't clear state
+            }
+            
+            // If getSession failed, try refresh as a last resort
+            if (sessionError || !currentSession) {
+              console.log('🔄 getSession failed, trying refresh...');
+              const { data: { session: refreshedSession }, error: refreshError } = 
+                await supabase.auth.refreshSession();
+              
+              if (!refreshError && refreshedSession?.user) {
+                // Session refreshed successfully - false logout prevented
+                console.log('✅ Session refreshed - false logout prevented');
+                setSession(refreshedSession);
+                setUser(refreshedSession.user);
+                startBackgroundRefresh();
+                return; // Don't clear state
+              }
+              
+              // Only clear if refresh definitively fails with auth errors
+              if (refreshError && (
+                refreshError.message?.includes('refresh_token_not_found') ||
+                refreshError.message?.includes('invalid_grant') ||
+                refreshError.message?.includes('JWT expired')
+              )) {
+                console.log('❌ Refresh token invalid - confirming logout');
+                // This is a real logout - clear state
+              } else {
+                // Network or other transient error - preserve state
+                console.log('⚠️ Transient error during logout verification - preserving state');
+                return; // Don't clear state
+              }
+            }
+          } catch (error) {
+            // Error during verification - preserve state to be safe
+            console.warn('⚠️ Error verifying logout - preserving state:', error);
+            return; // Don't clear state
+          }
+        }
+        
+        // Only clear state if we've confirmed this is a real logout
+        console.log('🔐 Confirmed logout - clearing state');
         setSession(null);
         setUser(null);
         
@@ -261,14 +335,18 @@ export const SupabaseProvider = ({
       // Only check if app became visible (not when it goes to background)
       if (document.hidden) return;
 
+      // CRITICAL FIX: Add delay for PWA resume - service worker needs time to sync
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Only restore if we have user state but lost session (indicates expired access token)
       if (user && !session) {
-        console.log('🔄 App resumed - attempting to restore session...');
+        console.log('🔄 PWA resumed - attempting to restore session...');
         try {
+          // CRITICAL FIX: Try getSession first (faster, uses cookies)
           const { data: { session: restoredSession }, error } = await supabase.auth.getSession();
           
           if (!error && restoredSession?.user) {
-            console.log('✅ Session restored on app resume');
+            console.log('✅ Session restored on PWA resume');
             setSession(restoredSession);
             setUser(restoredSession.user);
             startBackgroundRefresh();
@@ -282,7 +360,7 @@ export const SupabaseProvider = ({
               await supabase.auth.refreshSession();
             
             if (!refreshError && refreshedSession?.user) {
-              console.log('✅ Session refreshed on app resume');
+              console.log('✅ Session refreshed on PWA resume');
               setSession(refreshedSession);
               setUser(refreshedSession.user);
               startBackgroundRefresh();
@@ -294,11 +372,12 @@ export const SupabaseProvider = ({
                 setSession(null);
                 setUser(null);
               }
+              // Otherwise preserve state (might be network issue)
             }
           }
         } catch (error) {
           // Silent fail - don't clear state on unexpected errors
-          console.warn('⚠️ Error during session restoration:', error);
+          console.warn('⚠️ Error during PWA session restoration:', error);
         }
       }
     };
