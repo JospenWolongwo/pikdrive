@@ -403,7 +403,6 @@ export const useBookingStore = create<BookingState>()(
           
           // DEFENSIVE: Validate cached data type - if corrupted, skip cache
           if (typeof passengerInfoComplete !== 'boolean') {
-            console.warn('⚠️ [bookingStore] Corrupted passengerInfoComplete in cache. Fetching fresh data...');
             // Don't return cached value, continue to fetch from API
           } else {
             return {
@@ -426,9 +425,6 @@ export const useBookingStore = create<BookingState>()(
 
           // DEFENSIVE: Ensure isComplete is always a boolean before saving (prevent future corruption)
           const validatedIsComplete = typeof isComplete === 'boolean' ? isComplete : false;
-          if (typeof isComplete !== 'boolean') {
-            console.warn('⚠️ [bookingStore] API returned invalid isComplete value (type:', typeof isComplete, 'value:', isComplete, '). Using false as default.');
-          }
 
           set({
             passengerInfoComplete: validatedIsComplete,
@@ -466,7 +462,6 @@ export const useBookingStore = create<BookingState>()(
           
           // Check if passengerInfoComplete is a valid boolean (fix corrupted localStorage)
           if (typeof passengerInfoComplete !== 'boolean') {
-            console.warn('⚠️ [bookingStore] Corrupted passengerInfoComplete cache detected (type:', typeof passengerInfoComplete, 'value:', passengerInfoComplete, '). Invalidating cache...');
             // Invalidate corrupted cache
             set({
               lastPassengerInfoFetch: null,
