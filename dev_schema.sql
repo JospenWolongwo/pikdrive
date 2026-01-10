@@ -1375,39 +1375,57 @@ CREATE OR REPLACE FUNCTION "public"."update_seats_on_booking_change"() RETURNS "
     AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    -- When a booking is created, reduce available seats
-    UPDATE rides 
-    SET seats_available = GREATEST(0, seats_available - NEW.seats),
-        updated_at = NOW()
-    WHERE id = NEW.ride_id;
-    
-    RAISE NOTICE 'Reduced seats for ride % by % seats (new total: %)', 
-      NEW.ride_id, NEW.seats, 
-      (SELECT seats_available FROM rides WHERE id = NEW.ride_id);
+    -- Only decrement seats if payment is completed
+    -- Unpaid bookings should not block seats
+    IF NEW.payment_status = 'completed' THEN
+      UPDATE rides 
+      SET seats_available = GREATEST(0, seats_available - NEW.seats),
+          updated_at = NOW()
+      WHERE id = NEW.ride_id;
+    END IF;
       
   ELSIF TG_OP = 'DELETE' THEN
-    -- When a booking is deleted, restore available seats
-    UPDATE rides 
-    SET seats_available = seats_available + OLD.seats,
-        updated_at = NOW()
-    WHERE id = OLD.ride_id;
-    
-    RAISE NOTICE 'Restored seats for ride % by % seats (new total: %)', 
-      OLD.ride_id, OLD.seats, 
-      (SELECT seats_available FROM rides WHERE id = OLD.ride_id);
+    -- Only restore seats if booking was paid
+    -- Unpaid bookings never decremented seats, so no need to restore
+    IF OLD.payment_status = 'completed' THEN
+      UPDATE rides 
+      SET seats_available = seats_available + OLD.seats,
+          updated_at = NOW()
+      WHERE id = OLD.ride_id;
+    END IF;
       
   ELSIF TG_OP = 'UPDATE' THEN
-    -- When a booking is updated, adjust seats accordingly
-    IF OLD.seats != NEW.seats THEN
+    -- Handle payment_status changes and seat changes
+    
+    -- Case 1: Payment just completed (pending/partial/failed → completed)
+    -- Decrement seats for the first time
+    IF OLD.payment_status != 'completed' AND NEW.payment_status = 'completed' THEN
+      UPDATE rides 
+      SET seats_available = GREATEST(0, seats_available - NEW.seats),
+          updated_at = NOW()
+      WHERE id = NEW.ride_id;
+    END IF;
+    
+    -- Case 2: Payment was cancelled/refunded (completed → pending/failed/refunded)
+    -- Restore seats that were previously decremented
+    IF OLD.payment_status = 'completed' AND NEW.payment_status != 'completed' THEN
+      UPDATE rides 
+      SET seats_available = seats_available + OLD.seats,
+          updated_at = NOW()
+      WHERE id = NEW.ride_id;
+    END IF;
+    
+    -- Case 3: Both OLD and NEW are completed, but seats changed
+    -- Adjust seats: restore OLD.seats, decrement NEW.seats
+    IF OLD.payment_status = 'completed' AND NEW.payment_status = 'completed' AND OLD.seats != NEW.seats THEN
       UPDATE rides 
       SET seats_available = GREATEST(0, seats_available + OLD.seats - NEW.seats),
           updated_at = NOW()
       WHERE id = NEW.ride_id;
-      
-      RAISE NOTICE 'Adjusted seats for ride %: +% -% = % (new total: %)', 
-        NEW.ride_id, OLD.seats, NEW.seats, OLD.seats - NEW.seats,
-        (SELECT seats_available FROM rides WHERE id = NEW.ride_id);
     END IF;
+    
+    -- Case 4: Both OLD and NEW are NOT completed, but seats changed
+    -- No action needed (seats were never decremented, so nothing to adjust)
   END IF;
   
   RETURN COALESCE(NEW, OLD);
@@ -1418,7 +1436,7 @@ $$;
 ALTER FUNCTION "public"."update_seats_on_booking_change"() OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."update_seats_on_booking_change"() IS 'Automatically updates seats_available in rides table when bookings are created, updated, or deleted';
+COMMENT ON FUNCTION "public"."update_seats_on_booking_change"() IS 'Updates seats_available in rides table only when payment_status = completed. Prevents seats from being blocked by unpaid bookings.';
 
 
 
