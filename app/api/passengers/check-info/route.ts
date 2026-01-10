@@ -66,12 +66,13 @@ export async function GET(request: NextRequest) {
 
     if (passengerDocs) {
       // Check if all required fields are present
-      const hasAllFields = 
+      // FIX: Convert to boolean (&& returns last truthy value, not boolean)
+      // This ensures isComplete is always a boolean, not a URL string
+      isComplete = !!(
         passengerDocs.full_name &&
         passengerDocs.national_id_file_recto &&
-        passengerDocs.national_id_file_verso;
-      
-      isComplete = hasAllFields;
+        passengerDocs.national_id_file_verso
+      );
       // Pre-fill with passenger doc name, fallback to profile name
       profileName = passengerDocs.full_name || profile?.full_name || "";
     } else {
