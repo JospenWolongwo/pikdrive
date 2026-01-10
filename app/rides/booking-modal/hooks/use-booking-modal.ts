@@ -96,21 +96,30 @@ export function useBookingModal({
 
     // First check cache
     const cached = getCachedPassengerInfo();
+    console.log('🔍 [useBookingModal] checkPassengerInfo - cached:', cached);
     if (cached) {
-      setIsPassengerInfoComplete(cached.isComplete);
-      setProfileName(cached.profileName);
-      setStep(cached.isComplete ? 1 : 0);
+      // DEFENSIVE: Ensure isComplete is always a boolean (fix corrupted localStorage)
+      const isComplete = typeof cached.isComplete === 'boolean' ? cached.isComplete : false;
+      console.log('🔍 [useBookingModal] checkPassengerInfo - setting isComplete from cache:', isComplete, '(original value was:', cached.isComplete, typeof cached.isComplete, ')');
+      setIsPassengerInfoComplete(isComplete);
+      setProfileName(cached.profileName || "");
+      setStep(isComplete ? 1 : 0);
       return;
     }
 
     // If not cached, fetch from store (which uses API client)
     try {
+      console.log('🔍 [useBookingModal] checkPassengerInfo - no cache, fetching from API...');
       const result = await checkPassengerInfoStore(user.id);
-      setIsPassengerInfoComplete(result.isComplete);
-      setProfileName(result.profileName);
-      setStep(result.isComplete ? 1 : 0);
+      console.log('🔍 [useBookingModal] checkPassengerInfo - API result:', result);
+      // DEFENSIVE: Ensure isComplete is always a boolean
+      const isComplete = typeof result.isComplete === 'boolean' ? result.isComplete : false;
+      console.log('🔍 [useBookingModal] checkPassengerInfo - setting isComplete from API:', isComplete, '(original value was:', result.isComplete, typeof result.isComplete, ')');
+      setIsPassengerInfoComplete(isComplete);
+      setProfileName(result.profileName || "");
+      setStep(isComplete ? 1 : 0);
     } catch (error) {
-      console.error("Error checking passenger info:", error);
+      console.error("❌ [useBookingModal] Error checking passenger info:", error);
       setIsPassengerInfoComplete(false);
       setStep(0);
     }
@@ -165,11 +174,24 @@ export function useBookingModal({
 
   // Check for existing booking when modal opens - only after passenger info is confirmed complete
   useEffect(() => {
-    console.log('🔍 [useBookingModal] useEffect triggered - isOpen:', isOpen, 'user:', !!user, 'ride:', !!ride, 'userBookingsLoading:', userBookingsLoading, 'isPassengerInfoComplete:', isPassengerInfoComplete, 'step:', step);
-    if (isOpen && user && ride && user.id && !userBookingsLoading && isPassengerInfoComplete === true && step >= 1) {
+    // DEFENSIVE: Ensure isPassengerInfoComplete is a boolean for comparison (fix corrupted localStorage)
+    const isComplete = typeof isPassengerInfoComplete === 'boolean' && isPassengerInfoComplete === true;
+    console.log('🔍 [useBookingModal] useEffect triggered - isOpen:', isOpen, 'user:', !!user, 'ride:', !!ride, 'userBookingsLoading:', userBookingsLoading, 'isPassengerInfoComplete (raw):', isPassengerInfoComplete, 'isPassengerInfoComplete (type):', typeof isPassengerInfoComplete, 'isComplete (boolean):', isComplete, 'step:', step);
+    if (isOpen && user && ride && user.id && !userBookingsLoading && isComplete && step >= 1) {
+      console.log('🔍 [useBookingModal] All conditions met, calling checkExistingBooking');
       checkExistingBooking();
     } else {
-      console.log('🔍 [useBookingModal] Conditions not met to check existing booking');
+      console.log('🔍 [useBookingModal] Conditions not met - breaking down:', {
+        isOpen,
+        hasUser: !!user,
+        hasRide: !!ride,
+        userId: user?.id,
+        userBookingsLoading,
+        isPassengerInfoComplete,
+        isPassengerInfoCompleteType: typeof isPassengerInfoComplete,
+        isComplete,
+        step
+      });
     }
   }, [isOpen, user, ride, userBookings, userBookingsLoading, isPassengerInfoComplete, step]);
 
