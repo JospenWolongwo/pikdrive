@@ -46,6 +46,7 @@ export function useBookingModal({
   const [bookingId, setBookingId] = useState<string>();
   const [existingBooking, setExistingBooking] = useState<any>(null);
   const [originalSeats, setOriginalSeats] = useState<number | null>(null);
+  const [originalPaymentStatus, setOriginalPaymentStatus] = useState<string | null>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "SUCCESSFUL" | "FAILED" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
@@ -60,18 +61,14 @@ export function useBookingModal({
   const calculateTotalPrice = (): number => {
     if (!ride?.price) return 0;
     
-    // If booking is paid/completed and we have original seats, calculate for additional seats only
-    if (existingBooking && existingBooking.payment_status === 'completed') {
-      const currentPaidSeats = originalSeats ?? existingBooking.seats;
-      if (seats > currentPaidSeats) {
-        const additionalSeats = seats - currentPaidSeats;
-        return additionalSeats * ride.price;
-      }
-      // If seats <= currentPaidSeats, return 0 (user shouldn't be able to reduce, but handle gracefully)
-      return 0;
+    // Check if we're adding seats to an existing paid booking
+    // Use originalPaymentStatus to detect if the original booking was paid
+    if (originalSeats !== null && originalSeats > 0 && seats > originalSeats && originalPaymentStatus === 'completed') {
+      const additionalSeats = seats - originalSeats;
+      return additionalSeats * ride.price;
     }
     
-    // For unpaid bookings, charge for all seats
+    // For new bookings or unpaid bookings, charge for all seats
     return seats * ride.price;
   };
 
@@ -143,6 +140,7 @@ export function useBookingModal({
         setSeats(1);
         setExistingBooking(null);
         setOriginalSeats(null);
+        setOriginalPaymentStatus(null);
         setBookingId(undefined);
         setSelectedProvider(undefined);
         setPhoneNumber("");
@@ -188,6 +186,7 @@ export function useBookingModal({
         setExistingBooking(cachedBooking);
         setSeats(cachedBooking.seats);
         setOriginalSeats(cachedBooking.seats);
+        setOriginalPaymentStatus(cachedBooking.payment_status);
         setBookingId(cachedBooking.id);
 
         if (cachedBooking.payment_status === "completed") {
@@ -204,6 +203,7 @@ export function useBookingModal({
         setExistingBooking(existing);
         setSeats(existing.seats);
         setOriginalSeats(existing.seats);
+        setOriginalPaymentStatus(existing.payment_status);
         setBookingId(existing.id);
 
         if (existing.payment_status === "completed") {
