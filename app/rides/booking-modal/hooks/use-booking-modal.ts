@@ -7,6 +7,7 @@ import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/ty
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useBookingStore } from "@/stores";
 import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
+import { useLocale } from "@/hooks";
 import type { RideWithDriver } from "@/types";
 import { ApiError } from "@/lib/api-client/error";
 
@@ -23,6 +24,7 @@ export function useBookingModal({
 }: UseBookingModalProps) {
   const { user } = useSupabase();
   const router = useRouter();
+  const { t } = useLocale();
   const {
     createBooking,
     isCreatingBooking,
@@ -275,9 +277,7 @@ export function useBookingModal({
 
   const handlePayment = async () => {
     if (!selectedProvider || !isPhoneValid || !bookingId) {
-      toast.error(
-        "Veuillez sélectionner un mode de paiement et entrer un numéro de téléphone valide"
-      );
+      toast.error(t("pages.rides.booking.payment.validationError"));
       return;
     }
 
@@ -300,18 +300,18 @@ export function useBookingModal({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Le paiement a échoué");
+        throw new Error(data.message || t("pages.rides.booking.payment.failed"));
       }
 
       if (data.success && data.data?.transaction_id) {
         setPaymentTransactionId(data.data.transaction_id);
-        toast.success("Demande de paiement envoyée. Vérifiez votre téléphone pour approuver.");
+        toast.success(t("pages.rides.booking.payment.requestSent"));
       } else {
-        throw new Error(data.error || "Le paiement a échoué");
+        throw new Error(data.error || t("pages.rides.booking.payment.failed"));
       }
     } catch (error) {
       // Extract clear error message from ApiError or regular Error
-      let errorMessage = "Le paiement a échoué";
+      let errorMessage = t("pages.rides.booking.payment.failed");
       
       if (error instanceof ApiError) {
         errorMessage = error.getDisplayMessage();
@@ -344,7 +344,7 @@ export function useBookingModal({
       // Reset payment transaction ID to enable form fields
       setPaymentTransactionId(null);
       // Store error message for display
-      setStatusMessage(message || "Le paiement a échoué. Veuillez réessayer.");
+      setStatusMessage(message || t("pages.rides.booking.payment.failedRetry"));
       setPaymentStatus("FAILED");
     }
   };

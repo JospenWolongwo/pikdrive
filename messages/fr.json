@@ -1144,7 +1144,11 @@
           "paymentError": "Erreur de paiement",
           "retry": "Réessayer",
           "place": "place",
-          "places": "places"
+          "places": "places",
+          "validationError": "Veuillez sélectionner un mode de paiement et entrer un numéro de téléphone valide",
+          "requestSent": "Demande de paiement envoyée. Vérifiez votre téléphone pour approuver.",
+          "failed": "Le paiement a échoué",
+          "failedRetry": "Le paiement a échoué. Veuillez réessayer."
         },
         "success": {
           "title": "Réservation réussie !",

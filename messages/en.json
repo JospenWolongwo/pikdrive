@@ -1144,7 +1144,11 @@
           "paymentError": "Payment error",
           "retry": "Retry",
           "place": "seat",
-          "places": "seats"
+          "places": "seats",
+          "validationError": "Please select a payment method and enter a valid phone number",
+          "requestSent": "Payment request sent. Please check your phone to approve.",
+          "failed": "Payment failed",
+          "failedRetry": "Payment failed. Please try again."
         },
         "success": {
           "title": "Booking Successful!",
