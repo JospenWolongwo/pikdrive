@@ -165,19 +165,27 @@ export function useBookingModal({
 
   // Check for existing booking when modal opens - only after passenger info is confirmed complete
   useEffect(() => {
+    console.log('🔍 [useBookingModal] useEffect triggered - isOpen:', isOpen, 'user:', !!user, 'ride:', !!ride, 'userBookingsLoading:', userBookingsLoading, 'isPassengerInfoComplete:', isPassengerInfoComplete, 'step:', step);
     if (isOpen && user && ride && user.id && !userBookingsLoading && isPassengerInfoComplete === true && step >= 1) {
       checkExistingBooking();
+    } else {
+      console.log('🔍 [useBookingModal] Conditions not met to check existing booking');
     }
   }, [isOpen, user, ride, userBookings, userBookingsLoading, isPassengerInfoComplete, step]);
 
   const checkExistingBooking = async () => {
     if (!ride || !user) return;
 
+    console.log('🔍 [useBookingModal] checkExistingBooking called for ride:', ride.id, 'user:', user.id);
+
     try {
       // First, check cached user bookings for instant response
       const cachedBooking = getCachedBookingForRide(ride.id, user.id);
+      
+      console.log('🔍 [useBookingModal] cachedBooking:', cachedBooking);
 
       if (cachedBooking) {
+        console.log('🔍 [useBookingModal] Using cached booking:', cachedBooking);
         // Use cached data immediately for instant UI update
         setExistingBooking(cachedBooking);
         setSeats(cachedBooking.seats);
@@ -191,10 +199,14 @@ export function useBookingModal({
         return; // Exit early with cached data
       }
 
+      console.log('🔍 [useBookingModal] No cached booking, fetching from API...');
       // If not in cache, fetch from API (this should rarely happen)
       const existing = await getExistingBookingForRide(ride.id, user.id);
+      
+      console.log('🔍 [useBookingModal] API returned existing booking:', existing);
 
       if (existing) {
+        console.log('🔍 [useBookingModal] Setting existing booking:', existing);
         setExistingBooking(existing);
         setSeats(existing.seats);
         setOriginalSeats(existing.seats);
@@ -204,8 +216,11 @@ export function useBookingModal({
           // For paid bookings, don't auto-advance to payment step
           // User should be able to see seat selection and add more seats if needed
         }
+      } else {
+        console.log('🔍 [useBookingModal] No existing booking found');
       }
     } catch (error) {
+      console.error('❌ [useBookingModal] Error checking existing booking:', error);
       // Silently fail - booking check error
     }
   };

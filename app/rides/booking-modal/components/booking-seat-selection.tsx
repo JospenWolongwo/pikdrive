@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,15 +37,26 @@ export function BookingSeatSelection({
 }: BookingSeatSelectionProps) {
   const { t } = useLocale();
 
+  // TEMPORARY DEBUG: Log existingBooking and calculated values
+  useEffect(() => {
+    console.log('🔍 [BookingSeatSelection] existingBooking:', existingBooking);
+    console.log('🔍 [BookingSeatSelection] ride.seats_available:', ride.seats_available);
+    console.log('🔍 [BookingSeatSelection] seats:', seats);
+  }, [existingBooking, ride.seats_available, seats]);
+
   // Calculate maximum seats user can book (accounting for existing booking)
-  const maxSeats = existingBooking 
+  // ADD DEFENSIVE CHECKS
+  const maxSeats = existingBooking && typeof existingBooking.seats === 'number' && existingBooking.seats > 0
     ? ride.seats_available + existingBooking.seats  // User can "release and reallocate" their existing seats
     : ride.seats_available;                          // No existing booking, standard maximum
 
   // Calculate minimum seats user can book (can't reduce paid bookings)
-  const minSeats = existingBooking && existingBooking.payment_status === 'completed'
+  const minSeats = existingBooking && existingBooking.payment_status === 'completed' && typeof existingBooking.seats === 'number'
     ? existingBooking.seats  // Can't reduce seats below what's already paid
     : 1;                      // Standard minimum
+
+  // TEMPORARY DEBUG: Log calculated values
+  console.log('🔍 [BookingSeatSelection] maxSeats:', maxSeats, '| minSeats:', minSeats, '| existingBooking.seats:', existingBooking?.seats);
 
   // Parse error message to extract seats number if it's the "already have seats booked" error
   const parseBookingError = (error: string | null): { type: 'alreadyPaid' | 'other'; seats?: number; message: string } | null => {
@@ -171,7 +183,10 @@ export function BookingSeatSelection({
             max={maxSeats}
             value={seats}
             onChange={(e) => {
-              onSeatsChange(parseInt(e.target.value));
+              const value = parseInt(e.target.value, 10);
+              if (!isNaN(value) && value >= 0) {
+                onSeatsChange(value);
+              }
               // Clear error when user changes seats
               if (bookingError) {
                 onErrorClear();
