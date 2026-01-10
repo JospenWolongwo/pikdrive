@@ -112,6 +112,53 @@ export class ServerBookingService {
         throw new Error(`Failed to fetch booking: ${fetchError.message}`);
       }
 
+      // RECONCILIATION: Check if there's already a completed payment for this booking
+      // This handles race condition where payment completed before booking was created
+      // The payment callback may have failed to update booking_status because booking didn't exist yet
+      const { data: completedPayment } = await this.supabase
+        .from('payments')
+        .select('id, status, amount')
+        .eq('booking_id', result.booking_id)
+        .eq('status', 'completed')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (completedPayment && booking.payment_status !== 'completed') {
+        console.log('🔄 [BOOKING SERVICE] Reconciling booking with completed payment:', {
+          bookingId: result.booking_id,
+          paymentId: completedPayment.id,
+          currentPaymentStatus: booking.payment_status,
+          reconcilingTo: 'completed'
+        });
+
+        // Update booking to match completed payment status
+        // This will trigger the seat decrement via the database trigger
+        const { data: updatedBooking, error: updateError } = await this.supabase
+          .from('bookings')
+          .update({
+            payment_status: 'completed',
+            status: 'pending_verification',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', result.booking_id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('❌ [BOOKING SERVICE] Error reconciling booking payment status:', updateError);
+          // Don't throw - return the original booking to avoid breaking the flow
+          // The reconciliation can be retried later if needed
+        } else {
+          console.log('✅ [BOOKING SERVICE] Booking reconciled successfully:', {
+            bookingId: result.booking_id,
+            paymentStatus: updatedBooking?.payment_status,
+            status: updatedBooking?.status
+          });
+          return updatedBooking!;
+        }
+      }
+
       return booking;
     } catch (error) {
       console.error('ServerBookingService.createBooking error:', error);

@@ -92,6 +92,21 @@ export class ServerPaymentOrchestrationService {
 
       if (bookingFetchError) {
         console.error('❌ [ORCHESTRATION] Error fetching booking for payment status check:', bookingFetchError);
+        // FIX: Return early if booking doesn't exist yet (race condition: payment completed before booking created)
+        // The booking creation will handle reconciliation when it's created
+        console.warn('⚠️ [ORCHESTRATION] Booking not found for completed payment - will be reconciled on booking creation:', {
+          paymentId: payment.id,
+          bookingId: payment.booking_id
+        });
+        return;
+      }
+
+      if (!currentBooking) {
+        console.warn('⚠️ [ORCHESTRATION] Booking not found for completed payment - will be reconciled on booking creation:', {
+          paymentId: payment.id,
+          bookingId: payment.booking_id
+        });
+        return;
       }
 
       // Determine new payment_status: if booking was 'partial', set to 'completed'; otherwise 'completed'
