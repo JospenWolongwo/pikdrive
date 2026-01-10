@@ -36,6 +36,16 @@ export function BookingSeatSelection({
 }: BookingSeatSelectionProps) {
   const { t } = useLocale();
 
+  // Calculate maximum seats user can book (accounting for existing booking)
+  const maxSeats = existingBooking 
+    ? ride.seats_available + existingBooking.seats  // User can "release and reallocate" their existing seats
+    : ride.seats_available;                          // No existing booking, standard maximum
+
+  // Calculate minimum seats user can book (can't reduce paid bookings)
+  const minSeats = existingBooking && existingBooking.payment_status === 'completed'
+    ? existingBooking.seats  // Can't reduce seats below what's already paid
+    : 1;                      // Standard minimum
+
   // Parse error message to extract seats number if it's the "already have seats booked" error
   const parseBookingError = (error: string | null): { type: 'alreadyPaid' | 'other'; seats?: number; message: string } | null => {
     if (!error) return null;
@@ -157,10 +167,8 @@ export function BookingSeatSelection({
           <Input
             id="seats"
             type="number"
-            min={existingBooking && existingBooking.payment_status === 'completed' 
-              ? existingBooking.seats 
-              : 1}
-            max={ride.seats_available}
+            min={minSeats}
+            max={maxSeats}
             value={seats}
             onChange={(e) => {
               onSeatsChange(parseInt(e.target.value));
@@ -173,6 +181,15 @@ export function BookingSeatSelection({
           {existingBooking && existingBooking.payment_status === 'completed' && (
             <p className="text-xs text-muted-foreground">
               {t("pages.rides.booking.seatSelection.cannotReduce")}
+            </p>
+          )}
+          {existingBooking && (
+            <p className="text-xs text-muted-foreground">
+              {t("pages.rides.booking.seatSelection.maxSeatsExplanation", {
+                max: maxSeats,
+                available: ride.seats_available,
+                your: existingBooking.seats
+              })}
             </p>
           )}
         </div>
@@ -193,7 +210,7 @@ export function BookingSeatSelection({
         </Button>
         <Button
           onClick={onCreateBooking}
-          disabled={seats < 1 || seats > ride.seats_available || isCreatingBooking}
+          disabled={seats < minSeats || seats > maxSeats || isCreatingBooking}
         >
           {isCreatingBooking ? (
             <>
