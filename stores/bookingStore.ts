@@ -398,12 +398,19 @@ export const useBookingStore = create<BookingState>()(
         // Use cache if fresh (5 minutes) and not forcing refresh
         if (!force && 
             lastPassengerInfoFetch && 
-            now - lastPassengerInfoFetch < 5 * 60 * 1000 && 
+            now - lastPassengerInfoFetch < 5 * 60 * 1000 &&
             passengerInfoComplete !== null) {
-          return {
-            isComplete: passengerInfoComplete,
-            profileName: passengerInfoProfileName,
-          };
+          
+          // DEFENSIVE: Validate cached data type - if corrupted, skip cache
+          if (typeof passengerInfoComplete !== 'boolean') {
+            console.warn('⚠️ [bookingStore] Corrupted passengerInfoComplete in cache. Fetching fresh data...');
+            // Don't return cached value, continue to fetch from API
+          } else {
+            return {
+              isComplete: passengerInfoComplete,
+              profileName: passengerInfoProfileName || "",
+            };
+          }
         }
 
         set({ passengerInfoLoading: true });
@@ -417,16 +424,22 @@ export const useBookingStore = create<BookingState>()(
 
           const { isComplete, profileName } = response.data!;
 
+          // DEFENSIVE: Ensure isComplete is always a boolean before saving (prevent future corruption)
+          const validatedIsComplete = typeof isComplete === 'boolean' ? isComplete : false;
+          if (typeof isComplete !== 'boolean') {
+            console.warn('⚠️ [bookingStore] API returned invalid isComplete value (type:', typeof isComplete, 'value:', isComplete, '). Using false as default.');
+          }
+
           set({
-            passengerInfoComplete: isComplete,
-            passengerInfoProfileName: profileName,
+            passengerInfoComplete: validatedIsComplete,
+            passengerInfoProfileName: profileName || "",
             lastPassengerInfoFetch: now,
             passengerInfoLoading: false,
           });
 
           return {
-            isComplete,
-            profileName,
+            isComplete: validatedIsComplete,
+            profileName: profileName || "",
           };
         } catch (error) {
           console.error("Error checking passenger info:", error);
@@ -446,13 +459,27 @@ export const useBookingStore = create<BookingState>()(
         const { lastPassengerInfoFetch, passengerInfoComplete, passengerInfoProfileName } = get();
         const now = Date.now();
         
-        // Return cached value if fresh (5 minutes)
+        // DEFENSIVE: Validate cached data type - if corrupted, invalidate cache
         if (lastPassengerInfoFetch && 
             now - lastPassengerInfoFetch < 5 * 60 * 1000 &&
             passengerInfoComplete !== null) {
+          
+          // Check if passengerInfoComplete is a valid boolean (fix corrupted localStorage)
+          if (typeof passengerInfoComplete !== 'boolean') {
+            console.warn('⚠️ [bookingStore] Corrupted passengerInfoComplete cache detected (type:', typeof passengerInfoComplete, 'value:', passengerInfoComplete, '). Invalidating cache...');
+            // Invalidate corrupted cache
+            set({
+              lastPassengerInfoFetch: null,
+              passengerInfoComplete: null,
+              passengerInfoProfileName: "",
+            });
+            return null; // Force fresh fetch from API
+          }
+          
+          // Return valid cached value
           return {
             isComplete: passengerInfoComplete,
-            profileName: passengerInfoProfileName,
+            profileName: passengerInfoProfileName || "",
           };
         }
         
