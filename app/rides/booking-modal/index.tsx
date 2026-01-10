@@ -44,6 +44,7 @@ export function BookingModal({
     userBookings,
     checkingPassengerInfo,
     profileName,
+    bookingError,
     setSeats,
     setSelectedProvider,
     setPhoneNumber,
@@ -51,6 +52,7 @@ export function BookingModal({
     setStep,
     setStatusMessage,
     setPaymentStatus,
+    setBookingError,
     handlePassengerInfoComplete,
     handleCreateBooking,
     handlePayment,
@@ -104,9 +106,11 @@ export function BookingModal({
             existingBooking={existingBooking}
             totalPrice={totalPrice}
             isCreatingBooking={isCreatingBooking}
+            bookingError={bookingError}
             onSeatsChange={setSeats}
             onCreateBooking={handleCreateBooking}
             onClose={onClose}
+            onErrorClear={() => setBookingError(null)}
           />
         );
 

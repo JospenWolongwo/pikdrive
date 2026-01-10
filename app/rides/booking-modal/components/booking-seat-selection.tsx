@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Users, Clock, Car, ArrowRight, Loader2 } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { MapPin, Users, Clock, Car, ArrowRight, Loader2, AlertCircle, X } from "lucide-react";
 import { format } from "date-fns";
 import type { RideWithDriver } from "@/types";
 import { useLocale } from "@/hooks";
@@ -14,9 +15,11 @@ interface BookingSeatSelectionProps {
   existingBooking: any;
   totalPrice: number;
   isCreatingBooking: boolean;
+  bookingError: string | null;
   onSeatsChange: (seats: number) => void;
   onCreateBooking: () => void;
   onClose: () => void;
+  onErrorClear: () => void;
 }
 
 export function BookingSeatSelection({
@@ -25,15 +28,88 @@ export function BookingSeatSelection({
   existingBooking,
   totalPrice,
   isCreatingBooking,
+  bookingError,
   onSeatsChange,
   onCreateBooking,
   onClose,
+  onErrorClear,
 }: BookingSeatSelectionProps) {
   const { t } = useLocale();
+
+  // Parse error message to extract seats number if it's the "already have seats booked" error
+  const parseBookingError = (error: string | null): { type: 'alreadyPaid' | 'other'; seats?: number; message: string } | null => {
+    if (!error) return null;
+
+    // Check if error matches pattern: "You already have X seat(s) booked and paid..."
+    // Handle both "seat(s)" and "seat" or "seats" variations
+    const alreadyPaidPattern = /You already have (\d+) seat\(s\) booked and paid for this ride/i;
+    const match = error.match(alreadyPaidPattern);
+    
+    if (match) {
+      const bookedSeats = parseInt(match[1], 10);
+      return {
+        type: 'alreadyPaid',
+        seats: bookedSeats,
+        message: error
+      };
+    }
+
+    // Fallback: Check for general "already have" + "seat" pattern and extract number
+    if (error.toLowerCase().includes('already have') && error.toLowerCase().includes('seat')) {
+      // Try to extract the first number from the error message
+      const generalPattern = /already have (\d+)/i;
+      const numberMatch = error.match(generalPattern);
+      if (numberMatch) {
+        return {
+          type: 'alreadyPaid',
+          seats: parseInt(numberMatch[1], 10),
+          message: error
+        };
+      }
+    }
+
+    // For any other error, return as-is
+    return {
+      type: 'other',
+      message: error
+    };
+  };
+
+  const parsedError = parseBookingError(bookingError);
+
   return (
     <>
       <div className="space-y-6">
-        {existingBooking && (
+        {/* Display booking error if present */}
+        {parsedError && (
+          <Alert variant="destructive" className="relative pr-10">
+            <AlertCircle className="h-4 w-4" />
+            {parsedError.type === 'alreadyPaid' && parsedError.seats ? (
+              <>
+                <AlertTitle>{t("pages.rides.booking.seatSelection.errors.alreadyPaidTitle")}</AlertTitle>
+                <AlertDescription>
+                  {t("pages.rides.booking.seatSelection.errors.alreadyPaidMessage", { 
+                    seats: parsedError.seats
+                  })}
+                </AlertDescription>
+              </>
+            ) : (
+              <>
+                <AlertTitle>{t("pages.rides.booking.seatSelection.errors.genericError")}</AlertTitle>
+                <AlertDescription>{parsedError.message}</AlertDescription>
+              </>
+            )}
+            <button
+              onClick={onErrorClear}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={t("common.close")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </Alert>
+        )}
+
+        {existingBooking && !parsedError && (
           <div className={`border rounded-lg p-3 ${
             existingBooking.payment_status === 'completed'
               ? 'bg-green-50 border-green-200'
@@ -86,7 +162,13 @@ export function BookingSeatSelection({
               : 1}
             max={ride.seats_available}
             value={seats}
-            onChange={(e) => onSeatsChange(parseInt(e.target.value))}
+            onChange={(e) => {
+              onSeatsChange(parseInt(e.target.value));
+              // Clear error when user changes seats
+              if (bookingError) {
+                onErrorClear();
+              }
+            }}
           />
           {existingBooking && existingBooking.payment_status === 'completed' && (
             <p className="text-xs text-muted-foreground">

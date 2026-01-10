@@ -50,12 +50,28 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Booking creation error:', error);
+    
+    // Determine appropriate HTTP status code based on error type
+    // Business logic errors (user input validation) should be 400 (Bad Request)
+    // Server/database errors should be 500 (Internal Server Error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create booking';
+    
+    // Check if it's a business logic error (validation errors, constraint violations, etc.)
+    const isBusinessLogicError = 
+      errorMessage.includes('already have') ||
+      errorMessage.includes('seats available') ||
+      errorMessage.includes('Cannot') ||
+      errorMessage.includes('Only') ||
+      errorMessage.includes('Driver cannot book');
+    
+    const statusCode = isBusinessLogicError ? 400 : 500;
+    
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create booking'
+        error: errorMessage
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }

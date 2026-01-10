@@ -53,6 +53,7 @@ export function useBookingModal({
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [isPassengerInfoComplete, setIsPassengerInfoComplete] = useState<boolean | null>(null);
   const [profileName, setProfileName] = useState<string>("");
+  const [bookingError, setBookingError] = useState<string | null>(null); // NEW: Store booking creation errors
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate total price - for paid bookings, only charge for additional seats
@@ -148,6 +149,7 @@ export function useBookingModal({
         setIsPolling(false);
         setIsPassengerInfoComplete(null);
         setProfileName("");
+        setBookingError(null); // Clear booking error when modal closes
       }
     }
   }, [isOpen, paymentSuccess]);
@@ -222,6 +224,9 @@ export function useBookingModal({
   const handleCreateBooking = async () => {
     if (!user || !ride || isCreatingBooking) return;
 
+    // Clear previous error
+    setBookingError(null);
+
     try {
       // Use the booking store to create/update booking (without auto-refresh for performance)
       const booking = await createBooking(
@@ -246,7 +251,7 @@ export function useBookingModal({
       // This prevents sending driver notification before payment is confirmed
     } catch (error) {
       // Extract clear error message from ApiError or regular Error
-      let errorMessage = "Échec de la création de la réservation";
+      let errorMessage = null;
       
       if (error instanceof ApiError) {
         errorMessage = error.getDisplayMessage();
@@ -254,7 +259,11 @@ export function useBookingModal({
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage);
+      // Store error to display in modal instead of toast
+      if (errorMessage) {
+        setBookingError(errorMessage);
+        // Keep user on seat selection step so they can see the error and fix it
+      }
     }
   };
 
@@ -357,6 +366,7 @@ export function useBookingModal({
     isPassengerInfoComplete,
     checkingPassengerInfo: passengerInfoLoading,
     profileName,
+    bookingError, // NEW: Expose booking error
     // Setters
     setSeats,
     setSelectedProvider,
@@ -365,6 +375,7 @@ export function useBookingModal({
     setStep,
     setStatusMessage,
     setPaymentStatus,
+    setBookingError, // NEW: Allow clearing error
     // Handlers
     handlePassengerInfoComplete,
     handleCreateBooking,

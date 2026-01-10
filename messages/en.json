@@ -1122,7 +1122,12 @@
           "creating": "Creating...",
           "cannotReduce": "You cannot reduce the number of seats for a booking that has already been paid",
           "place": "seat",
-          "places": "seats"
+          "places": "seats",
+          "errors": {
+            "alreadyPaidTitle": "Booking Already Paid",
+            "alreadyPaidMessage": "You already have {seats} {seats, plural, =1 {seat} other {seats}} booked and paid for this ride. To add more seats, please select a higher number above.",
+            "genericError": "An error occurred while creating your booking. Please try again."
+          }
         },
         "payment": {
           "title": "Select payment method",

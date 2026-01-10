@@ -1122,7 +1122,12 @@
           "creating": "Création...",
           "cannotReduce": "Vous ne pouvez pas réduire le nombre de places d'une réservation déjà payée",
           "place": "place",
-          "places": "places"
+          "places": "places",
+          "errors": {
+            "alreadyPaidTitle": "Réservation Déjà Payée",
+            "alreadyPaidMessage": "Vous avez déjà {seats} {seats, plural, =1 {place} other {places}} réservée(s) et payée(s) pour ce trajet. Pour ajouter plus de places, veuillez sélectionner un nombre plus élevé ci-dessus.",
+            "genericError": "Une erreur s'est produite lors de la création de votre réservation. Veuillez réessayer."
+          }
         },
         "payment": {
           "title": "Sélectionner le mode de paiement",
