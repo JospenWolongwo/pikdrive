@@ -366,15 +366,21 @@ Besoin d'aide? Contactez-nous`;
       from: string;
       to: string;
       amount: number;
+      refundInitiated?: boolean;
     }
   ): Promise<NotificationResponse> {
     const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
-    const message = `Réservation annulée
-Trajet: ${booking.from} → ${booking.to}
-Montant: ${formatAmount(booking.amount)} XAF
+    // Customize message based on whether refund was initiated
+    const refundStatus = booking.amount > 0 
+      ? (booking.refundInitiated 
+          ? `\n\n✅ Remboursement de ${formatAmount(booking.amount)} XAF en cours vers ${phoneNumber}`
+          : `\n\nMontant payé: ${formatAmount(booking.amount)} XAF\nRemboursement en cours de traitement...`)
+      : '';
 
-Remboursement en cours...
+    const message = `Réservation annulée
+Trajet: ${booking.from} → ${booking.to}${refundStatus}
+
 Détails: pikdrive.com/bookings/${booking.id}`;
 
     return this.sendNotification({
@@ -386,6 +392,8 @@ Détails: pikdrive.com/bookings/${booking.id}`;
       sendSMS: true,
       data: {
         bookingId: booking.id,
+        refundInitiated: booking.refundInitiated || false,
+        refundAmount: booking.amount,
         type: 'cancellation_confirmation_sms',
       },
     });

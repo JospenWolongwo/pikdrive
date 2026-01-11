@@ -12,6 +12,8 @@ import type {
   PaymentServiceResponse,
   CheckPaymentServiceResponse,
   PayoutRequest,
+  RefundRequest,
+  RefundServiceResponse,
   Environment,
 } from "@/types/payment-ext";
 import {
@@ -129,6 +131,45 @@ export class PaymentOrchestratorService {
         message: "Unsupported operator for this phone number",
         verificationToken: null,
         apiResponse: null,
+      },
+    };
+  }
+
+  async refund(
+    request: RefundRequest
+  ): Promise<{
+    statusCode: number;
+    response: RefundServiceResponse;
+  }> {
+    console.log("💸 [ORCHESTRATOR] Refund request received:", {
+      phoneNumber: request.phoneNumber,
+      amount: request.amount,
+      originalPaymentId: request.originalPaymentId,
+      reason: request.reason,
+    });
+
+    // Refund = Payout to customer's original payment phone number
+    // We reuse the existing payout infrastructure for refunds
+    const payoutRequest: PayoutRequest = {
+      phoneNumber: request.phoneNumber,
+      amount: request.amount,
+      reason: `REFUND: ${request.reason}`,
+      currency: request.currency,
+      userId: request.userId,
+      customerName: undefined,
+    };
+
+    // Route through existing payout infrastructure
+    const result = await this.payout(payoutRequest);
+
+    // Transform payout response to refund response
+    return {
+      statusCode: result.statusCode,
+      response: {
+        success: result.response.success,
+        message: result.response.message,
+        refundId: result.response.verificationToken,
+        apiResponse: result.response.apiResponse,
       },
     };
   }

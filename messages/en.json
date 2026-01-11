@@ -1391,6 +1391,12 @@
       "activating": "Activating...",
       "enableNotifications": "Enable notifications",
       "privacyNote": "We respect your privacy. You can disable notifications at any time."
+    },
+    "bookingCancelled": {
+      "title": "Booking Cancelled",
+      "message": "Your booking {from} → {to} has been cancelled.",
+      "refundProcessing": "Refund of {amount} XAF processing to {phone}",
+      "refundProcessingGeneric": "Refund processing..."
     }
   },
   "footer": {

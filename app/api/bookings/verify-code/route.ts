@@ -97,39 +97,50 @@ export async function POST(request: Request) {
       });
     }
 
-    // Fetch payment to get amount
-    const { data: payment, error: paymentError } = await supabase
+    // Fetch ALL completed payments for this booking (cumulative payout support)
+    const { data: payments, error: paymentsError } = await supabase
       .from('payments')
-      .select('id, amount, currency, provider')
+      .select('id, amount, currency, provider, created_at')
       .eq('booking_id', bookingId)
       .eq('status', 'completed')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .order('created_at', { ascending: false });
+
+    if (paymentsError) {
+      console.error('Error fetching payments:', paymentsError);
+      // Continue with verification even if payment fetch fails
+    }
+
+    // Guard: Ensure we have at least one payment
+    if (!payments || payments.length === 0) {
+      console.warn('⚠️ [PAYOUT] No completed payments found for booking, skipping payout');
+    }
 
     // Check if payout already processed (prevent duplicate payouts)
-    // Check by payment_id if payment exists, otherwise by booking_id
+    // Check if ANY of the payments already has a payout
     let existingPayout = null;
-    if (payment) {
-      const { data: payoutByPayment } = await supabase
+    if (payments && payments.length > 0) {
+      const paymentIds = payments.map(p => p.id);
+      const { data: existingPayouts } = await supabase
         .from('payouts')
         .select('id, status')
-        .eq('payment_id', payment.id)
-        .maybeSingle();
-      existingPayout = payoutByPayment;
+        .in('payment_id', paymentIds);
+      
+      if (existingPayouts && existingPayouts.length > 0) {
+        existingPayout = existingPayouts[0];
+        console.log('✅ [PAYOUT] Payout already exists for this booking:', {
+          payoutId: existingPayout.id,
+          status: existingPayout.status,
+          paymentCount: payments.length,
+        });
+      }
     } else {
-      // Fallback: check by booking_id if payment not found
+      // Fallback: check by booking_id if no payments found
       const { data: payoutByBooking } = await supabase
         .from('payouts')
         .select('id, status')
         .eq('booking_id', bookingId)
         .maybeSingle();
       existingPayout = payoutByBooking;
-    }
-
-    if (paymentError || !payment) {
-      console.error('Error fetching payment:', paymentError);
-      // Continue with verification even if payment fetch fails
     }
 
     // Update booking status to confirmed if it was pending or pending_verification
@@ -149,10 +160,30 @@ export async function POST(request: Request) {
       }
     }
 
-    // Trigger driver payout if payment exists and not already processed
+    // Trigger driver payout if payments exist and not already processed
     let payoutResult = null;
-    if (payment && !existingPayout) {
+    if (payments && payments.length > 0 && !existingPayout) {
       try {
+        // Calculate cumulative totals from all payments
+        const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+        const paymentIds = payments.map(p => p.id);
+        const primaryPayment = payments[0]; // Most recent payment
+        
+        // Validate currency consistency
+        const currencies = [...new Set(payments.map(p => p.currency))];
+        if (currencies.length > 1) {
+          console.warn('⚠️ [PAYOUT] Multiple currencies detected in payments:', currencies);
+          // Use most recent payment's currency
+        }
+
+        console.log('💰 [PAYOUT] Processing cumulative payout:', {
+          bookingId,
+          paymentCount: payments.length,
+          paymentIds,
+          individualAmounts: payments.map(p => ({ id: p.id, amount: p.amount })),
+          totalAmount,
+        });
+
         // Get driver phone number
         const { data: driverProfile, error: profileError } = await supabase
           .from('profiles')
@@ -161,12 +192,12 @@ export async function POST(request: Request) {
           .single();
 
         if (!profileError && driverProfile?.phone) {
-          // Calculate driver earnings (original amount - fees - commission)
-          const feeCalculation = FeeCalculator.calculate(payment.amount);
+          // Calculate driver earnings from CUMULATIVE total (original amount - fees - commission)
+          const feeCalculation = FeeCalculator.calculate(totalAmount);
           
-          console.log('💰 [PAYOUT] Calculating driver payout:', {
+          console.log('💰 [PAYOUT] Calculating driver payout from cumulative total:', {
             bookingId,
-            originalAmount: payment.amount,
+            totalAmount,
             transactionFee: feeCalculation.transactionFee,
             commission: feeCalculation.commission,
             driverEarnings: feeCalculation.driverEarnings,
@@ -242,12 +273,12 @@ export async function POST(request: Request) {
             }
           }
 
-          // Initiate payout
+          // Initiate payout with cumulative amount
           payoutResult = await orchestrator.payout({
             phoneNumber: payoutPhoneNumber,
             amount: feeCalculation.driverEarnings,
-            reason: `PikDrive Ride Payment - Booking ${bookingId}`,
-            currency: payment.currency || 'XAF',
+            reason: `PikDrive Ride Payment - Booking ${bookingId}${payments.length > 1 ? ` (${payments.length} payments)` : ''}`,
+            currency: primaryPayment.currency || 'XAF',
             userId: user.id,
           });
 
@@ -255,27 +286,32 @@ export async function POST(request: Request) {
             console.log('✅ [PAYOUT] Driver payout initiated successfully:', {
               transactionId: payoutResult.response.verificationToken,
               amount: feeCalculation.driverEarnings,
+              totalAmount,
+              paymentCount: payments.length,
               driverPhone: driverProfile.phone,
             });
 
-            // Create payout record in database
+            // Create payout record in database with cumulative data
             const { error: payoutRecordError } = await supabase
               .from('payouts')
               .insert({
                 driver_id: user.id,
                 booking_id: bookingId,
-                payment_id: payment.id,
+                payment_id: primaryPayment.id, // Most recent payment (for DB constraint)
                 amount: feeCalculation.driverEarnings,
-                original_amount: payment.amount,
+                original_amount: totalAmount, // Cumulative total from all payments
                 transaction_fee: feeCalculation.transactionFee,
                 commission: feeCalculation.commission,
-                currency: payment.currency || 'XAF',
-                provider: usePawaPay ? 'pawapay' : (payment.provider || 'mtn'),
+                currency: primaryPayment.currency || 'XAF',
+                provider: usePawaPay ? 'pawapay' : (primaryPayment.provider || 'mtn'),
                 phone_number: driverProfile.phone,
                 transaction_id: payoutResult.response.verificationToken,
                 status: 'processing',
-                reason: `PikDrive Ride Payment - Booking ${bookingId}`,
+                reason: `PikDrive Ride Payment - Booking ${bookingId}${payments.length > 1 ? ` (${payments.length} payments)` : ''}`,
                 metadata: {
+                  payment_ids: paymentIds, // Track ALL payment IDs included in this payout
+                  payment_count: payments.length,
+                  individual_amounts: payments.map(p => ({ id: p.id, amount: p.amount })),
                   apiResponse: payoutResult.response.apiResponse,
                   payoutInitiatedAt: new Date().toISOString(),
                 },
@@ -290,23 +326,26 @@ export async function POST(request: Request) {
           } else {
             console.error('❌ [PAYOUT] Driver payout failed:', payoutResult.response.message);
             
-            // Create payout record with failed status
+            // Create payout record with failed status and cumulative data
             const { data: failedPayout, error: payoutRecordError } = await supabase
               .from('payouts')
               .insert({
                 driver_id: user.id,
                 booking_id: bookingId,
-                payment_id: payment.id,
+                payment_id: primaryPayment.id, // Most recent payment
                 amount: feeCalculation.driverEarnings,
-                original_amount: payment.amount,
+                original_amount: totalAmount, // Cumulative total
                 transaction_fee: feeCalculation.transactionFee,
                 commission: feeCalculation.commission,
-                currency: payment.currency || 'XAF',
-                provider: payment.provider || 'mtn',
+                currency: primaryPayment.currency || 'XAF',
+                provider: primaryPayment.provider || 'mtn',
                 phone_number: driverProfile.phone,
                 status: 'failed',
-                reason: `PikDrive Ride Payment - Booking ${bookingId}`,
+                reason: `PikDrive Ride Payment - Booking ${bookingId}${payments.length > 1 ? ` (${payments.length} payments)` : ''}`,
                 metadata: {
+                  payment_ids: paymentIds,
+                  payment_count: payments.length,
+                  individual_amounts: payments.map(p => ({ id: p.id, amount: p.amount })),
                   error: payoutResult.response.message,
                   payoutFailedAt: new Date().toISOString(),
                 },
@@ -337,11 +376,17 @@ export async function POST(request: Request) {
       }
     }
 
+    // Calculate total earnings for response
+    const totalEarnings = payments && payments.length > 0
+      ? FeeCalculator.calculate(payments.reduce((sum, p) => sum + p.amount, 0)).driverEarnings
+      : null;
+
     return NextResponse.json({
       success: true,
       message: 'Verification successful',
       payoutInitiated: payoutResult?.response.success || false,
-      driverEarnings: payment ? FeeCalculator.calculate(payment.amount).driverEarnings : null,
+      driverEarnings: totalEarnings,
+      paymentCount: payments?.length || 0,
     });
   } catch (error) {
     console.error('Verification error:', error);

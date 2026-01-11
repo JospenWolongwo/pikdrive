@@ -12,7 +12,7 @@ import {
 import { formatDate } from "@/lib/utils";
 import { VerificationCodeDisplay } from "@/components/bookings/verification-code-display";
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, X, MessageCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, X, MessageCircle, Minus } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLocale } from "@/hooks";
 
 import type { BookingWithPayments } from '@/types';
@@ -51,6 +66,9 @@ export function BookingCard({ booking }: BookingCardProps) {
     ride: RideWithDriver;
     conversationId: string;
   } | null>(null);
+  const [showReduceSeatsDialog, setShowReduceSeatsDialog] = useState(false);
+  const [newSeats, setNewSeats] = useState<string>("");
+  const [isReducingSeats, setIsReducingSeats] = useState(false);
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
@@ -96,6 +114,12 @@ export function BookingCard({ booking }: BookingCardProps) {
     booking.status
   );
 
+  // Determine if booking can have seats reduced (paid booking with > 1 seat)
+  const canReduceSeats = 
+    booking.payment_status === "completed" && 
+    booking.seats > 1 && 
+    canCancel;
+
   // Handle booking cancellation
   const handleCancelBooking = async () => {
     if (!canCancel) return;
@@ -136,6 +160,55 @@ export function BookingCard({ booking }: BookingCardProps) {
       });
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  // Handle reducing seats
+  const handleReduceSeats = async () => {
+    if (!newSeats || !canReduceSeats) return;
+
+    const seatsToKeep = parseInt(newSeats);
+    if (seatsToKeep >= booking.seats) {
+      toast({
+        title: "Erreur",
+        description: "Le nombre de places doit être inférieur au nombre actuel.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsReducingSeats(true);
+
+      const response = await fetch(`/api/bookings/${booking.id}/reduce-seats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newSeats: seatsToKeep }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to reduce seats");
+      }
+
+      toast({
+        title: "Places réduites",
+        description: `${data.seatsRemoved} place(s) retirée(s). Remboursement de ${data.refundAmount} XAF en cours.`,
+      });
+
+      // Close dialog and refresh
+      setShowReduceSeatsDialog(false);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error reducing seats:", error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de réduire les places.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReducingSeats(false);
     }
   };
 
@@ -288,6 +361,18 @@ export function BookingCard({ booking }: BookingCardProps) {
           </Button>
         )}
 
+        {canReduceSeats && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowReduceSeatsDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Minus className="h-4 w-4" />
+            Réduire places
+          </Button>
+        )}
+
         {canCancel && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -335,6 +420,58 @@ export function BookingCard({ booking }: BookingCardProps) {
           </Button>
         )}
       </CardFooter>
+
+      <Dialog open={showReduceSeatsDialog} onOpenChange={setShowReduceSeatsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Réduire le nombre de places</DialogTitle>
+            <DialogDescription>
+              Sélectionnez le nombre de places que vous souhaitez conserver. 
+              La différence vous sera remboursée sur le {payment?.phone_number || "numéro de paiement"}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <label className="block text-sm font-medium mb-2">
+              Places actuelles: {booking.seats}
+            </label>
+            <Select value={newSeats} onValueChange={setNewSeats}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionnez le nombre de places à conserver" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: booking.seats - 1 }, (_, i) => i + 1).map(n => (
+                  <SelectItem key={n} value={n.toString()}>
+                    {n} place{n > 1 ? "s" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {newSeats && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Montant du remboursement: {((booking.seats - parseInt(newSeats)) * (booking.ride?.price || 0)).toLocaleString()} XAF
+              </p>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReduceSeatsDialog(false)}
+              disabled={isReducingSeats}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleReduceSeats}
+              disabled={!newSeats || isReducingSeats}
+            >
+              {isReducingSeats ? "En cours..." : "Confirmer la réduction"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {selectedChatRide && (
         <ChatDialog

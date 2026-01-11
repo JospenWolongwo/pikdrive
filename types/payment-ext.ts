@@ -34,6 +34,23 @@ export interface PayoutRequest {
   readonly userId?: string;
 }
 
+export interface RefundRequest {
+  readonly phoneNumber: string; // Phone that made the payment
+  readonly amount: number;
+  readonly reason: string;
+  readonly originalPaymentId: string; // Primary payment being refunded
+  readonly currency: string;
+  readonly bookingId: string;
+  readonly userId?: string;
+}
+
+export interface RefundServiceResponse {
+  readonly success: boolean;
+  readonly message: string;
+  readonly refundId: string | null; // Provider's transaction ID
+  readonly apiResponse: any;
+}
+
 export const ENUM_CHECK_PAYMENT_TRANSACTION_STATUS = {
   PENDING: "PENDING",
   SUCCESS: "SUCCESS",
