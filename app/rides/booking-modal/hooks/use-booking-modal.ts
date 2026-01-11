@@ -141,8 +141,14 @@ export function useBookingModal({
         navigationTimeoutRef.current = null;
       }
       
-      // Only reset state if not in payment success (to allow success step to show)
-      if (!paymentSuccess) {
+      // Smart reset: Keep booking context if pending/partial payment
+      // This allows user to return and complete payment without confusion
+      const hasPendingPayment = existingBooking && 
+        (existingBooking.payment_status === 'pending' || 
+         existingBooking.payment_status === 'partial');
+      
+      // Only reset state if not in payment success AND no pending payment
+      if (!paymentSuccess && !hasPendingPayment) {
         setStep(0);
         setSeats(1);
         setExistingBooking(null);
@@ -159,9 +165,20 @@ export function useBookingModal({
         setIsPassengerInfoComplete(null);
         setProfileName("");
         setBookingError(null); // Clear booking error when modal closes
+      } else if (hasPendingPayment) {
+        // For pending payments, only clear payment-specific state
+        // Keep booking context so user can resume
+        setSelectedProvider(undefined);
+        setPhoneNumber("");
+        setIsPhoneValid(false);
+        setPaymentTransactionId(null);
+        setPaymentStatus(null);
+        setStatusMessage("");
+        setIsPolling(false);
+        setBookingError(null);
       }
     }
-  }, [isOpen, paymentSuccess]);
+  }, [isOpen, paymentSuccess, existingBooking]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -176,10 +193,10 @@ export function useBookingModal({
   useEffect(() => {
     // DEFENSIVE: Ensure isPassengerInfoComplete is a boolean for comparison (fix corrupted localStorage)
     const isComplete = typeof isPassengerInfoComplete === 'boolean' && isPassengerInfoComplete === true;
-    if (isOpen && user && ride && user.id && !userBookingsLoading && isComplete && step >= 1) {
+    if (isOpen && user && ride && user.id && !userBookingsLoading && isComplete) {
       checkExistingBooking();
     }
-  }, [isOpen, user, ride, userBookings, userBookingsLoading, isPassengerInfoComplete, step]);
+  }, [isOpen, user, ride, userBookings, userBookingsLoading, isPassengerInfoComplete]);
 
   const checkExistingBooking = async () => {
     if (!ride || !user) return;
@@ -196,9 +213,13 @@ export function useBookingModal({
         setOriginalPaymentStatus(cachedBooking.payment_status);
         setBookingId(cachedBooking.id);
 
+        // Smart step detection based on payment status
         if (cachedBooking.payment_status === "completed") {
-          // For paid bookings, don't auto-advance to payment step
-          // User should be able to see seat selection and add more seats if needed
+          // Paid booking - stay at seat selection to add more seats
+          setStep(1);
+        } else if (cachedBooking.payment_status === "pending" || cachedBooking.payment_status === "partial") {
+          // Unpaid/partially paid booking - go directly to payment step
+          setStep(2);
         }
         return; // Exit early with cached data
       }
@@ -213,9 +234,13 @@ export function useBookingModal({
         setOriginalPaymentStatus(existing.payment_status);
         setBookingId(existing.id);
 
+        // Smart step detection based on payment status
         if (existing.payment_status === "completed") {
-          // For paid bookings, don't auto-advance to payment step
-          // User should be able to see seat selection and add more seats if needed
+          // Paid booking - stay at seat selection to add more seats
+          setStep(1);
+        } else if (existing.payment_status === "pending" || existing.payment_status === "partial") {
+          // Unpaid/partially paid booking - go directly to payment step
+          setStep(2);
         }
       }
     } catch (error) {

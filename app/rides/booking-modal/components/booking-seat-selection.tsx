@@ -122,15 +122,27 @@ export function BookingSeatSelection({
         {existingBooking && !parsedError && (
           <div className={`border rounded-lg p-3 ${
             existingBooking.payment_status === 'completed'
-              ? 'bg-green-50 border-green-200'
-              : 'bg-blue-50 border-blue-200'
+              ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
+              : existingBooking.payment_status === 'pending'
+              ? 'bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800'
+              : existingBooking.payment_status === 'partial'
+              ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-800'
+              : 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800'
           }`}>
             {existingBooking.payment_status === 'completed' ? (
-              <p className="text-sm text-green-800">
+              <p className="text-sm text-green-800 dark:text-green-200">
                 <strong>{t("pages.rides.booking.seatSelection.alreadyPaid")}</strong> {t("pages.rides.booking.seatSelection.alreadyPaidDesc", { seats: existingBooking.seats })}
               </p>
+            ) : existingBooking.payment_status === 'pending' ? (
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                <strong>{t("pages.rides.booking.seatSelection.pendingPayment")}</strong> {t("pages.rides.booking.seatSelection.pendingPaymentDesc", { seats: existingBooking.seats })}
+              </p>
+            ) : existingBooking.payment_status === 'partial' ? (
+              <p className="text-sm text-orange-800 dark:text-orange-200">
+                <strong>{t("pages.rides.booking.seatSelection.partialPayment")}</strong> {t("pages.rides.booking.seatSelection.partialPaymentDesc", { seats: existingBooking.seats })}
+              </p>
             ) : (
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
                 <strong>{t("pages.rides.booking.seatSelection.modifyBooking")}</strong> {t("pages.rides.booking.seatSelection.modifyBookingDesc")}
               </p>
             )}
@@ -208,7 +220,7 @@ export function BookingSeatSelection({
       </div>
 
       <div className="space-y-3 mt-6">
-        {/* Show message when user hasn't added seats to paid booking */}
+        {/* Show message when user hasn't added seats to PAID booking */}
         {existingBooking && 
          existingBooking.payment_status === 'completed' && 
          seats === existingBooking.seats && (
@@ -227,8 +239,10 @@ export function BookingSeatSelection({
               seats < minSeats || 
               seats > maxSeats || 
               isCreatingBooking ||
-              // Disable if paid booking and no additional seats added
-              (existingBooking?.payment_status === 'completed' && seats === existingBooking.seats)
+              // ONLY disable if COMPLETED payment and no additional seats
+              // Allow proceeding for pending/partial bookings (user needs to pay)
+              (existingBooking?.payment_status === 'completed' && 
+               seats === existingBooking.seats)
             }
           >
             {isCreatingBooking ? (
