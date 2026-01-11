@@ -75,6 +75,7 @@ interface RidesState {
   clearAllRides: () => void;
   subscribeToRideUpdates: (supabase: SupabaseClient) => void;
   unsubscribeFromRideUpdates: () => void;
+  updateRideSeatsOptimistically: (rideId: string, seatsToDecrement: number) => void;
 
   // Actions for driver rides
   fetchDriverRides: (params?: {
@@ -251,10 +252,38 @@ export const useRidesStore = create<RidesState>()(
         const { realTimeChannel } = get();
         
         if (realTimeChannel) {
-          // Note: This assumes supabase is available, but we can't access it here
-          // The caller should handle cleanup
+          // Properly remove the channel
+          try {
+            realTimeChannel.unsubscribe();
+          } catch (error) {
+            console.error('Error unsubscribing from ride updates:', error);
+          }
           set({ realTimeChannel: null });
         }
+      },
+      
+      // Optimistically update a ride's seats_available
+      updateRideSeatsOptimistically: (rideId: string, seatsToDecrement: number) => {
+        set((state) => ({
+          allRides: state.allRides.map(ride =>
+            ride.id === rideId
+              ? { 
+                  ...ride, 
+                  seats_available: Math.max(0, ride.seats_available - seatsToDecrement),
+                  updated_at: new Date().toISOString()
+                }
+              : ride
+          ),
+          driverRides: state.driverRides.map(ride =>
+            ride.id === rideId
+              ? { 
+                  ...ride, 
+                  seats_available: Math.max(0, ride.seats_available - seatsToDecrement),
+                  updated_at: new Date().toISOString()
+                }
+              : ride
+          )
+        }));
       },
 
       // Actions for driver rides

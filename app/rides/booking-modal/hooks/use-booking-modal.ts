@@ -5,7 +5,7 @@ import { PaymentProviderType } from "@/lib/payment/types";
 import { getAvailableProviders } from "@/lib/payment/provider-config";
 import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/types";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useBookingStore } from "@/stores";
+import { useBookingStore, useRidesStore } from "@/stores";
 import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
 import { useLocale } from "@/hooks";
 import type { RideWithDriver } from "@/types";
@@ -37,6 +37,7 @@ export function useBookingModal({
     invalidatePassengerInfoCache,
     passengerInfoLoading,
   } = useBookingStore();
+  const { updateRideSeatsOptimistically, refreshAllRides } = useRidesStore();
   const { triggerPrompt } = useNotificationPromptTrigger();
 
   const [step, setStep] = useState(0);
@@ -63,9 +64,13 @@ export function useBookingModal({
   const calculateTotalPrice = (): number => {
     if (!ride?.price) return 0;
     
-    // Check if we're adding seats to an existing paid booking
-    // Use originalPaymentStatus to detect if the original booking was paid
-    if (originalSeats !== null && originalSeats > 0 && seats > originalSeats && originalPaymentStatus === 'completed') {
+    // For existing paid bookings, only charge for additional seats
+    if (originalPaymentStatus === 'completed' && originalSeats !== null) {
+      // If user hasn't added any seats yet, nothing to pay
+      if (seats <= originalSeats) {
+        return 0;
+      }
+      // Calculate price for only the additional seats
       const additionalSeats = seats - originalSeats;
       return additionalSeats * ride.price;
     }
@@ -327,6 +332,22 @@ export function useBookingModal({
 
   const handlePaymentComplete = async (status: PaymentTransactionStatus, message?: string) => {
     if (status === "completed" && ride) {
+      // Optimistically update the ride's available seats for instant UI feedback
+      // Only decrement if this is a new booking or adding seats to existing
+      const seatsToDecrement = originalPaymentStatus === 'completed' && originalSeats !== null
+        ? seats - originalSeats  // Only new seats for paid bookings
+        : seats;  // All seats for new bookings
+      
+      if (seatsToDecrement > 0) {
+        updateRideSeatsOptimistically(ride.id, seatsToDecrement);
+      }
+      
+      // Refresh rides in background to ensure accuracy
+      // This will sync with the real database state from the trigger
+      refreshAllRides().catch(error => {
+        console.error('Error refreshing rides after payment:', error);
+      });
+
       // Trigger notification prompt after payment completion
       // This is the highest value moment - user just completed transaction
       // Use priority=true to bypass 24h cooldown for critical payment events

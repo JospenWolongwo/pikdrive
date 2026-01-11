@@ -207,26 +207,43 @@ export function BookingSeatSelection({
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2 mt-6">
-        <Button onClick={onClose} variant="outline">
-          {t("pages.rides.booking.seatSelection.cancel")}
-        </Button>
-        <Button
-          onClick={onCreateBooking}
-          disabled={seats < minSeats || seats > maxSeats || isCreatingBooking}
-        >
-          {isCreatingBooking ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {existingBooking ? t("pages.rides.booking.seatSelection.updating") : t("pages.rides.booking.seatSelection.creating")}
-            </>
-          ) : (
-            <>
-              {existingBooking ? t("pages.rides.booking.seatSelection.updateAndContinue") : t("pages.rides.booking.seatSelection.continueToPayment")}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
+      <div className="space-y-3 mt-6">
+        {/* Show message when user hasn't added seats to paid booking */}
+        {existingBooking && 
+         existingBooking.payment_status === 'completed' && 
+         seats === existingBooking.seats && (
+          <p className="text-sm text-amber-600 dark:text-amber-500 text-center">
+            {t("pages.rides.booking.seatSelection.addMoreSeatsToContinue")}
+          </p>
+        )}
+        
+        <div className="flex justify-end space-x-2">
+          <Button onClick={onClose} variant="outline">
+            {t("pages.rides.booking.seatSelection.cancel")}
+          </Button>
+          <Button
+            onClick={onCreateBooking}
+            disabled={
+              seats < minSeats || 
+              seats > maxSeats || 
+              isCreatingBooking ||
+              // Disable if paid booking and no additional seats added
+              (existingBooking?.payment_status === 'completed' && seats === existingBooking.seats)
+            }
+          >
+            {isCreatingBooking ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {existingBooking ? t("pages.rides.booking.seatSelection.updating") : t("pages.rides.booking.seatSelection.creating")}
+              </>
+            ) : (
+              <>
+                {existingBooking ? t("pages.rides.booking.seatSelection.updateAndContinue") : t("pages.rides.booking.seatSelection.continueToPayment")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </>
   );

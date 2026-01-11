@@ -1122,6 +1122,7 @@
           "creating": "Creating...",
           "cannotReduce": "You cannot reduce the number of seats for a booking that has already been paid",
           "maxSeatsExplanation": "You can book up to {max} total {max, plural, =1 {seat} other {seats}} ({available} available + {your} {your, plural, =1 {seat} other {seats}} you already have)",
+          "addMoreSeatsToContinue": "Please add more seats to continue to payment",
           "place": "seat",
           "places": "seats",
           "errors": {
