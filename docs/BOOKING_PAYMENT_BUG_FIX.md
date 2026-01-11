@@ -221,8 +221,14 @@ const handlePaymentComplete = async (status: PaymentTransactionStatus) => {
     // Refresh in background for accuracy
     refreshAllRides();
     
+    // Close modal to prevent reopening
+    if (onBookingComplete) {
+      onBookingComplete();  // ✅ Close modal cleanly
+    }
+    
     // Then navigate
     setPaymentSuccess(true);
+    setTimeout(() => router.replace("/bookings"), 2000);
   }
 };
 ```
@@ -232,6 +238,7 @@ const handlePaymentComplete = async (status: PaymentTransactionStatus) => {
 - ✅ No need to refresh page
 - ✅ Syncs with real data in background
 - ✅ Prevents memory leaks from subscriptions
+- ✅ Modal closes properly and doesn't reopen
 
 ---
 

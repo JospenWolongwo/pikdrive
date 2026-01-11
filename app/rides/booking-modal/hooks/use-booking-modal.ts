@@ -357,6 +357,11 @@ export function useBookingModal({
       setPaymentSuccess(true);
       setStep(3);
 
+      // Close the modal to prevent it from reopening after rides refresh
+      if (onBookingComplete) {
+        onBookingComplete();
+      }
+
       // Navigate after showing success step (2000ms to ensure user sees confirmation)
       navigationTimeoutRef.current = setTimeout(() => {
         router.replace("/bookings");
