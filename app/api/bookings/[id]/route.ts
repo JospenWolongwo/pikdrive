@@ -151,21 +151,84 @@ export async function DELETE(
     const totalPaid = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
     const hasPaidBooking = payments && payments.length > 0 && totalPaid > 0;
 
-    // Cancel booking (restore seats)
-    await bookingService.cancelBooking(params.id);
-
-    // Process automatic refund if booking was paid
+    // Use atomic function to cancel booking and prepare refund record
+    // This ensures both operations succeed or fail together
     let refundResult = null;
     let refundPhoneNumber = booking.user.phone; // Fallback to user's phone
-    
-    if (hasPaidBooking) {
-      try {
-        // Use phone number from most recent payment (cumulative strategy)
-        const primaryPayment = payments[0];
-        refundPhoneNumber = primaryPayment.phone_number;
+    let refundRecordId: string | null = null;
+    let cancellationResult: any = null;
 
-        console.log('💸 [REFUND] Processing automatic refund:', {
+    if (hasPaidBooking) {
+      // Use phone number from most recent payment (cumulative strategy)
+      const primaryPayment = payments[0];
+      refundPhoneNumber = primaryPayment.phone_number;
+
+      console.log('🔄 [CANCELLATION] Starting atomic cancellation with refund preparation:', {
+        bookingId: params.id,
+        userId: user.id,
+        totalAmount: totalPaid,
+        phoneNumber: refundPhoneNumber,
+        paymentCount: payments.length,
+        paymentIds: payments.map(p => p.id),
+      });
+
+      // Call atomic function: cancellation + refund record creation
+      const { data: atomicResult, error: atomicError } = await supabase.rpc(
+        'cancel_booking_with_refund_preparation',
+        {
+          p_booking_id: params.id,
+          p_user_id: user.id,
+          p_refund_amount: totalPaid,
+          p_refund_currency: primaryPayment.currency || 'XAF',
+          p_refund_provider: primaryPayment.provider,
+          p_refund_phone_number: refundPhoneNumber,
+          p_payment_ids: payments.map(p => p.id),
+        }
+      );
+
+      if (atomicError) {
+        console.error('❌ [CANCELLATION] Atomic cancellation failed:', {
+          error: atomicError.message,
+          code: atomicError.code,
+          details: atomicError.details,
+          hint: atomicError.hint,
           bookingId: params.id,
+        });
+        throw new Error(`Failed to cancel booking atomically: ${atomicError.message}`);
+      }
+
+      if (!atomicResult || atomicResult.length === 0) {
+        console.error('❌ [CANCELLATION] Atomic function returned no result');
+        throw new Error('Atomic cancellation returned no result');
+      }
+
+      cancellationResult = atomicResult[0];
+
+      if (!cancellationResult.success) {
+        console.error('❌ [CANCELLATION] Atomic cancellation failed:', {
+          success: cancellationResult.success,
+          booking_cancelled: cancellationResult.booking_cancelled,
+          error_message: cancellationResult.error_message,
+          debug_info: cancellationResult.debug_info,
+          bookingId: params.id,
+        });
+        throw new Error(cancellationResult.error_message || 'Atomic cancellation failed');
+      }
+
+      refundRecordId = cancellationResult.refund_record_id;
+
+      console.log('✅ [CANCELLATION] Atomic cancellation succeeded:', {
+        bookingId: params.id,
+        booking_cancelled: cancellationResult.booking_cancelled,
+        refund_record_id: refundRecordId,
+        debug_steps: cancellationResult.debug_info?.steps,
+      });
+
+      // Now process external refund API (after database transaction succeeded)
+      try {
+        console.log('💸 [REFUND] Processing external refund API call:', {
+          bookingId: params.id,
+          refundRecordId,
           totalAmount: totalPaid,
           phoneNumber: refundPhoneNumber,
           paymentCount: payments.length,
@@ -222,63 +285,168 @@ export async function DELETE(
         });
 
         if (refundResult.response.success) {
-          console.log('✅ [REFUND] Refund initiated successfully');
-
-          // Create refund record
-          await supabase.from('refunds').insert({
-            payment_id: primaryPayment.id,
-            booking_id: params.id,
-            user_id: user.id,
+          console.log('✅ [REFUND] External refund API succeeded:', {
+            refundRecordId,
+            transactionId: refundResult.response.refundId,
             amount: totalPaid,
-            currency: primaryPayment.currency || 'XAF',
-            provider: primaryPayment.provider,
-            phone_number: refundPhoneNumber,
-            transaction_id: refundResult.response.refundId,
-            status: 'processing',
-            refund_type: 'full',
-            reason: 'Full booking cancellation',
-            metadata: {
-              payment_ids: payments.map(p => p.id),
-              payment_count: payments.length,
-              individual_amounts: payments.map(p => ({ id: p.id, amount: p.amount })),
-              apiResponse: refundResult.response.apiResponse,
-              refundInitiatedAt: new Date().toISOString(),
-            },
           });
 
-          // Update all payment statuses to 'refunded'
-          await supabase
-            .from('payments')
-            .update({ status: 'refunded', updated_at: new Date().toISOString() })
-            .in('id', payments.map(p => p.id));
+          // Update existing refund record with transaction ID and status
+          if (refundRecordId) {
+            // Get existing metadata first to merge
+            const { data: existingRefund } = await supabase
+              .from('refunds')
+              .select('metadata')
+              .eq('id', refundRecordId)
+              .single();
+
+            const existingMetadata = existingRefund?.metadata || {};
+            
+            const { error: updateError } = await supabase
+              .from('refunds')
+              .update({
+                transaction_id: refundResult.response.refundId,
+                status: 'processing',
+                updated_at: new Date().toISOString(),
+                metadata: {
+                  ...existingMetadata,
+                  payment_ids: payments.map(p => p.id),
+                  payment_count: payments.length,
+                  individual_amounts: payments.map(p => ({ id: p.id, amount: p.amount })),
+                  apiResponse: refundResult.response.apiResponse,
+                  refundInitiatedAt: new Date().toISOString(),
+                  externalApiSuccess: true,
+                  externalApiCalledAt: new Date().toISOString(),
+                },
+              })
+              .eq('id', refundRecordId);
+
+            if (updateError) {
+              console.error('❌ [REFUND] Failed to update refund record:', {
+                refundRecordId,
+                error: updateError.message,
+              });
+            } else {
+              console.log('✅ [REFUND] Refund record updated with transaction ID');
+            }
+          }
 
         } else {
-          console.error('❌ [REFUND] Refund failed:', refundResult.response.message);
-          
-          // Create failed refund record for tracking
-          await supabase.from('refunds').insert({
-            payment_id: primaryPayment.id,
-            booking_id: params.id,
-            user_id: user.id,
-            amount: totalPaid,
-            currency: primaryPayment.currency || 'XAF',
-            provider: primaryPayment.provider,
-            phone_number: refundPhoneNumber,
-            status: 'failed',
-            refund_type: 'full',
-            reason: 'Full booking cancellation',
-            metadata: {
-              payment_ids: payments.map(p => p.id),
-              payment_count: payments.length,
-              error: refundResult.response.message,
-              refundFailedAt: new Date().toISOString(),
-            },
+          console.error('❌ [REFUND] External refund API failed:', {
+            refundRecordId,
+            error: refundResult.response.message,
+            bookingId: params.id,
           });
+          
+          // Update existing refund record as failed
+          if (refundRecordId) {
+            // Get existing metadata first to merge
+            const { data: existingRefund } = await supabase
+              .from('refunds')
+              .select('metadata')
+              .eq('id', refundRecordId)
+              .single();
+
+            const existingMetadata = existingRefund?.metadata || {};
+            
+            const { error: updateError } = await supabase
+              .from('refunds')
+              .update({
+                status: 'failed',
+                updated_at: new Date().toISOString(),
+                metadata: {
+                  ...existingMetadata,
+                  payment_ids: payments.map(p => p.id),
+                  payment_count: payments.length,
+                  error: refundResult.response.message,
+                  refundFailedAt: new Date().toISOString(),
+                  externalApiSuccess: false,
+                  externalApiFailedAt: new Date().toISOString(),
+                },
+              })
+              .eq('id', refundRecordId);
+
+            if (updateError) {
+              console.error('❌ [REFUND] Failed to update refund record status:', {
+                refundRecordId,
+                error: updateError.message,
+              });
+            } else {
+              console.log('⚠️ [REFUND] Refund record marked as failed (can be retried later)');
+            }
+          }
         }
       } catch (error) {
-        console.error('❌ [REFUND] Exception processing refund:', error);
-        // Don't fail cancellation if refund fails
+        console.error('❌ [REFUND] Exception processing external refund API:', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          refundRecordId,
+          bookingId: params.id,
+        });
+        
+        // Update refund record as failed if it exists
+        if (refundRecordId) {
+          // Get existing metadata first to merge
+          const { data: existingRefund } = await supabase
+            .from('refunds')
+            .select('metadata')
+            .eq('id', refundRecordId)
+            .single()
+            .catch(() => null);
+
+          const existingMetadata = existingRefund?.metadata || {};
+          
+          await supabase
+            .from('refunds')
+            .update({
+              status: 'failed',
+              updated_at: new Date().toISOString(),
+              metadata: {
+                ...existingMetadata,
+                error: error instanceof Error ? error.message : String(error),
+                exceptionAt: new Date().toISOString(),
+                externalApiSuccess: false,
+                externalApiExceptionAt: new Date().toISOString(),
+              },
+            })
+            .eq('id', refundRecordId)
+            .catch(err => {
+              console.error('❌ [REFUND] Failed to update refund record after exception:', err);
+            });
+        }
+        
+        // Note: Booking is already cancelled, refund can be retried later
+        // We don't throw here to avoid blocking the cancellation response
       }
+    } else {
+      // No paid booking - just cancel without refund
+      console.log('🔄 [CANCELLATION] Cancelling unpaid booking:', {
+        bookingId: params.id,
+        userId: user.id,
+      });
+
+      const { data: cancelResult, error: cancelError } = await supabase.rpc(
+        'cancel_booking_and_restore_seats',
+        { p_booking_id: params.id }
+      );
+
+      if (cancelError) {
+        console.error('❌ [CANCELLATION] Booking cancellation failed:', {
+          error: cancelError.message,
+          code: cancelError.code,
+          details: cancelError.details,
+          hint: cancelError.hint,
+          bookingId: params.id,
+        });
+        throw new Error(`Failed to cancel booking: ${cancelError.message}`);
+      }
+
+      if (!cancelResult) {
+        console.error('❌ [CANCELLATION] Cancellation function returned false');
+        throw new Error('Failed to cancel booking');
+      }
+
+      console.log('✅ [CANCELLATION] Unpaid booking cancelled successfully');
     }
 
     // Send notifications (push only, no SMS)
@@ -351,6 +519,8 @@ export async function DELETE(
       message: 'Booking cancelled successfully',
       refundInitiated: refundResult?.response.success || false,
       refundAmount: totalPaid,
+      refundRecordId: refundRecordId,
+      cancellationDebugInfo: cancellationResult?.debug_info || null,
     });
   } catch (error) {
     console.error('Booking cancellation error:', error);
