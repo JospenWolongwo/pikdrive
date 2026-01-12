@@ -293,41 +293,52 @@ export async function DELETE(
 
           // Update existing refund record with transaction ID and status
           if (refundRecordId) {
-            // Get existing metadata first to merge
-            const { data: existingRefund } = await supabase
-              .from('refunds')
-              .select('metadata')
-              .eq('id', refundRecordId)
-              .single();
+            try {
+              // Get existing metadata first to merge
+              const { data: existingRefund, error: fetchError } = await supabase
+                .from('refunds')
+                .select('metadata')
+                .eq('id', refundRecordId)
+                .single();
 
-            const existingMetadata = existingRefund?.metadata || {};
-            
-            const { error: updateError } = await supabase
-              .from('refunds')
-              .update({
-                transaction_id: refundResult.response.refundId,
-                status: 'processing',
-                updated_at: new Date().toISOString(),
-                metadata: {
-                  ...existingMetadata,
-                  payment_ids: payments.map(p => p.id),
-                  payment_count: payments.length,
-                  individual_amounts: payments.map(p => ({ id: p.id, amount: p.amount })),
-                  apiResponse: refundResult.response.apiResponse,
-                  refundInitiatedAt: new Date().toISOString(),
-                  externalApiSuccess: true,
-                  externalApiCalledAt: new Date().toISOString(),
-                },
-              })
-              .eq('id', refundRecordId);
+              if (fetchError) {
+                console.error('❌ [REFUND] Failed to fetch existing refund record:', {
+                  refundRecordId,
+                  error: fetchError.message,
+                });
+              }
 
-            if (updateError) {
-              console.error('❌ [REFUND] Failed to update refund record:', {
-                refundRecordId,
-                error: updateError.message,
-              });
-            } else {
-              console.log('✅ [REFUND] Refund record updated with transaction ID');
+              const existingMetadata = existingRefund?.metadata || {};
+              
+              const { error: updateError } = await supabase
+                .from('refunds')
+                .update({
+                  transaction_id: refundResult.response.refundId,
+                  status: 'processing',
+                  updated_at: new Date().toISOString(),
+                  metadata: {
+                    ...existingMetadata,
+                    payment_ids: payments.map(p => p.id),
+                    payment_count: payments.length,
+                    individual_amounts: payments.map(p => ({ id: p.id, amount: p.amount })),
+                    apiResponse: refundResult.response.apiResponse,
+                    refundInitiatedAt: new Date().toISOString(),
+                    externalApiSuccess: true,
+                    externalApiCalledAt: new Date().toISOString(),
+                  },
+                })
+                .eq('id', refundRecordId);
+
+              if (updateError) {
+                console.error('❌ [REFUND] Failed to update refund record:', {
+                  refundRecordId,
+                  error: updateError.message,
+                });
+              } else {
+                console.log('✅ [REFUND] Refund record updated with transaction ID');
+              }
+            } catch (err) {
+              console.error('❌ [REFUND] Exception updating refund record:', err);
             }
           }
 
@@ -340,39 +351,50 @@ export async function DELETE(
           
           // Update existing refund record as failed
           if (refundRecordId) {
-            // Get existing metadata first to merge
-            const { data: existingRefund } = await supabase
-              .from('refunds')
-              .select('metadata')
-              .eq('id', refundRecordId)
-              .single();
+            try {
+              // Get existing metadata first to merge
+              const { data: existingRefund, error: fetchError } = await supabase
+                .from('refunds')
+                .select('metadata')
+                .eq('id', refundRecordId)
+                .single();
 
-            const existingMetadata = existingRefund?.metadata || {};
-            
-            const { error: updateError } = await supabase
-              .from('refunds')
-              .update({
-                status: 'failed',
-                updated_at: new Date().toISOString(),
-                metadata: {
-                  ...existingMetadata,
-                  payment_ids: payments.map(p => p.id),
-                  payment_count: payments.length,
-                  error: refundResult.response.message,
-                  refundFailedAt: new Date().toISOString(),
-                  externalApiSuccess: false,
-                  externalApiFailedAt: new Date().toISOString(),
-                },
-              })
-              .eq('id', refundRecordId);
+              if (fetchError) {
+                console.error('❌ [REFUND] Failed to fetch existing refund record:', {
+                  refundRecordId,
+                  error: fetchError.message,
+                });
+              }
 
-            if (updateError) {
-              console.error('❌ [REFUND] Failed to update refund record status:', {
-                refundRecordId,
-                error: updateError.message,
-              });
-            } else {
-              console.log('⚠️ [REFUND] Refund record marked as failed (can be retried later)');
+              const existingMetadata = existingRefund?.metadata || {};
+              
+              const { error: updateError } = await supabase
+                .from('refunds')
+                .update({
+                  status: 'failed',
+                  updated_at: new Date().toISOString(),
+                  metadata: {
+                    ...existingMetadata,
+                    payment_ids: payments.map(p => p.id),
+                    payment_count: payments.length,
+                    error: refundResult.response.message,
+                    refundFailedAt: new Date().toISOString(),
+                    externalApiSuccess: false,
+                    externalApiFailedAt: new Date().toISOString(),
+                  },
+                })
+                .eq('id', refundRecordId);
+
+              if (updateError) {
+                console.error('❌ [REFUND] Failed to update refund record status:', {
+                  refundRecordId,
+                  error: updateError.message,
+                });
+              } else {
+                console.log('⚠️ [REFUND] Refund record marked as failed (can be retried later)');
+              }
+            } catch (err) {
+              console.error('❌ [REFUND] Exception updating refund record status:', err);
             }
           }
         }
@@ -386,33 +408,33 @@ export async function DELETE(
         
         // Update refund record as failed if it exists
         if (refundRecordId) {
-          // Get existing metadata first to merge
-          const { data: existingRefund } = await supabase
-            .from('refunds')
-            .select('metadata')
-            .eq('id', refundRecordId)
-            .single()
-            .catch(() => null);
+          try {
+            // Get existing metadata first to merge
+            const { data: existingRefund } = await supabase
+              .from('refunds')
+              .select('metadata')
+              .eq('id', refundRecordId)
+              .single();
 
-          const existingMetadata = existingRefund?.metadata || {};
-          
-          await supabase
-            .from('refunds')
-            .update({
-              status: 'failed',
-              updated_at: new Date().toISOString(),
-              metadata: {
-                ...existingMetadata,
-                error: error instanceof Error ? error.message : String(error),
-                exceptionAt: new Date().toISOString(),
-                externalApiSuccess: false,
-                externalApiExceptionAt: new Date().toISOString(),
-              },
-            })
-            .eq('id', refundRecordId)
-            .catch(err => {
-              console.error('❌ [REFUND] Failed to update refund record after exception:', err);
-            });
+            const existingMetadata = existingRefund?.metadata || {};
+            
+            await supabase
+              .from('refunds')
+              .update({
+                status: 'failed',
+                updated_at: new Date().toISOString(),
+                metadata: {
+                  ...existingMetadata,
+                  error: error instanceof Error ? error.message : String(error),
+                  exceptionAt: new Date().toISOString(),
+                  externalApiSuccess: false,
+                  externalApiExceptionAt: new Date().toISOString(),
+                },
+              })
+              .eq('id', refundRecordId);
+          } catch (err) {
+            console.error('❌ [REFUND] Failed to update refund record after exception:', err);
+          }
         }
         
         // Note: Booking is already cancelled, refund can be retried later
