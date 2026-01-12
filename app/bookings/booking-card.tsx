@@ -127,35 +127,49 @@ export function BookingCard({ booking }: BookingCardProps) {
     try {
       setIsCancelling(true);
 
-      // Use the database function for atomic cancellation
-      const { data, error } = await supabase.rpc(
-        "cancel_booking_and_restore_seats",
-        {
-          p_booking_id: booking.id,
-        }
-      );
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error("Cancellation failed");
-      }
-
-      toast({
-        title: t("pages.bookings.card.cancelled"),
-        description:
-          "Votre réservation a été annulée avec succès et les places ont été libérées.",
+      // Use the DELETE API endpoint which handles atomic cancellation with refunds
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: "DELETE",
       });
 
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Cancellation failed");
+      }
+
+      // Show success message with refund information if applicable
+      if (data.refundInitiated && data.refundAmount) {
+        const refundAmount = data.refundAmount.toLocaleString();
+        const currency = payment?.currency || "XAF";
+        
+        toast({
+          title: t("pages.bookings.card.cancelledSuccess"),
+          description: t("pages.bookings.card.cancelledSuccessWithRefund", {
+            amount: refundAmount,
+            currency,
+          }),
+          duration: 6000,
+        });
+      } else {
+        toast({
+          title: t("pages.bookings.card.cancelledSuccess"),
+          description: t("pages.bookings.card.cancelledSuccessNoRefund"),
+          duration: 5000,
+        });
+      }
+
       // Refresh the page to show updated status
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500); // Give user time to see the success message
     } catch (error) {
       console.error("Error cancelling booking:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible d'annuler la réservation. Veuillez réessayer.",
+        title: t("common.error"),
+        description: error instanceof Error 
+          ? error.message 
+          : t("pages.bookings.card.cancelDescription", { seats: booking.seats }),
         variant: "destructive",
       });
     } finally {
@@ -192,19 +206,32 @@ export function BookingCard({ booking }: BookingCardProps) {
         throw new Error(data.error || "Failed to reduce seats");
       }
 
+      // Show success message with refund information
+      const refundAmount = data.refundAmount?.toLocaleString() || "0";
+      const currency = payment?.currency || "XAF";
+      
       toast({
-        title: "Places réduites",
-        description: `${data.seatsRemoved} place(s) retirée(s). Remboursement de ${data.refundAmount} XAF en cours.`,
+        title: t("pages.bookings.card.seatsReducedSuccess"),
+        description: t("pages.bookings.card.seatsReducedSuccessWithRefund", {
+          seatsRemoved: data.seatsRemoved,
+          amount: refundAmount,
+          currency,
+        }),
+        duration: 6000,
       });
 
-      // Close dialog and refresh
+      // Close dialog and refresh after showing success message
       setShowReduceSeatsDialog(false);
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500); // Give user time to see the success message
     } catch (error) {
       console.error("Error reducing seats:", error);
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de réduire les places.",
+        title: t("common.error"),
+        description: error instanceof Error 
+          ? error.message 
+          : t("pages.bookings.card.cancelDescription", { seats: booking.seats }),
         variant: "destructive",
       });
     } finally {

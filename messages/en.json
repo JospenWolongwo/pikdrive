@@ -1252,7 +1252,14 @@
         "keepBooking": "No, keep booking",
         "confirmCancel": "Yes, cancel",
         "viewReceipt": "View receipt",
-        "cancelled": "Booking cancelled"
+        "cancelled": "Booking cancelled",
+        "cancelledSuccess": "Booking cancelled successfully",
+        "cancelledSuccessWithRefund": "Booking cancelled successfully. Refund of {amount} {currency} is being processed.",
+        "cancelledSuccessNoRefund": "Booking cancelled successfully. Seats have been released.",
+        "seatsReducedSuccess": "Seats reduced successfully",
+        "seatsReducedSuccessWithRefund": "{seatsRemoved} seat(s) removed. Refund of {amount} {currency} is being processed.",
+        "refundProcessing": "Refund processing",
+        "refundProcessingDescription": "Your refund is being processed and will be sent to your payment number shortly."
       },
       "verificationCode": {
         "title": "Verification Code",

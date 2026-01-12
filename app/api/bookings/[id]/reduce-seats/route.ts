@@ -85,9 +85,11 @@ export async function POST(
     const primaryPayment = payments[0];
 
     // Update booking (reduce seats)
+    // Note: Use 'partial' for bookings (partial_refund is for payments only)
+    // The booking still has some paid seats, so 'partial' is more accurate
     await supabase.from('bookings').update({
       seats: newSeats,
-      payment_status: 'partial_refund',
+      payment_status: 'partial', // Use 'partial' instead of 'partial_refund' for bookings
       updated_at: new Date().toISOString(),
     }).eq('id', params.id);
 

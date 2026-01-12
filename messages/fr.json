@@ -1252,7 +1252,14 @@
         "keepBooking": "Non, garder la réservation",
         "confirmCancel": "Oui, annuler",
         "viewReceipt": "Voir le reçu",
-        "cancelled": "Réservation annulée"
+        "cancelled": "Réservation annulée",
+        "cancelledSuccess": "Réservation annulée avec succès",
+        "cancelledSuccessWithRefund": "Réservation annulée avec succès. Remboursement de {amount} {currency} en cours de traitement.",
+        "cancelledSuccessNoRefund": "Réservation annulée avec succès. Les places ont été libérées.",
+        "seatsReducedSuccess": "Places réduites avec succès",
+        "seatsReducedSuccessWithRefund": "{seatsRemoved} place(s) retirée(s). Remboursement de {amount} {currency} en cours de traitement.",
+        "refundProcessing": "Traitement du remboursement",
+        "refundProcessingDescription": "Votre remboursement est en cours de traitement et sera envoyé à votre numéro de paiement sous peu."
       },
       "verificationCode": {
         "title": "Code de Vérification",

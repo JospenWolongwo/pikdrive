@@ -10,7 +10,28 @@
 -- ============================================================================
 
 -- Add partial_refund status to payment_status enum
-ALTER TYPE public.payment_status ADD VALUE IF NOT EXISTS 'partial_refund';
+-- Note: PostgreSQL doesn't support "IF NOT EXISTS" with ALTER TYPE ADD VALUE
+-- So we use a DO block to check first
+DO $$
+BEGIN
+  -- Check if 'partial_refund' already exists in the enum
+  IF NOT EXISTS (
+    SELECT 1 
+    FROM pg_enum 
+    WHERE enumlabel = 'partial_refund' 
+    AND enumtypid = (
+      SELECT oid 
+      FROM pg_type 
+      WHERE typname = 'payment_status'
+    )
+  ) THEN
+    -- Add the enum value
+    ALTER TYPE public.payment_status ADD VALUE 'partial_refund';
+    RAISE NOTICE '✅ Added partial_refund to payment_status enum';
+  ELSE
+    RAISE NOTICE 'ℹ️ partial_refund already exists in payment_status enum';
+  END IF;
+END $$;
 
 COMMENT ON TYPE public.payment_status IS 'Payment status enum: pending, processing, completed, failed, cancelled, refunded, partial_refund';
 
@@ -55,7 +76,7 @@ COMMENT ON TABLE public.refunds IS 'Tracks refunds for cancelled or partially ca
 COMMENT ON COLUMN public.refunds.phone_number IS 'Phone number that made the original payment (refund destination)';
 COMMENT ON COLUMN public.refunds.refund_type IS 'full: entire booking cancelled, partial: some seats reduced';
 COMMENT ON COLUMN public.refunds.amount IS 'Amount refunded to customer';
-COMMENT ON COLUMN public.refunds.original_payment_id IS 'Reference to the original payment being refunded';
+COMMENT ON COLUMN public.refunds.payment_id IS 'Reference to the original payment being refunded';
 
 -- ============================================================================
 -- PART 3: Create indexes for refunds table
