@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +36,18 @@ export function BookingSeatSelection({
   onErrorClear,
 }: BookingSeatSelectionProps) {
   const { t } = useLocale();
+  // Local state for input display - allows temporary empty values while typing
+  const [inputValue, setInputValue] = useState<string>(seats.toString());
+  // Track if user is actively typing to prevent useEffect from overwriting
+  const isTypingRef = useRef(false);
+
+  // Sync local state with parent state when seats prop changes
+  // But only if user is not actively typing (to prevent overwriting their input)
+  useEffect(() => {
+    if (!isTypingRef.current) {
+      setInputValue(seats.toString());
+    }
+  }, [seats]);
 
   // Calculate maximum seats user can book (accounting for existing booking)
   const maxSeats = existingBooking && typeof existingBooking.seats === 'number' && existingBooking.seats > 0
@@ -181,15 +194,59 @@ export function BookingSeatSelection({
             type="number"
             min={minSeats}
             max={maxSeats}
-            value={seats}
+            value={inputValue}
             onChange={(e) => {
-              const value = parseInt(e.target.value, 10);
-              if (!isNaN(value) && value >= 0) {
-                onSeatsChange(value);
-              }
+              const rawValue = e.target.value;
+              // Update local state immediately to allow clearing
+              setInputValue(rawValue);
+              isTypingRef.current = true;
+              
               // Clear error when user changes seats
               if (bookingError) {
                 onErrorClear();
+              }
+              
+              // Only update parent state if we have a valid number
+              // This keeps price/validation using valid parent state
+              if (rawValue === "" || rawValue === null || rawValue === undefined) {
+                // Allow empty temporarily - parent state unchanged (keeps valid value)
+                return;
+              }
+              
+              const value = parseInt(rawValue, 10);
+              if (!isNaN(value) && value >= 0) {
+                // Update parent state immediately for valid numbers
+                // This ensures price/validation stay in sync
+                onSeatsChange(value);
+              }
+            }}
+            onBlur={(e) => {
+              // Mark that user is no longer typing
+              isTypingRef.current = false;
+              
+              // On blur, ensure we have a valid value
+              const rawValue = e.target.value;
+              if (rawValue === "" || rawValue === null || rawValue === undefined) {
+                // If empty on blur, restore to current parent state value
+                // This ensures we never submit invalid state
+                setInputValue(seats.toString());
+              } else {
+                const value = parseInt(rawValue, 10);
+                if (isNaN(value) || value < minSeats) {
+                  // If invalid, set to minimum and update parent
+                  setInputValue(minSeats.toString());
+                  onSeatsChange(minSeats);
+                } else if (value > maxSeats) {
+                  // If exceeds max, set to max and update parent
+                  setInputValue(maxSeats.toString());
+                  onSeatsChange(maxSeats);
+                } else {
+                  // Valid value - ensure parent state is in sync
+                  if (value !== seats) {
+                    onSeatsChange(value);
+                  }
+                  setInputValue(value.toString());
+                }
               }
             }}
           />
