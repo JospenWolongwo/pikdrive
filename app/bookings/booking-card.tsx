@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
+import { format } from "date-fns";
 import { VerificationCodeDisplay } from "@/components/bookings/verification-code-display";
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, X, MessageCircle, Minus } from "lucide-react";
@@ -303,6 +304,16 @@ export function BookingCard({ booking }: BookingCardProps) {
           <div>
             <strong>{t("pages.bookings.card.seats")}</strong> {booking.seats}
           </div>
+          {booking.pickup_point_name && (
+            <div>
+              <strong>{t("pages.bookings.card.pickupPoint")}</strong> {booking.pickup_point_name}
+              {booking.pickup_time && (
+                <span className="text-muted-foreground text-sm ml-2">
+                  ({format(new Date(booking.pickup_time), "h:mm a")})
+                </span>
+              )}
+            </div>
+          )}
           <div>
             <strong>{t("pages.bookings.card.total")}</strong>{" "}
             {payment 

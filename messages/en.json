@@ -832,6 +832,20 @@
         "redirecting": "Redirecting...",
         "invalidTime": "Invalid Departure Time",
         "invalidTimeDescription": "The departure time must be in the future.",
+        "pickupPoints": {
+          "title": "Pickup Points",
+          "description": "Define at least 2 pickup points where passengers can be picked up",
+          "name": "Pickup Point Name",
+          "namePlaceholder": "e.g., Carrefour Deido",
+          "timeOffset": "Minutes After Departure",
+          "minutes": "min",
+          "pickupAt": "Pickup at",
+          "add": "Add Point",
+          "remove": "Remove",
+          "noPoints": "No pickup points added yet",
+          "addFirst": "Add First Point",
+          "minRequired": "At least 2 pickup points are required"
+        },
         "validation": {
           "fromCityRequired": "Departure city is required",
           "toCityRequired": "Destination city is required",
@@ -840,13 +854,18 @@
           "seatsRequired": "Number of available seats is required",
           "seatsMax": "Cannot exceed 100 seats",
           "carModelRequired": "Car model is required",
-          "carColorRequired": "Car color is required"
+          "carColorRequired": "Car color is required",
+          "pickupPointsMinRequired": "At least 2 pickup points are required"
         },
         "errors": {
           "authRequired": "Authentication Required",
           "authRequiredDescription": "Please log in to create a ride.",
           "fieldsRequired": "Required Fields",
           "fieldsRequiredDescription": "Price and number of seats are required.",
+          "pickupPointsRequired": "Pickup Points Required",
+          "pickupPointsRequiredDescription": "Please add at least 2 pickup points for your ride.",
+          "pickupPointsInvalid": "Invalid Pickup Points",
+          "pickupPointsInvalidDescription": "Please ensure all pickup points have valid names and times.",
           "error": "Error",
           "errorDescription": "An error occurred while creating your ride. Please try again."
         }
@@ -1135,6 +1154,13 @@
             "genericError": "An error occurred while creating your booking. Please try again."
           }
         },
+        "pickupPoint": {
+          "title": "Select Pickup Point",
+          "description": "Choose where you want to be picked up",
+          "pickupAt": "Pickup at",
+          "noPoints": "No pickup points available for this ride",
+          "required": "Please select a pickup point"
+        },
         "payment": {
           "title": "Select payment method",
           "alreadyPaidSeats": "Already paid seats:",
@@ -1204,6 +1230,9 @@
         "destinationPoint": "Destination point",
         "scheduledDeparture": "Scheduled departure",
         "pricePerSeat": "Price per seat",
+        "pickupPoints": "pickup point",
+        "pickupPoints_plural": "pickup points",
+        "firstPickup": "First pickup:",
         "book": "Book",
         "chat": "Chat",
         "contact": "Contact",
@@ -1231,6 +1260,7 @@
         "driver": "Driver:",
         "car": "Car:",
         "seats": "Seats:",
+        "pickupPoint": "Pickup Point:",
         "total": "Total:",
         "status": "Status:",
         "payment": "Payment:",

@@ -58,6 +58,7 @@ export function useBookingModal({
   const [isPassengerInfoComplete, setIsPassengerInfoComplete] = useState<boolean | null>(null);
   const [profileName, setProfileName] = useState<string>("");
   const [bookingError, setBookingError] = useState<string | null>(null); // NEW: Store booking creation errors
+  const [selectedPickupPointId, setSelectedPickupPointId] = useState<string | undefined>(undefined);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate total price - for paid bookings, only charge for additional seats
@@ -165,6 +166,7 @@ export function useBookingModal({
         setIsPassengerInfoComplete(null);
         setProfileName("");
         setBookingError(null); // Clear booking error when modal closes
+        setSelectedPickupPointId(undefined);
       } else if (hasPendingPayment) {
         // For pending payments, only clear payment-specific state
         // Keep booking context so user can resume
@@ -233,6 +235,7 @@ export function useBookingModal({
         setOriginalSeats(existing.seats);
         setOriginalPaymentStatus(existing.payment_status);
         setBookingId(existing.id);
+        setSelectedPickupPointId(existing.selected_pickup_point_id);
 
         // Smart step detection based on payment status
         if (existing.payment_status === "completed") {
@@ -265,6 +268,14 @@ export function useBookingModal({
     // Clear previous error
     setBookingError(null);
 
+    // Validate pickup point selection if ride has pickup points
+    if (ride.pickup_points && ride.pickup_points.length > 0) {
+      if (!selectedPickupPointId) {
+        setBookingError(t("pages.rides.booking.pickupPoint.required"));
+        return;
+      }
+    }
+
     try {
       // Use the booking store to create/update booking (without auto-refresh for performance)
       const booking = await createBooking(
@@ -272,6 +283,7 @@ export function useBookingModal({
           ride_id: ride.id,
           user_id: user.id,
           seats: seats,
+          selected_pickup_point_id: selectedPickupPointId,
         },
         { refreshUserBookings: false }
       ); // Don't auto-refresh for performance
@@ -400,44 +412,46 @@ export function useBookingModal({
     }
   };
 
-  return {
-    // State
-    step,
-    seats,
-    loading,
-    selectedProvider,
-    phoneNumber,
-    isPhoneValid,
-    bookingId,
-    existingBooking,
-    paymentTransactionId,
-    paymentStatus,
-    statusMessage,
-    isPolling,
-    paymentSuccess,
-    totalPrice,
-    providers,
-    userBookingsLoading,
-    userBookings,
-    isCreatingBooking,
-    isPassengerInfoComplete,
-    checkingPassengerInfo: passengerInfoLoading,
-    profileName,
-    bookingError, // NEW: Expose booking error
-    // Setters
-    setSeats,
-    setSelectedProvider,
-    setPhoneNumber,
-    setIsPhoneValid,
-    setStep,
-    setStatusMessage,
-    setPaymentStatus,
-    setBookingError, // NEW: Allow clearing error
-    // Handlers
-    handlePassengerInfoComplete,
-    handleCreateBooking,
-    handlePayment,
-    handlePaymentComplete,
-  };
+    return {
+      // State
+      step,
+      seats,
+      loading,
+      selectedProvider,
+      phoneNumber,
+      isPhoneValid,
+      bookingId,
+      existingBooking,
+      paymentTransactionId,
+      paymentStatus,
+      statusMessage,
+      isPolling,
+      paymentSuccess,
+      totalPrice,
+      providers,
+      userBookingsLoading,
+      userBookings,
+      isCreatingBooking,
+      isPassengerInfoComplete,
+      checkingPassengerInfo: passengerInfoLoading,
+      profileName,
+      bookingError, // NEW: Expose booking error
+      selectedPickupPointId,
+      // Setters
+      setSeats,
+      setSelectedProvider,
+      setPhoneNumber,
+      setIsPhoneValid,
+      setStep,
+      setStatusMessage,
+      setPaymentStatus,
+      setBookingError, // NEW: Allow clearing error
+      setSelectedPickupPointId,
+      // Handlers
+      handlePassengerInfoComplete,
+      handleCreateBooking,
+      handlePayment,
+      handlePaymentComplete,
+    };
 }
 

@@ -9,6 +9,7 @@ import {
   User,
   Car,
   Clock,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -213,6 +214,25 @@ export function PassengerRideCard({
               ></div>
             </div>
           </div>
+
+          {/* Pickup Points Info */}
+          {ride.pickup_points && ride.pickup_points.length > 0 && (
+            <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Navigation className="w-4 h-4 text-primary" />
+                <p className="text-sm font-semibold text-foreground">
+                  {ride.pickup_points.length} {ride.pickup_points.length === 1 
+                    ? t("pages.rides.rideCard.pickupPoints") 
+                    : t("pages.rides.rideCard.pickupPoints_plural")}
+                </p>
+              </div>
+              {ride.pickup_points.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t("pages.rides.rideCard.firstPickup")} {ride.pickup_points[0].name}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Time and Price with Enhanced Design */}
           <div className="bg-gradient-to-r from-muted/50 to-secondary/30 rounded-xl p-4 mb-4">

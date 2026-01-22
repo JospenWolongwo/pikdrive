@@ -9,6 +9,7 @@ import { MapPin, Users, Clock, Car, ArrowRight, Loader2, AlertCircle, X } from "
 import { format } from "date-fns";
 import type { RideWithDriver } from "@/types";
 import { useLocale } from "@/hooks";
+import { PickupPointSelector } from "@/components/passenger/pickup-point-selector";
 
 interface BookingSeatSelectionProps {
   ride: RideWithDriver;
@@ -17,7 +18,9 @@ interface BookingSeatSelectionProps {
   totalPrice: number;
   isCreatingBooking: boolean;
   bookingError: string | null;
+  selectedPickupPointId?: string;
   onSeatsChange: (seats: number) => void;
+  onPickupPointChange: (pickupPointId: string) => void;
   onCreateBooking: () => void;
   onClose: () => void;
   onErrorClear: () => void;
@@ -30,7 +33,9 @@ export function BookingSeatSelection({
   totalPrice,
   isCreatingBooking,
   bookingError,
+  selectedPickupPointId,
   onSeatsChange,
+  onPickupPointChange,
   onCreateBooking,
   onClose,
   onErrorClear,
@@ -186,6 +191,19 @@ export function BookingSeatSelection({
             </div>
           </div>
         </div>
+
+        {/* Pickup Point Selection */}
+        {ride.pickup_points && ride.pickup_points.length > 0 && (
+          <div className="space-y-3">
+            <PickupPointSelector
+              pickupPoints={ride.pickup_points}
+              departureTime={ride.departure_time}
+              value={selectedPickupPointId}
+              onChange={onPickupPointChange}
+              error={bookingError?.includes("pickup") ? bookingError : undefined}
+            />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="seats">{t("pages.rides.booking.seatSelection.seats")}</Label>

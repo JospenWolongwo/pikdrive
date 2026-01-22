@@ -111,12 +111,25 @@ export class ServerRidesService {
       });
     }
 
-    // Merge vehicle images with rides data
+    // Merge vehicle images with rides data and parse pickup_points
     const ridesWithVehicleImages = (rides || []).map((ride: any) => {
       const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
       
+      // Parse pickup_points JSONB if present
+      let pickupPoints = undefined;
+      if (ride.pickup_points) {
+        try {
+          pickupPoints = typeof ride.pickup_points === 'string'
+            ? JSON.parse(ride.pickup_points)
+            : ride.pickup_points;
+        } catch (e) {
+          console.error('Error parsing pickup_points:', e);
+        }
+      }
+      
       return {
         ...ride,
+        pickup_points: pickupPoints,
         driver: {
           ...ride.driver,
           vehicle_images: vehicleImages,
@@ -173,24 +186,43 @@ export class ServerRidesService {
    * Create a new ride
    */
   async createRide(rideData: CreateRideRequest, driverId: string): Promise<Ride> {
+    const insertData: any = {
+      driver_id: driverId,
+      from_city: rideData.from_city,
+      to_city: rideData.to_city,
+      departure_time: rideData.departure_time,
+      price: rideData.price,
+      seats_available: rideData.seats_available,
+      description: rideData.description,
+      car_model: rideData.car_model,
+      car_color: rideData.car_color,
+    };
+
+    // Add pickup_points if provided
+    if (rideData.pickup_points && rideData.pickup_points.length > 0) {
+      insertData.pickup_points = rideData.pickup_points;
+    }
+
     const { data, error } = await this.supabase
       .from('rides')
-      .insert({
-        driver_id: driverId,
-        from_city: rideData.from_city,
-        to_city: rideData.to_city,
-        departure_time: rideData.departure_time,
-        price: rideData.price,
-        seats_available: rideData.seats_available,
-        description: rideData.description,
-        car_model: rideData.car_model,
-        car_color: rideData.car_color,
-      })
+      .insert(insertData)
       .select("*")
       .single();
 
     if (error) {
       throw new Error(`Failed to create ride: ${error.message}`);
+    }
+
+    // Parse pickup_points JSONB if present
+    let pickupPoints = undefined;
+    if (data.pickup_points) {
+      try {
+        pickupPoints = typeof data.pickup_points === 'string'
+          ? JSON.parse(data.pickup_points)
+          : data.pickup_points;
+      } catch (e) {
+        console.error('Error parsing pickup_points:', e);
+      }
     }
 
     // Fetch driver profile separately (avoids PostgREST relationship syntax issues)
@@ -203,6 +235,7 @@ export class ServerRidesService {
     // Attach driver profile to ride
     return {
       ...data,
+      pickup_points: pickupPoints,
       driver: driverProfile || null,
     } as Ride;
   }
@@ -211,12 +244,21 @@ export class ServerRidesService {
    * Update an existing ride
    */
   async updateRide(rideId: string, updateData: UpdateRideRequest): Promise<Ride> {
+    const updatePayload: any = {
+      ...updateData,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Handle pickup_points separately if provided
+    if (updateData.pickup_points !== undefined) {
+      updatePayload.pickup_points = updateData.pickup_points.length > 0 
+        ? updateData.pickup_points 
+        : null;
+    }
+
     const { data, error } = await this.supabase
       .from('rides')
-      .update({
-        ...updateData,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', rideId)
       .select(`
         *,
@@ -228,7 +270,22 @@ export class ServerRidesService {
       throw new Error(`Failed to update ride: ${error.message}`);
     }
 
-    return data;
+    // Parse pickup_points JSONB if present
+    let pickupPoints = undefined;
+    if (data.pickup_points) {
+      try {
+        pickupPoints = typeof data.pickup_points === 'string'
+          ? JSON.parse(data.pickup_points)
+          : data.pickup_points;
+      } catch (e) {
+        console.error('Error parsing pickup_points:', e);
+      }
+    }
+
+    return {
+      ...data,
+      pickup_points: pickupPoints,
+    };
   }
 
   /**

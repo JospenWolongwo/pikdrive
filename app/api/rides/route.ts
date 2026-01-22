@@ -1,9 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
-import type { Ride, CreateRideRequest, UpdateRideRequest } from "@/types";
+import type { Ride, CreateRideRequest, UpdateRideRequest, PickupPoint } from "@/types";
+import { randomUUID } from "crypto";
 
 // Force dynamic rendering since this route uses cookies() via createApiSupabaseClient()
 export const dynamic = 'force-dynamic';
+
+/**
+ * Validate and process pickup points
+ * Ensures at least 2 points, assigns IDs and orders if missing
+ */
+function validateAndProcessPickupPoints(
+  pickupPoints: readonly PickupPoint[] | undefined
+): PickupPoint[] | null {
+  if (!pickupPoints || pickupPoints.length === 0) {
+    return null; // Optional field, null is valid
+  }
+
+  // Require at least 2 pickup points
+  if (pickupPoints.length < 2) {
+    throw new Error("At least 2 pickup points are required");
+  }
+
+  // Process and validate each point
+  return pickupPoints.map((point, index) => {
+    // Validate required fields
+    if (!point.name || typeof point.name !== 'string' || point.name.trim().length === 0) {
+      throw new Error(`Pickup point ${index + 1}: name is required`);
+    }
+
+    if (typeof point.time_offset_minutes !== 'number' || point.time_offset_minutes < 0) {
+      throw new Error(`Pickup point ${index + 1}: time_offset_minutes must be a non-negative number`);
+    }
+
+    // Auto-assign id and order if missing
+    return {
+      id: point.id || randomUUID(),
+      name: point.name.trim(),
+      order: point.order !== undefined ? point.order : index + 1,
+      time_offset_minutes: point.time_offset_minutes,
+    };
+  }).sort((a, b) => a.order - b.order); // Sort by order
+}
 
 /**
  * Helper function to construct Supabase storage public URL
@@ -149,8 +187,22 @@ export async function GET(request: NextRequest) {
       const driverProfile = driverProfileMap.get(ride.driver_id);
       const vehicleImages = vehicleImagesMap.get(ride.driver_id) || [];
       
+      // Parse pickup_points JSONB if present
+      let pickupPoints: PickupPoint[] | undefined;
+      if (ride.pickup_points) {
+        try {
+          pickupPoints = typeof ride.pickup_points === 'string' 
+            ? JSON.parse(ride.pickup_points) 
+            : ride.pickup_points;
+        } catch (e) {
+          console.error("Error parsing pickup_points:", e);
+          pickupPoints = undefined;
+        }
+      }
+      
       return {
         ...ride,
+        pickup_points: pickupPoints,
         driver: driverProfile ? {
           ...driverProfile,
           avatar_url: getStoragePublicUrl(driverProfile.avatar_url, 'avatars'),
@@ -223,20 +275,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate and process pickup points
+    let processedPickupPoints: PickupPoint[] | null = null;
+    try {
+      processedPickupPoints = validateAndProcessPickupPoints(rideData.pickup_points);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Invalid pickup points" },
+        { status: 400 }
+      );
+    }
+
+    // Prepare insert data
+    const insertData: any = {
+      driver_id: userId,
+      from_city: rideData.from_city,
+      to_city: rideData.to_city,
+      departure_time: rideData.departure_time,
+      price: rideData.price,
+      seats_available: rideData.seats_available,
+      description: rideData.description,
+      car_model: rideData.car_model,
+      car_color: rideData.car_color,
+    };
+
+    // Add pickup_points if provided
+    if (processedPickupPoints) {
+      insertData.pickup_points = processedPickupPoints;
+    }
+
     // Create the ride
     const { data: ride, error: createError } = await supabase
       .from("rides")
-      .insert({
-        driver_id: userId,
-        from_city: rideData.from_city,
-        to_city: rideData.to_city,
-        departure_time: rideData.departure_time,
-        price: rideData.price,
-        seats_available: rideData.seats_available,
-        description: rideData.description,
-        car_model: rideData.car_model,
-        car_color: rideData.car_color,
-      })
+      .insert(insertData)
       .select("*")
       .single();
 
@@ -248,9 +319,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse pickup_points JSONB if present
+    let pickupPoints: PickupPoint[] | undefined;
+    if (ride.pickup_points) {
+      try {
+        pickupPoints = typeof ride.pickup_points === 'string' 
+          ? JSON.parse(ride.pickup_points) 
+          : ride.pickup_points;
+      } catch (e) {
+        console.error("Error parsing pickup_points:", e);
+        pickupPoints = undefined;
+      }
+    }
+
     // Attach driver profile (already fetched above - no extra query!)
     const rideWithDriver = {
       ...ride,
+      pickup_points: pickupPoints,
       driver: {
         id: driverData.id,
         full_name: driverData.full_name,

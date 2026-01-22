@@ -45,6 +45,7 @@ export function BookingModal({
     checkingPassengerInfo,
     profileName,
     bookingError,
+    selectedPickupPointId,
     setSeats,
     setSelectedProvider,
     setPhoneNumber,
@@ -53,6 +54,7 @@ export function BookingModal({
     setStatusMessage,
     setPaymentStatus,
     setBookingError,
+    setSelectedPickupPointId,
     handlePassengerInfoComplete,
     handleCreateBooking,
     handlePayment,
@@ -107,7 +109,9 @@ export function BookingModal({
             totalPrice={totalPrice}
             isCreatingBooking={isCreatingBooking}
             bookingError={bookingError}
+            selectedPickupPointId={selectedPickupPointId}
             onSeatsChange={setSeats}
+            onPickupPointChange={setSelectedPickupPointId}
             onCreateBooking={handleCreateBooking}
             onClose={onClose}
             onErrorClear={() => setBookingError(null)}

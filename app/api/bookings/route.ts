@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json();
-    const { ride_id, seats } = body;
+    const { ride_id, seats, selected_pickup_point_id } = body;
 
     if (!ride_id || !seats) {
       return NextResponse.json(
@@ -37,11 +37,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create booking
+    // Create booking (service will handle pickup point validation and calculation)
     const booking = await bookingService.createBooking({
       ride_id,
       user_id: userId,
-      seats
+      seats,
+      selected_pickup_point_id: selected_pickup_point_id || undefined,
     });
 
     return NextResponse.json({
@@ -62,7 +63,10 @@ export async function POST(request: NextRequest) {
       errorMessage.includes('seats available') ||
       errorMessage.includes('Cannot') ||
       errorMessage.includes('Only') ||
-      errorMessage.includes('Driver cannot book');
+      errorMessage.includes('Driver cannot book') ||
+      errorMessage.includes('pickup point') ||
+      errorMessage.includes('Ride not found') ||
+      errorMessage.includes('no pickup points');
     
     const statusCode = isBusinessLogicError ? 400 : 500;
     

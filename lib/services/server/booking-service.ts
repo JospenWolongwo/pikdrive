@@ -4,7 +4,8 @@ import type {
   CreateBookingRequest, 
   UpdateBookingRequest,
   BookingWithDetails,
-  DriverBooking 
+  DriverBooking,
+  PickupPoint
 } from '@/types';
 
 export interface BookingSearchParams {
@@ -23,11 +24,71 @@ export class ServerBookingService {
   constructor(private supabase: SupabaseClient) {}
 
   /**
+   * Validate and calculate pickup point information
+   */
+  private async validateAndCalculatePickupPoint(
+    rideId: string,
+    selectedPickupPointId: string | undefined
+  ): Promise<{ pickup_point_name?: string; pickup_time?: string } | null> {
+    if (!selectedPickupPointId) {
+      return null;
+    }
+
+    // Fetch ride to get pickup_points
+    const { data: ride, error: rideError } = await this.supabase
+      .from('rides')
+      .select('departure_time, pickup_points')
+      .eq('id', rideId)
+      .single();
+
+    if (rideError || !ride) {
+      throw new Error('Ride not found');
+    }
+
+    // Parse pickup_points
+    let pickupPoints: PickupPoint[] | undefined;
+    if (ride.pickup_points) {
+      try {
+        pickupPoints = typeof ride.pickup_points === 'string'
+          ? JSON.parse(ride.pickup_points)
+          : ride.pickup_points;
+      } catch (e) {
+        console.error('Error parsing pickup_points:', e);
+        throw new Error('Invalid pickup points data in ride');
+      }
+    }
+
+    // Validate pickup point exists
+    if (!pickupPoints || pickupPoints.length === 0) {
+      throw new Error('Ride has no pickup points defined');
+    }
+
+    const selectedPoint = pickupPoints.find(p => p.id === selectedPickupPointId);
+    if (!selectedPoint) {
+      throw new Error('Selected pickup point not found in ride');
+    }
+
+    // Calculate pickup time: departure_time + time_offset_minutes
+    const departureTime = new Date(ride.departure_time);
+    const pickupTimeDate = new Date(
+      departureTime.getTime() + selectedPoint.time_offset_minutes * 60 * 1000
+    );
+
+    return {
+      pickup_point_name: selectedPoint.name,
+      pickup_time: pickupTimeDate.toISOString(),
+    };
+  }
+
+  /**
    * Create or update a booking (upsert)
    * Uses atomic seat reservation to prevent race conditions
    * Supports both creating new bookings and updating existing ones
    */
-  async createBooking(params: CreateBookingRequest & { user_id: string }): Promise<Booking> {
+  async createBooking(params: CreateBookingRequest & { 
+    user_id: string;
+    selected_pickup_point_id?: string;
+  }): Promise<Booking> {
     try {
       // First, check if user already has a booking for this ride
       const { data: existingBooking } = await this.supabase
@@ -110,6 +171,42 @@ export class ServerBookingService {
       if (fetchError) {
         console.error('❌ Error fetching booking:', fetchError);
         throw new Error(`Failed to fetch booking: ${fetchError.message}`);
+      }
+
+      // Validate and calculate pickup point information if provided
+      let pickupPointInfo: { pickup_point_name?: string; pickup_time?: string } | null = null;
+      if (params.selected_pickup_point_id) {
+        try {
+          pickupPointInfo = await this.validateAndCalculatePickupPoint(
+            params.ride_id,
+            params.selected_pickup_point_id
+          );
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to validate pickup point');
+        }
+      }
+
+      // Update booking with pickup point information if provided
+      if (pickupPointInfo) {
+        const { data: updatedBooking, error: updateError } = await this.supabase
+          .from('bookings')
+          .update({
+            selected_pickup_point_id: params.selected_pickup_point_id || null,
+            pickup_point_name: pickupPointInfo.pickup_point_name || null,
+            pickup_time: pickupPointInfo.pickup_time || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', result.booking_id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('❌ Error updating booking with pickup point:', updateError);
+          // Don't throw - continue with original booking
+        } else if (updatedBooking) {
+          // Use updated booking for reconciliation check
+          Object.assign(booking, updatedBooking);
+        }
       }
 
       // RECONCILIATION: Check if there's already a completed payment for this booking

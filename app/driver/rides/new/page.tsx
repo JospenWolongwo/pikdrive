@@ -40,6 +40,8 @@ import { CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { allCameroonCities } from "@/app/data/cities";
 import { useLocale } from "@/hooks";
+import { PickupPointsForm } from "@/components/driver/pickup-points-form";
+import type { PickupPoint } from "@/types";
 
 const createFormSchema = (t: (key: string) => string) => z.object({
   fromCity: z.string().min(1, t("pages.driver.newRide.validation.fromCityRequired")),
@@ -55,6 +57,12 @@ const createFormSchema = (t: (key: string) => string) => z.object({
     .optional(),
   carModel: z.string().min(1, t("pages.driver.newRide.validation.carModelRequired")),
   carColor: z.string().min(1, t("pages.driver.newRide.validation.carColorRequired")),
+  pickupPoints: z.array(z.object({
+    id: z.string(),
+    name: z.string().min(1),
+    order: z.number(),
+    time_offset_minutes: z.number().min(0),
+  })).min(2, t("pages.driver.newRide.validation.pickupPointsMinRequired")),
 });
 
 export default function NewRidePage() {
@@ -83,8 +91,11 @@ export default function NewRidePage() {
       seatsAvailable: undefined,
       carModel: "",
       carColor: "",
+      pickupPoints: [],
     },
   });
+
+  const [pickupPoints, setPickupPoints] = useState<PickupPoint[]>([]);
 
   async function onSubmit(values: z.infer<ReturnType<typeof createFormSchema>>) {
     if (!user) {
@@ -145,6 +156,30 @@ export default function NewRidePage() {
         return;
       }
 
+      // Validate pickup points
+      if (!pickupPoints || pickupPoints.length < 2) {
+        toast({
+          title: t("pages.driver.newRide.errors.pickupPointsRequired"),
+          description: t("pages.driver.newRide.errors.pickupPointsRequiredDescription"),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Ensure all pickup points have valid data
+      const validPickupPoints = pickupPoints.filter(
+        p => p.name.trim().length > 0 && typeof p.time_offset_minutes === 'number'
+      );
+
+      if (validPickupPoints.length < 2) {
+        toast({
+          title: t("pages.driver.newRide.errors.pickupPointsInvalid"),
+          description: t("pages.driver.newRide.errors.pickupPointsInvalidDescription"),
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Create the ride using the API endpoint
       const response = await fetch("/api/rides", {
         method: "POST",
@@ -159,6 +194,7 @@ export default function NewRidePage() {
           seats_available: values.seatsAvailable,
           car_model: values.carModel,
           car_color: values.carColor,
+          pickup_points: validPickupPoints,
         }),
       });
 
@@ -366,6 +402,27 @@ export default function NewRidePage() {
                         </div>
                       </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="pickupPoints"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <PickupPointsForm
+                        departureTime={form.watch("departureTime")}
+                        value={pickupPoints}
+                        onChange={(points) => {
+                          setPickupPoints(points);
+                          field.onChange(points);
+                        }}
+                        error={form.formState.errors.pickupPoints?.message}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

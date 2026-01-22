@@ -2,6 +2,14 @@ import type { Booking, DashboardBooking } from './booking';
 import { Passenger } from './passenger';
 import type { RideMessage } from './chat';
 
+// Pickup point interface
+export interface PickupPoint {
+  readonly id: string;
+  readonly name: string;
+  readonly order: number;
+  readonly time_offset_minutes: number;
+}
+
 // Base Ride interface - core ride data
 export interface Ride {
   readonly id: string;
@@ -15,6 +23,7 @@ export interface Ride {
   readonly description?: string;
   readonly car_model?: string;
   readonly car_color?: string;
+  readonly pickup_points?: readonly PickupPoint[];
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -65,6 +74,7 @@ export interface CreateRideRequest {
   readonly description?: string;
   readonly car_model?: string;
   readonly car_color?: string;
+  readonly pickup_points?: readonly PickupPoint[];
 }
 
 export interface UpdateRideRequest {
@@ -76,6 +86,7 @@ export interface UpdateRideRequest {
   readonly description?: string;
   readonly car_model?: string;
   readonly car_color?: string;
+  readonly pickup_points?: readonly PickupPoint[];
 }
 
 // Additional ride-related types

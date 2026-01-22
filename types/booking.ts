@@ -9,6 +9,9 @@ export interface Booking {
   readonly status: BookingStatus;
   readonly payment_status: PaymentStatus;
   readonly code_verified?: boolean;
+  readonly selected_pickup_point_id?: string;
+  readonly pickup_point_name?: string;
+  readonly pickup_time?: string;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -57,6 +60,7 @@ export interface BookingWithPayments extends BookingWithDetails {
 export interface CreateBookingRequest {
   readonly ride_id: string;
   readonly seats: number;
+  readonly selected_pickup_point_id?: string;
 }
 
 export interface UpdateBookingRequest {
@@ -77,6 +81,9 @@ export interface DashboardBooking {
   readonly transaction_id?: string;
   readonly payment_provider?: string;
   readonly created_at?: string;
+  readonly selected_pickup_point_id?: string;
+  readonly pickup_point_name?: string;
+  readonly pickup_time?: string;
   readonly user: {
     readonly id: string;
     readonly full_name: string;
@@ -93,6 +100,9 @@ export interface DriverBooking {
   readonly created_at: string;
   readonly payment_status: string;
   readonly code_verified?: boolean;
+  readonly selected_pickup_point_id?: string;
+  readonly pickup_point_name?: string;
+  readonly pickup_time?: string;
   readonly user_id: string;
   readonly user: {
     readonly id: string;
