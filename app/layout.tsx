@@ -68,6 +68,9 @@ export async function generateMetadata(): Promise<Metadata> {
         { url: "/apple-icon-120x120.png", sizes: "120x120", type: "image/png" },
       ],
     },
+    other: {
+      "facebook-domain-verification": "1rh8g11t12jxxv56m7bfrs1mlvkfvt",
+    },
   };
 }
 
@@ -141,6 +144,7 @@ export default async function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
+        <meta name="facebook-domain-verification" content="1rh8g11t12jxxv56m7bfrs1mlvkfvt" />
       </head>
       <body className={`h-full ${inter.className}`}>
         <SupabaseProvider>
