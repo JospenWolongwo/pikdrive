@@ -111,6 +111,7 @@ export class ServerPickupUpdateService {
           id,
           pickup_point_name,
           pickup_time,
+          selected_pickup_point_id,
           ride:ride_id (
             id,
             pickup_points

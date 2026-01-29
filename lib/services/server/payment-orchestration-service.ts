@@ -126,7 +126,7 @@ export class ServerPaymentOrchestrationService {
       // Get booking with explicit columns (avoids PostgREST relationship cache issues)
       let { data: bookingData, error: bookingError } = await this.supabase
         .from('bookings')
-        .select('id, ride_id, user_id, seats, status, verification_code, created_at')
+        .select('id, ride_id, user_id, seats, status, verification_code, created_at, pickup_point_name, pickup_time')
         .eq('id', payment.booking_id)
         .single();
 
@@ -142,7 +142,7 @@ export class ServerPaymentOrchestrationService {
         // Try fallback: Fetch booking without relations and manually fetch related data
         const { data: simpleBooking, error: simpleError } = await this.supabase
           .from('bookings')
-          .select('id, ride_id, user_id, seats, status, verification_code, created_at')
+          .select('id, ride_id, user_id, seats, status, verification_code, created_at, pickup_point_name, pickup_time')
           .eq('id', payment.booking_id)
           .single();
           
@@ -363,7 +363,7 @@ export class ServerPaymentOrchestrationService {
             .single(),
           this.supabase
             .from('profiles')
-            .select('phone')
+            .select('phone, full_name')
             .eq('id', bookingData.user_id)
             .single()
         ]);
