@@ -147,3 +147,29 @@ export interface OneSignalWebhookLog {
   readonly data?: Record<string, any>;
   readonly created_at: string;
 }
+
+// WhatsApp Business API Types
+export interface WhatsAppTemplateRequest {
+  readonly templateName: string;
+  readonly phoneNumber: string;
+  readonly variables: readonly string[];
+  readonly language?: string; // Default: 'fr'
+}
+
+export interface WhatsAppMessageResponse {
+  readonly success: boolean;
+  readonly messageId?: string;
+  readonly status?: 'sent' | 'delivered' | 'read' | 'failed';
+  readonly error?: string;
+  readonly errorCode?: number;
+}
+
+export interface MultiChannelNotificationRequest {
+  readonly userId: string;
+  readonly phoneNumber?: string;
+  readonly whatsappEnabled?: boolean;
+  readonly onesignalData: NotificationRequest;
+  readonly whatsappData?: WhatsAppTemplateRequest;
+}
+
+export type NotificationChannel = 'onesignal' | 'whatsapp' | 'both';

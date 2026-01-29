@@ -35,7 +35,7 @@ export default function ContactPage() {
     {
       icon: Phone,
       title: t("pages.contact.phone"),
-      details: ["+237 698 805 890", "+237 674 123 456"],
+      details: ["+237 6 21 79 34 23"],
     },
     {
       icon: Mail,
@@ -156,7 +156,7 @@ export default function ContactPage() {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="698805890"
+                    placeholder="621793423"
                     required
                     disabled={isLoading}
                   />

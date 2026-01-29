@@ -40,7 +40,7 @@ export default function ApplicationConfirmationPage() {
       ]}
       contactInfo={{
         email: "support@pikdrive.com",
-        phone: "+237 698 805 890",
+        phone: "+237 6 21 79 34 23",
         supportText: t("pages.becomeDriver.confirmation.contact.supportText")
       }}
       actions={{

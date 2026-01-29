@@ -117,7 +117,7 @@ export default function Home() {
               className="bg-green-500/90 hover:bg-green-500 text-white flex items-center gap-2"
               asChild
             >
-              <a href="https://wa.me/+237698805890" target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/+237621793423" target="_blank" rel="noopener noreferrer">
                 <BsWhatsapp className="h-5 w-5" />
                 <span className="hidden sm:inline">{t("pages.home.hero.contactWhatsApp")}</span>
                 <span className="sm:hidden">{t("pages.home.hero.whatsApp")}</span>

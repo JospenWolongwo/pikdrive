@@ -257,10 +257,10 @@ export default function AdvicePage() {
               <PhoneCall className="w-8 h-8 text-primary mx-auto mb-4" />
               <h3 className="font-semibold mb-2">{t("pages.advice.contact.callUs")}</h3>
               <a 
-                href="tel:+237698805890" 
+                href="tel:+237621793423" 
                 className="text-muted-foreground break-words hover:text-primary transition-colors"
               >
-                +237 698805890
+                +237 6 21 79 34 23
               </a>
             </Card>
             
@@ -268,12 +268,12 @@ export default function AdvicePage() {
               <BsWhatsapp className="w-8 h-8 text-green-500 mx-auto mb-4" />
               <h3 className="font-semibold mb-2">{t("pages.advice.contact.whatsapp")}</h3>
               <a 
-                href="https://wa.me/+237698805890" 
+                href="https://wa.me/+237621793423" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground break-words hover:text-green-500 transition-colors"
               >
-                +237 698805890
+                +237 6 21 79 34 23
               </a>
             </Card>
 

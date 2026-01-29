@@ -3,10 +3,17 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
 import { Toaster } from 'sonner'
 import { LocaleProvider } from '@/providers/LocaleProvider'
+import type { Locale } from '@/i18n/config'
 
-export function Providers({ children }: { children: React.ReactNode }) {
+type ProvidersProps = {
+  children: React.ReactNode
+  initialLocale?: Locale
+  initialMessages?: Record<string, any>
+}
+
+export function Providers({ children, initialLocale, initialMessages }: ProvidersProps) {
   return (
-    <LocaleProvider>
+    <LocaleProvider defaultLocaleProp={initialLocale} initialMessages={initialMessages}>
       <NextThemesProvider
         attribute="class"
         defaultTheme="system"

@@ -82,6 +82,7 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get("locale");
   const locale = getLocaleFromCookie(localeCookie?.value);
+  const messages = locale === "en" ? enMessages : frMessages;
 
   return (
     <html lang={locale} className="h-full" suppressHydrationWarning>
@@ -148,7 +149,7 @@ export default async function RootLayout({
       </head>
       <body className={`h-full ${inter.className}`}>
         <SupabaseProvider>
-          <Providers>
+          <Providers initialLocale={locale} initialMessages={messages}>
             <OneSignalInitializer />
             <RouteOptimizer>
               <div className="relative flex min-h-screen flex-col">

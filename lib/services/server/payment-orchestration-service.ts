@@ -5,6 +5,7 @@ import { ServerBookingService } from './booking-service';
 import { ServerReceiptService } from './receipt-service';
 import { ServerPaymentNotificationService } from './payment-notification-service';
 import { ServerOneSignalNotificationService } from './onesignal-notification-service';
+import { ServerMultiChannelNotificationService } from './multi-channel-notification-service';
 
 /**
  * Server-side PaymentOrchestrationService
@@ -18,6 +19,7 @@ export class ServerPaymentOrchestrationService {
   private receiptService: ServerReceiptService;
   private notificationService: ServerPaymentNotificationService;
   private oneSignalService: ServerOneSignalNotificationService;
+  private multiChannelService: ServerMultiChannelNotificationService;
 
   constructor(private supabase: SupabaseClient) {
     this.paymentService = new ServerPaymentService(supabase);
@@ -25,6 +27,7 @@ export class ServerPaymentOrchestrationService {
     this.receiptService = new ServerReceiptService(supabase);
     this.notificationService = new ServerPaymentNotificationService(supabase);
     this.oneSignalService = new ServerOneSignalNotificationService(supabase);
+    this.multiChannelService = new ServerMultiChannelNotificationService(supabase);
   }
 
   /**
@@ -157,6 +160,7 @@ export class ServerPaymentOrchestrationService {
       }
 
       // Fetch related data in parallel (more efficient than nested queries)
+      // Include pickup point fields from booking
       const [rideResult, userResult] = await Promise.all([
         this.supabase
           .from('rides')
@@ -205,8 +209,11 @@ export class ServerPaymentOrchestrationService {
       }
 
       // Create merged booking object in expected format
+      // Include pickup point data from booking
       const mergedBooking = {
         ...bookingData,
+        pickup_point_name: bookingData.pickup_point_name,
+        pickup_time: bookingData.pickup_time,
         ride: {
           ...rideData,
           driver: driverData
@@ -263,90 +270,48 @@ export class ServerPaymentOrchestrationService {
           // Don't throw - receipt creation failure shouldn't block the workflow
         }),
 
-        // Send single push notification to passenger with verification code
+        // Send multi-channel notification to passenger (OneSignal + WhatsApp)
         (async () => {
-          console.log('🔔 [ORCHESTRATION] Sending push notification to passenger:', booking.user.id);
-          const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
-          const formatDate = (dateStr: string) => {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('fr-FR', { 
-              day: '2-digit', 
-              month: 'short', 
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-          };
+          console.log('🔔 [ORCHESTRATION] Sending multi-channel notification to passenger:', booking.user.id);
           
-          const message = `Votre réservation pour ${booking.ride.from_city} → ${booking.ride.to_city} est confirmée.\n` +
-            `Code de vérification: ${actualCode}\n` +
-            `Montant: ${formatAmount(payment.amount)} XAF • Date: ${formatDate(booking.ride.departure_time)}\n` +
-            `Places: ${booking.seats} • ${booking.user.full_name}\n\n` +
-            `📱 Note: Présentez ce code au conducteur à l'embarquement.`;
-          
-          return this.oneSignalService.sendNotification({
+          return this.multiChannelService.sendPaymentConfirmed({
             userId: booking.user.id,
-            title: '✅ Paiement Confirmé!',
-            message: message,
-            notificationType: 'payment_success',
-            imageUrl: 'https://pikdrive.com/icons/icon-192x192.png',
-            data: {
-              bookingId: booking.id,
-              rideId: booking.ride.id,
-              paymentId: payment.id,
-              type: 'payment_completed',
-              icon: 'CheckCircle2',
-              verificationCode: actualCode,
-              action: 'view_booking',
-              deepLink: `pikdrive.com/bookings/${booking.id}`,
-              priority: 'high'
-            },
+            phoneNumber: booking.user.phone,
+            passengerName: booking.user.full_name || 'Passager',
+            route: `${booking.ride.from_city} → ${booking.ride.to_city}`,
+            departureTime: booking.ride.departure_time,
+            pickupPointName: booking.pickup_point_name,
+            pickupTime: booking.pickup_time,
+            seats: booking.seats,
+            amount: payment.amount,
+            verificationCode: actualCode,
+            bookingId: booking.id,
+            paymentId: payment.id,
+            rideId: booking.ride.id,
+            transactionId: payment.transaction_id,
           });
         })().catch(err => {
           console.error('❌ Passenger notification error (non-critical):', err);
         }),
 
-        // Send single push notification to driver (WITHOUT verification code for security)
+        // Send multi-channel notification to driver (OneSignal + WhatsApp)
         (async () => {
-          console.log('🔔 [ORCHESTRATION] Sending push notification to driver:', booking.ride.driver.id);
-          const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
-          const formatDate = (dateStr: string) => {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('fr-FR', { 
-              day: '2-digit', 
-              month: 'short', 
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-          };
+          console.log('🔔 [ORCHESTRATION] Sending multi-channel notification to driver:', booking.ride.driver.id);
           
-          const message = `${booking.user.full_name} a payé ${formatAmount(payment.amount)} XAF pour votre trajet ${booking.ride.from_city} → ${booking.ride.to_city}.\n` +
-            `Places: ${booking.seats} • Date: ${formatDate(booking.ride.departure_time)}\n\n` +
-            `🔒 Note: Demandez le code de vérification au passager à l'embarquement.`;
-          
-          return this.oneSignalService.sendNotification({
-            userId: booking.ride.driver.id,
-            title: '💰 Nouvelle Réservation Payée!',
-            message: message,
-            notificationType: 'driver_new_booking',
-            imageUrl: 'https://pikdrive.com/icons/icon-192x192.png',
-            data: {
-              bookingId: booking.id,
-              rideId: booking.ride.id,
-              paymentId: payment.id,
-              passengerName: booking.user.full_name,
-              amount: payment.amount,
-              seats: booking.seats,
-              fromCity: booking.ride.from_city,
-              toCity: booking.ride.to_city,
-              departureTime: booking.ride.departure_time,
-              type: 'driver_booking_paid',
-              action: 'view_driver_booking',
-              deepLink: `pikdrive.com/driver/bookings/${booking.id}`,
-              priority: 'high'
-              // NOTE: verificationCode intentionally NOT included for security
-            },
+          return this.multiChannelService.sendDriverNewBooking({
+            driverId: booking.ride.driver.id,
+            driverPhone: booking.ride.driver.phone,
+            driverName: booking.ride.driver.full_name || 'Chauffeur',
+            passengerName: booking.user.full_name || 'Passager',
+            route: `${booking.ride.from_city} → ${booking.ride.to_city}`,
+            seats: booking.seats,
+            amount: payment.amount,
+            pickupPointName: booking.pickup_point_name,
+            pickupTime: booking.pickup_time,
+            departureTime: booking.ride.departure_time,
+            bookingId: booking.id,
+            rideId: booking.ride.id,
+            paymentId: payment.id,
           });
         })().catch(err => {
           console.error('❌ Driver notification error (non-critical):', err);
@@ -354,8 +319,10 @@ export class ServerPaymentOrchestrationService {
       ]).then(results => {
         console.log('✅ [ORCHESTRATION] All notification tasks completed:', {
           receiptCreated: results[0] !== null,
-          passengerNotification: results[1]?.success !== false,
-          driverNotification: results[2]?.success !== false
+          passengerNotification: results[1]?.onesignal || results[1]?.whatsapp || false,
+          driverNotification: results[2]?.onesignal || results[2]?.whatsapp || false,
+          passengerWhatsApp: results[1]?.whatsapp || false,
+          driverWhatsApp: results[2]?.whatsapp || false,
         });
       }).catch(err => {
         console.error('❌ [ORCHESTRATION] Error in notification tasks:', err);
@@ -405,19 +372,17 @@ export class ServerPaymentOrchestrationService {
         const { data: userData } = userResult;
 
         if (rideData && userData) {
-          // Send SMS to passenger (with retry link)
-          this.oneSignalService.sendPaymentFailureSMS(
-            userData.phone,
-            {
-              id: bookingData.id,
-              from: rideData.from_city,
-              to: rideData.to_city,
-              amount: payment.amount,
-              paymentId: payment.id,
-            },
-            reason || 'Paiement non autorisé'
-          ).catch(err => {
-            console.error('❌ SMS failure notification error (non-critical):', err);
+          // Send multi-channel failure notification
+          this.multiChannelService.sendPaymentFailed({
+            userId: bookingData.user_id,
+            phoneNumber: userData.phone,
+            passengerName: userData.full_name || 'Passager',
+            amount: payment.amount,
+            reason: reason || 'Paiement non autorisé',
+            retryLink: `pikdrive.com/payments/retry/${payment.id}`,
+            paymentId: payment.id,
+          }).catch(err => {
+            console.error('❌ Payment failure notification error (non-critical):', err);
           });
         }
       }

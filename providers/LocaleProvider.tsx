@@ -8,6 +8,7 @@ import { defaultLocale, getLocaleFromStorage, getLocaleFromCookie } from '@/i18n
 type LocaleProviderProps = {
   children: React.ReactNode
   defaultLocaleProp?: Locale
+  initialMessages?: Record<string, any>
   storageKey?: string
 }
 
@@ -44,13 +45,14 @@ async function getMessages(locale: Locale) {
 export function LocaleProvider({
   children,
   defaultLocaleProp = defaultLocale,
+  initialMessages,
   storageKey = 'ui-locale',
   ...props
 }: LocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocaleProp)
   const [mounted, setMounted] = useState(false)
-  const [messages, setMessages] = useState<Record<string, any>>({})
-  const [loading, setLoading] = useState(true)
+  const [messages, setMessages] = useState<Record<string, any>>(initialMessages ?? {})
+  const [loading, setLoading] = useState(!(initialMessages && Object.keys(initialMessages).length > 0))
 
   // Only access localStorage after component is mounted on client
   useEffect(() => {
@@ -127,7 +129,8 @@ export function LocaleProvider({
     setLocale,
   }
 
-  // Always provide NextIntlClientProvider, even during loading (with empty messages as fallback)
+  // Always provide NextIntlClientProvider.
+  // With server-provided `initialMessages`, we avoid flashing translation keys on first paint.
   return (
     <LocaleProviderContext.Provider value={value} {...props}>
       <NextIntlClientProvider locale={locale} messages={messages}>
