@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLocale } from "@/hooks";
+import { TermsAcceptance } from "@/components/legal/terms-acceptance";
 
 function LoadingFallback() {
   const { t } = useLocale();
@@ -71,6 +72,7 @@ function AuthContent() {
   const [error, setError] = useState("");
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   // Get auth actions from Supabase client directly
   const { supabase } = useSupabase();
   const { toast } = useToast();
@@ -131,6 +133,33 @@ function AuthContent() {
     }
   };
 
+  const storeConsent = async (userId: string, session: any) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        console.warn('No access token available for consent storage');
+        return;
+      }
+
+      await fetch('/api/legal/consent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          consentType: 'terms_and_privacy',
+          termsVersion: '1.0',
+        }),
+      });
+    } catch (error) {
+      console.error('Error storing consent:', error);
+      // Don't block user flow if consent storage fails
+    }
+  };
+
   const handleVerify = async () => {
     setError("");
 
@@ -157,6 +186,9 @@ function AuthContent() {
 
       // Reset resend cooldown on successful verification
       setResendCooldown(0);
+
+      // Store consent record for legal compliance
+      await storeConsent(data.user.id, data.session);
 
       toast({
         title: t("pages.auth.toast.welcome"),
@@ -269,7 +301,7 @@ function AuthContent() {
 
         <div className="space-y-4">
           {!showVerification && !savedPhone && (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="relative">
                 <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -280,6 +312,13 @@ function AuthContent() {
                   type="tel"
                 />
               </div>
+              
+              {/* Terms acceptance - required before continuing */}
+              <TermsAcceptance
+                variant="compact"
+                onAcceptanceChange={setTermsAccepted}
+                required
+              />
             </div>
           )}
 
@@ -377,7 +416,7 @@ function AuthContent() {
             <Button
               className="w-full"
               onClick={handleContinue}
-              disabled={isLoading}
+              disabled={isLoading || !termsAccepted}
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

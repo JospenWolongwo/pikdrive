@@ -20,12 +20,14 @@ import { uploadDocument } from "../upload-utils"
 import { isValidDocumentUrl } from "../upload-utils"
 import { submitDriverApplication, DriverApplicationData } from "@/lib/driver-application-utils"
 import { useLocale } from "@/hooks"
+import { TermsAcceptance } from "@/components/legal/terms-acceptance"
 
 export default function DriverApplicationForm() {
   const { supabase, user } = useSupabase()
   const router = useRouter()
   const { t } = useLocale()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [driverTermsAccepted, setDriverTermsAccepted] = useState(false)
   
   // Document file upload states - recto (front)
   const [nationalIdFileRecto, setNationalIdFileRecto] = useState<string>("") 
@@ -361,6 +363,29 @@ export default function DriverApplicationForm() {
         throw new Error(result.error || 'Failed to submit application')
       }
 
+      // Store driver-specific consent for legal compliance
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        
+        if (accessToken) {
+          await fetch('/api/legal/consent', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              consentType: 'driver_terms',
+              termsVersion: '1.0',
+            }),
+          })
+        }
+      } catch (consentError) {
+        console.error('Error storing driver consent:', consentError)
+        // Don't block the flow if consent storage fails
+      }
+
       // Show success toast 
       toast({
         title: t("pages.becomeDriver.form.errors.submitted"),
@@ -438,11 +463,21 @@ export default function DriverApplicationForm() {
             </div>
           </Card>
 
+          {/* Driver Terms Acceptance */}
+          <div className="max-w-3xl mx-auto">
+            <TermsAcceptance
+              variant="detailed"
+              type="driver"
+              onAcceptanceChange={setDriverTermsAccepted}
+              required
+            />
+          </div>
+
           {/* Submit Button */}
           <Button 
             type="submit" 
             className="w-full md:w-auto md:px-8 mx-auto block"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !driverTermsAccepted}
           >
             {isSubmitting ? (
               <>

@@ -1436,6 +1436,55 @@
       "refundProcessingGeneric": "Refund processing..."
     }
   },
+  "legal": {
+    "version": "Version",
+    "lastUpdated": "Last updated",
+    "effectiveDate": "Effective date",
+    "tableOfContents": "Table of Contents",
+    "and": "and",
+    "contact": {
+      "title": "Contact Us",
+      "address": "Address",
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "acceptance": {
+      "compact": "By continuing, I accept the",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy",
+      "and": "and",
+      "mustAccept": "You must accept the terms to continue"
+    },
+    "driver": {
+      "title": "Driver Commitment",
+      "intro": "As a driver, I commit to:",
+      "responsibility": {
+        "bold": "Being solely responsible",
+        "text": "for safety and transport"
+      },
+      "insurance": {
+        "text": "Maintaining",
+        "bold": "valid insurance",
+        "continue": "and updating my documents"
+      },
+      "independence": "Understanding that PikDrive is only a connection platform",
+      "passwordSystem": {
+        "text": "Accepting the",
+        "bold": "password + escrow system",
+        "continue": "to receive payments"
+      },
+      "fullAcceptance": "I have read and accept the full",
+      "ofPikDrive": "of PikDrive"
+    },
+    "passenger": {
+      "title": "Important Confirmation",
+      "intro": "By submitting this information, I confirm that:",
+      "verifyIdentity": "My identity is truthful",
+      "understandPassword": "I have read and accept the password + escrow system",
+      "giveCodeAfterMeet": "I will give my code only after meeting the driver",
+      "confirmUnderstanding": "I confirm I have read and understood how PikDrive works"
+    }
+  },
   "footer": {
     "tagline": "Discover Cameroon, Together",
     "copyright": "{year} PikDrive. All rights reserved."

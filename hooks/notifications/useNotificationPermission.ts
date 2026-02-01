@@ -36,20 +36,43 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
 
   /**
    * Check current permission status
+   * Uses native Notification.permission as source of truth, then syncs with OneSignal
    */
   const checkPermission = useCallback(async () => {
-    if (!window.OneSignal) {
-      return;
+    // STEP 1: Check native permission first (immediate, synchronous, reliable)
+    if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && 'permission' in Notification) {
+      try {
+        const nativePermission = Notification.permission;
+        setPermission(nativePermission);
+        
+        // If native permission is granted, user is considered subscribed
+        // This prevents showing prompt to users who already granted permission
+        if (nativePermission === 'granted') {
+          setIsSubscribed(true);
+        } else if (nativePermission === 'denied') {
+          setIsSubscribed(false);
+        }
+        // For 'default', keep current isSubscribed state until OneSignal confirms
+      } catch (error) {
+        console.warn('Error checking native Notification.permission:', error);
+      }
     }
 
-    try {
-      const currentPermission = await window.OneSignal.Notifications.permission;
-      setPermission(currentPermission ? 'granted' : 'denied');
-
-      const subscribed = currentPermission === true;
-      setIsSubscribed(subscribed);
-    } catch (error) {
-      console.error('Error checking permission:', error);
+    // STEP 2: Sync with OneSignal if available (for accurate subscription state)
+    if (window.OneSignal && window.__oneSignalReady) {
+      try {
+        const currentPermission = await window.OneSignal.Notifications.permission;
+        const subscribed = currentPermission === true;
+        setIsSubscribed(subscribed);
+        
+        // Update permission state based on OneSignal's perspective
+        if (subscribed) {
+          setPermission('granted');
+        }
+      } catch (error) {
+        console.error('Error checking OneSignal permission:', error);
+        // Don't reset states on error - keep native permission state
+      }
     }
   }, []);
 
@@ -152,11 +175,35 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
     }
   }, []);
 
-  // Check permission on mount (only in browser)
+  // Check permission on mount and poll for OneSignal initialization
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.OneSignal && window.__oneSignalReady) {
-      checkPermission();
-    }
+    if (typeof window === 'undefined') return;
+
+    // IMMEDIATE CHECK: Use native permission first (synchronous, no waiting)
+    checkPermission();
+
+    // POLLING: Wait for OneSignal to initialize and sync subscription state
+    // This fixes the race condition where OneSignal isn't ready when component mounts
+    let attempts = 0;
+    const maxAttempts = 60; // 30 seconds max (60 * 500ms)
+    
+    const pollInterval = setInterval(() => {
+      attempts++;
+      
+      if (window.OneSignal && window.__oneSignalReady) {
+        // OneSignal is ready - sync permission state
+        checkPermission();
+        clearInterval(pollInterval);
+      } else if (attempts >= maxAttempts) {
+        // Timeout after 30 seconds - stop polling
+        clearInterval(pollInterval);
+        console.warn('⚠️ OneSignal initialization timeout - using native permission state only');
+      }
+    }, 500); // Check every 500ms
+
+    return () => {
+      clearInterval(pollInterval);
+    };
   }, [checkPermission]);
 
   return {

@@ -1436,6 +1436,55 @@
       "refundProcessingGeneric": "Remboursement en cours de traitement..."
     }
   },
+  "legal": {
+    "version": "Version",
+    "lastUpdated": "Dernière mise à jour",
+    "effectiveDate": "Date d'entrée en vigueur",
+    "tableOfContents": "Table des matières",
+    "and": "et la",
+    "contact": {
+      "title": "Nous contacter",
+      "address": "Adresse",
+      "email": "Email",
+      "phone": "Téléphone"
+    },
+    "acceptance": {
+      "compact": "En continuant, j'accepte les",
+      "termsLink": "Conditions Générales",
+      "privacyLink": "Politique de Confidentialité",
+      "and": "et la",
+      "mustAccept": "Vous devez accepter les conditions pour continuer"
+    },
+    "driver": {
+      "title": "Engagement du Conducteur",
+      "intro": "En tant que conducteur, je m'engage à :",
+      "responsibility": {
+        "bold": "Être seul responsable",
+        "text": "de la sécurité et du transport"
+      },
+      "insurance": {
+        "text": "Maintenir une",
+        "bold": "assurance valide",
+        "continue": "et mettre à jour mes documents"
+      },
+      "independence": "Comprendre que PikDrive est uniquement une plateforme de mise en relation",
+      "passwordSystem": {
+        "text": "Accepter le système",
+        "bold": "mot de passe + séquestre",
+        "continue": "pour recevoir les paiements"
+      },
+      "fullAcceptance": "J'ai lu et j'accepte l'intégralité des",
+      "ofPikDrive": "de PikDrive"
+    },
+    "passenger": {
+      "title": "Confirmation importante",
+      "intro": "En soumettant ces informations, je confirme que :",
+      "verifyIdentity": "Mon identité est véridique",
+      "understandPassword": "J'ai lu et accepte le système mot de passe + séquestre",
+      "giveCodeAfterMeet": "Je donnerai mon code uniquement après avoir rencontré le conducteur",
+      "confirmUnderstanding": "Je confirme avoir lu et compris le fonctionnement de PikDrive"
+    }
+  },
   "footer": {
     "tagline": "Découvrez le Cameroun, Ensemble",
     "copyright": "{year} PikDrive. Tous droits réservés."
