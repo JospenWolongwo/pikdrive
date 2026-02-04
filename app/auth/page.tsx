@@ -11,6 +11,7 @@ import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLocale } from "@/hooks";
 import { TermsAcceptance } from "@/components/legal/terms-acceptance";
+import { apiClient } from "@/lib/api-client";
 
 function LoadingFallback() {
   const { t } = useLocale();
@@ -143,17 +144,11 @@ function AuthContent() {
         return;
       }
 
-      await fetch('/api/legal/consent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          consentType: 'terms_and_privacy',
-          termsVersion: '1.0',
-        }),
-      });
+      await apiClient.post(
+        '/api/legal/consent',
+        { consentType: 'terms_and_privacy', termsVersion: '1.0' },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
     } catch (error) {
       console.error('Error storing consent:', error);
       // Don't block user flow if consent storage fails

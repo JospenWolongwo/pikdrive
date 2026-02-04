@@ -132,15 +132,14 @@ export function SuccessCard({
             </div>
           )}
           
-          {/* Steps */}
+          {/* Steps - scrollable when list is long */}
           {steps && steps.length > 0 && (
             <div className="w-full text-left space-y-4">
               <h2 className="font-semibold flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-primary" />
                 {t("components.successCard.whatHappensNext")}
               </h2>
-              
-              <ul className="space-y-3">
+              <ul className="space-y-3 max-h-[280px] overflow-y-auto pr-2">
                 {steps.map((step, index) => (
                   <li key={index} className="flex gap-3">
                     <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">

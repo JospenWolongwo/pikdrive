@@ -33,17 +33,26 @@ interface WhatsAppApiResponse {
 }
 
 /**
+ * Normalize phone number to E.164 digits only (no + or spaces).
+ * Meta WhatsApp API expects the "to" field as digits only.
+ */
+function normalizePhoneForWhatsApp(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+/**
  * Send WhatsApp template message via Meta API
  */
 async function sendWhatsAppTemplate(
   request: WhatsAppTemplateRequest
 ): Promise<{ messageId: string; status: string }> {
   const apiUrl = `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+  const toNumber = normalizePhoneForWhatsApp(request.phoneNumber);
 
-  // Build template message payload
+  // Build template message payload (Meta expects "to" as digits only)
   const payload = {
     messaging_product: "whatsapp",
-    to: request.phoneNumber,
+    to: toNumber,
     type: "template",
     template: {
       name: request.templateName,
@@ -65,7 +74,7 @@ async function sendWhatsAppTemplate(
   console.log("📤 Sending to WhatsApp API:", {
     url: apiUrl,
     templateName: request.templateName,
-    phoneNumber: request.phoneNumber,
+    phoneNumber: toNumber,
     variableCount: request.variables.length,
   });
 
@@ -175,6 +184,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  let whatsappRequest: WhatsAppTemplateRequest | null = null;
+
   try {
     // Validate environment variables
     if (!WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_ACCESS_TOKEN) {
@@ -190,8 +201,8 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const whatsappRequest: WhatsAppTemplateRequest = await req.json();
+    // Parse request body (in scope for catch block)
+    whatsappRequest = (await req.json()) as WhatsAppTemplateRequest;
 
     console.log("📤 Received WhatsApp request:", {
       templateName: whatsappRequest.templateName,
@@ -245,23 +256,25 @@ serve(async (req) => {
     console.error("❌ Error sending WhatsApp message:", error);
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
-    // Determine error code
-    let errorCode = 500;
-    if (errorMessage.includes("429") || errorMessage.includes("rate limit")) {
-      errorCode = 429;
-    } else if (errorMessage.includes("401") || errorMessage.includes("unauthorized")) {
-      errorCode = 401;
-    } else if (errorMessage.includes("400") || errorMessage.includes("bad request")) {
-      errorCode = 400;
+    const err = error as { status?: number; errorCode?: number };
+
+    // Use status from thrown API error when available (e.g. WhatsApp 400/401)
+    let errorCode = typeof err.status === "number" ? err.status : 500;
+    if (errorCode === 500) {
+      if (errorMessage.includes("429") || errorMessage.includes("rate limit")) errorCode = 429;
+      else if (errorMessage.includes("401") || errorMessage.includes("unauthorized")) errorCode = 401;
+      else if (errorMessage.includes("400") || errorMessage.includes("bad request")) errorCode = 400;
     }
 
-    // Log error details for monitoring
+    // Log error details for monitoring (whatsappRequest may be null if parse failed)
+    const phonePreview = whatsappRequest?.phoneNumber
+      ? `${whatsappRequest.phoneNumber.substring(0, 5)}***`
+      : "n/a";
     console.error("❌ WhatsApp API Error Details:", {
       errorMessage,
       errorCode,
-      templateName: whatsappRequest?.templateName,
-      phoneNumber: whatsappRequest?.phoneNumber?.substring(0, 5) + "***", // Partial for privacy
+      templateName: whatsappRequest?.templateName ?? "n/a",
+      phoneNumber: phonePreview,
     });
 
     return new Response(

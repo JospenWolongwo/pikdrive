@@ -111,6 +111,11 @@ auth_token = "env(TWILIO_AUTH_TOKEN)"
 [auth.sms.test_otp]
 # 4152127777 = "123456"
 
+# Send SMS Hook: replaces built-in Twilio sending; hook sends via Twilio and/or WhatsApp.
+[auth.hook.send_sms]
+enabled = false
+uri = "http://127.0.0.1:54321/functions/v1/send-otp-hook"
+
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
 [auth.captcha]
 enabled = false

@@ -27,6 +27,24 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_FROM_NUMBER=your_twilio_phone_number
+TWILIO_MESSAGE_SERVICE_SID=your_messaging_service_sid
+```
+
+### Send SMS Hook (Auth OTP)
+
+When using the Send SMS Hook for auth OTP (see `supabase/config.toml` `[auth.hook.send_sms]`), set:
+
+```env
+# Required for hook request verification (use a long random string; e.g. v1,whsec_...)
+SEND_SMS_HOOK_SECRET=your_hook_secret
+```
+
+Optional, for gradual migration to WhatsApp:
+
+```env
+OTP_WHATSAPP_PERCENTAGE=0
+OTP_USE_WHATSAPP_KILL_SWITCH=false
+OTP_WHATSAPP_TEMPLATE_NAME=auth_otp
 ```
 
 ## 🚀 How to Get VAPID Keys

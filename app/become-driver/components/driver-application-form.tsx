@@ -21,6 +21,7 @@ import { isValidDocumentUrl } from "../upload-utils"
 import { submitDriverApplication, DriverApplicationData } from "@/lib/driver-application-utils"
 import { useLocale } from "@/hooks"
 import { TermsAcceptance } from "@/components/legal/terms-acceptance"
+import { apiClient } from "@/lib/api-client"
 
 export default function DriverApplicationForm() {
   const { supabase, user } = useSupabase()
@@ -369,17 +370,11 @@ export default function DriverApplicationForm() {
         const accessToken = sessionData.session?.access_token
         
         if (accessToken) {
-          await fetch('/api/legal/consent', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              consentType: 'driver_terms',
-              termsVersion: '1.0',
-            }),
-          })
+          await apiClient.post(
+            '/api/legal/consent',
+            { consentType: 'driver_terms', termsVersion: '1.0' },
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          )
         }
       } catch (consentError) {
         console.error('Error storing driver consent:', consentError)
