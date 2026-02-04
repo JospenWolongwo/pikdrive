@@ -18,6 +18,7 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores/chatStore";
+import { useBookingStore } from "@/stores";
 import { ChatDialog } from "@/components/chat/chat-dialog";
 import {
   AlertDialog,
@@ -70,10 +71,17 @@ export function BookingCard({ booking }: BookingCardProps) {
   const [showReduceSeatsDialog, setShowReduceSeatsDialog] = useState(false);
   const [newSeats, setNewSeats] = useState<string>("");
   const [isReducingSeats, setIsReducingSeats] = useState(false);
+  const [displayStatus, setDisplayStatus] = useState(booking.status);
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
   const { conversations } = useChatStore();
+  const { refreshUserBookings } = useBookingStore();
+
+  // Keep displayStatus in sync when booking prop updates (e.g. after refetch)
+  useEffect(() => {
+    setDisplayStatus(booking.status);
+  }, [booking.status]);
 
   // Set up real-time subscription for code_verified changes
   useEffect(() => {
@@ -102,23 +110,22 @@ export function BookingCard({ booking }: BookingCardProps) {
     };
   }, [booking.id, supabase]);
 
-  // Determine if we should show verification code
-  // Hide if code is already verified
+  // Determine if we should show verification code (use displayStatus for instant UI)
   const shouldShowVerification =
     !codeVerified &&
-    (booking.status === "pending_verification" ||
-      booking.status === "confirmed") &&
+    (displayStatus === "pending_verification" ||
+      displayStatus === "confirmed") &&
     booking.payment_status === "completed";
 
-  // Determine if booking can be cancelled
+  // Use displayStatus so the card updates instantly when we optimistically set cancelled
   const canCancel = ["pending", "confirmed", "pending_verification"].includes(
-    booking.status
+    displayStatus
   );
 
   // Determine if booking can have seats reduced (paid booking with > 1 seat)
-  const canReduceSeats = 
-    booking.payment_status === "completed" && 
-    booking.seats > 1 && 
+  const canReduceSeats =
+    booking.payment_status === "completed" &&
+    booking.seats > 1 &&
     canCancel;
 
   // Handle booking cancellation
@@ -139,11 +146,12 @@ export function BookingCard({ booking }: BookingCardProps) {
         throw new Error(data.error || "Cancellation failed");
       }
 
-      // Show success message with refund information if applicable
+      // Update card immediately so user sees "Cancelled" and toast is not wiped by a reload
+      setDisplayStatus("cancelled");
+
       if (data.refundInitiated && data.refundAmount) {
         const refundAmount = data.refundAmount.toLocaleString();
         const currency = payment?.currency || "XAF";
-        
         toast({
           title: t("pages.bookings.card.cancelledSuccess"),
           description: t("pages.bookings.card.cancelledSuccessWithRefund", {
@@ -160,10 +168,9 @@ export function BookingCard({ booking }: BookingCardProps) {
         });
       }
 
-      // Refresh the page to show updated status
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500); // Give user time to see the success message
+      if (user?.id) {
+        refreshUserBookings(user.id);
+      }
     } catch (error) {
       console.error("Error cancelling booking:", error);
       toast({
@@ -326,22 +333,24 @@ export function BookingCard({ booking }: BookingCardProps) {
             <strong>{t("pages.bookings.card.status")}</strong>{" "}
             <span
               className={`inline-block px-2 py-1 text-sm rounded-full ${
-                booking.status === "confirmed"
+                displayStatus === "confirmed"
                   ? "bg-green-100 text-green-800"
-                  : booking.status === "pending"
+                  : displayStatus === "pending"
                   ? "bg-yellow-100 text-yellow-800"
-                  : "bg-red-100 text-red-800"
+                  : displayStatus === "cancelled"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-yellow-100 text-yellow-800"
               }`}
             >
-              {booking.status === "confirmed"
+              {displayStatus === "confirmed"
                 ? t("pages.bookings.card.statusConfirmed")
-                : booking.status === "pending"
+                : displayStatus === "pending"
                 ? t("pages.bookings.card.statusPending")
-                : booking.status === "cancelled"
+                : displayStatus === "cancelled"
                 ? t("pages.bookings.card.statusCancelled")
-                : booking.status === "pending_verification"
+                : displayStatus === "pending_verification"
                 ? t("pages.bookings.card.statusPendingVerification")
-                : booking.status}
+                : displayStatus}
             </span>
           </div>
           {payment && (

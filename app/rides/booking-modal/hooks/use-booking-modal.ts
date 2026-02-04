@@ -390,17 +390,16 @@ export function useBookingModal({
       // Use priority=true to bypass 24h cooldown for critical payment events
       triggerPrompt(true);
 
-      // Show success state immediately
+      // Show success state immediately; keep modal open so user sees it
       setPaymentSuccess(true);
       setStep(3);
 
-      // Close the modal to prevent it from reopening after rides refresh
-      if (onBookingComplete) {
-        onBookingComplete();
-      }
-
-      // Navigate after showing success step (2000ms to ensure user sees confirmation)
+      // After 2s: close modal and navigate to bookings together (avoids closing modal
+      // before success step and prevents timeout from being cleared on unmount)
       navigationTimeoutRef.current = setTimeout(() => {
+        if (onBookingComplete) {
+          onBookingComplete();
+        }
         router.replace("/bookings");
       }, 2000);
     } else if (status === "failed") {
