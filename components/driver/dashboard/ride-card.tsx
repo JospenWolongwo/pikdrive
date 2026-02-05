@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
 import {
   MapPin,
@@ -162,17 +163,12 @@ export function RideCard({
             {/* Ride Management Buttons - Responsive layout */}
             {!isPastRide && (
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    (window.location.href = `/driver/rides/${ride.id}`)
-                  }
-                  className="flex items-center gap-1 text-xs sm:text-sm"
-                >
-                  <Edit className="h-3 w-3" />
-                  <span className="hidden sm:inline">{t("pages.driver.dashboard.rideCard.edit")}</span>
-                  <span className="sm:hidden">{t("pages.driver.dashboard.rideCard.editShort")}</span>
+                <Button variant="outline" size="sm" asChild className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Link href={`/driver/rides/${ride.id}`}>
+                    <Edit className="h-3 w-3" />
+                    <span className="hidden sm:inline">{t("pages.driver.dashboard.rideCard.edit")}</span>
+                    <span className="sm:hidden">{t("pages.driver.dashboard.rideCard.editShort")}</span>
+                  </Link>
                 </Button>
 
                 {/* Show warning if ride cannot be deleted */}

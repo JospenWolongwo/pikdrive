@@ -99,17 +99,13 @@ export async function POST(
     // Update booking (reduce seats)
     // Note: Use 'partial' for bookings (partial_refund is for payments only)
     // The booking still has some paid seats, so 'partial' is more accurate
+    // Seat restoration is handled by update_seats_on_booking_change trigger
+    // (restores OLD.seats - NEW.seats when completed → partial with fewer seats)
     await supabase.from('bookings').update({
       seats: newSeats,
       payment_status: 'partial', // Use 'partial' instead of 'partial_refund' for bookings
       updated_at: new Date().toISOString(),
     }).eq('id', params.id);
-
-    // Restore seats to ride
-    await supabase.rpc('restore_seats_to_ride', {
-      p_ride_id: booking.ride_id,
-      p_seats: seatsToRemove,
-    });
 
     // Initialize orchestrator for refund processing
     const targetEnvironment = (process.env.MOMO_TARGET_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production';
