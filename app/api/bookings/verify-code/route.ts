@@ -29,10 +29,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if the booking exists with payment information
+    // Check if the booking exists with payment information (seats needed for partial payout)
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, ride_id, status, payment_status')
+      .select('id, ride_id, status, payment_status, seats')
       .eq('id', bookingId)
       .single();
 
@@ -43,10 +43,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch ride to verify driver
+    // Fetch ride to verify driver and get price (needed for partial payout)
     const { data: ride, error: rideError } = await supabase
       .from('rides')
-      .select('id, driver_id')
+      .select('id, driver_id, price')
       .eq('id', booking.ride_id)
       .single();
 
@@ -65,7 +65,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify the code using our database function
+    // Check payment status BEFORE calling RPC so we never set code_verified when we will reject.
+    // Allow 'completed' (full) and 'partial' (seat reduction: one or more paid seats remaining).
+    const allowedPaymentStatuses = ['completed', 'partial'];
+    if (!allowedPaymentStatuses.includes(booking.payment_status)) {
+      return NextResponse.json({
+        success: false,
+        message: 'Payment must be completed before verification'
+      }, { status: 400 });
+    }
+
+    // Verify the code using our database function (only after payment check)
     const { data: isValid, error: verifyError } = await supabase.rpc(
       'verify_booking_code',
       { 
@@ -89,37 +99,44 @@ export async function POST(request: Request) {
       });
     }
 
-    // Check if payment was completed
-    if (booking.payment_status !== 'completed') {
-      return NextResponse.json({
-        success: false,
-        message: 'Payment must be completed before verification'
-      });
-    }
-
-    // Fetch ALL completed payments for this booking (cumulative payout support)
+    // Fetch payments: completed (full payout) or partial_refund (partial booking – payout from booking.seats * price)
     const { data: payments, error: paymentsError } = await supabase
       .from('payments')
-      .select('id, amount, currency, provider, created_at')
+      .select('id, amount, currency, provider, created_at, status')
       .eq('booking_id', bookingId)
-      .eq('status', 'completed')
+      .in('status', ['completed', 'partial_refund'])
       .order('created_at', { ascending: false });
 
     if (paymentsError) {
       console.error('Error fetching payments:', paymentsError);
-      // Continue with verification even if payment fetch fails
     }
 
-    // Guard: Ensure we have at least one payment
+    // Total amount for payout: from completed payments, or for partial booking from remaining seats × price
+    const completedPayments = payments?.filter((p: { status: string }) => p.status === 'completed') ?? [];
+    const completedTotal = completedPayments.reduce((sum: number, p: { amount: number }) => sum + Number(p.amount), 0);
+    const isPartialBooking = booking.payment_status === 'partial' && (payments?.length ?? 0) > 0 && completedTotal === 0;
+    const ridePrice = typeof ride.price === 'number' ? ride.price : Number(ride.price);
+    const totalAmount = completedTotal > 0
+      ? completedTotal
+      : (isPartialBooking && booking.seats != null && ridePrice >= 0 ? booking.seats * ridePrice : 0);
+
+    if (isPartialBooking && totalAmount > 0) {
+      console.log('💰 [PAYOUT] Partial booking: paying for remaining seats', {
+        bookingId,
+        seats: booking.seats,
+        pricePerSeat: ridePrice,
+        totalAmount,
+      });
+    }
+
     if (!payments || payments.length === 0) {
-      console.warn('⚠️ [PAYOUT] No completed payments found for booking, skipping payout');
+      console.warn('⚠️ [PAYOUT] No payments found for booking, skipping payout');
     }
 
-    // Check if payout already processed (prevent duplicate payouts)
-    // Check if ANY of the payments already has a payout
+    // Check if payout already processed (by payment ids or by booking_id for partial)
     let existingPayout = null;
     if (payments && payments.length > 0) {
-      const paymentIds = payments.map(p => p.id);
+      const paymentIds = payments.map((p: { id: string }) => p.id);
       const { data: existingPayouts } = await supabase
         .from('payouts')
         .select('id, status')
@@ -133,8 +150,8 @@ export async function POST(request: Request) {
           paymentCount: payments.length,
         });
       }
-    } else {
-      // Fallback: check by booking_id if no payments found
+    }
+    if (!existingPayout) {
       const { data: payoutByBooking } = await supabase
         .from('payouts')
         .select('id, status')
@@ -160,14 +177,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // Trigger driver payout if payments exist and not already processed
+    // Trigger driver payout when we have a total amount to pay and no existing payout
     let payoutResult = null;
-    if (payments && payments.length > 0 && !existingPayout) {
+    const primaryPayment = payments && payments.length > 0 ? payments[0] : null;
+    if (payments && payments.length > 0 && !existingPayout && totalAmount > 0 && primaryPayment) {
       try {
-        // Calculate cumulative totals from all payments
-        const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
-        const paymentIds = payments.map(p => p.id);
-        const primaryPayment = payments[0]; // Most recent payment
+        const paymentIds = payments.map((p: { id: string }) => p.id);
         
         // Validate currency consistency
         const currencies = [...new Set(payments.map(p => p.currency))];
@@ -376,10 +391,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Calculate total earnings for response
-    const totalEarnings = payments && payments.length > 0
-      ? FeeCalculator.calculate(payments.reduce((sum, p) => sum + p.amount, 0)).driverEarnings
-      : null;
+    // Calculate total earnings for response (uses same totalAmount as payout logic)
+    const totalEarnings = totalAmount > 0 ? FeeCalculator.calculate(totalAmount).driverEarnings : null;
 
     return NextResponse.json({
       success: true,
