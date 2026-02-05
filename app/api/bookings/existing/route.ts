@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { ServerBookingService } from '@/lib/services/server/booking-service';
+import { ServerBookingService } from '@/lib/services/server/bookings';
 
 export async function GET(request: NextRequest) {
   try {

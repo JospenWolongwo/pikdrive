@@ -14,17 +14,17 @@ import {
   CreditCard,
   Clock,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
+  Button,
+  Badge,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui";
 import type { RideWithDetails, DashboardBooking } from "@/types";
 import { useLocale } from "@/hooks";
 

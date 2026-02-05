@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useSupabase } from "@/providers/SupabaseProvider"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { toast } from "@/components/ui/use-toast"
+import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
+import { Button } from "./button"
+import { toast } from "./use-toast"
 import { Camera } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
 import { useLocale } from "@/hooks"

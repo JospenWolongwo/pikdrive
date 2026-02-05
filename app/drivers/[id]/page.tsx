@@ -7,7 +7,7 @@ import { DriverStatistics } from "@/components/passenger/driver-statistics";
 import { VehicleGallery } from "@/components/passenger/vehicle-gallery";
 import { TrustBadges } from "@/components/passenger/trust-badges";
 import { DriverRecentRides } from "@/components/passenger/driver-recent-rides";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui";
 import { ArrowLeft, AlertCircle, MapPin } from "lucide-react";
 import Link from "next/link";
 import { driverApiClient } from "@/lib/api-client/driver";

@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useOneSignal } from '@/hooks/notifications/useOneSignal';
+import { useOneSignal, useNotificationPrompt } from "@/hooks/notifications";
 import { useSupabase } from '@/providers/SupabaseProvider';
-import { useNotificationPrompt } from '@/hooks/notifications/useNotificationPrompt';
 import { NotificationPrompt } from './NotificationPrompt';
 // OneSignalScript removed - initialization handled directly here
 

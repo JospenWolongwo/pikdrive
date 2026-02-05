@@ -1,9 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Card } from '@/components/ui'
 import { Shield, AlertTriangle, HelpCircle, PhoneCall, Mail, Clock, MapPin, CreditCard, CheckCircle, Smartphone, AlertCircle, WifiOff, Truck, Network } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
 import { useLocale } from "@/hooks";

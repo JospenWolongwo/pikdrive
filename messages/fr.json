@@ -87,6 +87,47 @@
     }
   },
   "pages": {
+    "admin": {
+      "pickupPoints": {
+        "title": "Points de ramassage",
+        "description": "Gérer les points de rendez-vous par ville. Les conducteurs les choisissent lors de la création d'un trajet.",
+        "refresh": "Actualiser",
+        "add": "Ajouter un point",
+        "filterByCity": "Filtrer par ville",
+        "allCities": "Toutes les villes",
+        "table": {
+          "city": "Ville",
+          "name": "Nom",
+          "displayOrder": "Ordre",
+          "actions": "Actions"
+        },
+        "noPoints": "Aucun point de ramassage. Ajoutez-en pour une ville.",
+        "createTitle": "Ajouter un point de ramassage",
+        "editTitle": "Modifier le point de ramassage",
+        "form": {
+          "city": "Ville",
+          "cityPlaceholder": "Choisir une ville",
+          "name": "Nom",
+          "namePlaceholder": "ex. Carrefour Deido",
+          "displayOrder": "Ordre d'affichage",
+          "create": "Créer"
+        },
+        "toast": {
+          "created": "Point de ramassage créé",
+          "updated": "Point de ramassage mis à jour",
+          "deleted": "Point de ramassage supprimé"
+        },
+        "errors": {
+          "loadFailed": "Impossible de charger les points",
+          "saveFailed": "Enregistrement impossible",
+          "deleteFailed": "Suppression impossible"
+        },
+        "validation": {
+          "cityRequired": "La ville est requise",
+          "nameRequired": "Le nom est requis"
+        }
+      }
+    },
     "home": {
       "hero": {
         "title1": "Découvrez",
@@ -835,6 +876,11 @@
         "pickupPoints": {
           "title": "Points de Ramassage",
           "description": "Définissez au moins 2 points de ramassage où les passagers peuvent être récupérés",
+          "selectDescription": "Choisissez au moins 2 points de rendez-vous pour votre ville de départ (gérés par PikDrive).",
+          "selectLoading": "Chargement des points pour cette ville...",
+          "noPointsForCity": "Aucun point défini pour cette ville. Contactez le support.",
+          "available": "Disponibles pour cette ville",
+          "selected": "Sélectionnés (ordre et heure)",
           "name": "Nom du Point de Ramassage",
           "namePlaceholder": "ex: Carrefour Deido",
           "timeOffset": "Minutes Après le Départ",
@@ -881,6 +927,11 @@
           "payments": "Paiements"
         },
         "searchPlaceholder": "Rechercher par ville, passager ou modèle de voiture...",
+        "pagination": {
+          "showing": "Affichage de",
+          "of": "sur",
+          "rides": "trajets"
+        },
         "sort": {
           "label": "Trier",
           "earliest": "Plus tôt d'abord",
@@ -1373,6 +1424,13 @@
     }
   },
   "payment": {
+    "methodSelector": {
+      "processingTime": "Délai de traitement",
+      "minimumAmount": "Montant minimum",
+      "maximumAmount": "Montant maximum",
+      "processingFee": "Frais de traitement",
+      "currency": "FCFA"
+    },
     "status": {
       "checking": "Vérification du statut du paiement...",
       "pleaseCheckPhone": "Veuillez vérifier votre téléphone pour la demande de paiement",

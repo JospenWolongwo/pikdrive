@@ -8,10 +8,7 @@ import {
   sendMessage,
   subscribeToMessages,
 } from "@/lib/messages";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button, Textarea, ScrollArea, Avatar, AvatarFallback, AvatarImage } from "@/components/ui";
 import { formatDistanceToNow } from "date-fns";
 import { Send } from "lucide-react";
 import { useLocale } from "@/hooks";

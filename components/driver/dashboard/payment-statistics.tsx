@@ -11,11 +11,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ContentLoader } from "@/components/ui/content-loader";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger, ContentLoader } from "@/components/ui";
 import { PayoutStatusChecker } from "@/components/payout/payout-status-checker";
 import type { PayoutStatus } from "@/types/payout";
 import { usePayoutStatistics, useLocale } from "@/hooks";

@@ -3,30 +3,24 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/use-toast";
 import {
-  Loader2,
-  RefreshCw,
-  Eye,
-  CheckCircle,
-  XCircle,
-  Filter,
-  Search,
-} from "lucide-react";
-import {
+  Button,
+  Card,
+  Badge,
+  toast,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,17 +30,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  Input,
+} from "@/components/ui";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+  Loader2,
+  RefreshCw,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Search,
+} from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import DriverDetail from "./driver-detail";
 

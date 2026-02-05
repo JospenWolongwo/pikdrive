@@ -1,12 +1,6 @@
 import { format } from "date-fns";
 import { X } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import type { CancelledBooking } from "@/types";
 
 interface CancellationNotificationsProps {

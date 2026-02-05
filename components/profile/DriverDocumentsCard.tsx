@@ -1,11 +1,5 @@
 import { useLocale } from "@/hooks";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { FileText } from "lucide-react";
 import { DriverDocumentImages } from "./DriverDocumentImages";
 import { VehicleImagesSection } from "./VehicleImagesSection";

@@ -3,16 +3,9 @@
 import { useCallback } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useLocale } from "@/hooks";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationPrevious,
-  PaginationNext,
-} from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from "@/components/ui";
 import { BookingModal } from "./booking-modal";
-import { ChatDialog } from "@/components/chat/chat-dialog";
+import { ChatDialog } from "@/components/chat";
 import {
   NavigationOverlay,
   RidesEmptyState,

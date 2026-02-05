@@ -4,16 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRidesStore } from "@/stores";
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import {
   Form,
   FormControl,
   FormDescription,
@@ -21,14 +19,26 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+  Input,
+  Textarea,
+  useToast,
+  SearchableSelect,
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { SearchableSelect } from "@/components/ui/searchable-select";
 import { allCameroonCities } from "@/app/data/cities";
 import {
   Calendar,
@@ -45,23 +55,12 @@ import {
   CalendarClock,
   Check,
 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { format, addDays, parse } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
-import { useLocale } from "@/hooks";
+import { useLocale, useCityPickupPoints } from "@/hooks";
+import { PickupPointsSelectForm } from "@/components/driver";
+import type { CityPickupPoint, RidePickupPointInput } from "@/types";
 
-// Type for the form values - will be inferred from schema created in component
 type RideFormValues = {
   from_city: string;
   to_city: string;
@@ -70,9 +69,9 @@ type RideFormValues = {
   price: string;
   seats: string;
   description?: string;
+  pickup_points?: RidePickupPointInput[];
 };
 
-// Interface for Ride type
 interface Ride {
   id: string;
   from_city: string;
@@ -84,6 +83,7 @@ interface Ride {
   car_model?: string;
   car_color?: string;
   driver_id: string;
+  pickup_points?: { id: string; name?: string; order: number; time_offset_minutes: number }[];
   bookings?: {
     id: string;
     status: string;
@@ -104,8 +104,8 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const [deleting, setDeleting] = useState(false);
   const [hasBookings, setHasBookings] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [pickupPoints, setPickupPoints] = useState<RidePickupPointInput[]>([]);
 
-  // Define the form schema with validation rules (using translations)
   const rideFormSchema = z.object({
     from_city: z.string().min(2, {
       message: t("pages.driver.manageRide.validation.fromCityMin"),
@@ -124,23 +124,27 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         const parsed = parseInt(val);
         return !isNaN(parsed) && parsed > 0;
       },
-      {
-        message: t("pages.driver.manageRide.validation.pricePositive"),
-      }
+      { message: t("pages.driver.manageRide.validation.pricePositive") }
     ),
     seats: z.string().refine(
       (val) => {
         const parsed = parseInt(val);
         return !isNaN(parsed) && parsed > 0 && parsed <= 8;
       },
-      {
-        message: t("pages.driver.manageRide.validation.seatsRange"),
-      }
+      { message: t("pages.driver.manageRide.validation.seatsRange") }
     ),
     description: z.string().optional(),
+    pickup_points: z
+      .array(
+        z.object({
+          id: z.string(),
+          order: z.number(),
+          time_offset_minutes: z.number().min(0),
+        })
+      )
+      .min(2, t("pages.driver.newRide.validation.pickupPointsMinRequired")),
   });
 
-  // Form initialization with default empty values
   const form = useForm<RideFormValues>({
     resolver: zodResolver(rideFormSchema),
     defaultValues: {
@@ -151,8 +155,13 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       price: "",
       seats: "",
       description: "",
+      pickup_points: [],
     },
   });
+
+  const fromCity = form.watch("from_city");
+  const { cityPickupPoints, loading: pickupPointsLoading } =
+    useCityPickupPoints(fromCity ?? "");
 
   // Load ride data when component mounts (only once)
   useEffect(() => {
@@ -194,7 +203,12 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       try {
         const departureDate = new Date(currentRide.departure_time);
 
-        form.reset({
+        const pp = currentRide.pickup_points;
+      const initialPickupPoints: RidePickupPointInput[] = Array.isArray(pp)
+        ? pp.map((p) => ({ id: p.id, order: p.order, time_offset_minutes: p.time_offset_minutes }))
+        : [];
+      setPickupPoints(initialPickupPoints);
+      form.reset({
           from_city: currentRide.from_city,
           to_city: currentRide.to_city,
           departure_date: format(departureDate, "yyyy-MM-dd"),
@@ -202,6 +216,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           price: currentRide.price.toString(),
           seats: currentRide.seats_available.toString(),
           description: currentRide.description || "",
+          pickup_points: initialPickupPoints,
         });
         console.log("✅ Form populated successfully");
       } catch (formError) {
@@ -229,7 +244,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
 
      
 
-      // Prepare update data with all required fields
       const updateData: {
         from_city: string;
         to_city: string;
@@ -237,6 +251,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         price: number;
         description?: string;
         seats_available: number;
+        pickup_points: RidePickupPointInput[];
       } = {
         from_city: values.from_city,
         to_city: values.to_city,
@@ -244,6 +259,11 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         price: parseInt(values.price),
         description: values.description,
         seats_available: parseInt(values.seats),
+        pickup_points: pickupPoints.map(({ id, order, time_offset_minutes }) => ({
+          id,
+          order,
+          time_offset_minutes,
+        })),
       };
 
       // If there are existing bookings, we shouldn't reduce seats below that number
@@ -545,6 +565,34 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="pickup_points"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <PickupPointsSelectForm
+                            cityPickupPoints={cityPickupPoints}
+                            departureTime={(() => {
+                              const d = form.watch("departure_date");
+                              const tm = form.watch("departure_time");
+                              if (!d || !tm) return null;
+                              return new Date(`${d}T${tm}`);
+                            })()}
+                            value={pickupPoints}
+                            onChange={(points) => {
+                              setPickupPoints(points);
+                              field.onChange(points);
+                            }}
+                            error={form.formState.errors.pickup_points?.message}
+                            loading={pickupPointsLoading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}

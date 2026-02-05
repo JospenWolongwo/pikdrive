@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui";
 import type { RideWithDriver } from "@/types";
 import { useBookingModal } from "./hooks/use-booking-modal";
 import { useLocale } from "@/hooks";

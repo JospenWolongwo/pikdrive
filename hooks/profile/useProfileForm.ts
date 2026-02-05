@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast } from "@/hooks";
 import { useLocale } from "@/hooks";
-import { ProfileService } from "@/lib/services/client/profile-service";
+import { ProfileService } from "@/lib/services/client/profile";
 import type { ProfileData } from "@/types/user";
 
 interface FormData {

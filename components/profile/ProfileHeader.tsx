@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/hooks";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui";
 import {
   Car,
   Clock,

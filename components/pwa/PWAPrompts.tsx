@@ -3,14 +3,7 @@
 import { useState, createContext, useContext, useEffect, useCallback } from 'react';
 import { usePWA, useDeviceDetect } from '@/hooks/common';
 import { useLocale } from '@/hooks';
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui";
 import { IOSInstallPrompt } from './IOSInstallPrompt';
 
 // Create context for showing Android prompt

@@ -1,12 +1,5 @@
 import { useLocale } from "@/hooks";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge as BadgeComponent } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle, Badge as BadgeComponent, Separator } from "@/components/ui";
 import { Badge } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { format } from "date-fns";

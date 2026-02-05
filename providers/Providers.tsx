@@ -2,7 +2,7 @@
 
 import { ThemeProvider } from 'next-themes'
 import { SupabaseProvider } from './SupabaseProvider'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from '@/components/ui'
 import { Navbar } from '@/components/navbar'
 
 export function Providers({ children }: { children: React.ReactNode }) {

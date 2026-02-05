@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox, Alert, AlertDescription, AlertTitle } from '@/components/ui';
 import Link from 'next/link';
 import { ExternalLink, FileText } from 'lucide-react';
 import { useLocale } from '@/hooks';

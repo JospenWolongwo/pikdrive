@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { format } from "date-fns";
+import { CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
+
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRidesStore } from "@/stores";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
+  Button,
+  Card,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
-import {
   Form,
   FormControl,
   FormDescription,
@@ -25,23 +25,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
-import { Calendar } from "@/components/ui/calendar";
-import {
+  Input,
+  useToast,
+  Calendar,
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+  SearchableSelect,
+} from "@/components/ui";
+import { PickupPointsSelectForm } from "@/components/driver";
+import { useLocale, useCityPickupPoints, useNotificationPromptTrigger } from "@/hooks";
+import { cn, getCurrentTimeUTC, dateToUTCDate } from "@/lib/utils";
 import { allCameroonCities } from "@/app/data/cities";
-import { useLocale } from "@/hooks";
-import { PickupPointsForm } from "@/components/driver/pickup-points-form";
-import type { PickupPoint } from "@/types";
+import type { CityPickupPoint, RidePickupPointInput } from "@/types";
 
 const createFormSchema = (t: (key: string) => string) => z.object({
   fromCity: z.string().min(1, t("pages.driver.newRide.validation.fromCityRequired")),
@@ -59,7 +55,6 @@ const createFormSchema = (t: (key: string) => string) => z.object({
   carColor: z.string().min(1, t("pages.driver.newRide.validation.carColorRequired")),
   pickupPoints: z.array(z.object({
     id: z.string(),
-    name: z.string().min(1),
     order: z.number(),
     time_offset_minutes: z.number().min(0),
   })).min(2, t("pages.driver.newRide.validation.pickupPointsMinRequired")),
@@ -95,7 +90,16 @@ export default function NewRidePage() {
     },
   });
 
-  const [pickupPoints, setPickupPoints] = useState<PickupPoint[]>([]);
+  const [pickupPoints, setPickupPoints] = useState<RidePickupPointInput[]>([]);
+  const fromCity = form.watch("fromCity");
+  const { cityPickupPoints, loading: pickupPointsLoading } =
+    useCityPickupPoints(fromCity ?? "");
+
+  useEffect(() => {
+    if (!fromCity?.trim()) return;
+    setPickupPoints([]);
+    form.setValue("pickupPoints", []);
+  }, [fromCity, form]);
 
   async function onSubmit(values: z.infer<ReturnType<typeof createFormSchema>>) {
     if (!user) {
@@ -121,30 +125,8 @@ export default function NewRidePage() {
     try {
       setIsSubmitting(true);
 
-      // Get current time in UTC
-      const now = new Date();
-      const nowUTC = new Date(
-        Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate(),
-          now.getUTCHours(),
-          now.getUTCMinutes(),
-          now.getUTCSeconds()
-        )
-      );
-
-      // Convert departure time to UTC
-      const departureUTC = new Date(
-        Date.UTC(
-          values.departureTime.getUTCFullYear(),
-          values.departureTime.getUTCMonth(),
-          values.departureTime.getUTCDate(),
-          values.departureTime.getUTCHours(),
-          values.departureTime.getUTCMinutes(),
-          values.departureTime.getUTCSeconds()
-        )
-      );
+      const nowUTC = getCurrentTimeUTC();
+      const departureUTC = dateToUTCDate(values.departureTime);
 
       // Ensure the departure time is in the future
       if (departureUTC.getTime() <= nowUTC.getTime()) {
@@ -156,7 +138,6 @@ export default function NewRidePage() {
         return;
       }
 
-      // Validate pickup points
       if (!pickupPoints || pickupPoints.length < 2) {
         toast({
           title: t("pages.driver.newRide.errors.pickupPointsRequired"),
@@ -166,11 +147,9 @@ export default function NewRidePage() {
         return;
       }
 
-      // Ensure all pickup points have valid data
       const validPickupPoints = pickupPoints.filter(
-        p => p.name.trim().length > 0 && typeof p.time_offset_minutes === 'number'
+        (p) => typeof p.time_offset_minutes === "number" && p.time_offset_minutes >= 0
       );
-
       if (validPickupPoints.length < 2) {
         toast({
           title: t("pages.driver.newRide.errors.pickupPointsInvalid"),
@@ -180,12 +159,9 @@ export default function NewRidePage() {
         return;
       }
 
-      // Create the ride using the API endpoint
       const response = await fetch("/api/rides", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           from_city: values.fromCity,
           to_city: values.toCity,
@@ -194,7 +170,11 @@ export default function NewRidePage() {
           seats_available: values.seatsAvailable,
           car_model: values.carModel,
           car_color: values.carColor,
-          pickup_points: validPickupPoints,
+          pickup_points: validPickupPoints.map(({ id, order, time_offset_minutes }) => ({
+            id,
+            order,
+            time_offset_minutes,
+          })),
         }),
       });
 
@@ -413,7 +393,8 @@ export default function NewRidePage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <PickupPointsForm
+                      <PickupPointsSelectForm
+                        cityPickupPoints={cityPickupPoints}
                         departureTime={form.watch("departureTime")}
                         value={pickupPoints}
                         onChange={(points) => {
@@ -421,6 +402,7 @@ export default function NewRidePage() {
                           field.onChange(points);
                         }}
                         error={form.formState.errors.pickupPoints?.message}
+                        loading={pickupPointsLoading}
                       />
                     </FormControl>
                     <FormMessage />

@@ -1,7 +1,7 @@
 "use client"
 
 import { Car, CheckCircle2, DollarSign, ShieldCheck } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { Card } from "@/components/ui"
 import { useLocale } from "@/hooks"
 
 // Requirements section as a separate component

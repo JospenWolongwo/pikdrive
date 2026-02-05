@@ -7,18 +7,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Separator,
+  Badge,
+} from "@/components/ui";
 import {
   FileIcon,
   ImageIcon,

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { type PaymentProviderType } from '@/lib/payment/types';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui';
+import { useLocale } from '@/hooks';
 
 interface PaymentMethodSelectorProps {
   providers: Array<{
@@ -34,6 +34,8 @@ export function PaymentMethodSelector({
   onSelect,
   disabled
 }: PaymentMethodSelectorProps) {
+  const { t } = useLocale();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {providers.map((provider) => (
@@ -73,24 +75,24 @@ export function PaymentMethodSelector({
                   {provider.description}
                 </p>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  Processing time: {provider.processingTime}
+                  {t("payment.methodSelector.processingTime")}: {provider.processingTime}
                 </div>
               </div>
             </div>
 
             <div className="mt-3 text-xs text-muted-foreground">
               <div className="flex justify-between">
-                <span>Minimum amount:</span>
-                <span>{provider.minimumAmount.toLocaleString()} FCFA</span>
+                <span>{t("payment.methodSelector.minimumAmount")}:</span>
+                <span>{provider.minimumAmount.toLocaleString()} {t("payment.methodSelector.currency")}</span>
               </div>
               <div className="flex justify-between">
-                <span>Maximum amount:</span>
-                <span>{provider.maximumAmount.toLocaleString()} FCFA</span>
+                <span>{t("payment.methodSelector.maximumAmount")}:</span>
+                <span>{provider.maximumAmount.toLocaleString()} {t("payment.methodSelector.currency")}</span>
               </div>
               {provider.processingFee > 0 && (
                 <div className="flex justify-between">
-                  <span>Processing fee:</span>
-                  <span>{provider.processingFee.toLocaleString()} FCFA</span>
+                  <span>{t("payment.methodSelector.processingFee")}:</span>
+                  <span>{provider.processingFee.toLocaleString()} {t("payment.methodSelector.currency")}</span>
                 </div>
               )}
             </div>

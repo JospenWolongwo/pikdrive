@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui';
 import { MessageSquare, Bell, CheckCircle, X } from 'lucide-react';
-import { useNotificationPermission } from '@/hooks/notifications/useNotificationPermission';
+import { useNotificationPermission } from "@/hooks/notifications";
 import { detectDevice, getNotificationSupportMessage } from '@/lib/utils/device-detection';
 import { useLocale } from '@/hooks';
 

@@ -2,11 +2,9 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Button, Card, CardContent, Skeleton } from '@/components/ui'
 import { toast } from 'sonner'
 import { useSupabase } from '@/providers/SupabaseProvider'
-import { Skeleton } from '@/components/ui/skeleton'
 import { RefreshCcw, Copy, CheckCircle, Clock } from 'lucide-react'
 import { useLocale } from '@/hooks'
 

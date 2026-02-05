@@ -87,6 +87,47 @@
     }
   },
   "pages": {
+    "admin": {
+      "pickupPoints": {
+        "title": "Pickup Points",
+        "description": "Manage meeting points per city. Drivers select from these when creating rides.",
+        "refresh": "Refresh",
+        "add": "Add pickup point",
+        "filterByCity": "Filter by city",
+        "allCities": "All cities",
+        "table": {
+          "city": "City",
+          "name": "Name",
+          "displayOrder": "Order",
+          "actions": "Actions"
+        },
+        "noPoints": "No pickup points. Add one for a city.",
+        "createTitle": "Add pickup point",
+        "editTitle": "Edit pickup point",
+        "form": {
+          "city": "City",
+          "cityPlaceholder": "Select city",
+          "name": "Name",
+          "namePlaceholder": "e.g. Carrefour Deido",
+          "displayOrder": "Display order",
+          "create": "Create"
+        },
+        "toast": {
+          "created": "Pickup point created",
+          "updated": "Pickup point updated",
+          "deleted": "Pickup point deleted"
+        },
+        "errors": {
+          "loadFailed": "Failed to load pickup points",
+          "saveFailed": "Failed to save",
+          "deleteFailed": "Failed to delete"
+        },
+        "validation": {
+          "cityRequired": "City is required",
+          "nameRequired": "Name is required"
+        }
+      }
+    },
     "home": {
       "hero": {
         "title1": "Discover",
@@ -835,6 +876,11 @@
         "pickupPoints": {
           "title": "Pickup Points",
           "description": "Define at least 2 pickup points where passengers can be picked up",
+          "selectDescription": "Select at least 2 meeting points for your departure city (managed by PikDrive).",
+          "selectLoading": "Loading pickup points for this city...",
+          "noPointsForCity": "No pickup points defined for this city yet. Contact support.",
+          "available": "Available for this city",
+          "selected": "Selected (order and time)",
           "name": "Pickup Point Name",
           "namePlaceholder": "e.g., Carrefour Deido",
           "timeOffset": "Minutes After Departure",
@@ -881,6 +927,11 @@
           "payments": "Payments"
         },
         "searchPlaceholder": "Search by city, passenger or car model...",
+        "pagination": {
+          "showing": "Showing",
+          "of": "of",
+          "rides": "rides"
+        },
         "sort": {
           "label": "Sort",
           "earliest": "Earliest first",
@@ -1373,6 +1424,13 @@
     }
   },
   "payment": {
+    "methodSelector": {
+      "processingTime": "Processing time",
+      "minimumAmount": "Minimum amount",
+      "maximumAmount": "Maximum amount",
+      "processingFee": "Processing fee",
+      "currency": "FCFA"
+    },
     "status": {
       "checking": "Checking payment status...",
       "pleaseCheckPhone": "Please check your phone for the payment request",

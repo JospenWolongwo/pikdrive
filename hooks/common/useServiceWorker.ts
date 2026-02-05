@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useOneSignal } from "@/hooks/notifications/useOneSignal";
+import { useOneSignal } from "@/hooks/notifications";
 
 interface ServiceWorkerState {
   readonly isSupported: boolean;

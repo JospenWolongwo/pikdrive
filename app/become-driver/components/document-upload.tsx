@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FormControl, FormField, FormItem } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+import { FormControl, FormField, FormItem, Input } from "@/components/ui"
 import { CheckCircle2, Loader2, Upload, Check } from "lucide-react"
 
 interface DocumentUploadProps {

@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Button, Card, Separator, Badge } from "@/components/ui";
 import {
   Users,
   LayoutDashboard,
@@ -19,6 +16,7 @@ import {
   X,
   Home,
   ChevronRight,
+  MapPin,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -94,6 +92,12 @@ export default function AdminLayout({
       icon: Users,
       description: "Gestion des conducteurs",
       badge: "Active",
+    },
+    {
+      title: "Pickup Points",
+      href: "/admin/pickup-points",
+      icon: MapPin,
+      description: "Points de ramassage par ville",
     },
     {
       title: "Vehicle Management",

@@ -1,13 +1,7 @@
 'use client'
 
 import { useLocale } from "@/hooks";
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui'
 import { Globe } from 'lucide-react'
 import { localeNames, type Locale } from '@/i18n/config'
 import { cn } from '@/lib/utils'

@@ -4,11 +4,9 @@ import { useEffect, useState } from 'react'
 // Removed useAuthStore - using useSupabase for auth state
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@/components/ui'
 import { Clock, CheckCircle, AlertCircle, RefreshCw, X, Shield } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Badge } from '@/components/ui/badge'
 import { useLocale } from '@/hooks'
 
 interface DriverStatus {

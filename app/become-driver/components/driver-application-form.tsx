@@ -3,21 +3,20 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useSupabase } from "@/providers/SupabaseProvider"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Form } from "@/components/ui/form"
+import { Button, Card, Form, toast } from "@/components/ui"
 import { Loader2, Camera } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { formSchema } from "../form-schema"
 import * as z from "zod"
-import { DriverRequirements } from "./driver-requirements"
-import { DriverDocuments } from "./driver-documents"
-import { VehicleImagesUpload } from "./vehicle-images-upload"
-import { DocumentFieldName } from "./document-types"
-import { uploadDocument } from "../upload-utils"
-import { isValidDocumentUrl } from "../upload-utils"
+import {
+  DriverRequirements,
+  DriverDocuments,
+  VehicleImagesUpload,
+  DocumentFieldName,
+  uploadDocument,
+  isValidDocumentUrl,
+} from "."
 import { submitDriverApplication, DriverApplicationData } from "@/lib/driver-application-utils"
 import { useLocale } from "@/hooks"
 import { TermsAcceptance } from "@/components/legal/terms-acceptance"

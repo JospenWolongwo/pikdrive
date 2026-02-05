@@ -85,6 +85,24 @@ export interface RideMessage {
   };
 }
 
+/** Ride with messages and bookings (driver messages page) */
+export interface RideWithMessages {
+  readonly id: string;
+  readonly from_city: string;
+  readonly to_city: string;
+  readonly departure_time: string;
+  readonly driver_id: string;
+  readonly messages: readonly RideMessage[];
+  readonly bookings?: readonly {
+    readonly id: string;
+    readonly passenger: {
+      readonly id: string;
+      readonly full_name: string;
+      readonly avatar_url?: string;
+    };
+  }[];
+}
+
 // Conversation summary for ride dashboard
 export interface RideConversationSummary {
   readonly conversationId: string;

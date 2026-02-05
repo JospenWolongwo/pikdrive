@@ -1,3 +1,5 @@
+"use client"
+
 import { Avatar, AvatarImage, AvatarFallback } from './avatar'
 import { User } from '@supabase/supabase-js'
 import { useSupabase } from '@/providers/SupabaseProvider'

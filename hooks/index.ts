@@ -12,6 +12,9 @@ export * from './useLocale';
 // Rides hooks (new centralized store-based hooks)
 export * from './rides';
 
+// Bookings hooks
+export * from './bookings';
+
 // Driver hooks (legacy hooks - to be migrated)
 export * from './driver';
 
@@ -20,3 +23,9 @@ export * from './passenger';
 
 // Profile hooks
 export * from './profile';
+
+// Settings hooks
+export * from './settings';
+
+// Notification hooks
+export * from './notifications';

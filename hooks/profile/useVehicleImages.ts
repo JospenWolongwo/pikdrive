@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast, useLocale } from "@/hooks";
-import { DriverDocumentsService } from "@/lib/services/client/driver-documents-service";
-import { ProfileStorageService } from "@/lib/services/client/profile-storage-service";
+import { DriverDocumentsService, ProfileStorageService } from "@/lib/services/client/profile";
 import type { DriverDocuments } from "@/types/user";
 
 interface UseVehicleImagesReturn {

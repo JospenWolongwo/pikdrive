@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui";
 import { Users, Car, UserCheck } from "lucide-react";
 
 export default function AdminDashboard() {

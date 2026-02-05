@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { ServerBookingService } from '@/lib/services/server/booking-service';
-import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
+import { ServerBookingService } from '@/lib/services/server/bookings';
+import { ServerOneSignalNotificationService } from '@/lib/services/server/notifications';
 import { PaymentOrchestratorService } from '@/lib/payment/payment-orchestrator.service';
 import type { Environment } from '@/types/payment-ext';
 import { Environment as EnvEnum, PawaPayApiUrl } from '@/types/payment-ext';

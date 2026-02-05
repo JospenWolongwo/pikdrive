@@ -1,7 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Button, Input, Label, SearchableSelect } from "@/components/ui";
 import { Search, Filter } from "lucide-react";
 import { allCameroonCities } from "@/app/data/cities";
 import type { RideFilters } from "@/hooks/passenger/use-ride-filters";

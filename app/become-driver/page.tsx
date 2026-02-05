@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 import { Suspense } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui"
 
 // Dynamically import the form component to reduce initial load size
 const DriverApplicationForm = dynamic(

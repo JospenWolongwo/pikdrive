@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button, Input, Label, Card, CardContent } from "@/components/ui";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { PickupPoint } from "@/types";
 import { format } from "date-fns";

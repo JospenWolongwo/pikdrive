@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button, Input, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui'
 import { toast } from 'sonner'
 import { KeyRound, Loader2, CheckCircle } from 'lucide-react'
 import { useLocale } from '@/hooks'
+import { bookingApiClient } from '@/lib/api-client/booking'
 
 interface CodeVerificationFormProps {
   bookingId: string
@@ -53,32 +52,17 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
         error: null
       }))
 
-      const response = await fetch('/api/bookings/verify-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          bookingId, 
-          verificationCode: state.code 
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || t("pages.driver.codeVerification.verificationFailed"))
-      }
+      const data = await bookingApiClient.verifyBookingCode(bookingId, state.code)
 
       if (!data.success) {
+        const message = data.message || t("pages.driver.codeVerification.invalidCode")
         setState(prev => ({
           ...prev,
           loading: false,
-          error: data.message || t("pages.driver.codeVerification.invalidCode"),
+          error: message,
           lastUpdated: Date.now()
         }))
-        toast.error(data.message || t("pages.driver.codeVerification.invalidCode"))
+        toast.error(message)
         return
       }
 

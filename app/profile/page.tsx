@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast, useLocale, useProfile} from "@/hooks";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui";
 import { User, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";

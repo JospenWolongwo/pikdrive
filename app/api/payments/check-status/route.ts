@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { ServerPaymentService } from '@/lib/services/server/payment-service';
-import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
+import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
 import { MTNMomoService } from '@/lib/payment/mtn-momo-service';
 import { PawaPayService } from '@/lib/payment/pawapay/pawapay-service';
 import { mapMtnMomoStatus, mapPawaPayStatus } from '@/lib/payment/status-mapper';

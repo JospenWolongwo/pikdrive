@@ -1,12 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/hooks";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import {
   Settings,
   Car,

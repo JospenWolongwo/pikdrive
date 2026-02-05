@@ -24,3 +24,4 @@ export { paymentApiClient } from './payment';
 export { ridesApiClient } from './rides';
 export { chatApiClient } from './chat';
 export { driverApiClient } from './driver';
+export { getPickupPointsByCity } from './pickup-points';

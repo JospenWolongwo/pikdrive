@@ -1,10 +1,6 @@
 import { useLocale } from "@/hooks";
 import { useAvatarUpload } from "@/hooks/profile";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, Avatar, AvatarImage, AvatarFallback } from "@/components/ui";
 import {
   Camera,
   Loader2,

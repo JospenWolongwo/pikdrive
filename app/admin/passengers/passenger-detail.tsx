@@ -6,16 +6,16 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
-import {
+  Badge,
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui";
 import {
   CalendarIcon,
   MapPinIcon,

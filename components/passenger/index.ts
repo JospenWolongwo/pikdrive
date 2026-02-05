@@ -1,4 +1,4 @@
-export { NavigationOverlay } from "@/components/ui/navigation-overlay";
+export { NavigationOverlay } from "@/components/ui";
 export { RidesEmptyState } from "./rides-empty-state";
 export { RideFiltersComponent } from "./ride-filters";
 export { PassengerRideCard } from "./ride-card";

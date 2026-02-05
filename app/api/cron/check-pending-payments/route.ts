@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { ServerPaymentService } from '@/lib/services/server/payment-service';
-import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
+import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
 import { PaymentReconciliationService } from '@/lib/services/payment-reconciliation.service';
 import { PayoutReconciliationService } from '@/lib/services/payout-reconciliation.service';
 

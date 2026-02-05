@@ -1,5 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage, Badge } from "@/components/ui";
 import { MapPin, Shield } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useLocale } from "@/hooks";

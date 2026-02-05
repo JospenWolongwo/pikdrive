@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { FormControl, FormField, FormItem } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+import { FormControl, FormField, FormItem, Input } from "@/components/ui"
 import { Loader2, Upload } from "lucide-react"
 import { useLocale } from "@/hooks"
 

@@ -5,7 +5,7 @@
 This document provides a comprehensive overview of the PikDrive database schema, including all tables, relationships, and Row Level Security (RLS) policies.
 
 **Database**: PostgreSQL (via Supabase)  
-**Last Updated**: January 2025
+**Last Updated**: February 2025
 
 ---
 
@@ -166,10 +166,13 @@ CREATE TABLE public.rides (
   status TEXT DEFAULT 'upcoming' 
     CHECK (status IN ('upcoming', 'in_progress', 'completed', 'cancelled')),
   
+  -- Pickup points: JSONB array of { id, order, time_offset_minutes }; id references city_pickup_points.id (Phase 1: admin-owned points per city)
+  pickup_points JSONB DEFAULT '[]'::jsonb,
+
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Constraints
   CHECK (seats_available <= total_seats)
 );
@@ -189,9 +192,35 @@ CREATE INDEX idx_rides_search ON public.rides(from_city, to_city, departure_time
 - ✅ `rides_update_own` - Drivers can update their own rides
 - ✅ `rides_delete_own` - Drivers can delete their own rides (if no bookings)
 
+**Note on pickup_points:** Each element in the array stores only `id` (UUID referencing `city_pickup_points.id`), `order`, and `time_offset_minutes`. Names are resolved from `city_pickup_points` when returning rides via API (enrichment). Legacy rides may still have `name` in the JSON.
+
 ---
 
-### 4. **bookings**
+### 4. **city_pickup_points**
+
+Admin-defined meeting/pickup points per city. Drivers select from these when creating or editing a ride (no free-form names).
+
+```sql
+CREATE TABLE public.city_pickup_points (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  city TEXT NOT NULL,
+  name TEXT NOT NULL,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(city, name)
+);
+
+CREATE INDEX idx_city_pickup_points_city ON public.city_pickup_points(city);
+```
+
+**RLS Policies:**
+- SELECT: authenticated and anon (so drivers can read for ride creation)
+- INSERT/UPDATE/DELETE: admin only (via profiles.role = 'admin')
+
+---
+
+### 5. **bookings**
 
 Passenger bookings for rides.
 
@@ -239,7 +268,7 @@ CREATE INDEX idx_bookings_verification_code ON public.bookings(verification_code
 
 ---
 
-### 5. **payments**
+### 6. **payments**
 
 Payment records for bookings.
 
@@ -292,7 +321,7 @@ CREATE INDEX idx_payments_idempotency_key ON public.payments(idempotency_key);
 
 ---
 
-### 6. **payment_receipts**
+### 7. **payment_receipts**
 
 Payment receipts generated after successful payments.
 
@@ -361,7 +390,7 @@ CREATE INDEX idx_conversations_ride_id ON public.conversations(ride_id);
 
 ---
 
-### 8. **messages**
+### 9. **messages**
 
 Individual messages in conversations.
 
@@ -397,7 +426,7 @@ CREATE INDEX idx_messages_created_at ON public.messages(created_at);
 
 ---
 
-### 9. **push_subscriptions**
+### 10. **push_subscriptions**
 
 Push notification subscriptions for web push notifications.
 

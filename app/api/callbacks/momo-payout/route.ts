@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { ServerPaymentService } from '@/lib/services/server/payment-service';
-import { ServerPaymentOrchestrationService } from '@/lib/services/server/payment-orchestration-service';
-import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
+import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
+import { ServerOneSignalNotificationService } from '@/lib/services/server/notifications';
 import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
 import { sendPayoutNotificationIfNeeded } from '@/lib/payment/payout-notification-helper';
 

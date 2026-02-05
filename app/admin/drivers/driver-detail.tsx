@@ -7,18 +7,17 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
+  Badge,
+  Button,
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui";
 import {
   CalendarIcon,
   MapPinIcon,

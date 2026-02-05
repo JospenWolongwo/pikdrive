@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast, useLocale } from "@/hooks";
-import { ProfileService } from "@/lib/services/client/profile-service";
-import { ProfileStorageService } from "@/lib/services/client/profile-storage-service";
+import { ProfileService, ProfileStorageService } from "@/lib/services/client/profile";
 
 interface UseAvatarUploadReturn {
   readonly handleFileChange: (

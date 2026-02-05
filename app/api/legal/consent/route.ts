@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server-client';
-import { ConsentService } from '@/lib/services/server/consent-service';
+import { ConsentService } from '@/lib/services/server/consent';
 
 /**
  * POST /api/legal/consent

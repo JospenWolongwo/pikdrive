@@ -1,55 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabase } from "@/providers/SupabaseProvider";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
+import { Button, Card, Input } from "@/components/ui";
 import { MessageCircle, Send } from "lucide-react";
 import { format } from "date-fns";
-import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-
-interface Message {
-  id: string;
-  content: string;
-  created_at: string;
-  sender: {
-    full_name: string;
-  };
-}
-
-interface DatabaseMessage {
-  id: string;
-  content: string;
-  created_at: string;
-  ride_id: string;
-  sender_id: string;
-}
-
-interface Ride {
-  id: string;
-  from_city: string;
-  to_city: string;
-  departure_time: string;
-  driver_id: string;
-  messages: Message[];
-  bookings?: {
-    id: string;
-    passenger: {
-      id: string;
-      full_name: string;
-      avatar_url?: string;
-    };
-  }[];
-}
-
-interface RealtimePayload {
-  new: DatabaseMessage;
-  old: DatabaseMessage | null;
-  eventType: "INSERT" | "UPDATE" | "DELETE";
-}
+import { useRideMessages } from "@/hooks/driver";
 
 export default function RideMessagesPage({
   params,
@@ -57,176 +13,13 @@ export default function RideMessagesPage({
   params: { id: string };
 }) {
   const router = useRouter();
-  const { supabase, user } = useSupabase();
-  const [ride, setRide] = useState<Ride | null>(null);
+  const { ride, loading, sending, sendMessage } = useRideMessages(params.id);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/auth");
-      return;
-    }
-
-    const loadRide = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("rides")
-          .select(
-            `
-            id,
-            from_city,
-            to_city,
-            departure_time,
-            driver_id,
-            messages (
-              id,
-              content,
-              created_at,
-              sender:profiles (
-                full_name
-              )
-            ),
-            bookings (
-              id,
-              passenger:profiles (
-                id,
-                full_name,
-                avatar_url
-              )
-            )
-          `
-          )
-          .eq("id", params.id)
-          .eq("driver_id", user.id)
-          .single();
-
-        if (error) throw error;
-        if (!data) {
-          toast({
-            title: "Ride not found",
-            description: "The requested ride could not be found.",
-            variant: "destructive",
-          });
-          router.push("/driver/dashboard");
-          return;
-        }
-
-        setRide(data);
-      } catch (error) {
-        console.error("Error loading ride:", error);
-        toast({
-          title: "Error",
-          description: "There was an error loading the ride messages.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadRide();
-
-    // Subscribe to new messages
-    const channel = supabase
-      .channel(`ride:${params.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `ride_id=eq.${params.id}`,
-        },
-        async (payload: RealtimePayload) => {
-          // Fetch the sender's information
-          const { data: senderData, error: senderError } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", payload.new.sender_id)
-            .single();
-
-          if (senderError) {
-            console.error("Error fetching sender info:", senderError);
-            return;
-          }
-
-          const newMessage: Message = {
-            id: payload.new.id,
-            content: payload.new.content,
-            created_at: payload.new.created_at,
-            sender: {
-              full_name: senderData.full_name,
-            },
-          };
-
-          setRide((currentRide) => {
-            if (!currentRide) return null;
-            return {
-              ...currentRide,
-              messages: [...currentRide.messages, newMessage],
-            };
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, router, supabase, params.id]);
-
-  const sendMessage = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !ride || !newMessage.trim()) return;
-
-    try {
-      setSending(true);
-
-      // Find the receiver - if driver is sending, receiver is passenger, and vice versa
-      let receiverId: string;
-
-      if (user.id === ride.driver_id) {
-        // Current user is driver, find passenger
-        const passenger = ride.bookings?.[0]?.passenger;
-        if (!passenger?.id) {
-          throw new Error("No passenger found for this ride");
-        }
-        receiverId = passenger.id;
-      } else {
-        // Current user is passenger, receiver is driver
-        receiverId = ride.driver_id;
-      }
-
-      console.log("📨 Sending message:", {
-        senderId: user.id,
-        receiverId,
-        rideId: ride.id,
-        content: newMessage.trim().substring(0, 50) + "...",
-      });
-
-      const { error } = await supabase.from("messages").insert({
-        ride_id: ride.id,
-        sender_id: user.id,
-        receiver_id: receiverId,
-        content: newMessage.trim(),
-      });
-
-      if (error) throw error;
-
-      setNewMessage("");
-    } catch (error) {
-      console.error("Error sending message:", error);
-      toast({
-        title: "Error",
-        description:
-          "There was an error sending your message. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSending(false);
-    }
+    const success = await sendMessage(newMessage);
+    if (success) setNewMessage("");
   };
 
   if (loading) {
@@ -235,8 +28,8 @@ export default function RideMessagesPage({
         <div className="max-w-2xl mx-auto">
           <Card className="p-6">
             <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-4 bg-muted rounded w-1/2"></div>
+              <div className="h-4 bg-muted rounded w-3/4" />
+              <div className="h-4 bg-muted rounded w-1/2" />
             </div>
           </Card>
         </div>
@@ -279,7 +72,7 @@ export default function RideMessagesPage({
                     key={message.id}
                     className="flex items-start gap-2 p-3 rounded-lg bg-muted"
                   >
-                    <MessageCircle className="w-4 h-4 mt-1" />
+                    <MessageCircle className="w-4 h-4 mt-1 shrink-0" />
                     <div>
                       <div className="text-sm font-medium">
                         {message.sender.full_name}
@@ -294,7 +87,7 @@ export default function RideMessagesPage({
               )}
             </div>
 
-            <form onSubmit={sendMessage} className="flex gap-2">
+            <form onSubmit={handleSubmit} className="flex gap-2">
               <Input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { ProfileService } from "@/lib/services/client/profile-service";
-import { DriverDocumentsService } from "@/lib/services/client/driver-documents-service";
+import { ProfileService, DriverDocumentsService } from "@/lib/services/client/profile";
 import type { ProfileData, DriverDocuments } from "@/types/user";
 
 interface UseProfileReturn {

@@ -1,8 +1,7 @@
 'use client';
 
 import { Receipt } from "@/lib/payment/receipt-service";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button, Card } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 import { Download, FileText } from "lucide-react";
 

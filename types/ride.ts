@@ -2,7 +2,24 @@ import type { Booking, DashboardBooking } from './booking';
 import { Passenger } from './passenger';
 import type { RideMessage } from './chat';
 
-// Pickup point interface
+/** Admin-defined pickup point per city (table city_pickup_points) */
+export interface CityPickupPoint {
+  readonly id: string;
+  readonly city: string;
+  readonly name: string;
+  readonly display_order: number;
+  readonly created_at?: string;
+  readonly updated_at?: string;
+}
+
+/** Payload for create/update ride: reference to city_pickup_points + order and time offset */
+export interface RidePickupPointInput {
+  readonly id: string;
+  readonly order: number;
+  readonly time_offset_minutes: number;
+}
+
+/** Pickup point as returned in ride (id, name resolved from city_pickup_points, order, time_offset_minutes) */
 export interface PickupPoint {
   readonly id: string;
   readonly name: string;
@@ -74,7 +91,7 @@ export interface CreateRideRequest {
   readonly description?: string;
   readonly car_model?: string;
   readonly car_color?: string;
-  readonly pickup_points?: readonly PickupPoint[];
+  readonly pickup_points?: readonly RidePickupPointInput[];
 }
 
 export interface UpdateRideRequest {
@@ -86,7 +103,7 @@ export interface UpdateRideRequest {
   readonly description?: string;
   readonly car_model?: string;
   readonly car_color?: string;
-  readonly pickup_points?: readonly PickupPoint[];
+  readonly pickup_points?: readonly RidePickupPointInput[];
 }
 
 // Additional ride-related types

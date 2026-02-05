@@ -6,8 +6,7 @@ import { getAvailableProviders } from "@/lib/payment/provider-config";
 import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/types";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useBookingStore, useRidesStore } from "@/stores";
-import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
-import { useLocale } from "@/hooks";
+import { useNotificationPromptTrigger, useLocale } from "@/hooks";
 import type { RideWithDriver } from "@/types";
 import { ApiError } from "@/lib/api-client/error";
 
@@ -292,13 +291,9 @@ export function useBookingModal({
       setBookingId(booking.id);
       setStep(2);
 
-      // Trigger notification prompt after booking creation
-      // This is a critical moment - user is committed to booking
       // Use priority=true to bypass 24h cooldown for critical booking events
       triggerPrompt(true);
 
-      // NOTE: Notifications removed here - they will be sent AFTER payment completes
-      // This prevents sending driver notification before payment is confirmed
     } catch (error) {
       // Extract clear error message from ApiError or regular Error
       let errorMessage = null;
@@ -385,10 +380,6 @@ export function useBookingModal({
         console.error('Error refreshing rides after payment:', error);
       });
 
-      // Trigger notification prompt after payment completion
-      // This is the highest value moment - user just completed transaction
-      // Use priority=true to bypass 24h cooldown for critical payment events
-      triggerPrompt(true);
 
       // Show success state immediately; keep modal open so user sees it
       setPaymentSuccess(true);

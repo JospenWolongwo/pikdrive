@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button, Card, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { Star, MapPin, Car, Shield } from "lucide-react";
 import { allCameroonCities } from "@/app/data/cities";
 

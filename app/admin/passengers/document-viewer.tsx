@@ -7,16 +7,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+  Badge,
+} from "@/components/ui";
 import {
   FileIcon,
   ZoomInIcon,

@@ -1,15 +1,6 @@
 import { useLocale } from "@/hooks";
 import { useProfileForm } from "@/hooks/profile";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button, Input, Label, Card, CardContent, CardDescription, CardHeader, CardTitle, SearchableSelect } from "@/components/ui";
 import {
   User,
   Phone,
@@ -20,7 +11,6 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import { SearchableSelect } from "@/components/ui/searchable-select";
 import { allCameroonCities } from "@/app/data/cities";
 import type { ProfileData } from "@/types/user";
 import type { User as SupabaseUser } from "@supabase/supabase-js";

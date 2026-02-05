@@ -1,26 +1,14 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { formatDate } from "@/lib/utils";
-import { format } from "date-fns";
-import { VerificationCodeDisplay } from "@/components/bookings/verification-code-display";
-import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, X, MessageCircle, Minus } from "lucide-react";
-import { useSupabase } from "@/providers/SupabaseProvider";
-import { useToast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
-import { useChatStore } from "@/stores/chatStore";
-import { useBookingStore } from "@/stores";
-import { ChatDialog } from "@/components/chat/chat-dialog";
-import {
+  useToast,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,26 +18,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useLocale } from "@/hooks";
+} from "@/components/ui";
+import { formatDate } from "@/lib/utils";
+import { format } from "date-fns";
+import { VerificationCodeDisplay } from "@/components/bookings";
+import { useState, useEffect, useCallback } from "react";
+import { ChevronDown, ChevronUp, X, MessageCircle, Minus } from "lucide-react";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { useRouter } from "next/navigation";
+import { useChatStore } from "@/stores/chatStore";
+import { useBookingStore } from "@/stores";
+import { ChatDialog } from "@/components/chat";
+import { useLocale, useBookingVerificationSubscription } from "@/hooks";
 
-import type { BookingWithPayments } from '@/types';
-import type { RideWithDriver } from '@/types/ride';
+import type { BookingWithPayments, RideWithDriver } from "@/types";
 
 
 interface BookingCardProps {
@@ -83,32 +76,11 @@ export function BookingCard({ booking }: BookingCardProps) {
     setDisplayStatus(booking.status);
   }, [booking.status]);
 
-  // Set up real-time subscription for code_verified changes
-  useEffect(() => {
-    const subscription = supabase
-      .channel(`booking-verification-${booking.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'bookings',
-          filter: `id=eq.${booking.id}`,
-        },
-        (payload: any) => {
-          if (payload.new?.code_verified === true && payload.old?.code_verified !== true) {
-            setCodeVerified(true);
-            // Hide verification section when verified
-            setShowVerification(false);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [booking.id, supabase]);
+  const onVerified = useCallback(() => {
+    setCodeVerified(true);
+    setShowVerification(false);
+  }, []);
+  useBookingVerificationSubscription(booking.id, onVerified);
 
   // Determine if we should show verification code (use displayStatus for instant UI)
   const shouldShowVerification =

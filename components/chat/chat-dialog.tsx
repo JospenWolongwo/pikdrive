@@ -6,17 +6,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+  Button,
+  Textarea,
+  toast,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  ScrollArea,
+} from "@/components/ui";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
-import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
-import { toast } from "@/components/ui/use-toast";
+import { useNotificationPromptTrigger } from "@/hooks";
 import { format } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAvatarUrl } from "@/lib/utils/avatar-url";
 import { useLocale } from "@/hooks";
 

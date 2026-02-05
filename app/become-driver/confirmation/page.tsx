@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { SuccessCard } from "@/components/ui/success-card"
+import { SuccessCard } from "@/components/ui"
 import { useLocale } from "@/hooks"
 
 export default function ApplicationConfirmationPage() {

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, Label } from "@/components/ui";
 import { MapPin, Clock } from "lucide-react";
 import type { PickupPoint } from "@/types";
 import { format } from "date-fns";

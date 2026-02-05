@@ -5,7 +5,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
+import { ServerOneSignalNotificationService } from '@/lib/services/server/notifications';
 
 type NotificationSource = 'callback' | 'cron' | 'status-check' | 'initial';
 type NotificationStatus = 'failed' | 'completed';

@@ -7,11 +7,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+  Button,
+  Textarea,
+  toast,
+} from "@/components/ui";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 
 interface Message {

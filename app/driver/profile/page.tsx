@@ -6,15 +6,13 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import {
   Form,
   FormControl,
   FormDescription,
@@ -22,15 +20,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AvatarUpload } from "@/components/ui/avatar-upload";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+  Input,
+  toast,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  AvatarUpload,
+  Separator,
+  Badge,
+  SearchableSelect,
+} from "@/components/ui";
 import { Car, FileText, Shield, User } from "lucide-react";
-import { SearchableSelect } from "@/components/ui/searchable-select";
 import { allCameroonCities } from "@/app/data/cities";
 
 const driverProfileSchema = z.object({

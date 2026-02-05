@@ -1,11 +1,7 @@
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationPrevious,
-  PaginationNext,
-} from "@/components/ui/pagination";
+"use client";
+
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from "@/components/ui";
+import { useLocale } from "@/hooks";
 
 interface PaginationProps {
   currentPage: number;
@@ -20,17 +16,18 @@ export function PaginationComponent({
   itemsPerPage,
   onPageChange,
 }: PaginationProps) {
+  const { t } = useLocale();
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   if (totalPages <= 1) return null;
 
+  const from = Math.min(totalItems, (currentPage - 1) * itemsPerPage + 1);
+  const to = Math.min(totalItems, currentPage * itemsPerPage);
+
   return (
     <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
       <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
-        Affichage de{" "}
-        {Math.min(totalItems, (currentPage - 1) * itemsPerPage + 1)}-
-        {Math.min(totalItems, currentPage * itemsPerPage)} sur {totalItems}{" "}
-        trajets
+        {t("pages.driver.dashboard.pagination.showing")} {from}-{to} {t("pages.driver.dashboard.pagination.of")} {totalItems} {t("pages.driver.dashboard.pagination.rides")}
       </div>
 
       <Pagination>

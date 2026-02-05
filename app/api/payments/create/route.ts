@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { ServerPaymentService } from '@/lib/services/server/payment-service';
+import { ServerPaymentService } from '@/lib/services/server/payment';
 import { PaymentOrchestratorService } from '@/lib/payment/payment-orchestrator.service';
-import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
+import { ServerOneSignalNotificationService } from '@/lib/services/server/notifications';
 import type { Environment } from '@/types/payment-ext';
 import { Environment as EnvEnum, PawaPayApiUrl, HTTP_CODE } from '@/types/payment-ext';
 import { isMTNPhoneNumber, isOrangePhoneNumber } from '@/lib/payment/phone-utils';

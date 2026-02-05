@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui";
 import { Users, MapPin, Calendar } from "lucide-react";
 import { useLocale } from "@/hooks";
 

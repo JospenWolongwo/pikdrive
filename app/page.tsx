@@ -1,16 +1,14 @@
 'use client'
 
 // Removed useAuthStore - using useSupabase for auth state
-import { Button } from '@/components/ui/button'
+import { Button, Card, toast } from '@/components/ui'
 import { useRouter } from 'next/navigation'
 import { MapPin, Navigation, Phone, Shield, CreditCard, MessageSquare, Star, Users, Clock, ChevronRight, Check, HelpCircle, Building2, Mountain, Waves } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
-import { Card } from '@/components/ui/card'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { handleDriverAction } from '@/lib/driver-routing-utils'
-import { toast } from '@/components/ui/use-toast'
 import { useLocale } from "@/hooks";
 import { PassengerAdvantages } from '@/components/passenger/passenger-advantages';
 

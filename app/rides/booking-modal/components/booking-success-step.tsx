@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui";
 import { Loader2, Check } from "lucide-react";
 import { useLocale } from "@/hooks";
 

@@ -1,5 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, Badge } from "@/components/ui";
 import { Shield, CheckCircle } from "lucide-react";
 import { useLocale } from "@/hooks";
 

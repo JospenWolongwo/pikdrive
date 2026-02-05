@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useRidesStore } from "@/stores";
+import { getCurrentTimeUTC } from "@/lib/utils";
 import type { RideWithDetails, CancelledBooking } from "@/types";
 
 /**
@@ -16,20 +17,7 @@ export function useRidesStoreData() {
   } = useRidesStore();
 
 
-  // Get current time in UTC - wrapped in useMemo to prevent dependency changes on every render
-  const nowUTC = useMemo(() => {
-    const now = new Date();
-    return new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        now.getUTCHours(),
-        now.getUTCMinutes(),
-        now.getUTCSeconds()
-      )
-    );
-  }, []); // Empty dependency array means this only runs once
+  const nowUTC = useMemo(() => getCurrentTimeUTC(), []);
 
   // Note: Upcoming and past rides separation is now handled by useRidesFilteringStore
   // This hook provides the raw data, filtering is done in the filtering hook

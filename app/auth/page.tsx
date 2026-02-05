@@ -2,13 +2,10 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { Button, Input, useToast, Alert, AlertDescription } from "@/components/ui";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLocale } from "@/hooks";
 import { TermsAcceptance } from "@/components/legal/terms-acceptance";
 import { apiClient } from "@/lib/api-client";

@@ -3,22 +3,11 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Input, Badge, Button } from "@/components/ui";
 import { BookingCard } from "./booking-card";
 import { useBookingStore } from "@/stores";
 import { useLocale } from "@/hooks";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Input } from "@/components/ui/input";
 import { Search, X, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 interface Driver {
   full_name: string;

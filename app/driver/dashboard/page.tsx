@@ -4,27 +4,20 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger, Dialog, DialogContent, PageLoader, ContentLoader } from "@/components/ui";
+import { ChatDialog } from "@/components/chat";
 import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
-import { ChatDialog } from "@/components/chat/chat-dialog";
-import { CodeVerificationForm } from "@/components/driver/code-verification-form";
-import { PaymentStatusChecker } from "@/components/payment/payment-status-checker";
-import { PageLoader } from "@/components/ui/page-loader";
-import { ContentLoader } from "@/components/ui/content-loader";
-
-// Dashboard components
-import { DashboardHeader } from "@/components/driver/dashboard/dashboard-header";
-import { CancellationNotifications } from "@/components/driver/dashboard/cancellation-notifications";
-import { SearchAndFilters } from "@/components/driver/dashboard/search-and-filters";
-import { RidesTab } from "@/components/driver/dashboard/rides-tab";
-import { PaymentStatistics } from "@/components/driver/dashboard/payment-statistics";
+  CodeVerificationForm,
+  DashboardHeader,
+  CancellationNotifications,
+  SearchAndFilters,
+  RidesTab,
+  PaymentStatistics,
+} from "@/components/driver";
+import { PaymentStatusChecker } from "@/components/payment";
 
 // Custom hooks - using centralized rides store
-import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
-import { useToast, useRidesStoreData, useRidesFilteringStore, useLocale } from "@/hooks";
+import { useToast, useRidesStoreData, useRidesFilteringStore, useLocale, useNotificationPromptTrigger } from "@/hooks";
 
 // Types
 import type {

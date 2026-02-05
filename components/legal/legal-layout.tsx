@@ -1,8 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Button, Separator } from '@/components/ui';
 import { useLocale } from '@/hooks';
 
 interface Section {

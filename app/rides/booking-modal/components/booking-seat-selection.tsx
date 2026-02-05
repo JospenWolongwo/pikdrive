@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button, Input, Label, Alert, AlertTitle, AlertDescription } from "@/components/ui";
 import { MapPin, Users, Clock, Car, ArrowRight, Loader2, AlertCircle, X } from "lucide-react";
 import { format } from "date-fns";
 import type { RideWithDriver } from "@/types";

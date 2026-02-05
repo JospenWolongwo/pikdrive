@@ -1,7 +1,9 @@
+"use client"
+
 import React from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Button } from "./button"
+import { Card } from "./card"
 import { CheckCircle2, Clock, ClipboardCheck, Mail, Phone } from "lucide-react"
 import { useLocale } from "@/hooks"
 

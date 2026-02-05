@@ -1,8 +1,7 @@
 "use client"
 
 import { Shield, RefreshCw, Users, Zap, Sparkles } from "lucide-react"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, Badge } from "@/components/ui"
 import { useLocale } from "@/hooks"
 import { motion } from "framer-motion"
 

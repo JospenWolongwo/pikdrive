@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale } from "@/hooks";

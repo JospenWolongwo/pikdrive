@@ -2,8 +2,7 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { ReceiptService } from "@/lib/payment/receipt-service";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, Button } from "@/components/ui";
 import { Download } from "lucide-react";
 
 interface ReceiptPageProps {

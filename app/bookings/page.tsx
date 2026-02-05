@@ -5,8 +5,7 @@ export const runtime = 'edge';
 
 import { Suspense, useEffect } from 'react';
 import { BookingsList } from './bookings-list';
-import { PageLoader } from '@/components/ui/page-loader';
-import { ContentLoader } from '@/components/ui/content-loader';
+import { PageLoader, ContentLoader } from '@/components/ui';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useRouter } from 'next/navigation';
 import { CalendarCheck } from 'lucide-react';

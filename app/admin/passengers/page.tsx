@@ -2,26 +2,28 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/use-toast";
 import {
-  Loader2,
-  RefreshCw,
-  Eye,
-  Search,
-} from "lucide-react";
-import {
+  Button,
+  Card,
+  Badge,
+  toast,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Input,
+} from "@/components/ui";
+import {
+  Loader2,
+  RefreshCw,
+  Eye,
+  Search,
+} from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { useAdminAccess } from "@/hooks/admin";
 import PassengerDetail from "./passenger-detail";

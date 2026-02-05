@@ -1,7 +1,6 @@
 import { useLocale } from "@/hooks";
 import { useVehicleImages } from "@/hooks/profile";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Button, Label } from "@/components/ui";
 import {
   Camera,
   Edit3,

@@ -1,8 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, Button } from "@/components/ui";
 import { MapPin, Users, Shield, Clock, Heart } from "lucide-react";
 import { useLocale } from "@/hooks";
 

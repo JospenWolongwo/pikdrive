@@ -7,16 +7,20 @@ import { useTheme } from "next-themes";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
+  Button,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui";
 import {
   Menu,
   Sun,

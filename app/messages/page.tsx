@@ -7,12 +7,7 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
 import type { UIConversation } from "@/types";
 import { getAvatarUrl } from "@/lib/utils/avatar-url";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button, Input, Card, CardContent, CardHeader, CardTitle, Badge, Avatar, AvatarFallback, AvatarImage, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
 import {
   Search,
   MessageCircle,
@@ -21,8 +16,8 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react";
-import { ChatDialog } from "@/components/chat/chat-dialog";
-import { useNotificationPromptTrigger } from "@/hooks/notifications/useNotificationPrompt";
+import { ChatDialog } from "@/components/chat";
+import { useNotificationPromptTrigger } from "@/hooks";
 
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";

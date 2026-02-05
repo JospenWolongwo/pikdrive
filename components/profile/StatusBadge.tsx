@@ -1,6 +1,6 @@
 import { useLocale } from "@/hooks";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui";
 
 interface StatusBadgeProps {
   readonly status: string;

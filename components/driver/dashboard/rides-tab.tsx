@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui";
 import { RideCard } from "./ride-card";
 import { PaginationComponent } from "./pagination";
 import type { RideWithDetails } from "@/types";

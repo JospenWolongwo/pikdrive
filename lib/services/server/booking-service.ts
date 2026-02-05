@@ -68,14 +68,23 @@ export class ServerBookingService {
       throw new Error('Selected pickup point not found in ride');
     }
 
-    // Calculate pickup time: departure_time + time_offset_minutes
+    let pickupPointName = selectedPoint.name?.trim();
+    if (!pickupPointName) {
+      const { data: row } = await this.supabase
+        .from('city_pickup_points')
+        .select('name')
+        .eq('id', selectedPoint.id)
+        .single();
+      pickupPointName = (row as { name?: string } | null)?.name ?? '';
+    }
+
     const departureTime = new Date(ride.departure_time);
     const pickupTimeDate = new Date(
       departureTime.getTime() + selectedPoint.time_offset_minutes * 60 * 1000
     );
 
     return {
-      pickup_point_name: selectedPoint.name,
+      pickup_point_name: pickupPointName,
       pickup_time: pickupTimeDate.toISOString(),
     };
   }

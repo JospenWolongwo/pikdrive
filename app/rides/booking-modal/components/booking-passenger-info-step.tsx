@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button, Input, Label, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { Loader2, Upload, X, ArrowRight, User } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { toast } from "sonner";

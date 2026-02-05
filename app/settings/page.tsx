@@ -1,78 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useSupabase } from '@/providers/SupabaseProvider'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Bell, Shield, Globe, Phone, Mail, Sun, Moon, Monitor } from 'lucide-react'
-import { toast } from 'sonner'
+import { Card, Button, Switch, Label, Input, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui'
+import { Bell, Shield, Globe, Phone, Sun, Moon, Monitor } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useLocale } from "@/hooks";
+import { useLocale, useUserSettings } from "@/hooks";
 
 export default function SettingsPage() {
-  const { supabase, user } = useSupabase()
   const { theme: currentTheme, setTheme: setCurrentTheme } = useTheme()
   const { t } = useLocale()
-  const [loading, setLoading] = useState(true)
-  const [settings, setSettings] = useState({
-    email_notifications: true,
-    sms_notifications: true,
-    whatsapp_notifications: true,
-    language: 'fr',
-    phone_number: '',
-    timezone: 'Africa/Douala',
-    theme: 'system'
-  })
+  const { settings, setSettings, loading, saveSettings } = useUserSettings()
 
+  // Sync theme with theme provider when settings load or theme changes
   useEffect(() => {
-    const loadSettings = async () => {
-      if (user) {
-        const { data, error } = await supabase
-          .from('user_settings')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-
-        if (data) {
-          setSettings(prev => ({
-            ...prev,
-            ...data
-          }))
-          // Sync theme with current theme provider
-          if (data.theme && data.theme !== currentTheme) {
-            setCurrentTheme(data.theme)
-          }
-        }
-      }
-      setLoading(false)
+    if (!loading && settings.theme && settings.theme !== currentTheme) {
+      setCurrentTheme(settings.theme)
     }
-
-    loadSettings()
-  }, [user, supabase])
-
-  const handleSaveSettings = async () => {
-    if (!user) return
-
-    try {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          ...settings
-        })
-
-      if (error) throw error
-      toast.success(t('pages.settings.toast.saved'))
-    } catch (error) {
-      console.error('Error saving settings:', error)
-      toast.error(t('pages.settings.toast.error'))
-    }
-  }
+  }, [loading, settings.theme, currentTheme, setCurrentTheme])
 
   const handleToggle = (key: keyof typeof settings) => {
     setSettings(prev => ({
@@ -292,7 +237,7 @@ export default function SettingsPage() {
         </Tabs>
 
         <div className="mt-6 flex justify-end">
-          <Button onClick={handleSaveSettings}>
+          <Button onClick={saveSettings}>
             {t("pages.settings.saveChanges")}
           </Button>
         </div>

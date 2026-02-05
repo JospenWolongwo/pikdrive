@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/hooks";
 
