@@ -3,9 +3,9 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { NOTIFICATION_ACTIONS } from '@/types/notification';
+import { NOTIFICATION_ACTIONS, NOTIFICATION_TYPE_ALIASES } from '@/types/notification';
 import type { NotificationData, NotificationType } from '@/types/notification';
 
 interface UseOneSignalReturn {
@@ -30,7 +30,10 @@ export function useOneSignal(): UseOneSignalReturn {
   const [error, setError] = useState<Error | null>(null);
   const router = useRouter();
 
-  // Monitor OneSignal initialization state
+  // Monitor OneSignal initialization state and (re-)attach click listener when ready
+  const routerRef = useRef(router);
+  routerRef.current = router;
+
   useEffect(() => {
     const checkInitialization = () => {
       if (window.OneSignal && window.__oneSignalReady) {
@@ -41,36 +44,43 @@ export function useOneSignal(): UseOneSignalReturn {
       }
     };
 
-    // Check immediately
     checkInitialization();
-
-    // Set up event listeners for notification clicks
-    if (window.OneSignal) {
-      try {
-        window.OneSignal.Notifications.addEventListener('click', (event: any) => {
-          const data = event.notification.data as NotificationData;
-          const type = data.type;
-          
-          if (type && NOTIFICATION_ACTIONS[type as NotificationType]) {
-            const action = NOTIFICATION_ACTIONS[type as NotificationType](data);
-            router.push(action);
-          }
-        });
-
-        // Set up foreground notification handler
-        window.OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: any) => {
-          console.log('📬 Notification displayed:', event.notification);
-          // You can add custom sound/UI handling here
-        });
-      } catch (error) {
-        console.error('❌ Failed to set up notification listeners:', error);
-      }
-    }
-
-    // Poll for initialization status
     const interval = setInterval(checkInitialization, 1000);
     return () => clearInterval(interval);
-  }, [router]);
+  }, []);
+
+  // Attach notification click listener only when OneSignal is ready (fixes cold start / late init)
+  useEffect(() => {
+    if (!window.OneSignal || !window.__oneSignalReady) return;
+
+    const handleNotificationClick = (event: any) => {
+      const data = (event?.notification?.data ?? event?.additionalData) as NotificationData | undefined;
+      if (!data) return;
+
+      const rawType = data.type ?? data.notificationType;
+      const actionKey = (NOTIFICATION_TYPE_ALIASES[rawType as string] ?? rawType) as NotificationType;
+      const getPath = NOTIFICATION_ACTIONS[actionKey];
+      if (getPath) {
+        const path = getPath(data);
+        routerRef.current.push(path);
+      }
+    };
+
+    const handleForegroundDisplay = (event: any) => {
+      console.log('📬 Notification displayed:', event?.notification);
+    };
+
+    try {
+      window.OneSignal.Notifications.addEventListener('click', handleNotificationClick);
+      window.OneSignal.Notifications.addEventListener('foregroundWillDisplay', handleForegroundDisplay);
+      return () => {
+        window.OneSignal?.Notifications.removeEventListener('click', handleNotificationClick);
+        window.OneSignal?.Notifications.removeEventListener('foregroundWillDisplay', handleForegroundDisplay);
+      };
+    } catch (error) {
+      console.error('❌ Failed to set up notification listeners:', error);
+    }
+  }, [isInitialized]);
 
   /**
    * Set external user ID (link with Supabase auth)

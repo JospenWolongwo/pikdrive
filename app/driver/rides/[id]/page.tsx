@@ -121,8 +121,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const showLoading =
     loading || Boolean(params.id && !ride && !error);
 
-  const { isDirty } = form.formState;
-
   const rideFormSchema = z.object({
     from_city: z.string().min(2, {
       message: t("pages.driver.manageRide.validation.fromCityMin"),
@@ -176,6 +174,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     },
   });
 
+  const { isDirty } = form.formState;
   const fromCity = form.watch("from_city");
   const { cityPickupPoints, loading: pickupPointsLoading } =
     useCityPickupPoints(fromCity ?? "");

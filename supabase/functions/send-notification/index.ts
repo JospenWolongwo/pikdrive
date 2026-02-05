@@ -28,6 +28,54 @@ interface OneSignalResponse {
 }
 
 /**
+ * Compute web push deep link path from notification type and data (mirrors NOTIFICATION_ACTIONS).
+ * Returns path including leading slash, or null if no deep link.
+ */
+function getWebPushPath(request: NotificationRequest): string | null {
+  const type = request.notificationType || request.data?.type || "general";
+  const d = request.data || {};
+  const bookingId = d.bookingId;
+  const paymentId = d.paymentId;
+  const rideId = d.rideId;
+
+  switch (type) {
+    case "booking_confirmed":
+    case "booking_cancelled":
+    case "booking_updated":
+    case "booking_confirmation_sms":
+    case "cancellation_confirmation_sms":
+    case "driver_arriving":
+    case "driver_arrived":
+    case "ride_started":
+    case "ride_completed":
+    case "ride_cancelled":
+    case "ride_reminder":
+    case "pickup_point_update":
+      return bookingId ? `/bookings/${bookingId}` : null;
+    case "payment_pending":
+    case "payment_processing":
+      return paymentId ? `/payments/${paymentId}` : null;
+    case "payment_success":
+    case "payment_completed":
+      return paymentId ? `/receipts/${paymentId}` : null;
+    case "payment_failed":
+    case "payment_failure_sms":
+      return paymentId ? `/payments/retry/${paymentId}` : null;
+    case "new_message":
+      return rideId != null ? `/messages?ride=${rideId}` : "/messages";
+    case "driver_new_booking":
+    case "payment_completed_driver":
+      return bookingId ? `/driver/bookings/${bookingId}` : "/driver/bookings";
+    case "driver_booking_cancelled":
+      return "/driver/bookings";
+    case "announcement":
+      return "/announcements";
+    default:
+      return null;
+  }
+}
+
+/**
  * Send SMS via OneSignal
  */
 async function sendSMSViaOneSignal(
@@ -91,7 +139,10 @@ async function sendPushViaOneSignal(
   // Use app icon - Lucide icons are rendered on the frontend
   const iconUrl = `${webAppUrl}/icons/icon-192x192.png`;
 
-  const requestBody = {
+  const webPath = getWebPushPath(request);
+  const webUrl = webPath ? `${webAppUrl.replace(/\/$/, "")}${webPath}` : null;
+
+  const requestBody: Record<string, unknown> = {
     app_id: NEXT_PUBLIC_ONESIGNAL_APP_ID,
     include_external_user_ids: [request.userId],
     contents: { fr: request.message, en: request.message },
@@ -109,10 +160,11 @@ async function sendPushViaOneSignal(
     android_sound: sound.replace('.wav', ''),
     small_icon: "ic_notification",
     large_icon: iconUrl,
-    // Web specific
+    // Web specific: deep link so cold-start notification click opens correct page
     web_push_topic: request.notificationType || "general",
     chrome_web_icon: iconUrl,
     chrome_web_badge: `${webAppUrl}/icons/badge-72x72.png`,
+    ...(webUrl && { web_url: webUrl }),
     // Delivery
     priority: 10,
     ttl: 86400, // 24 hours

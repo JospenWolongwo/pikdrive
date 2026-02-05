@@ -530,7 +530,7 @@ export class ServerRidesService {
           (processed ?? []).map((p: { id: string }) => p.id)
         );
         if (hasPaidBookings && Array.isArray(bookings)) {
-          const paidPickupIds = (bookings as { selected_pickup_point_id?: string }[])
+          const paidPickupIds = (bookings as { payment_status?: string; selected_pickup_point_id?: string }[])
             .filter((b) => b.payment_status === 'completed' && b.selected_pickup_point_id)
             .map((b) => b.selected_pickup_point_id as string);
           for (const id of paidPickupIds) {

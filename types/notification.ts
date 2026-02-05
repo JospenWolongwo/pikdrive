@@ -20,6 +20,8 @@ export type NotificationType =
   | 'ride_started'
   | 'ride_completed'
   | 'ride_cancelled'
+  | 'ride_reminder'
+  | 'pickup_point_update'
   | 'announcement';
 
 export interface NotificationData {
@@ -76,6 +78,8 @@ export const NOTIFICATION_SOUNDS: Record<NotificationType, string> = {
   ride_started: '/sounds/booking-confirmed.wav', // Reuse for now
   ride_completed: '/sounds/payment-success.wav', // Reuse for now
   ride_cancelled: '/sounds/booking-cancelled.wav', // Reuse for now
+  ride_reminder: '/sounds/new-message.wav', // Reuse for now
+  pickup_point_update: '/sounds/new-message.wav', // Reuse for now
   announcement: '/sounds/announcement.wav',
 };
 
@@ -99,7 +103,15 @@ export const NOTIFICATION_ACTIONS: Record<NotificationType, (data: NotificationD
   ride_started: (data) => `/bookings/${data.bookingId}`,
   ride_completed: (data) => `/bookings/${data.bookingId}`,
   ride_cancelled: (data) => `/bookings/${data.bookingId}`,
+  ride_reminder: (data) => `/bookings/${data.bookingId}`,
+  pickup_point_update: (data) => `/bookings/${data.bookingId}`,
   announcement: () => '/announcements',
+};
+
+/** Server may send these types; map to NOTIFICATION_ACTIONS key for path resolution. */
+export const NOTIFICATION_TYPE_ALIASES: Record<string, NotificationType> = {
+  payment_completed: 'payment_success',
+  payment_completed_driver: 'driver_new_booking',
 };
 
 // OneSignal Service Types
