@@ -140,6 +140,18 @@ export async function DELETE(
       );
     }
 
+    // Block cancellation once driver has verified code (driver already paid – protect company)
+    if (booking.code_verified === true) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Cancellation is not allowed after the driver has verified the code and been paid. Your trip is confirmed.',
+          errorCode: 'CODE_VERIFIED_NO_CANCEL',
+        },
+        { status: 403 }
+      );
+    }
+
     // Fetch ALL completed payments for this booking
     const { data: payments } = await supabase
       .from('payments')

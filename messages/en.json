@@ -1340,7 +1340,12 @@
         "seatsReducedSuccess": "Seats reduced successfully",
         "seatsReducedSuccessWithRefund": "{seatsRemoved} seat(s) removed. Refund of {amount} {currency} is being processed.",
         "refundProcessing": "Refund processing",
-        "refundProcessingDescription": "Your refund is being processed and will be sent to your payment number shortly."
+        "refundProcessingDescription": "Your refund is being processed and will be sent to your payment number shortly.",
+        "tripConfirmedNoChanges": "Trip confirmed with driver. Cancellation and seat changes are no longer possible.",
+        "errors": {
+          "codeVerifiedNoCancel": "Cancellation is not allowed after the driver has verified your trip. Your booking is confirmed.",
+          "codeVerifiedNoReduce": "Seat changes are not allowed after the driver has verified your trip. Your booking is confirmed."
+        }
       },
       "verificationCode": {
         "title": "Verification Code",

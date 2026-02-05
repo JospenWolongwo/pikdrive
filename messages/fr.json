@@ -1340,7 +1340,12 @@
         "seatsReducedSuccess": "Places réduites avec succès",
         "seatsReducedSuccessWithRefund": "{seatsRemoved} place(s) retirée(s). Remboursement de {amount} {currency} en cours de traitement.",
         "refundProcessing": "Traitement du remboursement",
-        "refundProcessingDescription": "Votre remboursement est en cours de traitement et sera envoyé à votre numéro de paiement sous peu."
+        "refundProcessingDescription": "Votre remboursement est en cours de traitement et sera envoyé à votre numéro de paiement sous peu.",
+        "tripConfirmedNoChanges": "Trajet confirmé avec le chauffeur. L'annulation et les modifications de places ne sont plus possibles.",
+        "errors": {
+          "codeVerifiedNoCancel": "L'annulation n'est plus possible après que le chauffeur a vérifié votre trajet. Votre réservation est confirmée.",
+          "codeVerifiedNoReduce": "Les modifications de places ne sont plus possibles après que le chauffeur a vérifié votre trajet. Votre réservation est confirmée."
+        }
       },
       "verificationCode": {
         "title": "Code de Vérification",

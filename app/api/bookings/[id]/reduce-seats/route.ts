@@ -46,6 +46,18 @@ export async function POST(
       );
     }
 
+    // Block seat reduction once driver has verified code (driver already paid – protect company)
+    if (booking.code_verified === true) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Seat reduction is not allowed after the driver has verified the code and been paid. Your trip is confirmed.',
+          errorCode: 'CODE_VERIFIED_NO_REDUCE',
+        },
+        { status: 403 }
+      );
+    }
+
     // Validate: can't increase seats via this endpoint
     if (newSeats >= booking.seats) {
       return NextResponse.json(

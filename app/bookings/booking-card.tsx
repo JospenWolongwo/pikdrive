@@ -71,10 +71,11 @@ export function BookingCard({ booking }: BookingCardProps) {
   const { conversations } = useChatStore();
   const { refreshUserBookings } = useBookingStore();
 
-  // Keep displayStatus in sync when booking prop updates (e.g. after refetch)
+  // Keep displayStatus and codeVerified in sync when booking prop updates (e.g. after refetch)
   useEffect(() => {
     setDisplayStatus(booking.status);
-  }, [booking.status]);
+    setCodeVerified(Boolean(booking.code_verified));
+  }, [booking.status, booking.code_verified]);
 
   const onVerified = useCallback(() => {
     setCodeVerified(true);
@@ -90,11 +91,12 @@ export function BookingCard({ booking }: BookingCardProps) {
     booking.payment_status === "completed";
 
   // Use displayStatus so the card updates instantly when we optimistically set cancelled
-  const canCancel = ["pending", "confirmed", "pending_verification"].includes(
-    displayStatus
-  );
+  // Block cancel/reduce once driver has verified code (driver already paid – company protection)
+  const canCancel =
+    ["pending", "confirmed", "pending_verification"].includes(displayStatus) &&
+    !codeVerified;
 
-  // Determine if booking can have seats reduced (paid booking with > 1 seat)
+  // Determine if booking can have seats reduced (paid booking with > 1 seat, and not yet verified)
   const canReduceSeats =
     booking.payment_status === "completed" &&
     booking.seats > 1 &&
@@ -115,7 +117,10 @@ export function BookingCard({ booking }: BookingCardProps) {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Cancellation failed");
+        const message = data.errorCode === 'CODE_VERIFIED_NO_CANCEL'
+          ? t("pages.bookings.card.errors.codeVerifiedNoCancel")
+          : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
+        throw new Error(message);
       }
 
       // Update card immediately so user sees "Cancelled" and toast is not wiped by a reload
@@ -140,17 +145,18 @@ export function BookingCard({ booking }: BookingCardProps) {
         });
       }
 
+      // Delay refresh so the success toast is visible before the list updates (better UX)
       if (user?.id) {
-        refreshUserBookings(user.id);
+        setTimeout(() => refreshUserBookings(user.id), 400);
       }
     } catch (error) {
       console.error("Error cancelling booking:", error);
+      const message = error instanceof Error ? error.message : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
       toast({
         title: t("common.error"),
-        description: error instanceof Error 
-          ? error.message 
-          : t("pages.bookings.card.cancelDescription", { seats: booking.seats }),
+        description: message,
         variant: "destructive",
+        duration: 6000,
       });
     } finally {
       setIsCancelling(false);
@@ -183,7 +189,10 @@ export function BookingCard({ booking }: BookingCardProps) {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to reduce seats");
+        const message = data.errorCode === 'CODE_VERIFIED_NO_REDUCE'
+          ? t("pages.bookings.card.errors.codeVerifiedNoReduce")
+          : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
+        throw new Error(message);
       }
 
       // Show success message with refund information
@@ -201,18 +210,18 @@ export function BookingCard({ booking }: BookingCardProps) {
       });
 
       setShowReduceSeatsDialog(false);
-      // Refresh store so list and card update in real time (no full page reload)
+      // Delay refresh so the success toast is visible before the list updates (better UX)
       if (user?.id) {
-        refreshUserBookings(user.id);
+        setTimeout(() => refreshUserBookings(user.id), 400);
       }
     } catch (error) {
       console.error("Error reducing seats:", error);
+      const message = error instanceof Error ? error.message : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
       toast({
         title: t("common.error"),
-        description: error instanceof Error 
-          ? error.message 
-          : t("pages.bookings.card.cancelDescription", { seats: booking.seats }),
+        description: message,
         variant: "destructive",
+        duration: 6000,
       });
     } finally {
       setIsReducingSeats(false);
@@ -367,7 +376,13 @@ export function BookingCard({ booking }: BookingCardProps) {
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end space-x-2">
+      <CardFooter className="flex flex-col gap-3">
+        {codeVerified && (
+          <p className="text-sm text-muted-foreground w-full">
+            {t("pages.bookings.card.tripConfirmedNoChanges")}
+          </p>
+        )}
+        <div className="flex justify-end flex-wrap gap-2 w-full">
         {booking.ride.driver_id && (
           <Button
             variant="outline"
@@ -438,6 +453,7 @@ export function BookingCard({ booking }: BookingCardProps) {
             </a>
           </Button>
         )}
+        </div>
       </CardFooter>
 
       <Dialog open={showReduceSeatsDialog} onOpenChange={setShowReduceSeatsDialog}>
