@@ -36,7 +36,7 @@ export function useBookingModal({
     invalidatePassengerInfoCache,
     passengerInfoLoading,
   } = useBookingStore();
-  const { updateRideSeatsOptimistically, refreshAllRides } = useRidesStore();
+  const { updateRideSeatsOptimistically } = useRidesStore();
   const { triggerPrompt } = useNotificationPromptTrigger();
 
   const [step, setStep] = useState(0);
@@ -191,12 +191,15 @@ export function useBookingModal({
   }, []);
 
   // Check for existing booking when modal opens - only after passenger info is confirmed complete
+  // Guard: never overwrite step when we're on success (avoids "already paid" replacing success step)
   useEffect(() => {
+    if (paymentSuccess || step === 3) return;
     // DEFENSIVE: Ensure isPassengerInfoComplete is a boolean for comparison (fix corrupted localStorage)
     const isComplete = typeof isPassengerInfoComplete === 'boolean' && isPassengerInfoComplete === true;
     if (isOpen && user && ride && user.id && !userBookingsLoading && isComplete) {
       checkExistingBooking();
     }
+  // step/paymentSuccess intentionally omitted from deps: we only read them to guard, not to re-run
   }, [isOpen, user, ride, userBookings, userBookingsLoading, isPassengerInfoComplete]);
 
   const checkExistingBooking = async () => {
@@ -373,13 +376,6 @@ export function useBookingModal({
       if (seatsToDecrement > 0) {
         updateRideSeatsOptimistically(ride.id, seatsToDecrement);
       }
-      
-      // Refresh rides in background to ensure accuracy
-      // This will sync with the real database state from the trigger
-      refreshAllRides().catch(error => {
-        console.error('Error refreshing rides after payment:', error);
-      });
-
 
       // Show success state immediately; keep modal open so user sees it
       setPaymentSuccess(true);
