@@ -200,11 +200,11 @@ export function BookingCard({ booking }: BookingCardProps) {
         duration: 6000,
       });
 
-      // Close dialog and refresh after showing success message
       setShowReduceSeatsDialog(false);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500); // Give user time to see the success message
+      // Refresh store so list and card update in real time (no full page reload)
+      if (user?.id) {
+        refreshUserBookings(user.id);
+      }
     } catch (error) {
       console.error("Error reducing seats:", error);
       toast({

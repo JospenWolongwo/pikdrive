@@ -1,7 +1,8 @@
 'use client'
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
-import { Toaster } from 'sonner'
+import { Toaster as SonnerToaster } from 'sonner'
+import { Toaster } from '@/components/ui'
 import { LocaleProvider } from '@/providers/LocaleProvider'
 import type { Locale } from '@/i18n/config'
 
@@ -21,7 +22,8 @@ export function Providers({ children, initialLocale, initialMessages }: Provider
         disableTransitionOnChange
       >
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster />
+        <SonnerToaster richColors position="top-right" />
       </NextThemesProvider>
     </LocaleProvider>
   )
