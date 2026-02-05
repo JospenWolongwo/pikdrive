@@ -69,7 +69,7 @@ export function BookingCard({ booking }: BookingCardProps) {
   const { toast } = useToast();
   const router = useRouter();
   const { conversations } = useChatStore();
-  const { refreshUserBookings } = useBookingStore();
+  const { refreshUserBookingsSilent } = useBookingStore();
 
   // Keep displayStatus and codeVerified in sync when booking prop updates (e.g. after refetch)
   useEffect(() => {
@@ -145,9 +145,9 @@ export function BookingCard({ booking }: BookingCardProps) {
         });
       }
 
-      // Delay refresh so the success toast is visible before the list updates (better UX)
+      // Silent refresh so list updates without loading state – success toast stays visible
       if (user?.id) {
-        setTimeout(() => refreshUserBookings(user.id), 400);
+        setTimeout(() => refreshUserBookingsSilent(user.id), 300);
       }
     } catch (error) {
       console.error("Error cancelling booking:", error);
@@ -210,9 +210,9 @@ export function BookingCard({ booking }: BookingCardProps) {
       });
 
       setShowReduceSeatsDialog(false);
-      // Delay refresh so the success toast is visible before the list updates (better UX)
+      // Silent refresh so list updates without loading state – success toast stays visible
       if (user?.id) {
-        setTimeout(() => refreshUserBookings(user.id), 400);
+        setTimeout(() => refreshUserBookingsSilent(user.id), 300);
       }
     } catch (error) {
       console.error("Error reducing seats:", error);

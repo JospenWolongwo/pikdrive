@@ -32,6 +32,7 @@ interface RidesState {
   driverRidesLoading: boolean;
   driverRidesError: string | null;
   lastDriverRidesFetch: number | null;
+  driverRealTimeChannel: any | null; // Realtime for driver rides + bookings
 
   // Current ride details state
   currentRide: RideWithDetails | null;
@@ -76,6 +77,8 @@ interface RidesState {
   subscribeToRideUpdates: (supabase: SupabaseClient) => void;
   unsubscribeFromRideUpdates: () => void;
   updateRideSeatsOptimistically: (rideId: string, seatsToDecrement: number) => void;
+  subscribeToDriverRideUpdates: (supabase: SupabaseClient, driverId: string, rideIds: string[]) => void;
+  unsubscribeFromDriverRideUpdates: () => void;
 
   // Actions for driver rides
   fetchDriverRides: (params?: {
@@ -137,6 +140,7 @@ export const useRidesStore = create<RidesState>()(
     driverRidesLoading: false,
     driverRidesError: null,
     lastDriverRidesFetch: null,
+    driverRealTimeChannel: null,
 
     currentRide: null,
     currentRideLoading: false,
@@ -252,7 +256,6 @@ export const useRidesStore = create<RidesState>()(
         const { realTimeChannel } = get();
         
         if (realTimeChannel) {
-          // Properly remove the channel
           try {
             realTimeChannel.unsubscribe();
           } catch (error) {
@@ -261,7 +264,59 @@ export const useRidesStore = create<RidesState>()(
           set({ realTimeChannel: null });
         }
       },
-      
+
+      subscribeToDriverRideUpdates: (supabase: SupabaseClient, driverId: string, rideIds: string[]) => {
+        const { driverRealTimeChannel } = get();
+        if (driverRealTimeChannel) {
+          supabase.removeChannel(driverRealTimeChannel);
+        }
+        if (!driverId) return;
+
+        const channel = supabase
+          .channel('driver-dashboard-updates')
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rides',
+            filter: `driver_id=eq.${driverId}`,
+          }, (payload: { new: Record<string, unknown> }) => {
+            const updated = payload.new as { id: string; seats_available?: number; updated_at?: string };
+            set((state) => ({
+              driverRides: state.driverRides.map((ride) =>
+                ride.id === updated.id
+                  ? { ...ride, seats_available: updated.seats_available ?? ride.seats_available, updated_at: updated.updated_at ?? ride.updated_at }
+                  : ride
+              ),
+            }));
+          });
+
+        if (rideIds.length > 0) {
+          channel.on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'bookings',
+            filter: `ride_id=in.(${rideIds.join(',')})`,
+          }, () => {
+            get().refreshDriverRides();
+          });
+        }
+
+        channel.subscribe();
+        set({ driverRealTimeChannel: channel });
+      },
+
+      unsubscribeFromDriverRideUpdates: () => {
+        const { driverRealTimeChannel } = get();
+        if (driverRealTimeChannel) {
+          try {
+            driverRealTimeChannel.unsubscribe();
+          } catch (error) {
+            console.error('Error unsubscribing from driver ride updates:', error);
+          }
+          set({ driverRealTimeChannel: null });
+        }
+      },
+
       // Optimistically update a ride's seats_available
       updateRideSeatsOptimistically: (rideId: string, seatsToDecrement: number) => {
         set((state) => ({

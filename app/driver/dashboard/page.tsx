@@ -18,6 +18,7 @@ import { PaymentStatusChecker } from "@/components/payment";
 
 // Custom hooks - using centralized rides store
 import { useToast, useRidesStoreData, useRidesFilteringStore, useLocale, useNotificationPromptTrigger } from "@/hooks";
+import { useRidesStore } from "@/stores";
 
 // Types
 import type {
@@ -59,6 +60,7 @@ export default function DriverDashboard() {
     refreshRides,
     nowUTC,
   } = useRidesStoreData();
+  const { subscribeToDriverRideUpdates, unsubscribeFromDriverRideUpdates } = useRidesStore();
   
   // Use the filtering hook to get search and sort filtered rides
   const { upcomingRides, pastRides } = useRidesFilteringStore({
@@ -80,21 +82,24 @@ export default function DriverDashboard() {
     });
   }, [ridesData.rides, conversations, subscribeToRide]);
 
-  // Load rides on mount and when user changes
+  // Load rides on mount – always force refresh so driver sees fresh data (no stale cache after refresh)
   useEffect(() => {
     const initialLoad = async () => {
-      // Only load if data is not already available (smart caching)
-      await loadRides(false); // Use cache if fresh, only fetch if needed
+      await loadRides(true);
       router.replace("/driver/dashboard");
-      
-      // Trigger notification prompt after dashboard loads
-      // Use priority=false to respect 24h cooldown (not as critical as ride creation)
-      // This catches drivers who haven't created rides yet
       triggerPrompt(false);
     };
 
     if (user) initialLoad();
   }, [user, loadRides, router, triggerPrompt]);
+
+  // Realtime: subscribe to ride + booking updates so driver sees cancellations and seat changes without refresh
+  useEffect(() => {
+    if (!supabase || !user?.id || ridesData.rides.length === 0) return;
+    const rideIds = ridesData.rides.map((r) => r.id);
+    subscribeToDriverRideUpdates(supabase, user.id, rideIds);
+    return () => unsubscribeFromDriverRideUpdates();
+  }, [supabase, user?.id, ridesData.rides.length, subscribeToDriverRideUpdates, unsubscribeFromDriverRideUpdates]);
 
   // Note: Booking notifications are handled by OneSignal via server-side triggers
 

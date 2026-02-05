@@ -39,8 +39,9 @@ interface BookingState {
   passengerInfoLoading: boolean;
 
   // Actions for user bookings
-  fetchUserBookings: (userId: string) => Promise<void>;
+  fetchUserBookings: (userId: string, options?: { silent?: boolean }) => Promise<void>;
   refreshUserBookings: (userId: string) => Promise<void>;
+  refreshUserBookingsSilent: (userId: string) => Promise<void>;
   setUserBookingsLoading: (loading: boolean) => void;
   setUserBookingsError: (error: string | null) => void;
   clearUserBookings: () => void;
@@ -103,27 +104,28 @@ export const useBookingStore = create<BookingState>()(
       passengerInfoLoading: false,
 
       // Actions for user bookings
-      fetchUserBookings: async (userId: string) => {
+      fetchUserBookings: async (userId: string, options?: { silent?: boolean }) => {
         const { lastUserBookingsFetch, userBookings } = get();
         const now = Date.now();
-        
-        
-        // Don't fetch if we already have recent data AND bookings are loaded
-        if (lastUserBookingsFetch && 
-            now - lastUserBookingsFetch < 5 * 60 * 1000 && 
+        const silent = options?.silent === true;
+
+        // When not silent: don't fetch if we already have recent data AND bookings are loaded
+        if (!silent &&
+            lastUserBookingsFetch &&
+            now - lastUserBookingsFetch < 5 * 60 * 1000 &&
             userBookings.length > 0) {
           return;
         }
 
-        set({ userBookingsLoading: true, userBookingsError: null });
+        if (!silent) set({ userBookingsLoading: true, userBookingsError: null });
 
         try {
           const response = await bookingApiClient.getUserBookings(userId);
-          
+
           if (!response.success) {
             throw new Error(response.error || "Failed to fetch user bookings");
           }
-          
+
           set({
             userBookings: response.data || [],
             userBookingsLoading: false,
@@ -140,9 +142,14 @@ export const useBookingStore = create<BookingState>()(
       },
 
       refreshUserBookings: async (userId: string) => {
-        // Force refresh by clearing cache
         set({ lastUserBookingsFetch: null });
         await get().fetchUserBookings(userId);
+      },
+
+      /** Refresh bookings in background without loading state – keeps success toast visible */
+      refreshUserBookingsSilent: async (userId: string) => {
+        set({ lastUserBookingsFetch: null });
+        await get().fetchUserBookings(userId, { silent: true });
       },
 
       setUserBookingsLoading: (loading) => {
