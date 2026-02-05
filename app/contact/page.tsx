@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Card, Input, Button, Textarea, useToast } from '@/components/ui'
+import { Card, Input, Button, Textarea } from '@/components/ui'
+import { useToast } from '@/hooks/ui'
 import { Phone, Mail, MapPin, Send, Loader2 } from 'lucide-react'
 import { useLocale } from "@/hooks";
 

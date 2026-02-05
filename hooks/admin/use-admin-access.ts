@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { toast } from "@/components/ui";
+import { toast } from "@/hooks/ui";
 
 interface UseAdminAccessOptions {
   showToast?: boolean;

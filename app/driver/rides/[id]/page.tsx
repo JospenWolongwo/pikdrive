@@ -21,7 +21,6 @@ import {
   FormMessage,
   Input,
   Textarea,
-  useToast,
   SearchableSelect,
   Alert,
   AlertDescription,
@@ -36,6 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui";
+import { useToast } from "@/hooks/ui";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";

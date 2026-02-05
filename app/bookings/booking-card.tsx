@@ -8,7 +8,6 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  useToast,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui";
+import { useToast } from "@/hooks/ui";
 import { formatDate } from "@/lib/utils";
 import { format } from "date-fns";
 import { VerificationCodeDisplay } from "@/components/bookings";

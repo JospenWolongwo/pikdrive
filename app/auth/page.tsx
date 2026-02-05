@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button, Input, useToast, Alert, AlertDescription } from "@/components/ui";
+import { Button, Input, Alert, AlertDescription } from "@/components/ui";
+import { useToast } from "@/hooks/ui";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";

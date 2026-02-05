@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRouter } from "next/navigation";
-import { useToast, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Input, Badge, Button } from "@/components/ui";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Input, Badge, Button } from "@/components/ui";
+import { useToast } from "@/hooks/ui";
 import { BookingCard } from "./booking-card";
 import { useBookingStore } from "@/stores";
 import { useLocale } from "@/hooks";

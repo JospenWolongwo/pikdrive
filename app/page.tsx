@@ -1,7 +1,8 @@
 'use client'
 
 // Removed useAuthStore - using useSupabase for auth state
-import { Button, Card, toast } from '@/components/ui'
+import { Button, Card } from '@/components/ui'
+import { toast } from '@/hooks/ui'
 import { useRouter } from 'next/navigation'
 import { MapPin, Navigation, Phone, Shield, CreditCard, MessageSquare, Star, Users, Clock, ChevronRight, Check, HelpCircle, Building2, Mountain, Waves } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'

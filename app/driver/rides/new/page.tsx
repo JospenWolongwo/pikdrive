@@ -26,13 +26,13 @@ import {
   FormLabel,
   FormMessage,
   Input,
-  useToast,
   Calendar,
   Popover,
   PopoverContent,
   PopoverTrigger,
   SearchableSelect,
 } from "@/components/ui";
+import { useToast } from "@/hooks/ui";
 import { PickupPointsSelectForm } from "@/components/driver";
 import { useLocale, useCityPickupPoints, useNotificationPromptTrigger } from "@/hooks";
 import { cn, getCurrentTimeUTC, dateToUTCDate } from "@/lib/utils";

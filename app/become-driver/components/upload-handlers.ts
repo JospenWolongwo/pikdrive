@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "@/components/ui"
+import { toast } from "@/hooks/ui"
 import { SupabaseClient } from "@supabase/supabase-js"
 import { UseFormReturn } from "react-hook-form"
 import { uploadDocument, DocumentFieldName } from "."

@@ -1,2 +1,2 @@
 // UI-related hooks
-export { useToast } from './use-toast';
+export { useToast, toast } from './use-toast';
