@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed:pickup-points": "node scripts/seed-pickup-points.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

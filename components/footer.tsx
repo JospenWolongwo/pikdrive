@@ -73,7 +73,7 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">{t("navigation.followUs")}</h3>
             <div className="flex space-x-4">
               <Link
-                href="https://facebook.com"
+                href="https://www.facebook.com/share/1JPWEA2ypT/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"

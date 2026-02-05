@@ -115,6 +115,12 @@ npm run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+6. **(Optional)** Seed city pickup points (precise public places per city). Requires `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. You can edit or add more via the admin dashboard after seeding.
+
+```bash
+npm run seed:pickup-points
+```
+
 ## Deployment
 
 The application is deployed on Vercel and can be accessed at [https://pikdrive.com](https://pikdrive.com).
