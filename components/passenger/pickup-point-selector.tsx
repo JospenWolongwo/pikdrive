@@ -41,6 +41,10 @@ export function PickupPointSelector({
 
   // Sort points by order
   const sortedPoints = [...pickupPoints].sort((a, b) => a.order - b.order);
+  const selectedPoint = value ? sortedPoints.find((p) => p.id === value) : null;
+  const selectedPickupTime = selectedPoint
+    ? calculatePickupTime(selectedPoint.time_offset_minutes)
+    : null;
 
   return (
     <div className="space-y-3">
@@ -50,6 +54,16 @@ export function PickupPointSelector({
       <p className="text-sm text-muted-foreground">
         {t("pages.rides.booking.pickupPoint.description")}
       </p>
+
+      {selectedPoint && selectedPickupTime && (
+        <p className="text-sm font-medium text-primary flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+          {t("pages.rides.booking.pickupPoint.yourPickupSummary", {
+            name: selectedPoint.name,
+            time: selectedPickupTime,
+          })}
+        </p>
+      )}
 
       {error && (
         <p className="text-sm text-destructive">{error}</p>

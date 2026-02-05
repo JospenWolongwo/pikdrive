@@ -775,7 +775,9 @@
           "formError": "Erreur lors du chargement des données du formulaire",
           "updateError": "Impossible de mettre à jour le trajet. Veuillez réessayer.",
           "deleteError": "Impossible de supprimer le trajet. Veuillez réessayer.",
-          "notFound": "Trajet introuvable ou inaccessible"
+          "notFound": "Trajet introuvable ou inaccessible",
+          "onlyDescriptionAndPickupWhenPaid": "Seules la description et les points de ramassage peuvent être modifiés lorsqu'un passager a déjà payé.",
+          "cannotRemovePaidPickupPoint": "Impossible de supprimer un point de ramassage choisi par un passager ayant déjà payé."
         },
         "form": {
           "title": "Détails du Trajet",
@@ -837,6 +839,9 @@
           "viewDetails": "Voir détails",
           "noBookings": "Aucune réservation trouvée"
         },
+        "pickupPoints": {
+          "requiredForPaidPassenger": "Requis pour un passager ayant payé"
+        },
         "validation": {
           "fromCityMin": "La ville de départ doit contenir au moins 2 caractères",
           "toCityMin": "La ville d'arrivée doit contenir au moins 2 caractères",
@@ -875,8 +880,8 @@
         "invalidTimeDescription": "L'heure de départ doit être dans le futur.",
         "pickupPoints": {
           "title": "Points de Ramassage",
-          "description": "Définissez au moins 2 points de ramassage où les passagers peuvent être récupérés",
-          "selectDescription": "Choisissez au moins 2 points de rendez-vous pour votre ville de départ (gérés par PikDrive).",
+          "description": "Définissez au moins 1 point de ramassage où les passagers peuvent être récupérés",
+          "selectDescription": "Choisissez au moins 1 point de rendez-vous pour votre ville de départ (gérés par PikDrive).",
           "selectLoading": "Chargement des points pour cette ville...",
           "noPointsForCity": "Aucun point défini pour cette ville. Contactez le support.",
           "available": "Disponibles pour cette ville",
@@ -884,13 +889,15 @@
           "name": "Nom du Point de Ramassage",
           "namePlaceholder": "ex: Carrefour Deido",
           "timeOffset": "Minutes Après le Départ",
+          "exactTimeAtPoint": "Heure à ce point",
           "minutes": "min",
           "pickupAt": "Ramassage à",
+          "firstPointDeparture": "Heure de départ (premier ramassage)",
           "add": "Ajouter un Point",
           "remove": "Supprimer",
           "noPoints": "Aucun point de ramassage ajouté",
           "addFirst": "Ajouter le Premier Point",
-          "minRequired": "Au moins 2 points de ramassage sont requis"
+          "minRequired": "Au moins 1 point de ramassage est requis"
         },
         "validation": {
           "fromCityRequired": "La ville de départ est requise",
@@ -901,7 +908,7 @@
           "seatsMax": "Ne peut pas dépasser 100 places",
           "carModelRequired": "Le modèle de voiture est requis",
           "carColorRequired": "La couleur de la voiture est requise",
-          "pickupPointsMinRequired": "Au moins 2 points de ramassage sont requis"
+          "pickupPointsMinRequired": "Au moins 1 point de ramassage est requis"
         },
         "errors": {
           "authRequired": "Authentification Requise",
@@ -909,7 +916,7 @@
           "fieldsRequired": "Champs Requis",
           "fieldsRequiredDescription": "Le prix et le nombre de places sont requis.",
           "pickupPointsRequired": "Points de Ramassage Requis",
-          "pickupPointsRequiredDescription": "Veuillez ajouter au moins 2 points de ramassage pour votre trajet.",
+          "pickupPointsRequiredDescription": "Veuillez ajouter au moins 1 point de ramassage pour votre trajet.",
           "pickupPointsInvalid": "Points de Ramassage Invalides",
           "pickupPointsInvalidDescription": "Veuillez vous assurer que tous les points de ramassage ont des noms et des heures valides.",
           "error": "Erreur",
@@ -1209,6 +1216,7 @@
           "title": "Sélectionner le Point de Ramassage",
           "description": "Choisissez où vous souhaitez être récupéré",
           "pickupAt": "Ramassage à",
+          "yourPickupSummary": "Votre ramassage : {name} à {time}",
           "noPoints": "Aucun point de ramassage disponible pour ce trajet",
           "required": "Veuillez sélectionner un point de ramassage"
         },
@@ -1280,6 +1288,7 @@
         "departurePoint": "Point de départ",
         "destinationPoint": "Point d'arrivée",
         "scheduledDeparture": "Départ prévu",
+        "departureHint": "Premier ramassage. Votre heure au choix du point.",
         "pricePerSeat": "Prix par place",
         "pickupPoints": "point de ramassage",
         "pickupPoints_plural": "points de ramassage",

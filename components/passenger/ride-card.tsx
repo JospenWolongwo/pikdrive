@@ -241,6 +241,11 @@ export function PassengerRideCard({
                   <p className="font-bold text-foreground">
                     {format(new Date(ride.departure_time), "dd MMM à HH:mm")}
                   </p>
+                  {ride.pickup_points && ride.pickup_points.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t("pages.rides.rideCard.departureHint")}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="text-right">

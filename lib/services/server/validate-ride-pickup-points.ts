@@ -19,8 +19,8 @@ export async function validateAndProcessPickupPoints(
   if (!pickupPoints || pickupPoints.length === 0) {
     return null;
   }
-  if (pickupPoints.length < 2) {
-    throw new Error('At least 2 pickup points are required');
+  if (pickupPoints.length < 1) {
+    throw new Error('At least 1 pickup point is required');
   }
 
   const ids = [...new Set(pickupPoints.map((p) => p.id))];

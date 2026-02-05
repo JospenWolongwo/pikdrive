@@ -218,6 +218,7 @@ export class ServerRidesService {
           status,
           payment_status,
           code_verified,
+          selected_pickup_point_id,
           created_at
         )
       `)
@@ -456,6 +457,54 @@ export class ServerRidesService {
       );
     }
 
+    const { data: bookings } = await this.supabase
+      .from('bookings')
+      .select('id, seats, payment_status, selected_pickup_point_id')
+      .eq('ride_id', rideId);
+
+    const hasBookings = Array.isArray(bookings) && bookings.length > 0;
+    const hasPaidBookings =
+      hasBookings &&
+      bookings!.some((b: { payment_status?: string }) => b.payment_status === 'completed');
+    const totalBookedSeats = hasBookings
+      ? (bookings as { seats: number }[]).reduce((sum, b) => sum + (b.seats ?? 0), 0)
+      : 0;
+
+    if (hasPaidBookings) {
+      if (
+        updateData.from_city !== undefined ||
+        updateData.to_city !== undefined ||
+        updateData.departure_time !== undefined ||
+        updateData.price !== undefined ||
+        updateData.seats_available !== undefined
+      ) {
+        throw new RideApiError(
+          'Only description and pickup points can be updated when a passenger has already paid.',
+          400
+        );
+      }
+    } else if (hasBookings) {
+      if (
+        updateData.from_city !== undefined ||
+        updateData.to_city !== undefined ||
+        updateData.departure_time !== undefined
+      ) {
+        throw new RideApiError(
+          'Route and departure time cannot be changed when the ride has bookings. You can still update price, seats, pickup points, and description.',
+          400
+        );
+      }
+      if (
+        updateData.seats_available !== undefined &&
+        updateData.seats_available < totalBookedSeats
+      ) {
+        throw new RideApiError(
+          `Cannot set seats below ${totalBookedSeats} (already booked).`,
+          400
+        );
+      }
+    }
+
     const updateFields: Record<string, unknown> = {};
     if (updateData.from_city !== undefined) updateFields.from_city = updateData.from_city;
     if (updateData.to_city !== undefined) updateFields.to_city = updateData.to_city;
@@ -477,8 +526,25 @@ export class ServerRidesService {
           fromCity,
           updateData.pickup_points
         );
+        const newPickupPointIds = new Set(
+          (processed ?? []).map((p: { id: string }) => p.id)
+        );
+        if (hasPaidBookings && Array.isArray(bookings)) {
+          const paidPickupIds = (bookings as { selected_pickup_point_id?: string }[])
+            .filter((b) => b.payment_status === 'completed' && b.selected_pickup_point_id)
+            .map((b) => b.selected_pickup_point_id as string);
+          for (const id of paidPickupIds) {
+            if (!newPickupPointIds.has(id)) {
+              throw new RideApiError(
+                'Cannot remove a pickup point chosen by a passenger who has already paid.',
+                400
+              );
+            }
+          }
+        }
         updateFields.pickup_points = processed ?? [];
       } catch (e) {
+        if (e instanceof RideApiError) throw e;
         throw new RideApiError(
           e instanceof Error ? e.message : 'Invalid pickup points',
           400

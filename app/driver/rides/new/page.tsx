@@ -57,7 +57,7 @@ const createFormSchema = (t: (key: string) => string) => z.object({
     id: z.string(),
     order: z.number(),
     time_offset_minutes: z.number().min(0),
-  })).min(2, t("pages.driver.newRide.validation.pickupPointsMinRequired")),
+  })).min(1, t("pages.driver.newRide.validation.pickupPointsMinRequired")),
 });
 
 export default function NewRidePage() {
@@ -138,7 +138,7 @@ export default function NewRidePage() {
         return;
       }
 
-      if (!pickupPoints || pickupPoints.length < 2) {
+      if (!pickupPoints || pickupPoints.length < 1) {
         toast({
           title: t("pages.driver.newRide.errors.pickupPointsRequired"),
           description: t("pages.driver.newRide.errors.pickupPointsRequiredDescription"),

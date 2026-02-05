@@ -775,7 +775,9 @@
           "formError": "Error loading form data",
           "updateError": "Unable to update the ride. Please try again.",
           "deleteError": "Unable to delete the ride. Please try again.",
-          "notFound": "Ride not found or inaccessible"
+          "notFound": "Ride not found or inaccessible",
+          "onlyDescriptionAndPickupWhenPaid": "Only description and pickup points can be updated when a passenger has already paid.",
+          "cannotRemovePaidPickupPoint": "Cannot remove a pickup point chosen by a passenger who has already paid."
         },
         "form": {
           "title": "Ride Details",
@@ -837,6 +839,9 @@
           "viewDetails": "View details",
           "noBookings": "No bookings found"
         },
+        "pickupPoints": {
+          "requiredForPaidPassenger": "Required for paid passenger"
+        },
         "validation": {
           "fromCityMin": "Departure city must contain at least 2 characters",
           "toCityMin": "Arrival city must contain at least 2 characters",
@@ -875,8 +880,8 @@
         "invalidTimeDescription": "The departure time must be in the future.",
         "pickupPoints": {
           "title": "Pickup Points",
-          "description": "Define at least 2 pickup points where passengers can be picked up",
-          "selectDescription": "Select at least 2 meeting points for your departure city (managed by PikDrive).",
+          "description": "Define at least 1 pickup point where passengers can be picked up",
+          "selectDescription": "Select at least 1 meeting point for your departure city (managed by PikDrive).",
           "selectLoading": "Loading pickup points for this city...",
           "noPointsForCity": "No pickup points defined for this city yet. Contact support.",
           "available": "Available for this city",
@@ -884,13 +889,15 @@
           "name": "Pickup Point Name",
           "namePlaceholder": "e.g., Carrefour Deido",
           "timeOffset": "Minutes After Departure",
+          "exactTimeAtPoint": "Time at this point",
           "minutes": "min",
           "pickupAt": "Pickup at",
+          "firstPointDeparture": "Departure time (first pickup)",
           "add": "Add Point",
           "remove": "Remove",
           "noPoints": "No pickup points added yet",
           "addFirst": "Add First Point",
-          "minRequired": "At least 2 pickup points are required"
+          "minRequired": "At least 1 pickup point is required"
         },
         "validation": {
           "fromCityRequired": "Departure city is required",
@@ -901,7 +908,7 @@
           "seatsMax": "Cannot exceed 100 seats",
           "carModelRequired": "Car model is required",
           "carColorRequired": "Car color is required",
-          "pickupPointsMinRequired": "At least 2 pickup points are required"
+          "pickupPointsMinRequired": "At least 1 pickup point is required"
         },
         "errors": {
           "authRequired": "Authentication Required",
@@ -909,7 +916,7 @@
           "fieldsRequired": "Required Fields",
           "fieldsRequiredDescription": "Price and number of seats are required.",
           "pickupPointsRequired": "Pickup Points Required",
-          "pickupPointsRequiredDescription": "Please add at least 2 pickup points for your ride.",
+          "pickupPointsRequiredDescription": "Please add at least 1 pickup point for your ride.",
           "pickupPointsInvalid": "Invalid Pickup Points",
           "pickupPointsInvalidDescription": "Please ensure all pickup points have valid names and times.",
           "error": "Error",
@@ -1209,6 +1216,7 @@
           "title": "Select Pickup Point",
           "description": "Choose where you want to be picked up",
           "pickupAt": "Pickup at",
+          "yourPickupSummary": "Your pickup: {name} at {time}",
           "noPoints": "No pickup points available for this ride",
           "required": "Please select a pickup point"
         },
@@ -1280,6 +1288,7 @@
         "departurePoint": "Departure point",
         "destinationPoint": "Destination point",
         "scheduledDeparture": "Scheduled departure",
+        "departureHint": "First pickup. Your time when you choose a point.",
         "pricePerSeat": "Price per seat",
         "pickupPoints": "pickup point",
         "pickupPoints_plural": "pickup points",

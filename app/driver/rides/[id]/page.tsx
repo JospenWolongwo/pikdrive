@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRidesStore } from "@/stores";
@@ -105,6 +105,23 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const [hasBookings, setHasBookings] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [pickupPoints, setPickupPoints] = useState<RidePickupPointInput[]>([]);
+  const lastPopulatedRideIdRef = useRef<string | null>(null);
+
+  const hasPaidBookings =
+    (ride?.bookings?.some((b) => b.payment_status === "completed") ?? false);
+  const lockedPickupPointIds =
+    hasPaidBookings && ride?.bookings
+      ? [...new Set(
+          ride.bookings
+            .filter((b) => b.payment_status === "completed")
+            .map((b) => b.selected_pickup_point_id)
+            .filter((id): id is string => Boolean(id))
+        )]
+      : [];
+  const showLoading =
+    loading || Boolean(params.id && !ride && !error);
+
+  const { isDirty } = form.formState;
 
   const rideFormSchema = z.object({
     from_city: z.string().min(2, {
@@ -142,7 +159,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           time_offset_minutes: z.number().min(0),
         })
       )
-      .min(2, t("pages.driver.newRide.validation.pickupPointsMinRequired")),
+      .min(1, t("pages.driver.newRide.validation.pickupPointsMinRequired")),
   });
 
   const form = useForm<RideFormValues>({
@@ -190,25 +207,33 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     // Only depend on params.id and user - NOT currentRide to avoid infinite loop
   }, [params.id, user, fetchRideById, toast]);
 
-  // Separate effect to populate form when ride data is loaded
+  // Clear populated ref when navigating to a different ride
   useEffect(() => {
-    // Only populate form when loading is complete and we have ride data
-    if (!loading && currentRide && !error) {
-      console.log("📝 Populating form with ride data:", currentRide.id);
-      
-      // Check if there are any bookings
-      setHasBookings(currentRide.bookings && currentRide.bookings.length > 0);
+    lastPopulatedRideIdRef.current = null;
+  }, [params.id]);
 
-      // Parse departure time and set form values
+  // Populate form only once per ride load to avoid unnecessary resets
+  useEffect(() => {
+    if (!loading && currentRide && !error) {
+      if (currentRide.id === lastPopulatedRideIdRef.current) return;
+
+      lastPopulatedRideIdRef.current = currentRide.id;
+      setHasBookings(
+        Boolean(currentRide.bookings && currentRide.bookings.length > 0)
+      );
+
       try {
         const departureDate = new Date(currentRide.departure_time);
-
         const pp = currentRide.pickup_points;
-      const initialPickupPoints: RidePickupPointInput[] = Array.isArray(pp)
-        ? pp.map((p) => ({ id: p.id, order: p.order, time_offset_minutes: p.time_offset_minutes }))
-        : [];
-      setPickupPoints(initialPickupPoints);
-      form.reset({
+        const initialPickupPoints: RidePickupPointInput[] = Array.isArray(pp)
+          ? pp.map((p) => ({
+              id: p.id,
+              order: p.order,
+              time_offset_minutes: p.time_offset_minutes,
+            }))
+          : [];
+        setPickupPoints(initialPickupPoints);
+        form.reset({
           from_city: currentRide.from_city,
           to_city: currentRide.to_city,
           departure_date: format(departureDate, "yyyy-MM-dd"),
@@ -218,7 +243,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
           description: currentRide.description || "",
           pickup_points: initialPickupPoints,
         });
-        console.log("✅ Form populated successfully");
       } catch (formError) {
         console.error("❌ Error populating form:", formError);
         toast({
@@ -228,7 +252,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         });
       }
     }
-  }, [loading, currentRide, error, form, toast]);
+  }, [loading, currentRide, error, params.id]);
 
   // Function to update ride details
   async function onSubmit(values: RideFormValues) {
@@ -374,7 +398,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
 
       <h1 className="text-2xl font-bold mb-6">{t("pages.driver.manageRide.title")}</h1>
 
-      {loading ? (
+      {showLoading ? (
         <div className="text-center py-12">
           <div
             className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"
@@ -402,7 +426,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
             {t("pages.driver.manageRide.backToDashboard")}
           </Button>
         </div>
-      ) : ride ? (
+      ) : !showLoading && ride ? (
         <div className="space-y-6">
           {hasBookings && (
             <Alert variant="destructive">
@@ -449,6 +473,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                               onValueChange={field.onChange}
                               placeholder={t("pages.driver.manageRide.form.fromCity")}
                               searchPlaceholder={t("common.search")}
+                              disabled={hasBookings}
                             />
                           </FormControl>
                           <FormMessage />
@@ -469,6 +494,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                               onValueChange={field.onChange}
                               placeholder={t("pages.driver.manageRide.form.toCity")}
                               searchPlaceholder={t("common.search")}
+                              disabled={hasBookings}
                             />
                           </FormControl>
                           <FormMessage />
@@ -490,6 +516,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                                 type="date"
                                 {...field}
                                 min="2024-01-01"
+                                disabled={hasBookings}
                               />
                             </div>
                           </FormControl>
@@ -507,7 +534,12 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                           <FormControl>
                             <div className="relative">
                               <Clock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input className="pl-10" type="time" {...field} />
+                              <Input
+                                className="pl-10"
+                                type="time"
+                                {...field}
+                                disabled={hasBookings}
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -529,6 +561,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                                 type="number"
                                 min="1"
                                 {...field}
+                                disabled={hasPaidBookings}
                               />
                             </div>
                           </FormControl>
@@ -552,6 +585,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                                 min="1"
                                 max="8"
                                 {...field}
+                                disabled={hasPaidBookings}
                               />
                             </div>
                           </FormControl>
@@ -587,6 +621,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                             }}
                             error={form.formState.errors.pickup_points?.message}
                             loading={pickupPointsLoading}
+                            lockedPickupPointIds={hasPaidBookings ? lockedPickupPointIds : undefined}
                           />
                         </FormControl>
                         <FormMessage />
@@ -651,7 +686,10 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                       </AlertDialogContent>
                     </AlertDialog>
 
-                    <Button type="submit" disabled={updating}>
+                    <Button
+                      type="submit"
+                      disabled={updating || !isDirty}
+                    >
                       <Save className="h-4 w-4 mr-2" />
                       {updating
                         ? t("pages.driver.manageRide.form.saving")

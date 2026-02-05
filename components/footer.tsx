@@ -27,7 +27,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/rides" className="text-muted-foreground hover:text-primary">
-                  {t("navigation.findRide")}
+                  {t("navigation.findRide
                 </Link>
               </li>
               <li>
