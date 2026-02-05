@@ -103,8 +103,8 @@ export function BookingSeatSelection({
   const parsedError = parseBookingError(bookingError);
 
   return (
-    <>
-      <div className="space-y-6">
+    <div className="min-w-0">
+      <div className="space-y-6 min-w-0">
         {/* Display booking error if present */}
         {parsedError && (
           <Alert variant="destructive" className="relative pr-10">
@@ -135,7 +135,7 @@ export function BookingSeatSelection({
         )}
 
         {existingBooking && !parsedError && (
-          <div className={`border rounded-lg p-3 ${
+          <div className={`border rounded-lg p-3 min-w-0 break-words ${
             existingBooking.payment_status === 'completed'
               ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
               : existingBooking.payment_status === 'pending'
@@ -164,11 +164,11 @@ export function BookingSeatSelection({
           </div>
         )}
 
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-2 mb-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span className="font-medium">{ride.from_city}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 min-w-0">
+              <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="font-medium break-words">{ride.from_city}</span>
               <span className="text-muted-foreground">→</span>
               <span className="font-medium">{ride.to_city}</span>
             </div>
@@ -281,17 +281,17 @@ export function BookingSeatSelection({
           )}
         </div>
 
-        <div className="flex justify-between items-center text-lg font-semibold">
-          <span>
+        <div className="flex flex-wrap justify-between items-center gap-2 text-lg font-semibold min-w-0">
+          <span className="break-words min-w-0">
             {existingBooking && existingBooking.payment_status === 'completed'
               ? t("pages.rides.booking.seatSelection.additionalPrice")
               : t("pages.rides.booking.seatSelection.totalPrice")}
           </span>
-          <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
+          <span className="text-primary whitespace-nowrap">{totalPrice.toLocaleString()} FCFA</span>
         </div>
       </div>
 
-      <div className="space-y-3 mt-6">
+      <div className="space-y-3 mt-6 flex flex-wrap gap-2 justify-end min-w-0">
         {/* Show message when user hasn't added seats to PAID booking */}
         {existingBooking && 
          existingBooking.payment_status === 'completed' && 
@@ -300,8 +300,8 @@ export function BookingSeatSelection({
             {t("pages.rides.booking.seatSelection.addMoreSeatsToContinue")}
           </p>
         )}
-        
-        <div className="flex justify-end space-x-2">
+
+        <div className="flex flex-wrap justify-end gap-2 w-full">
           <Button onClick={onClose} variant="outline">
             {t("pages.rides.booking.seatSelection.cancel")}
           </Button>
@@ -331,7 +331,7 @@ export function BookingSeatSelection({
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

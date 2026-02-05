@@ -77,7 +77,7 @@ export function BookingModal({
   if (isOpen && (checkingPassengerInfo || (userBookingsLoading && userBookings.length === 0))) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[540px]">
           <DialogHeader>
             <DialogTitle>{t("pages.rides.booking.loadingInfo")}</DialogTitle>
           </DialogHeader>
@@ -170,27 +170,29 @@ export function BookingModal({
     }
   };
 
+  const isScrollableStep = step === 0 || step === 1 || step === 2;
+
   return (
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        // Prevent closing during payment success state (navigation in progress)
-        // Only allow closing if we're not in the middle of a payment or success navigation
         if (!open && !isPolling && !loading && !paymentSuccess) {
           onClose();
         }
       }}
     >
       <DialogContent
-        className={`sm:max-w-[500px] ${
-          step === 0 || step === 2 ? "max-h-[90vh] flex flex-col" : ""
-        }`}
+        className={
+          "w-[calc(100vw-2rem)] max-w-[540px] max-h-[90vh] flex flex-col overflow-hidden p-4 sm:p-6"
+        }
       >
-        <DialogHeader>
-          <DialogTitle>{getTitle()}</DialogTitle>
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="text-left break-words pr-8">{getTitle()}</DialogTitle>
         </DialogHeader>
-        {step === 0 || step === 2 ? (
-          <div className="overflow-y-auto flex-1">{renderStep()}</div>
+        {isScrollableStep ? (
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain">
+            <div className="min-w-0 pb-2">{renderStep()}</div>
+          </div>
         ) : (
           renderStep()
         )}

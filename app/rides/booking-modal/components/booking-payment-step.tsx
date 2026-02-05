@@ -65,10 +65,10 @@ export function BookingPaymentStep({
     existingBooking.payment_status === 'completed' &&
     seats && seats > existingBooking.seats;
   return (
-    <>
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="font-medium">{t("pages.rides.booking.payment.title")}</h3>
+    <div className="min-w-0 space-y-6">
+      <div className="space-y-6 min-w-0">
+        <div className="space-y-2 min-w-0">
+          <h3 className="font-medium break-words">{t("pages.rides.booking.payment.title")}</h3>
           <PaymentMethodSelector
             providers={providers}
             selectedProvider={selectedProvider}
@@ -86,24 +86,24 @@ export function BookingPaymentStep({
         />
 
         {isPartialPayment && ride ? (
-          <div className="space-y-2 border rounded-lg p-4 bg-muted/50">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("pages.rides.booking.payment.alreadyPaidSeats")}</span>
-              <span>{existingBooking.seats} {existingBooking.seats > 1 ? t("pages.rides.booking.payment.places") : t("pages.rides.booking.payment.place")}</span>
+          <div className="space-y-2 border rounded-lg p-4 bg-muted/50 min-w-0">
+            <div className="flex flex-wrap justify-between gap-x-2 text-sm min-w-0">
+              <span className="text-muted-foreground break-words">{t("pages.rides.booking.payment.alreadyPaidSeats")}</span>
+              <span className="whitespace-nowrap">{existingBooking.seats} {existingBooking.seats > 1 ? t("pages.rides.booking.payment.places") : t("pages.rides.booking.payment.place")}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("pages.rides.booking.payment.additionalSeats")}</span>
-              <span>{seats! - existingBooking.seats} {(seats! - existingBooking.seats) > 1 ? t("pages.rides.booking.payment.places") : t("pages.rides.booking.payment.place")}</span>
+            <div className="flex flex-wrap justify-between gap-x-2 text-sm min-w-0">
+              <span className="text-muted-foreground break-words">{t("pages.rides.booking.payment.additionalSeats")}</span>
+              <span className="whitespace-nowrap">{seats! - existingBooking.seats} {(seats! - existingBooking.seats) > 1 ? t("pages.rides.booking.payment.places") : t("pages.rides.booking.payment.place")}</span>
             </div>
-            <div className="flex justify-between items-center text-lg font-semibold pt-2 border-t">
-              <span>{t("pages.rides.booking.payment.amountToPay")}</span>
-              <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
+            <div className="flex flex-wrap justify-between items-center gap-x-2 text-lg font-semibold pt-2 border-t min-w-0">
+              <span className="break-words">{t("pages.rides.booking.payment.amountToPay")}</span>
+              <span className="text-primary whitespace-nowrap">{totalPrice.toLocaleString()} FCFA</span>
             </div>
           </div>
         ) : (
-          <div className="flex justify-between items-center text-lg font-semibold">
-            <span>{t("pages.rides.booking.payment.amountToPay")}</span>
-            <span className="text-primary">{totalPrice.toLocaleString()} FCFA</span>
+          <div className="flex flex-wrap justify-between items-center gap-x-2 text-lg font-semibold min-w-0">
+            <span className="break-words">{t("pages.rides.booking.payment.amountToPay")}</span>
+            <span className="text-primary whitespace-nowrap">{totalPrice.toLocaleString()} FCFA</span>
           </div>
         )}
 
@@ -139,7 +139,7 @@ export function BookingPaymentStep({
         ) : null}
       </div>
 
-      <div className="flex justify-end space-x-2 mt-6">
+      <div className="flex flex-wrap justify-end gap-2 mt-6">
         <Button
           onClick={onBack}
           variant="outline"
@@ -171,7 +171,7 @@ export function BookingPaymentStep({
           )}
         </Button>
       </div>
-    </>
+    </div>
   );
 }
 
