@@ -71,7 +71,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold text-[#28C496]">
+            <DialogTitle className="text-xl font-bold text-brand">
               {isPermissionDenied ? t("notifications.prompt.titleBlocked") : t("notifications.prompt.titleEnable")}
             </DialogTitle>
             <Button
@@ -110,7 +110,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
           {!isPermissionDenied && (
           <div className="space-y-3">
             <div className="flex items-start space-x-3">
-              <MessageSquare className="h-5 w-5 text-[#28C496] mt-0.5 flex-shrink-0" />
+              <MessageSquare className="h-5 w-5 text-brand mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm">{t("notifications.prompt.benefits.realtimeMessages.title")}</p>
                 <p className="text-xs text-muted-foreground">
@@ -120,7 +120,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
             </div>
 
             <div className="flex items-start space-x-3">
-              <Bell className="h-5 w-5 text-[#28C496] mt-0.5 flex-shrink-0" />
+              <Bell className="h-5 w-5 text-brand mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm">{t("notifications.prompt.benefits.rideUpdates.title")}</p>
                 <p className="text-xs text-muted-foreground">
@@ -130,7 +130,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
             </div>
 
             <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-[#28C496] mt-0.5 flex-shrink-0" />
+              <CheckCircle className="h-5 w-5 text-brand mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm">{t("notifications.prompt.benefits.paymentConfirmations.title")}</p>
                 <p className="text-xs text-muted-foreground">
@@ -196,7 +196,7 @@ export function NotificationPrompt({ isOpen, onClose, onEnable }: NotificationPr
                 <Button
                   onClick={handleEnableNotifications}
                   disabled={!canEnable || isLoading}
-                  className="flex-1 bg-[#28C496] hover:bg-[#22a085]"
+                  className="flex-1 bg-brand hover:bg-brand-hover"
                 >
                   {isLoading ? t("notifications.prompt.activating") : t("notifications.prompt.enableNotifications")}
                 </Button>

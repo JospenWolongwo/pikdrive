@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import { BRAND } from './lib/theme-colors';
 
 const config: Config = {
   darkMode: ['class'],
@@ -20,6 +21,10 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       colors: {
+        brand: {
+          DEFAULT: BRAND.primary,
+          hover: BRAND.primaryHover,
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

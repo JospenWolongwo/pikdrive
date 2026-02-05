@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
+import { BRAND } from "@/lib/theme-colors";
 import { Providers } from "@/app/providers";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -21,7 +22,7 @@ const inter = Inter({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#28C496",
+  themeColor: BRAND.primary,
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -140,7 +141,7 @@ export default async function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="PikDrive" />
-        <meta name="theme-color" content="#28C496" />
+        <meta name="theme-color" content={BRAND.primary} />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
