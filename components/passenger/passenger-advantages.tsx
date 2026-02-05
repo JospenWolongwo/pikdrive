@@ -10,26 +10,6 @@ export function PassengerAdvantages() {
   
   const advantages = [
     {
-      icon: <RefreshCw className="w-8 h-8" />,
-      badge: t("pages.passenger.advantages.items.badges.instant"),
-      badgeColor: "bg-green-500",
-      title: t("pages.passenger.advantages.items.instantRefunds"),
-      description: t("pages.passenger.advantages.items.instantRefundsDescription"),
-      gradient: "from-green-500/10 to-emerald-500/5",
-      borderColor: "border-green-200",
-      iconBg: "bg-green-100 dark:bg-green-900/30"
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      badge: t("pages.passenger.advantages.items.badges.flexible"),
-      badgeColor: "bg-blue-500",
-      title: t("pages.passenger.advantages.items.flexibleSeats"),
-      description: t("pages.passenger.advantages.items.flexibleSeatsDescription"),
-      gradient: "from-blue-500/10 to-cyan-500/5",
-      borderColor: "border-blue-200",
-      iconBg: "bg-blue-100 dark:bg-blue-900/30"
-    },
-    {
       icon: <Shield className="w-8 h-8" />,
       badge: t("pages.passenger.advantages.items.badges.secure"),
       badgeColor: "bg-purple-500",
@@ -48,6 +28,26 @@ export function PassengerAdvantages() {
       gradient: "from-amber-500/10 to-orange-500/5",
       borderColor: "border-amber-200",
       iconBg: "bg-amber-100 dark:bg-amber-900/30"
+    },
+    {
+      icon: <RefreshCw className="w-8 h-8" />,
+      badge: t("pages.passenger.advantages.items.badges.instant"),
+      badgeColor: "bg-green-500",
+      title: t("pages.passenger.advantages.items.instantRefunds"),
+      description: t("pages.passenger.advantages.items.instantRefundsDescription"),
+      gradient: "from-green-500/10 to-emerald-500/5",
+      borderColor: "border-green-200",
+      iconBg: "bg-green-100 dark:bg-green-900/30"
+    },
+    {
+      icon: <Users className="w-8 h-8" />,
+      badge: t("pages.passenger.advantages.items.badges.flexible"),
+      badgeColor: "bg-blue-500",
+      title: t("pages.passenger.advantages.items.flexibleSeats"),
+      description: t("pages.passenger.advantages.items.flexibleSeatsDescription"),
+      gradient: "from-blue-500/10 to-cyan-500/5",
+      borderColor: "border-blue-200",
+      iconBg: "bg-blue-100 dark:bg-blue-900/30"
     }
   ]
 

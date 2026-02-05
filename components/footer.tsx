@@ -73,7 +73,7 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">{t("navigation.followUs")}</h3>
             <div className="flex space-x-4">
               <Link
-                href="https://www.facebook.com/share/1JPWEA2ypT/"
+                href="https://www.facebook.com/share/1HT2u7LcaX/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
@@ -91,7 +91,7 @@ export function Footer() {
                 <span className="sr-only">X</span>
               </Link>
               <Link
-                href="https://instagram.com"
+                href="https://www.instagram.com/pikdrive?igsh=MWNvazNmNnI5MWo0NQ=="
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
