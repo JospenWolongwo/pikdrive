@@ -160,20 +160,31 @@ export async function POST(request: Request) {
       existingPayout = payoutByBooking;
     }
 
-    // Update booking status to confirmed if it was pending or pending_verification
+    // Always set code_verified = true so passenger UI and refetches see it (RPC already set it; this ensures API path and realtime/refetch consistency, including partial bookings where status stays 'confirmed')
+    const { error: codeVerifiedError } = await supabase
+      .from('bookings')
+      .update({
+        code_verified: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', bookingId);
+
+    if (codeVerifiedError) {
+      console.error('Error setting code_verified on booking:', codeVerifiedError);
+    }
+
+    // Set status to confirmed only when it was still pending or pending_verification
     if (booking.status === 'pending' || booking.status === 'pending_verification') {
-      const { error: updateError } = await supabase
+      const { error: statusError } = await supabase
         .from('bookings')
-        .update({ 
+        .update({
           status: 'confirmed',
-          code_verified: true,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', bookingId);
-      
-      if (updateError) {
-        console.error('Error updating booking status:', updateError);
-        // Continue even if update fails, as the code verification was successful
+
+      if (statusError) {
+        console.error('Error updating booking status:', statusError);
       }
     }
 
