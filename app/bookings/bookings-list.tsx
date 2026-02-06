@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRouter } from "next/navigation";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Input, Badge, Button } from "@/components/ui";
@@ -110,6 +110,8 @@ export function BookingsList({ page }: { page: number }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [totalBookings, setTotalBookings] = useState(0);
   const itemsPerPage = 10;
+  const lastFocusRefetchRef = useRef<number>(0);
+  const FOCUS_REFETCH_THROTTLE_MS = 60 * 1000;
 
   // Create filtered bookings based on search query
   const filteredBookings = useMemo(() => {
@@ -174,6 +176,19 @@ export function BookingsList({ page }: { page: number }) {
   useEffect(() => {
     loadBookings();
   }, [loadBookings]);
+
+  // Refetch when user returns to the tab (throttled to avoid unnecessary refetches)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!user) return;
+      const now = Date.now();
+      if (now - lastFocusRefetchRef.current < FOCUS_REFETCH_THROTTLE_MS) return;
+      lastFocusRefetchRef.current = now;
+      refreshUserBookings(user.id);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [user, refreshUserBookings]);
 
   if (userBookingsLoading) {
     return (

@@ -498,12 +498,8 @@ export const useBookingStore = create<BookingState>()(
     }),
     {
       name: getVersionedStorageKey('booking-storage'),
-      // Only persist the data, not loading states
+      // Only persist passenger info UX cache; booking lists are always fetched fresh to avoid stale data
       partialize: (state) => ({
-        userBookings: state.userBookings,
-        lastUserBookingsFetch: state.lastUserBookingsFetch,
-        driverBookings: state.driverBookings,
-        lastDriverBookingsFetch: state.lastDriverBookingsFetch,
         passengerInfoComplete: state.passengerInfoComplete,
         passengerInfoProfileName: state.passengerInfoProfileName,
         lastPassengerInfoFetch: state.lastPassengerInfoFetch,
