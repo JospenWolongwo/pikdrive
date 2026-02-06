@@ -76,6 +76,7 @@ export function ChatDialog({
   
   const [newMessage, setNewMessage] = useState("");
   const [visualViewportHeight, setVisualViewportHeight] = useState<number | null>(null);
+  const [visualViewportOffsetTop, setVisualViewportOffsetTop] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fetchedConversationsRef = useRef<Set<string>>(new Set());
   
@@ -145,17 +146,18 @@ export function ChatDialog({
     const viewport = window.visualViewport;
     if (!viewport) return;
 
-    const updateViewportHeight = () => {
+    const updateViewport = () => {
       setVisualViewportHeight(viewport.height);
+      setVisualViewportOffsetTop(viewport.offsetTop);
     };
 
-    updateViewportHeight();
-    viewport.addEventListener("resize", updateViewportHeight);
-    viewport.addEventListener("scroll", updateViewportHeight);
+    updateViewport();
+    viewport.addEventListener("resize", updateViewport);
+    viewport.addEventListener("scroll", updateViewport);
 
     return () => {
-      viewport.removeEventListener("resize", updateViewportHeight);
-      viewport.removeEventListener("scroll", updateViewportHeight);
+      viewport.removeEventListener("resize", updateViewport);
+      viewport.removeEventListener("scroll", updateViewport);
     };
   }, []);
 
@@ -260,11 +262,16 @@ export function ChatDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         style={
-          visualViewportHeight
-            ? ({ ["--chat-vvh" as string]: `${visualViewportHeight}px` } as React.CSSProperties)
+          visualViewportHeight !== null || visualViewportOffsetTop !== null
+            ? ({
+                ["--chat-vvh" as string]:
+                  visualViewportHeight !== null ? `${visualViewportHeight}px` : undefined,
+                ["--chat-vvo" as string]:
+                  visualViewportOffsetTop !== null ? `${visualViewportOffsetTop}px` : undefined,
+              } as React.CSSProperties)
             : undefined
         }
-        className="flex flex-col p-0 overflow-hidden max-w-md w-[calc(100%-2rem)] sm:w-full top-4 left-4 right-4 sm:left-[50%] sm:right-auto sm:top-[50%] translate-x-0 translate-y-0 sm:translate-y-[-50%] sm:translate-x-[-50%] h-[calc(var(--chat-vvh,100svh)-2rem)] max-h-[calc(var(--chat-vvh,100svh)-2rem)] sm:h-[80vh] data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=closed]:slide-out-to-left-1/2"
+        className="flex flex-col p-0 overflow-hidden max-w-md w-[calc(100%-2rem)] sm:w-full top-[calc(var(--chat-vvo,0px)+1rem)] left-4 right-4 sm:left-[50%] sm:right-auto sm:top-[50%] translate-x-0 translate-y-0 sm:translate-y-[-50%] sm:translate-x-[-50%] h-[calc(var(--chat-vvh,100svh)-2rem)] max-h-[calc(var(--chat-vvh,100svh)-2rem)] sm:h-[80vh] data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=closed]:slide-out-to-left-1/2"
       >
         <DialogHeader className="shrink-0 p-4 border-b bg-background">
           <div className="flex items-center gap-3">
