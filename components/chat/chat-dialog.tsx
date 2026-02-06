@@ -77,6 +77,8 @@ export function ChatDialog({
   const [newMessage, setNewMessage] = useState("");
   const [visualViewportHeight, setVisualViewportHeight] = useState<number | null>(null);
   const [visualViewportOffsetTop, setVisualViewportOffsetTop] = useState<number | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fetchedConversationsRef = useRef<Set<string>>(new Set());
   
@@ -98,8 +100,14 @@ export function ChatDialog({
   // For new conversations, don't show error - empty state is expected
   const shouldShowError = error && !isNewConversation;
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const getScrollViewport = () =>
+    scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLDivElement | null;
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth", force = false) => {
+    if (!force && !isAtBottom) return;
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
@@ -140,6 +148,31 @@ export function ChatDialog({
   useEffect(() => {
     scrollToBottom();
   }, [conversationMessages]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const viewport = getScrollViewport();
+    if (!viewport) return;
+
+    const handleScroll = () => {
+      const threshold = 48;
+      const distanceFromBottom =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      setIsAtBottom(distanceFromBottom <= threshold);
+    };
+
+    handleScroll();
+    viewport.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      viewport.removeEventListener("scroll", handleScroll);
+    };
+  }, [isOpen, actualConversationId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    scrollToBottom("auto", true);
+  }, [isOpen, actualConversationId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -206,7 +239,7 @@ export function ChatDialog({
         sender_id: user.id,
       });
     }
-    scrollToBottom();
+    scrollToBottom("smooth", true);
 
     try {
       const newMessageResponse = await sendMessage({
@@ -219,7 +252,7 @@ export function ChatDialog({
       }
 
       triggerPrompt();
-      scrollToBottom();
+      scrollToBottom("smooth", true);
     } catch (error) {
       if (!isNewConversation) {
         removeOptimisticMessage(actualConversationId);
@@ -285,7 +318,7 @@ export function ChatDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 p-4">
+        <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 p-4">
           <div className="space-y-4 pr-4">
             {isLoading && !isNewConversation ? (
               <div className="flex justify-center py-4">
