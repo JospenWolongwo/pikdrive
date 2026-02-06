@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { ridesApiClient, ApiError } from "@/lib/api-client";
 import { useChatStore } from "@/stores/chatStore";
-import { Tabs, TabsContent, TabsList, TabsTrigger, Dialog, DialogContent, PageLoader, ContentLoader } from "@/components/ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger, Dialog, DialogContent, ContentLoader } from "@/components/ui";
 import { ChatDialog } from "@/components/chat";
 import {
   CodeVerificationForm,
@@ -214,11 +214,6 @@ export default function DriverDashboard() {
     }
   };
 
-  if (loading) {
-    return <PageLoader message={t("pages.driver.dashboard.loadingRides")} />;
-  }
-
-
   return (
     <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-4 sm:px-6">
       <DashboardHeader />
@@ -235,7 +230,7 @@ export default function DriverDashboard() {
       />
 
       <Suspense fallback={<ContentLoader size="lg" message={t("pages.driver.dashboard.loadingRidesList")} />}>
-        {/* Tabs for upcoming and past rides */}
+        {/* Tabs for upcoming and past rides – skeleton shown inside tabs when loading */}
         <Tabs
           defaultValue="upcoming"
           className="space-y-4 sm:space-y-6"
@@ -266,6 +261,7 @@ export default function DriverDashboard() {
               onDeleteRide={handleDeleteRide}
               isPastRide={false}
               searchQuery={searchQuery}
+              loading={loading}
             />
           </TabsContent>
 
@@ -281,6 +277,7 @@ export default function DriverDashboard() {
               onDeleteRide={handleDeleteRide}
               isPastRide={true}
               searchQuery={searchQuery}
+              loading={loading}
             />
           </TabsContent>
 

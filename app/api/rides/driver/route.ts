@@ -77,12 +77,23 @@ export async function GET(request: NextRequest) {
 
     const rideIds = rides.map((r: { id: string }) => r.id);
 
-    // Fetch rides without embedded resources to avoid PostgREST relationship errors
-    const { data: fullRides, error: fullRidesError } = await supabase
-      .from("rides")
-      .select("*")
-      .in("id", rideIds)
-      .order("created_at", { ascending: false }); // Newest first
+    // Fetch full rides and bookings in parallel (messages omitted for list – ride page loads its own)
+    const [
+      { data: fullRides, error: fullRidesError },
+      { data: bookings },
+    ] = await Promise.all([
+      supabase
+        .from("rides")
+        .select("*")
+        .in("id", rideIds)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("bookings")
+        .select("id, ride_id, user_id, seats, status, payment_status, code_verified, created_at, updated_at")
+        .in("ride_id", rideIds)
+        .neq("status", "cancelled")
+        .order("created_at", { ascending: false }),
+    ]);
 
     if (fullRidesError) {
       console.error("Error fetching rides:", fullRidesError);
@@ -92,22 +103,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch bookings separately - exclude cancelled bookings at database level for optimization
-    const { data: bookings } = await supabase
-      .from("bookings")
-      .select("id, ride_id, user_id, seats, status, payment_status, code_verified, created_at, updated_at")
-      .in("ride_id", rideIds)
-      .neq("status", "cancelled")
-      .order("created_at", { ascending: false });
-
-    // Fetch messages separately
-    const { data: messages } = await supabase
-      .from("messages")
-      .select("id, ride_id, sender_id, content, created_at")
-      .in("ride_id", rideIds)
-      .order("created_at", { ascending: false });
-
-    // Fetch user profiles for bookings
     const userIds = [...new Set(bookings?.map((b: any) => b.user_id) || [])];
     let userProfiles: { [key: string]: { id: string; full_name: string; avatar_url?: string } } = {};
 
@@ -122,22 +117,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Merge data manually
     const ridesWithDetails = (fullRides || []).map((ride: any) => {
       const rideBookings = bookings?.filter((b: any) => b.ride_id === ride.id) || [];
-      const rideMessages = messages?.filter((m: any) => m.ride_id === ride.id) || [];
-
       return {
         ...ride,
         bookings: rideBookings.map((booking: any) => ({
           ...booking,
-          user: userProfiles[booking.user_id] || { 
+          user: userProfiles[booking.user_id] || {
             id: booking.user_id,
-            full_name: "Unknown User", 
-            avatar_url: null 
-          }
+            full_name: "Unknown User",
+            avatar_url: null,
+          },
         })),
-        messages: rideMessages
+        messages: [] as any[],
       };
     });
 

@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useLocale } from "@/hooks";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from "@/components/ui";
+import { Card, CardContent, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, Skeleton } from "@/components/ui";
 import { BookingModal } from "./booking-modal";
 import { ChatDialog } from "@/components/chat";
 import {
@@ -80,23 +80,13 @@ export default function RidesPage() {
     }, [loadRides, currentPage])
   );
 
-  if (loading) {
-    return (
-      <div className="container py-10">
-        <div className="flex flex-col justify-center items-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-          <p className="text-muted-foreground">{t("pages.rides.loading")}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Sort rides by departure time
   const sortedRides = [...rides].sort(
     (a, b) =>
       new Date(a.departure_time).getTime() -
       new Date(b.departure_time).getTime()
   );
+
+  const RIDE_CARD_SKELETON_COUNT = 6;
 
   return (
     <div className="container py-6 space-y-6 relative">
@@ -123,8 +113,28 @@ export default function RidesPage() {
           onToggleFilters={toggleFilters}
         />
 
-        {/* Rides List or Empty State */}
-        {rides.length === 0 ? (
+        {/* Rides List, Skeleton, or Empty State */}
+        {loading ? (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3" data-testid="rides-list-skeleton">
+            {Array.from({ length: RIDE_CARD_SKELETON_COUNT }).map((_, i) => (
+              <Card key={i} className="overflow-hidden border-0 shadow-xl bg-card">
+                <Skeleton className="h-56 w-full rounded-none" />
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex justify-between items-start gap-2">
+                    <Skeleton className="h-5 flex-1 max-w-[140px]" />
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <div className="flex gap-2 pt-2">
+                    <Skeleton className="h-9 flex-1" />
+                    <Skeleton className="h-9 w-24" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : rides.length === 0 ? (
           <RidesEmptyState hasFilters={hasFilters} />
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
