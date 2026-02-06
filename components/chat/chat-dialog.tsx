@@ -75,6 +75,7 @@ export function ChatDialog({
   const { triggerPrompt } = useNotificationPromptTrigger();
   
   const [newMessage, setNewMessage] = useState("");
+  const [visualViewportHeight, setVisualViewportHeight] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fetchedConversationsRef = useRef<Set<string>>(new Set());
   
@@ -138,6 +139,25 @@ export function ChatDialog({
   useEffect(() => {
     scrollToBottom();
   }, [conversationMessages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const updateViewportHeight = () => {
+      setVisualViewportHeight(viewport.height);
+    };
+
+    updateViewportHeight();
+    viewport.addEventListener("resize", updateViewportHeight);
+    viewport.addEventListener("scroll", updateViewportHeight);
+
+    return () => {
+      viewport.removeEventListener("resize", updateViewportHeight);
+      viewport.removeEventListener("scroll", updateViewportHeight);
+    };
+  }, []);
 
   // Mark messages as read when viewing them (debounced to avoid excessive API calls)
   useEffect(() => {
@@ -239,7 +259,12 @@ export function ChatDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="flex flex-col p-0 overflow-hidden max-w-md w-[calc(100%-2rem)] sm:w-full top-4 left-4 right-4 sm:left-[50%] sm:right-auto sm:top-[50%] translate-x-0 translate-y-0 sm:translate-y-[-50%] sm:translate-x-[-50%] h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] sm:h-[80vh] data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=closed]:slide-out-to-left-1/2"
+        style={
+          visualViewportHeight
+            ? ({ ["--chat-vvh" as string]: `${visualViewportHeight}px` } as React.CSSProperties)
+            : undefined
+        }
+        className="flex flex-col p-0 overflow-hidden max-w-md w-[calc(100%-2rem)] sm:w-full top-4 left-4 right-4 sm:left-[50%] sm:right-auto sm:top-[50%] translate-x-0 translate-y-0 sm:translate-y-[-50%] sm:translate-x-[-50%] h-[calc(var(--chat-vvh,100svh)-2rem)] max-h-[calc(var(--chat-vvh,100svh)-2rem)] sm:h-[80vh] data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=closed]:slide-out-to-left-1/2"
       >
         <DialogHeader className="shrink-0 p-4 border-b bg-background">
           <div className="flex items-center gap-3">
