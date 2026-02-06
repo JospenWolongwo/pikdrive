@@ -997,6 +997,16 @@
             "notAvailable": "N/A"
           }
         },
+        "loadingRides": "Chargement de vos trajets",
+        "loadingRidesList": "Chargement des trajets...",
+        "deleteToastCannotTitle": "Suppression impossible",
+        "deleteToastCannotDescription": "Vous ne pouvez pas supprimer un trajet avec des réservations.",
+        "deleteToastErrorTitle": "Erreur",
+        "deleteToastErrorDescription": "Impossible de supprimer le trajet. Veuillez réessayer.",
+        "deleteToastSuccessTitle": "Trajet supprimé",
+        "deleteToastSuccessDescription": "Le trajet a été supprimé avec succès.",
+        "deleteToastErrorGenericTitle": "Erreur",
+        "deleteToastErrorGenericDescription": "Une erreur est survenue lors de la suppression.",
         "rideCard": {
           "passengers": "passagers",
           "availableSeats": "places disponibles",
@@ -1018,7 +1028,7 @@
           "paid": "payé(s)",
           "passenger": "Passager",
           "statusPending": "En attente",
-          "statusPendingVerification": "Vérif.",
+          "statusPendingVerification": "En attente de vérif.",
           "statusConfirmed": "Confirmé",
           "statusCancelled": "Annulé",
           "verified": "Vérifié",

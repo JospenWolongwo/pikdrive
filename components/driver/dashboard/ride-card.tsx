@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   MapPin,
@@ -80,6 +81,7 @@ export function RideCard({
   isPastRide = false,
 }: RideCardProps) {
   const { t } = useLocale();
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const confirmedPassengers = ride.bookings
@@ -106,10 +108,8 @@ export function RideCard({
       if (onDeleteRide) {
         await onDeleteRide(rideId);
       } else {
-        // Fallback: redirect to delete page
-        if (confirm(t("pages.driver.dashboard.rideCard.deleteTitle"))) {
-          window.location.href = `/driver/rides/${rideId}`;
-        }
+        // Fallback: navigate to ride page (no full reload)
+        router.push(`/driver/rides/${rideId}`);
       }
     } finally {
       setIsDeleting(false);
@@ -160,14 +160,13 @@ export function RideCard({
               )}
             </div>
 
-            {/* Ride Management Buttons - Responsive layout */}
+            {/* Ride Management Buttons - full labels on all breakpoints for alignment */}
             {!isPastRide && (
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" asChild className="flex items-center gap-1 text-xs sm:text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" asChild className="flex items-center gap-1.5 shrink-0 text-xs sm:text-sm">
                   <Link href={`/driver/rides/${ride.id}`}>
-                    <Edit className="h-3 w-3" />
-                    <span className="hidden sm:inline">{t("pages.driver.dashboard.rideCard.edit")}</span>
-                    <span className="sm:hidden">{t("pages.driver.dashboard.rideCard.editShort")}</span>
+                    <Edit className="h-3 w-3 shrink-0" />
+                    <span className="whitespace-nowrap">{t("pages.driver.dashboard.rideCard.edit")}</span>
                   </Link>
                 </Button>
 
@@ -185,12 +184,11 @@ export function RideCard({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm"
+                        className="flex items-center gap-1.5 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm"
                         title={t("pages.driver.dashboard.rideCard.delete")}
                       >
-                        <Trash2 className="h-3 w-3" />
-                        <span className="hidden sm:inline">{t("pages.driver.dashboard.rideCard.delete")}</span>
-                        <span className="sm:hidden">{t("pages.driver.dashboard.rideCard.deleteShort")}</span>
+                        <Trash2 className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">{t("pages.driver.dashboard.rideCard.delete")}</span>
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="max-w-[90vw] sm:max-w-md">

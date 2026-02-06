@@ -997,6 +997,16 @@
             "notAvailable": "N/A"
           }
         },
+        "loadingRides": "Loading your rides",
+        "loadingRidesList": "Loading rides...",
+        "deleteToastCannotTitle": "Cannot delete",
+        "deleteToastCannotDescription": "You cannot delete a ride that has bookings.",
+        "deleteToastErrorTitle": "Error",
+        "deleteToastErrorDescription": "Unable to delete the ride. Please try again.",
+        "deleteToastSuccessTitle": "Ride deleted",
+        "deleteToastSuccessDescription": "The ride was deleted successfully.",
+        "deleteToastErrorGenericTitle": "Error",
+        "deleteToastErrorGenericDescription": "An error occurred while deleting.",
         "rideCard": {
           "passengers": "passengers",
           "availableSeats": "available seats",
@@ -1018,7 +1028,7 @@
           "paid": "paid",
           "passenger": "Passenger",
           "statusPending": "Pending",
-          "statusPendingVerification": "Verif.",
+          "statusPendingVerification": "Pending verif.",
           "statusConfirmed": "Confirmed",
           "statusCancelled": "Cancelled",
           "verified": "Verified",

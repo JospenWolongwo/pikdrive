@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { ridesApiClient, ApiError } from "@/lib/api-client";
 import { useChatStore } from "@/stores/chatStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger, Dialog, DialogContent, PageLoader, ContentLoader } from "@/components/ui";
 import { ChatDialog } from "@/components/chat";
@@ -174,55 +175,47 @@ export default function DriverDashboard() {
 
   const handleDeleteRide = async (rideId: string) => {
     try {
-      // Check if the ride has any bookings at all
       const ride = ridesData.rides.find((r) => r.id === rideId);
       if (ride && ride.bookings.length > 0) {
         toast({
-          title: "Suppression impossible",
-          description:
-            "Vous ne pouvez pas supprimer un trajet avec des réservations.",
+          title: t("pages.driver.dashboard.deleteToastCannotTitle"),
+          description: t("pages.driver.dashboard.deleteToastCannotDescription"),
           variant: "destructive",
         });
         return;
       }
 
-      // Confirm deletion
-      if (confirm("Êtes-vous sûr de vouloir supprimer ce trajet ?")) {
-        const { error } = await supabase
-          .from("rides")
-          .delete()
-          .eq("id", rideId)
-          .eq("driver_id", user.id);
+      await ridesApiClient.deleteRide(rideId);
 
-        if (error) {
-          toast({
-            title: "Erreur",
-            description:
-              "Impossible de supprimer le trajet. Veuillez réessayer.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        toast({
-          title: "Trajet supprimé",
-          description: "Le trajet a été supprimé avec succès",
-        });
-
-        // Reload rides
-        await refreshRides();
-      }
-    } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la suppression.",
+        title: t("pages.driver.dashboard.deleteToastSuccessTitle"),
+        description: t("pages.driver.dashboard.deleteToastSuccessDescription"),
+      });
+      await refreshRides();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        const isCannotDelete = error.status === 400;
+        toast({
+          title: isCannotDelete
+            ? t("pages.driver.dashboard.deleteToastCannotTitle")
+            : t("pages.driver.dashboard.deleteToastErrorTitle"),
+          description: isCannotDelete
+            ? t("pages.driver.dashboard.deleteToastCannotDescription")
+            : t("pages.driver.dashboard.deleteToastErrorDescription"),
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: t("pages.driver.dashboard.deleteToastErrorGenericTitle"),
+        description: t("pages.driver.dashboard.deleteToastErrorGenericDescription"),
         variant: "destructive",
       });
     }
   };
 
   if (loading) {
-    return <PageLoader message="Chargement de vos trajets" />;
+    return <PageLoader message={t("pages.driver.dashboard.loadingRides")} />;
   }
 
 
@@ -241,7 +234,7 @@ export default function DriverDashboard() {
         onSortChange={handleSortChange}
       />
 
-      <Suspense fallback={<ContentLoader size="lg" message="Chargement des trajets..." />}>
+      <Suspense fallback={<ContentLoader size="lg" message={t("pages.driver.dashboard.loadingRidesList")} />}>
         {/* Tabs for upcoming and past rides */}
         <Tabs
           defaultValue="upcoming"
