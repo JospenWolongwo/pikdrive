@@ -25,6 +25,10 @@ interface RidesState {
     total: number;
     total_pages: number;
   } | null;
+  /** Last page fetched for "all rides" (used to only auto-refresh on new ride when viewing page 1) */
+  lastAllRidesPage: number;
+  /** Whether the last fetch used search filters (used to avoid auto-refresh when user is filtering) */
+  lastAllRidesHadFilters: boolean;
   realTimeChannel: any | null; // Supabase realtime channel for seat updates
 
   // Driver rides state
@@ -76,6 +80,8 @@ interface RidesState {
   clearAllRides: () => void;
   subscribeToRideUpdates: (supabase: SupabaseClient) => void;
   unsubscribeFromRideUpdates: () => void;
+  /** Refetch page 1 only when current view is default list (page 1, no filters); used on new ride INSERT */
+  refetchFirstPageIfViewingDefault: () => void;
   updateRideSeatsOptimistically: (rideId: string, seatsToDecrement: number) => void;
   subscribeToDriverRideUpdates: (supabase: SupabaseClient, driverId: string, rideIds: string[]) => void;
   unsubscribeFromDriverRideUpdates: () => void;
@@ -134,6 +140,8 @@ export const useRidesStore = create<RidesState>()(
     allRidesError: null,
     lastAllRidesFetch: null,
     allRidesPagination: null,
+    lastAllRidesPage: 1,
+    lastAllRidesHadFilters: false,
     realTimeChannel: null,
 
     driverRides: [],
@@ -177,6 +185,8 @@ export const useRidesStore = create<RidesState>()(
             allRidesError: null,
             allRidesPagination: response.pagination,
             lastAllRidesFetch: now,
+            lastAllRidesPage: params.page ?? 1,
+            lastAllRidesHadFilters: false,
           });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Failed to fetch rides";
@@ -196,7 +206,6 @@ export const useRidesStore = create<RidesState>()(
       },
 
       refreshAllRides: async (params = {}) => {
-        // Force refresh by clearing cache
         set({ lastAllRidesFetch: null });
         await get().fetchAllRides(params);
       },
@@ -582,12 +591,25 @@ export const useRidesStore = create<RidesState>()(
             allRidesLoading: false,
             allRidesError: null,
             allRidesPagination: response.pagination,
+            lastAllRidesPage: filters.page ?? 1,
+            lastAllRidesHadFilters: true,
           });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Failed to search rides";
           set({
             allRidesLoading: false,
             allRidesError: errorMessage,
+          });
+        }
+      },
+
+      refetchFirstPageIfViewingDefault: () => {
+        const { lastAllRidesPage, lastAllRidesHadFilters } = get();
+        if (lastAllRidesPage === 1 && !lastAllRidesHadFilters) {
+          get().refreshAllRides({
+            page: 1,
+            limit: 10,
+            upcoming: true,
           });
         }
       },
@@ -604,12 +626,8 @@ export const useRidesStore = create<RidesState>()(
     }),
     {
       name: getVersionedStorageKey('rides-storage'),
-      // Only persist the data, not loading states
+      // Only persist user preferences; ride lists are always fetched fresh to avoid stale data
       partialize: (state) => ({
-        allRides: state.allRides,
-        lastAllRidesFetch: state.lastAllRidesFetch,
-        driverRides: state.driverRides,
-        lastDriverRidesFetch: state.lastDriverRidesFetch,
         searchFilters: state.searchFilters,
       }),
     }

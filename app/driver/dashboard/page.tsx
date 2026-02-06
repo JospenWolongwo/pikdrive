@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
@@ -51,6 +51,9 @@ export default function DriverDashboard() {
 
   const itemsPerPage = 10;
 
+  const lastFocusRefetchRef = useRef<number>(0);
+  const FOCUS_REFETCH_THROTTLE_MS = 60 * 1000;
+
   // Custom hooks - using centralized rides store
   const {
     ridesData,
@@ -92,6 +95,19 @@ export default function DriverDashboard() {
 
     if (user) initialLoad();
   }, [user, loadRides, router, triggerPrompt]);
+
+  // Refetch when driver returns to the tab (throttled to avoid unnecessary refetches)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!user) return;
+      const now = Date.now();
+      if (now - lastFocusRefetchRef.current < FOCUS_REFETCH_THROTTLE_MS) return;
+      lastFocusRefetchRef.current = now;
+      loadRides(true);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [user, loadRides]);
 
   // Realtime: subscribe to ride + booking updates so driver sees cancellations and seat changes without refresh
   useEffect(() => {

@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRidesStore, useBookingStore } from "@/stores";
 import { useChatStore } from "@/stores/chatStore";
 import { useToast } from "@/hooks/ui";
 import { mapUnreadCountsByRideId } from "@/lib/utils/unread-counts";
-import { useRouter } from "next/navigation";
+import { subscribeToNewRides } from "@/lib/services/client/rides";
 import type { RideFilters } from "./use-ride-filters";
 import type { UnreadCounts } from "@/lib/utils/unread-counts";
 
@@ -23,11 +23,12 @@ interface UseRidesPageDataReturn {
 }
 
 const ITEMS_PER_PAGE = 10;
+const FOCUS_REFETCH_THROTTLE_MS = 60 * 1000;
 
 export function useRidesPageData(): UseRidesPageDataReturn {
   const { supabase, user } = useSupabase();
-  const router = useRouter();
   const { toast } = useToast();
+  const lastFocusRefetchRef = useRef<number>(0);
   const {
     allRides,
     allRidesLoading,
@@ -37,6 +38,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     lastAllRidesFetch,
     subscribeToRideUpdates,
     unsubscribeFromRideUpdates,
+    refetchFirstPageIfViewingDefault,
   } = useRidesStore();
   const { fetchUserBookings } = useBookingStore();
   const { unreadCounts: unreadCountsArray, conversations, subscribeToRide } =
@@ -98,11 +100,6 @@ export function useRidesPageData(): UseRidesPageDataReturn {
             upcoming: true,
           });
         }
-
-        // Update pagination from store response
-        if (allRidesPagination) {
-          setTotalPages(allRidesPagination.total_pages);
-        }
       } catch (error) {
         console.error("Error loading rides:", error);
         toast({
@@ -115,7 +112,14 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     [currentPage, searchRides, refreshAllRides, allRidesPagination, toast]
   );
 
-  // Load rides on component mount
+  // Sync pagination total pages from store when it updates after fetch
+  useEffect(() => {
+    if (allRidesPagination?.total_pages != null) {
+      setTotalPages(allRidesPagination.total_pages);
+    }
+  }, [allRidesPagination?.total_pages]);
+
+  // Load rides on component mount (no reliance on persisted list; always load or use in-memory cache)
   useEffect(() => {
     const fresh =
       lastAllRidesFetch && Date.now() - lastAllRidesFetch < 5 * 60 * 1000;
@@ -123,7 +127,26 @@ export function useRidesPageData(): UseRidesPageDataReturn {
       loadRides(undefined, 1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+  }, []);
+
+  // Refetch when user returns to the tab (throttled to avoid hammering the API)
+  useEffect(() => {
+    const handleFocus = () => {
+      const now = Date.now();
+      if (now - lastFocusRefetchRef.current < FOCUS_REFETCH_THROTTLE_MS) return;
+      lastFocusRefetchRef.current = now;
+      loadRides(undefined, currentPage);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [loadRides, currentPage]);
+
+  // Subscribe to new ride INSERTs: refetch only when store says we're viewing default list (page 1, no filters)
+  useEffect(() => {
+    if (!supabase) return;
+    const unsubscribe = subscribeToNewRides(supabase, refetchFirstPageIfViewingDefault);
+    return unsubscribe;
+  }, [supabase, refetchFirstPageIfViewingDefault]);
 
   // Subscribe to real-time ride updates for seat availability
   useEffect(() => {

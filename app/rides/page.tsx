@@ -22,8 +22,8 @@ export default function RidesPage() {
   const { user } = useSupabase();
   const { t } = useLocale();
 
-  // Data loading hook
-  const { 
+  // Data loading hook (must be first so loadRides/setCurrentPage exist for useRideFilters)
+  const {
     loading,
     rides,
     pagination,
@@ -55,6 +55,15 @@ export default function RidesPage() {
     }, [setCurrentPage])
   );
 
+  // Determine if filters are active (for empty state messaging)
+  const hasFilters = Boolean(
+    (tempFilters.fromCity && tempFilters.fromCity !== "any") ||
+      (tempFilters.toCity && tempFilters.toCity !== "any") ||
+      tempFilters.minPrice !== 0 ||
+      tempFilters.maxPrice !== 20000 ||
+      tempFilters.minSeats !== 1
+  );
+
   // Actions hook
   const {
     selectedRide,
@@ -69,15 +78,6 @@ export default function RidesPage() {
     useCallback(() => {
       loadRides(undefined, currentPage);
     }, [loadRides, currentPage])
-  );
-
-  // Determine if filters are active
-  const hasFilters = Boolean(
-    (tempFilters.fromCity && tempFilters.fromCity !== "any") ||
-      (tempFilters.toCity && tempFilters.toCity !== "any") ||
-      tempFilters.minPrice !== 0 ||
-      tempFilters.maxPrice !== 20000 ||
-      tempFilters.minSeats !== 1
   );
 
   if (loading) {
