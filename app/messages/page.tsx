@@ -326,19 +326,22 @@ export default function MessagesPage() {
                           <p className="text-sm text-muted-foreground truncate max-w-md">
                             {conversation.lastMessage}
                           </p>
-                          <div className="flex items-center mt-1 text-xs text-muted-foreground space-x-2">
-                            <div className="flex items-center">
-                              <Clock className="mr-1 h-3 w-3" />
-                              {formatDistanceToNow(
-                                new Date(conversation.lastMessageTime),
-                                { addSuffix: true, locale: fr }
-                              )}
+                          <div className="flex items-center flex-nowrap gap-2 mt-1 text-xs text-muted-foreground min-w-0">
+                            <div className="flex items-center shrink-0">
+                              <Clock className="mr-1 h-3 w-3 shrink-0" />
+                              <span className="whitespace-nowrap">
+                                {formatDistanceToNow(
+                                  new Date(conversation.lastMessageTime),
+                                  { addSuffix: true, locale: fr }
+                                )}
+                              </span>
                             </div>
-                            <span>•</span>
-                            <div className="flex items-center">
-                              <ArrowRight className="mr-1 h-3 w-3" />
-                              {conversation.ride.from_city} →{" "}
-                              {conversation.ride.to_city}
+                            <span className="shrink-0">•</span>
+                            <div className="flex items-center min-w-0 truncate">
+                              <ArrowRight className="mr-1 h-3 w-3 shrink-0" />
+                              <span className="truncate">
+                                {conversation.ride.from_city} → {conversation.ride.to_city}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -426,19 +429,22 @@ export default function MessagesPage() {
                             <p className="text-sm text-muted-foreground truncate max-w-md">
                               {conversation.lastMessage}
                             </p>
-                            <div className="flex items-center mt-1 text-xs text-muted-foreground space-x-2">
-                              <div className="flex items-center">
-                                <Clock className="mr-1 h-3 w-3" />
-                                {formatDistanceToNow(
-                                  new Date(conversation.lastMessageTime),
-                                  { addSuffix: true, locale: fr }
-                                )}
+                            <div className="flex items-center flex-nowrap gap-2 mt-1 text-xs text-muted-foreground min-w-0">
+                              <div className="flex items-center shrink-0">
+                                <Clock className="mr-1 h-3 w-3 shrink-0" />
+                                <span className="whitespace-nowrap">
+                                  {formatDistanceToNow(
+                                    new Date(conversation.lastMessageTime),
+                                    { addSuffix: true, locale: fr }
+                                  )}
+                                </span>
                               </div>
-                              <span>•</span>
-                              <div className="flex items-center">
-                                <ArrowRight className="mr-1 h-3 w-3" />
-                                {conversation.ride.from_city} →{" "}
-                                {conversation.ride.to_city}
+                              <span className="shrink-0">•</span>
+                              <div className="flex items-center min-w-0 truncate">
+                                <ArrowRight className="mr-1 h-3 w-3 shrink-0" />
+                                <span className="truncate">
+                                  {conversation.ride.from_city} → {conversation.ride.to_city}
+                                </span>
                               </div>
                             </div>
                           </div>

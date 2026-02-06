@@ -27,7 +27,7 @@ export function useRideActions(
   const { user } = useSupabase();
   const router = useRouter();
   const { toast } = useToast();
-  const { conversations } = useChatStore();
+  const { conversations, fetchConversations } = useChatStore();
   const [selectedRide, setSelectedRide] = useState<RideWithDriver | null>(
     null
   );
@@ -53,7 +53,7 @@ export function useRideActions(
   );
 
   const handleOpenChat = useCallback(
-    (ride: RideWithDriver) => {
+    async (ride: RideWithDriver) => {
       if (!user) {
         toast({
           title: "Connexion requise",
@@ -65,20 +65,25 @@ export function useRideActions(
         return;
       }
 
-      // Find the conversation for this ride and driver
-      const conversation = conversations.find(
+      let conversation = conversations.find(
         (conv) => conv.rideId === ride.id && conv.otherUserId === ride.driver_id
       );
+
+      if (!conversation) {
+        await fetchConversations(user.id);
+        const freshConversations = useChatStore.getState().conversations;
+        conversation = freshConversations.find(
+          (conv) => conv.rideId === ride.id && conv.otherUserId === ride.driver_id
+        );
+      }
 
       if (conversation) {
         setSelectedChatRide({ ride, conversationId: conversation.id });
       } else {
-        // If no conversation exists, we'll need to create one
-        // For now, we'll use the rideId as a fallback and let the ChatDialog handle creation
         setSelectedChatRide({ ride, conversationId: ride.id });
       }
     },
-    [user, router, toast, conversations]
+    [user, router, toast, conversations, fetchConversations]
   );
 
   const handleBookingComplete = useCallback(() => {

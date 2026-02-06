@@ -63,6 +63,8 @@ export function ChatDialog({
     conversations,
     fetchMessages,
     sendMessage,
+    addOptimisticMessage,
+    removeOptimisticMessage,
     markAsRead,
     subscribeToRide,
     unsubscribeFromRide,
@@ -172,26 +174,33 @@ export function ChatDialog({
     if (!newMessage.trim() || !user) return;
 
     const messageContent = newMessage.trim();
-    setNewMessage(""); // Clear input immediately for better UX
+    setNewMessage("");
+
+    if (!isNewConversation) {
+      addOptimisticMessage(actualConversationId, {
+        content: messageContent,
+        sender_id: user.id,
+      });
+    }
+    scrollToBottom();
 
     try {
-      // Send message directly - the backend will handle conversation lookup/creation
       const newMessageResponse = await sendMessage({
         ride_id: rideId,
         content: messageContent,
       });
 
-      // Update actualConversationId if a new conversation was created
       if (newMessageResponse?.conversation_id && newMessageResponse.conversation_id !== actualConversationId) {
         setActualConversationId(newMessageResponse.conversation_id);
       }
 
-      // Trigger notification prompt after sending message
       triggerPrompt();
-
       scrollToBottom();
     } catch (error) {
-      setNewMessage(messageContent); // Restore message if failed
+      if (!isNewConversation) {
+        removeOptimisticMessage(actualConversationId);
+      }
+      setNewMessage(messageContent);
       toast({
         variant: "destructive",
         title: t("pages.chat.errorSending"),

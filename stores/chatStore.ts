@@ -58,6 +58,8 @@ interface ChatState {
   // Actions for messages
   fetchMessages: (conversationId: string) => Promise<void>;
   sendMessage: (messageData: CreateMessageRequest) => Promise<Message>;
+  addOptimisticMessage: (conversationId: string, payload: { content: string; sender_id: string }) => void;
+  removeOptimisticMessage: (conversationId: string) => void;
   setMessagesLoading: (conversationId: string, loading: boolean) => void;
   setMessagesError: (conversationId: string, error: string | null) => void;
   clearMessages: (conversationId: string) => void;
@@ -218,6 +220,42 @@ export const useChatStore = create<ChatState>()(
         }
       },
 
+      addOptimisticMessage: (conversationId: string, payload: { content: string; sender_id: string }) => {
+        const tempId = `temp-${Date.now()}`;
+        const now = new Date().toISOString();
+        const optimistic: Message = {
+          id: tempId,
+          conversation_id: conversationId,
+          sender_id: payload.sender_id,
+          content: payload.content,
+          created_at: now,
+          updated_at: now,
+        };
+        set((state) => {
+          const existing = state.messages[conversationId] || [];
+          return {
+            messages: {
+              ...state.messages,
+              [conversationId]: [...existing, optimistic],
+            },
+          };
+        });
+      },
+
+      removeOptimisticMessage: (conversationId: string) => {
+        set((state) => {
+          const existing = state.messages[conversationId] || [];
+          const withoutOptimistic = existing.filter((m) => !m.id.startsWith('temp-'));
+          if (withoutOptimistic.length === existing.length) return state;
+          return {
+            messages: {
+              ...state.messages,
+              [conversationId]: withoutOptimistic,
+            },
+          };
+        });
+      },
+
       sendMessage: async (messageData: CreateMessageRequest) => {
         try {
           const response = await chatApiClient.sendMessage(messageData);
@@ -228,13 +266,12 @@ export const useChatStore = create<ChatState>()(
           
           const newMessage = response.data;
           
-          // Get conversationId from the response
           const conversationId = newMessage.conversation_id;
           
-          // Update local state
           set((state) => {
             const existingMessages = state.messages[conversationId] || [];
-            const updatedMessages = [...existingMessages, newMessage];
+            const withoutOptimistic = existingMessages.filter((m) => !m.id.startsWith('temp-'));
+            const updatedMessages = [...withoutOptimistic, newMessage];
             
             // Update conversation's last_message and move to top
             // Match by conversation_id for exact conversation, not rideId
