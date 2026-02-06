@@ -298,9 +298,9 @@ export default function MessagesPage() {
                     }`}
                     onClick={() => openChat(conversation)}
                   >
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="h-12 w-12">
+                    <CardContent className="p-4 flex items-center justify-between gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+                        <Avatar className="h-12 w-12 shrink-0">
                           <AvatarImage
                             src={getAvatarUrl(supabase, conversation.otherUserAvatar)}
                           />
@@ -309,27 +309,27 @@ export default function MessagesPage() {
                               "?"}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <div className="flex items-center">
-                            <h3 className="font-medium text-lg">
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h3 className="font-medium text-lg truncate">
                               {conversation.otherUserName}
                             </h3>
                             {conversation.unreadCount > 0 && (
                               <Badge
                                 variant="destructive"
-                                className="ml-2 px-2"
+                                className="shrink-0 px-2"
                               >
                                 {conversation.unreadCount}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground truncate max-w-md">
+                          <p className="text-sm text-muted-foreground truncate">
                             {conversation.lastMessage}
                           </p>
                           <div className="flex items-center flex-nowrap gap-2 mt-1 text-xs text-muted-foreground min-w-0">
-                            <div className="flex items-center shrink-0">
+                            <div className="flex items-center min-w-0 shrink overflow-hidden">
                               <Clock className="mr-1 h-3 w-3 shrink-0" />
-                              <span className="whitespace-nowrap">
+                              <span className="truncate">
                                 {formatDistanceToNow(
                                   new Date(conversation.lastMessageTime),
                                   { addSuffix: true, locale: fr }
@@ -337,7 +337,7 @@ export default function MessagesPage() {
                               </span>
                             </div>
                             <span className="shrink-0">•</span>
-                            <div className="flex items-center min-w-0 truncate">
+                            <div className="flex items-center min-w-0 flex-1 truncate">
                               <ArrowRight className="mr-1 h-3 w-3 shrink-0" />
                               <span className="truncate">
                                 {conversation.ride.from_city} → {conversation.ride.to_city}
@@ -346,7 +346,7 @@ export default function MessagesPage() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="ml-auto">
+                      <Button variant="ghost" size="sm" className="shrink-0">
                         {t("pages.messages.open")}
                       </Button>
                     </CardContent>
@@ -403,9 +403,9 @@ export default function MessagesPage() {
                       className="cursor-pointer transition-all hover:shadow-md bg-primary/5 border-primary/20 dark:bg-primary/10 dark:border-primary/30"
                       onClick={() => openChat(conversation)}
                     >
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="h-12 w-12">
+                      <CardContent className="p-4 flex items-center justify-between gap-3 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+                          <Avatar className="h-12 w-12 shrink-0">
                             <AvatarImage
                               src={getAvatarUrl(supabase, conversation.otherUserAvatar)}
                             />
@@ -414,25 +414,25 @@ export default function MessagesPage() {
                                 "?"}
                             </AvatarFallback>
                           </Avatar>
-                          <div>
-                            <div className="flex items-center">
-                              <h3 className="font-medium text-lg">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h3 className="font-medium text-lg truncate">
                                 {conversation.otherUserName}
                               </h3>
                               <Badge
                                 variant="destructive"
-                                className="ml-2 px-2"
+                                className="shrink-0 px-2"
                               >
                                 {conversation.unreadCount}
                               </Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground truncate max-w-md">
+                            <p className="text-sm text-muted-foreground truncate">
                               {conversation.lastMessage}
                             </p>
                             <div className="flex items-center flex-nowrap gap-2 mt-1 text-xs text-muted-foreground min-w-0">
-                              <div className="flex items-center shrink-0">
+                              <div className="flex items-center min-w-0 shrink overflow-hidden">
                                 <Clock className="mr-1 h-3 w-3 shrink-0" />
-                                <span className="whitespace-nowrap">
+                                <span className="truncate">
                                   {formatDistanceToNow(
                                     new Date(conversation.lastMessageTime),
                                     { addSuffix: true, locale: fr }
@@ -440,7 +440,7 @@ export default function MessagesPage() {
                                 </span>
                               </div>
                               <span className="shrink-0">•</span>
-                              <div className="flex items-center min-w-0 truncate">
+                              <div className="flex items-center min-w-0 flex-1 truncate">
                                 <ArrowRight className="mr-1 h-3 w-3 shrink-0" />
                                 <span className="truncate">
                                   {conversation.ride.from_city} → {conversation.ride.to_city}
@@ -449,7 +449,7 @@ export default function MessagesPage() {
                             </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" className="ml-auto">
+                        <Button variant="ghost" size="sm" className="shrink-0">
                           {t("pages.messages.open")}
                         </Button>
                       </CardContent>

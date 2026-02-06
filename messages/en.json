@@ -1414,6 +1414,8 @@
       "send": "Send",
       "errorSending": "Error sending message",
       "errorSendingDescription": "Please try again later.",
+      "sensitiveContactNotAllowed": "Contact info not allowed",
+      "sensitiveContactNotAllowedDescription": "Please do not share phone numbers or email addresses in chat. Use the app to communicate safely.",
       "failedToLoad": "Failed to load messages",
       "failedToSend": "Failed to send message",
       "tryAgain": "Try Again",

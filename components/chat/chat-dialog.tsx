@@ -21,6 +21,8 @@ import { format } from "date-fns";
 import { Send } from "lucide-react";
 import { getAvatarUrl } from "@/lib/utils/avatar-url";
 import { useLocale } from "@/hooks";
+import { ApiError } from "@/lib/api-client";
+import { SENSITIVE_CONTACT_ERROR_CODE } from "@/lib/utils/message-filter";
 
 interface Message {
   id: string;
@@ -201,10 +203,18 @@ export function ChatDialog({
         removeOptimisticMessage(actualConversationId);
       }
       setNewMessage(messageContent);
+      const isSensitiveContact =
+        error instanceof ApiError &&
+        (error.message === SENSITIVE_CONTACT_ERROR_CODE ||
+          error.data?.error === SENSITIVE_CONTACT_ERROR_CODE);
       toast({
         variant: "destructive",
-        title: t("pages.chat.errorSending"),
-        description: t("pages.chat.errorSendingDescription"),
+        title: isSensitiveContact
+          ? t("pages.chat.sensitiveContactNotAllowed")
+          : t("pages.chat.errorSending"),
+        description: isSensitiveContact
+          ? t("pages.chat.sensitiveContactNotAllowedDescription")
+          : t("pages.chat.errorSendingDescription"),
       });
     }
   };
@@ -228,8 +238,10 @@ export function ChatDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md h-[80vh] flex flex-col p-0">
-        <DialogHeader className="p-4 border-b">
+      <DialogContent
+        className="flex flex-col p-0 overflow-hidden max-w-md w-[calc(100%-2rem)] sm:w-full top-4 left-4 right-4 sm:left-[50%] sm:right-auto sm:top-[50%] translate-y-0 sm:translate-y-[-50%] sm:translate-x-[-50%] h-[calc(100vh-2rem)] sm:h-[80vh]"
+      >
+        <DialogHeader className="shrink-0 p-4 border-b bg-background">
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarImage src={getAvatarUrl(supabase, otherUserAvatar)} />
@@ -237,11 +249,11 @@ export function ChatDialog({
                 {(otherUserName || "Utilisateur").charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <DialogTitle>{otherUserName || "Utilisateur"}</DialogTitle>
+            <DialogTitle className="truncate">{otherUserName || "Utilisateur"}</DialogTitle>
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 min-h-0 p-4">
           <div className="space-y-4 pr-4">
             {isLoading && !isNewConversation ? (
               <div className="flex justify-center py-4">
@@ -297,7 +309,7 @@ export function ChatDialog({
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t mt-auto">
+        <div className="shrink-0 p-4 border-t bg-background">
           <div className="flex gap-2">
             <Textarea
               value={newMessage}
