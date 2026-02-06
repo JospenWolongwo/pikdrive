@@ -239,7 +239,7 @@ export function ChatDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="flex flex-col p-0 overflow-hidden max-w-md w-[calc(100%-2rem)] sm:w-full top-4 left-4 right-4 sm:left-[50%] sm:right-auto sm:top-[50%] translate-x-0 translate-y-0 sm:translate-y-[-50%] sm:translate-x-[-50%] h-[calc(100vh-2rem)] sm:h-[80vh] data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=closed]:slide-out-to-left-1/2"
+        className="flex flex-col p-0 overflow-hidden max-w-md w-[calc(100%-2rem)] sm:w-full top-4 left-4 right-4 sm:left-[50%] sm:right-auto sm:top-[50%] translate-x-0 translate-y-0 sm:translate-y-[-50%] sm:translate-x-[-50%] h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] sm:h-[80vh] data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=closed]:slide-out-to-left-1/2"
       >
         <DialogHeader className="shrink-0 p-4 border-b bg-background">
           <div className="flex items-center gap-3">
