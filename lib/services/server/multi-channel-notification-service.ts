@@ -104,7 +104,7 @@ export class ServerMultiChannelNotificationService {
         icon: 'CheckCircle2',
         verificationCode: data.verificationCode,
         action: 'view_booking',
-        deepLink: `pikdrive.com/bookings/${data.bookingId}`,
+        deepLink: `pikdrive.com/bookings`,
         priority: 'high',
       },
     });
@@ -202,7 +202,7 @@ export class ServerMultiChannelNotificationService {
         departureTime: data.departureTime,
         type: 'driver_booking_paid',
         action: 'view_driver_booking',
-        deepLink: `pikdrive.com/driver/bookings/${data.bookingId}`,
+        deepLink: `pikdrive.com/driver/rides/${data.rideId}`,
         priority: 'high',
       },
     });
@@ -354,7 +354,7 @@ export class ServerMultiChannelNotificationService {
         bookingId: data.bookingId,
         type: 'ride_reminder',
         action: 'view_booking',
-        deepLink: `pikdrive.com/bookings/${data.bookingId}`,
+        deepLink: `pikdrive.com/bookings`,
         priority: 'medium',
       },
     });
@@ -421,7 +421,7 @@ export class ServerMultiChannelNotificationService {
         bookingId: data.bookingId,
         type: 'pickup_point_update',
         action: 'view_booking',
-        deepLink: `pikdrive.com/bookings/${data.bookingId}`,
+        deepLink: `pikdrive.com/bookings`,
         priority: 'high',
       },
     });
@@ -493,7 +493,7 @@ export class ServerMultiChannelNotificationService {
         bookingId: data.bookingId,
         type: 'booking_cancelled',
         action: 'view_booking',
-        deepLink: `pikdrive.com/bookings/${data.bookingId}`,
+        deepLink: `pikdrive.com/bookings`,
         priority: 'medium',
       },
     });

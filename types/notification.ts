@@ -85,26 +85,34 @@ export const NOTIFICATION_SOUNDS: Record<NotificationType, string> = {
 
 // Action routes for notification clicks
 export const NOTIFICATION_ACTIONS: Record<NotificationType, (data: NotificationData) => string> = {
-  booking_confirmed: (data) => `/bookings/${data.bookingId}`,
-  booking_cancelled: (data) => `/bookings/${data.bookingId}`,
-  booking_updated: (data) => `/bookings/${data.bookingId}`,
-  payment_pending: (data) => `/payments/${data.paymentId}`,
-  payment_processing: (data) => `/payments/${data.paymentId}`,
-  payment_success: (data) => `/receipts/${data.paymentId}`,
-  payment_failed: (data) => `/payments/retry/${data.paymentId}`,
-  new_message: (data) => `/messages?ride=${data.rideId}`,
-  driver_new_booking: (data) => `/driver/bookings/${data.bookingId}`,
-  driver_booking_cancelled: (data) => `/driver/bookings`,
-  booking_confirmation_sms: (data) => `/bookings/${data.bookingId}`,
-  payment_failure_sms: (data) => `/payments/retry/${data.paymentId}`,
-  cancellation_confirmation_sms: (data) => `/bookings/${data.bookingId}`,
-  driver_arriving: (data) => `/bookings/${data.bookingId}`,
-  driver_arrived: (data) => `/bookings/${data.bookingId}`,
-  ride_started: (data) => `/bookings/${data.bookingId}`,
-  ride_completed: (data) => `/bookings/${data.bookingId}`,
-  ride_cancelled: (data) => `/bookings/${data.bookingId}`,
-  ride_reminder: (data) => `/bookings/${data.bookingId}`,
-  pickup_point_update: (data) => `/bookings/${data.bookingId}`,
+  booking_confirmed: () => `/bookings`,
+  booking_cancelled: () => `/bookings`,
+  booking_updated: () => `/bookings`,
+  payment_pending: (data) => data.paymentId ? `/payments/${data.paymentId}` : `/payments`,
+  payment_processing: (data) => data.paymentId ? `/payments/${data.paymentId}` : `/payments`,
+  payment_success: (data) => data.paymentId ? `/receipts/${data.paymentId}` : `/bookings`,
+  payment_failed: (data) => data.paymentId ? `/payments/retry/${data.paymentId}` : `/payments`,
+  new_message: (data) => {
+    if (data.rideId && data.senderId) {
+      return `/messages?ride=${data.rideId}&user=${data.senderId}`;
+    }
+    if (data.rideId) {
+      return `/messages?ride=${data.rideId}`;
+    }
+    return `/messages`;
+  },
+  driver_new_booking: (data) => data.rideId ? `/driver/rides/${data.rideId}` : `/driver/dashboard`,
+  driver_booking_cancelled: (data) => data.rideId ? `/driver/rides/${data.rideId}` : `/driver/dashboard`,
+  booking_confirmation_sms: () => `/bookings`,
+  payment_failure_sms: (data) => data.paymentId ? `/payments/retry/${data.paymentId}` : `/payments`,
+  cancellation_confirmation_sms: () => `/bookings`,
+  driver_arriving: () => `/bookings`,
+  driver_arrived: () => `/bookings`,
+  ride_started: () => `/bookings`,
+  ride_completed: () => `/bookings`,
+  ride_cancelled: () => `/bookings`,
+  ride_reminder: () => `/bookings`,
+  pickup_point_update: () => `/bookings`,
   announcement: () => '/announcements',
 };
 
@@ -112,6 +120,7 @@ export const NOTIFICATION_ACTIONS: Record<NotificationType, (data: NotificationD
 export const NOTIFICATION_TYPE_ALIASES: Record<string, NotificationType> = {
   payment_completed: 'payment_success',
   payment_completed_driver: 'driver_new_booking',
+  driver_booking_paid: 'driver_new_booking',
 };
 
 // OneSignal Service Types
