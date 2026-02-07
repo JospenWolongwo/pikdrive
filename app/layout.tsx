@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { cookies } from "next/headers";
 import "./globals.css";
 import { BRAND } from "@/lib/theme-colors";
 import { Providers } from "@/app/providers";
@@ -11,7 +10,7 @@ import { RouteOptimizer } from "@/components/performance/route-optimizer";
 import PWAPrompts from "@/components/pwa/PWAPrompts";
 import { Analytics } from "@vercel/analytics/react";
 import { OneSignalInitializer } from "@/components/notifications/OneSignalInitializer";
-import { getLocaleFromCookie } from "@/i18n/config";
+import { defaultLocale } from "@/i18n/config";
 import enMessages from "@/messages/en.json";
 import frMessages from "@/messages/fr.json";
 
@@ -30,10 +29,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  const cookieStore = await cookies();
-  const localeCookie = cookieStore.get("locale");
-  const locale = getLocaleFromCookie(localeCookie?.value);
+export function generateMetadata(): Metadata {
+  const locale = defaultLocale;
   const messages = locale === "en" ? enMessages : frMessages;
 
   return {
@@ -75,14 +72,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const localeCookie = cookieStore.get("locale");
-  const locale = getLocaleFromCookie(localeCookie?.value);
+  const locale = defaultLocale;
   const messages = locale === "en" ? enMessages : frMessages;
 
   return (
