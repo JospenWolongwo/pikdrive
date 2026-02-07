@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/ui";
 import { BookingCard } from "./booking-card";
 import { useBookingStore } from "@/stores";
 import { useLocale } from "@/hooks";
-import { Search, X, RefreshCw } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 interface Driver {
   full_name: string;
@@ -150,15 +150,11 @@ export function BookingsList({ page }: { page: number }) {
   }, [filteredBookings, page, itemsPerPage]);
 
   const loadBookings = useCallback(
-    async (forceRefresh = false) => {
+    async () => {
       if (!user) return;
       
       try {
-        if (forceRefresh) {
-          await refreshUserBookings(user.id);
-        } else {
-          await fetchUserBookings(user.id);
-        }
+        await fetchUserBookings(user.id);
         
         setTotalBookings(userBookings.length);
       } catch (err) {
@@ -170,7 +166,7 @@ export function BookingsList({ page }: { page: number }) {
         });
       }
     },
-    [user, fetchUserBookings, refreshUserBookings, userBookings.length, toast]
+    [user, fetchUserBookings, userBookings.length, toast]
   );
 
   useEffect(() => {
@@ -241,20 +237,6 @@ export function BookingsList({ page }: { page: number }) {
             </Button>
           </Badge>
         )}
-      </div>
-
-      {/* Refresh button */}
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => loadBookings(true)}
-          disabled={userBookingsLoading}
-          className="flex items-center gap-1"
-        >
-          <RefreshCw className={`h-4 w-4 ${userBookingsLoading ? "animate-spin" : ""}`} />
-          {t("pages.bookings.refresh")}
-        </Button>
       </div>
 
       {!filteredBookings.length ? (

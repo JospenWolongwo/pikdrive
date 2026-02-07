@@ -13,6 +13,7 @@ import {
   AvatarFallback,
   AvatarImage,
   ScrollArea,
+  Skeleton,
 } from "@/components/ui";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
@@ -81,6 +82,8 @@ export function ChatDialog({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fetchedConversationsRef = useRef<Set<string>>(new Set());
+  const isAtBottomRef = useRef(true);
+  const lastMessageCountRef = useRef(0);
   
   // Track the actual conversationId (may differ from prop if conversation was just created)
   const [actualConversationId, setActualConversationId] = useState(conversationId);
@@ -106,7 +109,7 @@ export function ChatDialog({
     ) as HTMLDivElement | null;
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth", force = false) => {
-    if (!force && !isAtBottom) return;
+    if (!force && !isAtBottomRef.current) return;
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
@@ -146,8 +149,12 @@ export function ChatDialog({
   }, [isOpen, user, actualConversationId, isNewConversation, messages, fetchMessages, subscribeToRide, unsubscribeFromRide, markAsRead, rideId]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [conversationMessages]);
+    const hasNewMessages = conversationMessages.length > lastMessageCountRef.current;
+    if (hasNewMessages) {
+      scrollToBottom();
+    }
+    lastMessageCountRef.current = conversationMessages.length;
+  }, [conversationMessages.length]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -158,7 +165,9 @@ export function ChatDialog({
       const threshold = 48;
       const distanceFromBottom =
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-      setIsAtBottom(distanceFromBottom <= threshold);
+      const atBottom = distanceFromBottom <= threshold;
+      isAtBottomRef.current = atBottom;
+      setIsAtBottom(atBottom);
     };
 
     handleScroll();
@@ -172,6 +181,7 @@ export function ChatDialog({
   useEffect(() => {
     if (!isOpen) return;
     scrollToBottom("auto", true);
+    lastMessageCountRef.current = conversationMessages.length;
   }, [isOpen, actualConversationId]);
 
   useEffect(() => {
@@ -321,8 +331,17 @@ export function ChatDialog({
         <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 p-4">
           <div className="space-y-4 pr-4">
             {isLoading && !isNewConversation ? (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-4 w-full max-w-[220px]" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : shouldShowError ? (
               <div className="text-center py-4 text-red-500">

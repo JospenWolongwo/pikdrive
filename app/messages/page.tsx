@@ -2,17 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { debounce } from "lodash";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useChatStore } from "@/stores/chatStore";
 import type { UIConversation } from "@/types";
 import { getAvatarUrl } from "@/lib/utils/avatar-url";
-import { Button, Input, Card, CardContent, CardHeader, CardTitle, Badge, Avatar, AvatarFallback, AvatarImage, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
+import { Button, Input, Card, CardContent, Badge, Avatar, AvatarFallback, AvatarImage, Tabs, TabsContent, TabsList, TabsTrigger, Skeleton } from "@/components/ui";
 import {
   Search,
   MessageCircle,
-  Settings,
-  RefreshCw,
   Clock,
   ArrowRight,
 } from "lucide-react";
@@ -20,7 +17,7 @@ import { ChatDialog } from "@/components/chat";
 import { useNotificationPromptTrigger } from "@/hooks";
 
 import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import { useUserRides, useToast, useServiceWorker, useLocale } from "@/hooks";
 
 // Use UIConversation type from types/chat.ts
@@ -31,7 +28,6 @@ export default function MessagesPage() {
   const { t } = useLocale();
   const {
     conversations,
-    conversationsLoading,
     conversationsError,
     unreadCounts,
     fetchConversations,
@@ -44,6 +40,7 @@ export default function MessagesPage() {
   const { userRides, userRidesLoading, userRidesError, loadUserRides } = useUserRides();
   const [selectedChat, setSelectedChat] = useState<UIConversation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [conversationsReady, setConversationsReady] = useState(false);
   
   // Track if conversations have been loaded to prevent unnecessary refetches
   const conversationsLoadedRef = useRef(false);
@@ -60,31 +57,6 @@ export default function MessagesPage() {
   const { triggerPrompt } = useNotificationPromptTrigger();
 
   // Note: Notifications are handled by OneSignal via server-side API
-
-  // Manual refresh function for the refresh button
-  const handleManualRefresh = useCallback(async () => {
-    if (!user) return;
-    
-    try {
-      // Reset the loaded flag to force fresh fetch
-      conversationsLoadedRef.current = false;
-      
-      // Load user rides using Zustand store (non-blocking)
-      loadUserRides(user.id).catch((error) => {
-        // Silently fail - non-blocking operation
-      });
-      
-      // Fetch conversations using chatStore (this is the important part)
-      await fetchConversations(user.id);
-      conversationsLoadedRef.current = true;
-    } catch (error) {
-      toast({
-        title: t("pages.messages.errorLoading"),
-        description: t("pages.messages.errorDescription"),
-        variant: "destructive",
-      });
-    }
-  }, [user, loadUserRides, fetchConversations, toast]);
 
   // Note: Unread counts are now handled by the chatStore automatically
 
@@ -156,6 +128,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!user) {
       conversationsLoadedRef.current = false; // Reset when user logs out
+      setConversationsReady(false);
       return;
     }
     
@@ -181,6 +154,8 @@ export default function MessagesPage() {
             "Impossible de charger vos conversations. Veuillez réessayer.",
           variant: "destructive",
         });
+      } finally {
+        setConversationsReady(true);
       }
     };
 
@@ -237,23 +212,36 @@ export default function MessagesPage() {
     setSearchQuery(e.target.value);
   };
 
+  const showConversationsSkeleton = !conversationsReady;
+  const showConversationsError = conversationsReady && !!conversationsError;
+  const dateFnsLocale = locale === "fr" ? fr : enUS;
+
+  const conversationSkeletons = (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{t("common.loading")}...</p>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Card key={index}>
+          <CardContent className="p-4 flex items-center justify-between gap-3 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="min-w-0 flex-1 overflow-hidden space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-64 max-w-full" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            </div>
+            <Skeleton className="h-8 w-16" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
   return (
     <div className="container mx-auto py-6 max-w-5xl">
       <div className="flex flex-col space-y-8">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold">{t("pages.messages.title")}</h1>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManualRefresh}
-              className="flex items-center gap-1 sm:gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("pages.messages.refresh")}</span>
-            </Button>
-          </div>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -282,10 +270,20 @@ export default function MessagesPage() {
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
-            {conversationsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
+            {showConversationsSkeleton ? (
+              conversationSkeletons
+            ) : showConversationsError ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <MessageCircle className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">
+                    {t("pages.messages.errorLoading")}
+                  </h3>
+                  <p className="text-muted-foreground text-center mt-2">
+                    {t("pages.messages.errorDescription")}
+                  </p>
+                </CardContent>
+              </Card>
             ) : filteredConversations.length > 0 ? (
               <div className="space-y-4">
                 {filteredConversations.map((conversation) => (
@@ -332,7 +330,7 @@ export default function MessagesPage() {
                               <span className="truncate">
                                 {formatDistanceToNow(
                                   new Date(conversation.lastMessageTime),
-                                  { addSuffix: true, locale: fr }
+                                  { addSuffix: true, locale: dateFnsLocale }
                                 )}
                               </span>
                             </div>
@@ -388,10 +386,20 @@ export default function MessagesPage() {
           </TabsContent>
 
           <TabsContent value="unread" className="space-y-4">
-            {conversationsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
+            {showConversationsSkeleton ? (
+              conversationSkeletons
+            ) : showConversationsError ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <MessageCircle className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">
+                    {t("pages.messages.errorLoading")}
+                  </h3>
+                  <p className="text-muted-foreground text-center mt-2">
+                    {t("pages.messages.errorDescription")}
+                  </p>
+                </CardContent>
+              </Card>
             ) : filteredConversations.filter((c) => c.unreadCount > 0).length >
               0 ? (
               <div className="space-y-4">
@@ -433,10 +441,10 @@ export default function MessagesPage() {
                               <div className="flex items-center min-w-0 shrink overflow-hidden">
                                 <Clock className="mr-1 h-3 w-3 shrink-0" />
                                 <span className="truncate">
-                                  {formatDistanceToNow(
-                                    new Date(conversation.lastMessageTime),
-                                    { addSuffix: true, locale: fr }
-                                  )}
+                                {formatDistanceToNow(
+                                  new Date(conversation.lastMessageTime),
+                                  { addSuffix: true, locale: dateFnsLocale }
+                                )}
                                 </span>
                               </div>
                               <span className="shrink-0">•</span>
