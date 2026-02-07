@@ -82,6 +82,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If a partial refund completed, restore booking payment_status to completed
+    if (mappedStatus === 'completed' && refund.refund_type === 'partial' && refund.booking_id) {
+      const { data: booking, error: bookingError } = await supabase
+        .from('bookings')
+        .select('id, status, payment_status')
+        .eq('id', refund.booking_id)
+        .maybeSingle();
+
+      if (bookingError) {
+        console.error('❌ [REFUND CALLBACK] Error fetching booking for partial refund:', bookingError);
+      } else if (booking && booking.status !== 'cancelled' && booking.payment_status === 'partial') {
+        const { error: bookingUpdateError } = await supabase
+          .from('bookings')
+          .update({ payment_status: 'completed', updated_at: new Date().toISOString() })
+          .eq('id', booking.id);
+
+        if (bookingUpdateError) {
+          console.error('❌ [REFUND CALLBACK] Error updating booking payment_status:', bookingUpdateError);
+        } else {
+          console.log('✅ [REFUND CALLBACK] Booking payment_status restored to completed after partial refund:', {
+            bookingId: booking.id,
+          });
+        }
+      }
+    }
+
     console.log('✅ [REFUND CALLBACK] Refund status updated successfully');
 
     return NextResponse.json({ 
