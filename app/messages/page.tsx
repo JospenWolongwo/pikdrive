@@ -25,7 +25,7 @@ import { useUserRides, useToast, useServiceWorker, useLocale } from "@/hooks";
 export default function MessagesPage() {
   const router = useRouter();
   const { user, supabase } = useSupabase();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const {
     conversations,
     conversationsError,
