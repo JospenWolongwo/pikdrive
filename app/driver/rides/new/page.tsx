@@ -150,7 +150,7 @@ export default function NewRidePage() {
       const validPickupPoints = pickupPoints.filter(
         (p) => typeof p.time_offset_minutes === "number" && p.time_offset_minutes >= 0
       );
-      if (validPickupPoints.length < 2) {
+      if (validPickupPoints.length < 1) {
         toast({
           title: t("pages.driver.newRide.errors.pickupPointsInvalid"),
           description: t("pages.driver.newRide.errors.pickupPointsInvalidDescription"),
