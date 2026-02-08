@@ -107,8 +107,14 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const [pickupPoints, setPickupPoints] = useState<RidePickupPointInput[]>([]);
   const lastPopulatedRideIdRef = useRef<string | null>(null);
 
-  const hasPaidBookings =
-    (ride?.bookings?.some((b) => b.payment_status === "completed") ?? false);
+  const totalBookedSeats =
+    ride?.bookings?.reduce((sum: number, b: any) => sum + (b.seats ?? 0), 0) ?? 0;
+  const paidBookedSeats =
+    ride?.bookings
+      ?.filter((b: any) => b.payment_status === "completed")
+      .reduce((sum: number, b: any) => sum + (b.seats ?? 0), 0) ?? 0;
+  const hasPaidBookings = paidBookedSeats > 0;
+  const minSeatsAllowed = Math.max(1, totalBookedSeats, paidBookedSeats);
   const lockedPickupPointIds =
     hasPaidBookings && ride?.bookings
       ? [...new Set(
@@ -183,15 +189,12 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function loadRide() {
       if (!user) {
-        console.log("⏳ Waiting for user...");
         return;
       }
 
-      console.log("🔄 Loading ride:", params.id);
       try {
         // Use Zustand store to fetch ride
         await fetchRideById(params.id);
-        console.log("✅ fetchRideById completed");
       } catch (error) {
         console.error("❌ Error in loadRide:", error);
         toast({
@@ -259,7 +262,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
 
     try {
       setUpdating(true);
-      console.log("🔄 Updating ride with values:", values);
 
       // Combine date and time into ISO string
       const dateTimeString = `${values.departure_date}T${values.departure_time}:00`;
@@ -289,13 +291,13 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         })),
       };
 
-      // If there are existing bookings, we shouldn't reduce seats below that number
+      // If there are existing bookings, we shouldn't reduce seats below already booked seats
       if (hasBookings) {
-        const bookedSeats = ride.bookings?.length || 0;
-        if (parseInt(values.seats) < bookedSeats) {
+        const minSeats = Math.max(totalBookedSeats, paidBookedSeats);
+        if (parseInt(values.seats) < minSeats) {
           toast({
             title: t("pages.driver.manageRide.alerts.cannotReduceSeats.title"),
-            description: t("pages.driver.manageRide.alerts.cannotReduceSeats.description", { count: bookedSeats.toString() }),
+            description: t("pages.driver.manageRide.alerts.cannotReduceSeats.description", { count: minSeats.toString() }),
             variant: "destructive",
           });
           setUpdating(false);
@@ -304,12 +306,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       }
 
       // Update the ride using Zustand store
-      console.log("🔄 Sending update data to database:", updateData);
-
       const updateResult = await updateRide(ride.id, updateData);
-
-      console.log("🔄 Update response details:");
-      console.log("  - Data:", updateResult);
 
       // The updateRide function from Zustand store returns the updated ride
       if (!updateResult) {
@@ -317,7 +314,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
         throw new Error("Failed to update ride");
       }
 
-      console.log("✅ Ride updated successfully:", updateResult);
 
 
 
@@ -348,7 +344,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
 
     try {
       setDeleting(true);
-      console.log(`🗑️ Deleting ride: ${ride.id}`);
 
       // Check if the ride has active bookings
       if (hasBookings) {
@@ -364,7 +359,6 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       // Delete the ride using Zustand store
       await deleteRideFromStore(ride.id);
 
-      console.log("✅ Ride deleted successfully");
       toast({
         title: t("pages.driver.manageRide.toast.deleted.title"),
         description: t("pages.driver.manageRide.toast.deleted.description"),
@@ -581,16 +575,15 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                               <Input
                                 className="pl-10"
                                 type="number"
-                                min="1"
+                                min={minSeatsAllowed}
                                 max="8"
                                 {...field}
-                                disabled={hasPaidBookings}
                               />
                             </div>
                           </FormControl>
                           {hasBookings && (
                             <FormDescription>
-                              {t("pages.driver.manageRide.form.seatsDescription")}
+                              {t("pages.driver.manageRide.form.seatsDescription")} Minimum: {minSeatsAllowed}
                             </FormDescription>
                           )}
                           <FormMessage />
@@ -652,13 +645,14 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                     )}
                   />
 
-                  <div className="flex justify-between pt-4">
+                  <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
                           type="button"
                           variant="destructive"
                           disabled={updating || hasBookings}
+                          className="w-full sm:w-auto"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           {t("pages.driver.manageRide.form.delete")}
@@ -688,6 +682,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                     <Button
                       type="submit"
                       disabled={updating || !isDirty}
+                      className="w-full sm:w-auto"
                     >
                       <Save className="h-4 w-4 mr-2" />
                       {updating

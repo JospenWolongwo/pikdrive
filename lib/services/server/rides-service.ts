@@ -469,17 +469,30 @@ export class ServerRidesService {
     const totalBookedSeats = hasBookings
       ? (bookings as { seats: number }[]).reduce((sum, b) => sum + (b.seats ?? 0), 0)
       : 0;
+    const paidBookedSeats = hasBookings
+      ? (bookings as { seats: number; payment_status?: string }[])
+          .filter((b) => b.payment_status === 'completed')
+          .reduce((sum, b) => sum + (b.seats ?? 0), 0)
+      : 0;
 
     if (hasPaidBookings) {
       if (
         updateData.from_city !== undefined ||
         updateData.to_city !== undefined ||
         updateData.departure_time !== undefined ||
-        updateData.price !== undefined ||
-        updateData.seats_available !== undefined
+        updateData.price !== undefined
       ) {
         throw new RideApiError(
-          'Only description and pickup points can be updated when a passenger has already paid.',
+          'Only description, seats, and pickup points can be updated when a passenger has already paid.',
+          400
+        );
+      }
+      if (
+        updateData.seats_available !== undefined &&
+        updateData.seats_available < Math.max(totalBookedSeats, paidBookedSeats)
+      ) {
+        throw new RideApiError(
+          `Cannot set seats below ${Math.max(totalBookedSeats, paidBookedSeats)} (already booked/paid).`,
           400
         );
       }
