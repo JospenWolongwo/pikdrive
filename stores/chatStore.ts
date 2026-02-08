@@ -14,6 +14,10 @@ import { supabaseClient } from "@/lib/supabase-client";
 import { getVersionedStorageKey } from "@/lib/storage-version";
 import { subscribeToUserConversationMessages, applyIncomingConversationMessage } from "@/lib/services/client";
 
+const MIN_CONVERSATIONS_SYNC_INTERVAL_MS = 5000;
+let conversationsSyncInFlight = false;
+let lastConversationsSyncAt = 0;
+
 // Helper function to sort conversations by latest message time
 const sortConversationsByLatest = (conversations: UIConversation[]): UIConversation[] => {
   return [...conversations].sort((a, b) => {
@@ -564,6 +568,28 @@ export const useChatStore = create<ChatState>()(
         if (globalChannel) return; // Already subscribed
         
         const channel = subscribeToUserConversationMessages(supabaseClient, userId, (message) => {
+          const hasConversation = get().conversations.some(
+            (conv) => conv.id === message.conversation_id
+          );
+
+          if (!hasConversation) {
+            const now = Date.now();
+            const shouldSync =
+              !conversationsSyncInFlight &&
+              now - lastConversationsSyncAt > MIN_CONVERSATIONS_SYNC_INTERVAL_MS;
+
+            if (shouldSync) {
+              conversationsSyncInFlight = true;
+              lastConversationsSyncAt = now;
+              void get()
+                .fetchConversations(userId)
+                .catch(() => {})
+                .finally(() => {
+                  conversationsSyncInFlight = false;
+                });
+            }
+          }
+
           // Update conversation and add message to messages array
           set((state) => {
             const next = applyIncomingConversationMessage(
