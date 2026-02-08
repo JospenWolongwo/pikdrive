@@ -1,54 +1,51 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
 import { BookingApiError, ServerBookingService } from '@/lib/services/server/bookings';
 
-/**
- * API endpoint to manually refresh/regenerate verification code for a booking
- */
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createApiSupabaseClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const body = await request.json();
-    const { bookingId } = body;
-
+    const bookingId = request.nextUrl.searchParams.get('bookingId');
     if (!bookingId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { success: false, error: 'Missing bookingId' },
         { status: 400 }
       );
     }
 
     const bookingService = new ServerBookingService(supabase);
-    const { verificationCode, codeExpiry } =
-      await bookingService.refreshVerificationCodeForOwner(bookingId, user.id);
+    const { verificationCode, codeVerified, codeExpiry } =
+      await bookingService.getVerificationCodeForUser(bookingId, user.id);
 
     return NextResponse.json({
       success: true,
       verificationCode,
-      expiryTime: codeExpiry,
+      codeVerified,
+      codeExpiry,
     });
   } catch (error) {
     if (error instanceof BookingApiError) {
       return NextResponse.json(
-        { error: error.message },
+        { success: false, error: error.message },
         { status: error.statusCode }
       );
     }
-
-    console.error('Error refreshing verification code:', error);
+    console.error('Verification code fetch error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: error instanceof Error ? error.message : 'Failed to fetch verification code',
       },
       { status: 500 }
     );

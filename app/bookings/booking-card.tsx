@@ -41,6 +41,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useBookingStore } from "@/stores";
 import { ChatDialog } from "@/components/chat";
 import { useLocale, useBookingVerificationSubscription } from "@/hooks";
+import { ApiError, bookingApiClient } from "@/lib/api-client";
 
 import type { BookingWithPayments, RideWithDriver } from "@/types";
 
@@ -111,13 +112,9 @@ export function BookingCard({ booking }: BookingCardProps) {
       setIsCancelling(true);
 
       // Use the DELETE API endpoint which handles atomic cancellation with refunds
-      const response = await fetch(`/api/bookings/${booking.id}`, {
-        method: "DELETE",
-      });
+      const data = await bookingApiClient.cancelBooking(booking.id);
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         const message = data.errorCode === 'CODE_VERIFIED_NO_CANCEL'
           ? t("pages.bookings.card.errors.codeVerifiedNoCancel")
           : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
@@ -152,7 +149,18 @@ export function BookingCard({ booking }: BookingCardProps) {
       }
     } catch (error) {
       console.error("Error cancelling booking:", error);
-      const message = error instanceof Error ? error.message : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
+      const message = (() => {
+        if (error instanceof ApiError) {
+          const code = (error.data as { errorCode?: string } | undefined)?.errorCode;
+          if (code === 'CODE_VERIFIED_NO_CANCEL') {
+            return t("pages.bookings.card.errors.codeVerifiedNoCancel");
+          }
+          return error.getDisplayMessage();
+        }
+        return error instanceof Error
+          ? error.message
+          : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
+      })();
       toast({
         title: t("common.error"),
         description: message,
@@ -181,15 +189,9 @@ export function BookingCard({ booking }: BookingCardProps) {
     try {
       setIsReducingSeats(true);
 
-      const response = await fetch(`/api/bookings/${booking.id}/reduce-seats`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newSeats: seatsToKeep }),
-      });
+      const data = await bookingApiClient.reduceBookingSeats(booking.id, seatsToKeep);
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         const message = data.errorCode === 'CODE_VERIFIED_NO_REDUCE'
           ? t("pages.bookings.card.errors.codeVerifiedNoReduce")
           : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
@@ -217,7 +219,18 @@ export function BookingCard({ booking }: BookingCardProps) {
       }
     } catch (error) {
       console.error("Error reducing seats:", error);
-      const message = error instanceof Error ? error.message : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
+      const message = (() => {
+        if (error instanceof ApiError) {
+          const code = (error.data as { errorCode?: string } | undefined)?.errorCode;
+          if (code === 'CODE_VERIFIED_NO_REDUCE') {
+            return t("pages.bookings.card.errors.codeVerifiedNoReduce");
+          }
+          return error.getDisplayMessage();
+        }
+        return error instanceof Error
+          ? error.message
+          : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
+      })();
       toast({
         title: t("common.error"),
         description: message,

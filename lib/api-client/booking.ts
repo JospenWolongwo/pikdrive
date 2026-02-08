@@ -12,6 +12,44 @@ export interface BookingApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
+  errorCode?: string;
+}
+
+export interface BookingCancelResponse extends BookingApiResponse<void> {
+  refundInitiated?: boolean;
+  refundAmount?: number;
+  refundRecordId?: string | null;
+}
+
+export interface BookingReduceSeatsResponse extends BookingApiResponse<void> {
+  refundInitiated?: boolean;
+  refundAmount?: number;
+  newSeats?: number;
+  seatsRemoved?: number;
+}
+
+export interface BookingVerificationCodeResponse {
+  success: boolean;
+  verificationCode?: string | null;
+  codeVerified?: boolean;
+  codeExpiry?: string | null;
+  error?: string;
+  message?: string;
+}
+
+export interface BookingGenerateCodeResponse {
+  success: boolean;
+  verificationCode?: string | null;
+  error?: string;
+  message?: string;
+}
+
+export interface BookingRefreshCodeResponse {
+  success: boolean;
+  verificationCode?: string | null;
+  expiryTime?: string | null;
+  error?: string;
+  message?: string;
 }
 
 export interface BookingSearchParams {
@@ -71,8 +109,44 @@ export class BookingApiClient {
   /**
    * Cancel booking
    */
-  async cancelBooking(bookingId: string): Promise<BookingApiResponse<void>> {
+  async cancelBooking(bookingId: string): Promise<BookingCancelResponse> {
     return apiClient.delete(`/api/bookings/${bookingId}`);
+  }
+
+  /**
+   * Reduce seats for a paid booking
+   */
+  async reduceBookingSeats(bookingId: string, newSeats: number): Promise<BookingReduceSeatsResponse> {
+    return apiClient.post(`/api/bookings/${bookingId}/reduce-seats`, { newSeats });
+  }
+
+  /**
+   * Get verification code for a booking (read-only)
+   */
+  async getVerificationCode(bookingId: string): Promise<BookingVerificationCodeResponse> {
+    const searchParams = new URLSearchParams({ bookingId });
+    return apiClient.get(`/api/bookings/verification-code?${searchParams}`);
+  }
+
+  /**
+   * Generate a new verification code
+   */
+  async generateVerificationCode(bookingId: string): Promise<BookingGenerateCodeResponse> {
+    return apiClient.post('/api/bookings/generate-code', { bookingId });
+  }
+
+  /**
+   * Backup generate verification code endpoint
+   */
+  async generateVerificationCodeBackup(bookingId: string): Promise<BookingGenerateCodeResponse> {
+    return apiClient.post('/api/bookings/code-generator', { bookingId });
+  }
+
+  /**
+   * Refresh/regenerate verification code (owner only)
+   */
+  async refreshVerificationCode(bookingId: string): Promise<BookingRefreshCodeResponse> {
+    return apiClient.post('/api/bookings/refresh-verification', { bookingId });
   }
 
   /**

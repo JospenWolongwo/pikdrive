@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import DriverDetail from "./driver-detail";
+import { ApiError, adminApiClient } from "@/lib/api-client";
 
 interface DriverApplication {
   id: string;
@@ -264,17 +265,9 @@ export default function AdminDriversPage() {
       console.log(`🔄 Updating driver ${driverId} status to ${status}`);
 
       // Call the API route for driver status update
-      const response = await fetch(`/api/admin/drivers/${driverId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
+      const data = await adminApiClient.updateDriverStatus(driverId, status);
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (data?.success == false) {
         throw new Error(data.error || "Failed to update driver status");
       }
 
@@ -311,7 +304,9 @@ export default function AdminDriversPage() {
       toast({
         title: "Erreur",
         description:
-          error instanceof Error
+          error instanceof ApiError
+            ? error.getDisplayMessage()
+            : error instanceof Error
             ? error.message
             : "Impossible de mettre à jour le statut du conducteur.",
         variant: "destructive",

@@ -16,12 +16,65 @@ export interface BookingSearchParams {
   limit?: number;
 }
 
+/** Thrown by API-oriented methods; route handlers map statusCode to HTTP status */
+export class BookingApiError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number
+  ) {
+    super(message);
+    this.name = 'BookingApiError';
+  }
+}
+
 /**
  * Server-side BookingService for use in API routes
  * Uses direct Supabase client access (no HTTP calls)
  */
 export class ServerBookingService {
   constructor(private supabase: SupabaseClient) {}
+
+  private async getBookingOrThrow<T = any>(
+    bookingId: string,
+    select: string
+  ): Promise<T> {
+    const { data, error } = await this.supabase
+      .from('bookings')
+      .select(select)
+      .eq('id', bookingId)
+      .single();
+
+    if (error || !data) {
+      throw new BookingApiError('Booking not found', 404);
+    }
+
+    return data as T;
+  }
+
+  private async assertOwnerOrDriver(
+    booking: { user_id?: string; ride_id?: string | null },
+    userId: string
+  ): Promise<void> {
+    if (booking.user_id === userId) return;
+
+    if (booking.ride_id) {
+      const { data: ride } = await this.supabase
+        .from('rides')
+        .select('driver_id')
+        .eq('id', booking.ride_id)
+        .single();
+
+      if (ride?.driver_id === userId) return;
+    }
+
+    throw new BookingApiError('Not authorized to access this booking', 403);
+  }
+
+  private assertOwner(booking: { user_id?: string }, userId: string): void {
+    if (booking.user_id !== userId) {
+      throw new BookingApiError('Not authorized to access this booking', 403);
+    }
+  }
 
   /**
    * Validate and calculate pickup point information
@@ -470,6 +523,116 @@ export class ServerBookingService {
       console.error('ServerBookingService.getBookingById error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Get verification code info for a booking (owner or driver only)
+   */
+  async getVerificationCodeForUser(
+    bookingId: string,
+    userId: string
+  ): Promise<{
+    verificationCode: string | null;
+    codeVerified: boolean;
+    codeExpiry: string | null;
+  }> {
+    try {
+      const booking = await this.getBookingOrThrow<{
+        user_id?: string;
+        ride_id?: string | null;
+        verification_code?: string | null;
+        code_expiry?: string | null;
+        code_verified?: boolean | null;
+      }>(
+        bookingId,
+        'user_id, ride_id, verification_code, code_expiry, code_verified'
+      );
+
+      await this.assertOwnerOrDriver(booking, userId);
+
+      const codeVerified = Boolean(booking.code_verified);
+      return {
+        verificationCode: codeVerified ? null : (booking.verification_code ?? null),
+        codeVerified,
+        codeExpiry: booking.code_expiry ?? null,
+      };
+    } catch (error) {
+      if (error instanceof BookingApiError) throw error;
+      console.error('ServerBookingService.getVerificationCodeForUser error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate a verification code for a booking (owner or driver only)
+   */
+  async generateVerificationCodeForUser(
+    bookingId: string,
+    userId: string
+  ): Promise<{ verificationCode: string | null }> {
+    const booking = await this.getBookingOrThrow<{
+      user_id?: string;
+      ride_id?: string | null;
+    }>(bookingId, 'user_id, ride_id');
+
+    await this.assertOwnerOrDriver(booking, userId);
+
+    const { data, error } = await this.supabase.rpc(
+      'generate_booking_verification_code',
+      { booking_id: bookingId }
+    );
+
+    if (error) {
+      throw new BookingApiError('Failed to generate verification code', 500);
+    }
+
+    return { verificationCode: data ?? null };
+  }
+
+  /**
+   * Refresh verification code for a booking (owner only)
+   */
+  async refreshVerificationCodeForOwner(
+    bookingId: string,
+    userId: string
+  ): Promise<{ verificationCode: string | null; codeExpiry: string | null }> {
+    const booking = await this.getBookingOrThrow<{
+      user_id?: string;
+      status?: string | null;
+      payment_status?: string | null;
+    }>(bookingId, 'user_id, status, payment_status');
+
+    this.assertOwner(booking, userId);
+
+    if (booking.status !== 'confirmed' && booking.payment_status !== 'completed') {
+      throw new BookingApiError(
+        'Booking must be confirmed and paid to generate verification code',
+        400
+      );
+    }
+
+    const { error: codeError } = await this.supabase.rpc(
+      'generate_booking_verification_code',
+      { booking_id: bookingId }
+    );
+
+    if (codeError) {
+      throw new BookingApiError('Failed to generate verification code', 500);
+    }
+
+    const { data: codeData, error: fetchError } = await this.supabase.rpc(
+      'get_booking_verification_code',
+      { booking_id: bookingId }
+    );
+
+    if (fetchError || !codeData || codeData.length === 0) {
+      throw new BookingApiError('Generated code could not be verified', 500);
+    }
+
+    return {
+      verificationCode: codeData[0].verification_code ?? null,
+      codeExpiry: codeData[0].code_expiry ?? null,
+    };
   }
 
   /**

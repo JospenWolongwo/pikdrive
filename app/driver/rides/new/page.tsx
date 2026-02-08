@@ -35,9 +35,10 @@ import {
 import { useToast } from "@/hooks/ui";
 import { PickupPointsSelectForm } from "@/components/driver";
 import { useLocale, useCityPickupPoints, useNotificationPromptTrigger } from "@/hooks";
+import { ridesApiClient, ApiError } from "@/lib/api-client";
 import { cn, getCurrentTimeUTC, dateToUTCDate } from "@/lib/utils";
 import { allCameroonCities } from "@/app/data/cities";
-import type { CityPickupPoint, RidePickupPointInput } from "@/types";
+import type { CityPickupPoint, RidePickupPointInput, Ride, RideWithDetails } from "@/types";
 
 const createFormSchema = (t: (key: string) => string) => z.object({
   fromCity: z.string().min(1, t("pages.driver.newRide.validation.fromCityRequired")),
@@ -159,28 +160,22 @@ export default function NewRidePage() {
         return;
       }
 
-      const response = await fetch("/api/rides", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from_city: values.fromCity,
-          to_city: values.toCity,
-          departure_time: departureUTC.toISOString(),
-          price: values.price,
-          seats_available: values.seatsAvailable,
-          car_model: values.carModel,
-          car_color: values.carColor,
-          pickup_points: validPickupPoints.map(({ id, order, time_offset_minutes }) => ({
-            id,
-            order,
-            time_offset_minutes,
-          })),
-        }),
+      const result = await ridesApiClient.createRide({
+        from_city: values.fromCity,
+        to_city: values.toCity,
+        departure_time: departureUTC.toISOString(),
+        price: values.price,
+        seats_available: values.seatsAvailable,
+        car_model: values.carModel,
+        car_color: values.carColor,
+        pickup_points: validPickupPoints.map(({ id, order, time_offset_minutes }) => ({
+          id,
+          order,
+          time_offset_minutes,
+        })),
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         console.error("Error creating ride:", result);
         throw new Error(result.error || "Failed to create ride");
       }
@@ -193,9 +188,13 @@ export default function NewRidePage() {
         seats: result.data?.seats_available
       });
 
+      if (!result.data) {
+        throw new Error("Failed to create ride");
+      }
+
       // ✅ OPTIMISTIC UPDATE: Add ride to store immediately (no API call needed!)
-      const newRide = {
-        ...result.data,
+      const newRide: RideWithDetails = {
+        ...(result.data as Ride),
         bookings: [],
         messages: [],
       };
@@ -218,7 +217,9 @@ export default function NewRidePage() {
       console.error("Error creating ride:", error);
       toast({
         title: t("pages.driver.newRide.errors.error"),
-        description: t("pages.driver.newRide.errors.errorDescription"),
+        description: error instanceof ApiError
+          ? error.getDisplayMessage()
+          : t("pages.driver.newRide.errors.errorDescription"),
         variant: "destructive",
       });
     } finally {

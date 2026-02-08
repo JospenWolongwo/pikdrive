@@ -5,6 +5,7 @@ import { PaymentStatus } from '@/lib/payment/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocale } from '@/hooks';
+import { paymentApiClient } from '@/lib/api-client';
 
 interface PaymentStatusCheckerProps {
   transactionId: string;
@@ -48,28 +49,24 @@ export function PaymentStatusChecker({
       try {
         // Use our server API endpoint as a proxy to avoid CORS issues
         // This follows the best practice of making API calls through our backend
-        const response = await fetch('/api/payments/check-status', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            transactionId, 
-            provider,
-            bookingId // ✅ Pass bookingId for resilient fallback queries
-          }),
-        });
+        const responseData = await paymentApiClient.checkPaymentStatus(
+          transactionId,
+          provider,
+          bookingId
+        );
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || `Server responded with ${response.status}`);
+        if (!responseData.success) {
+          throw new Error(responseData.error || t("payment.status.failedToVerify"));
         }
 
-        const responseData = await response.json();
         
         // Extract status and message from the nested data structure
-        const paymentStatus = responseData.data?.status;
+        const paymentStatus = responseData.data?.status as PaymentStatus | undefined;
         const paymentMessage = responseData.data?.message;
+
+        if (!paymentStatus) {
+          throw new Error(responseData.error || t("payment.status.failedToVerify"));
+        }
         
         // Use functional updates to ensure state consistency
         setStatus((prev: PaymentStatus) => paymentStatus !== prev ? paymentStatus : prev);

@@ -50,6 +50,17 @@ export class ApiClient {
   }
 
   /**
+   * Make an authenticated PATCH request
+   */
+  async patch<T = any>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    });
+  }
+
+  /**
    * Make an authenticated DELETE request
    */
   async delete<T = any>(endpoint: string, options?: RequestOptions): Promise<T> {

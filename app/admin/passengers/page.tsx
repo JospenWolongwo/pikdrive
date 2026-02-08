@@ -27,6 +27,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { useAdminAccess } from "@/hooks/admin";
 import PassengerDetail from "./passenger-detail";
+import { ApiError, adminApiClient } from "@/lib/api-client";
 
 interface PassengerApplication {
   id: string;
@@ -62,10 +63,9 @@ export default function AdminPassengersPage() {
     try {
       setLoading(true);
 
-      const response = await fetch('/api/admin/passengers');
-      const result = await response.json();
+      const result = await adminApiClient.getPassengers<PassengerApplication>();
 
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to load passengers');
       }
 
@@ -74,7 +74,7 @@ export default function AdminPassengersPage() {
       console.error("Error loading passengers:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les passagers.",
+        description: error instanceof ApiError ? error.getDisplayMessage() : "Impossible de charger les passagers.",
         variant: "destructive",
       });
       setPassengers([]);
@@ -263,4 +263,3 @@ export default function AdminPassengersPage() {
     </div>
   );
 }
-

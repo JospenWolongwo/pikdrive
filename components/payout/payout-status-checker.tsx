@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocale } from '@/hooks';
+import { apiClient } from '@/lib/api-client';
 
 type PayoutStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
@@ -79,24 +80,15 @@ export function PayoutStatusChecker({
       }
 
       try {
-        const response = await fetch('/api/payouts/check-status', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            transactionId: transactionId || undefined,
-            payoutId: payoutId || undefined,
-          }),
+        const responseData = await apiClient.post<{
+          success: boolean;
+          data?: { status?: PayoutStatus; message?: string; shouldRetry?: boolean };
+          error?: string;
+        }>('/api/payouts/check-status', {
+          transactionId: transactionId || undefined,
+          payoutId: payoutId || undefined,
         });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || `Server responded with ${response.status}`);
-        }
-
-        const responseData = await response.json();
-        
         if (!responseData.success) {
           throw new Error(responseData.error || 'Failed to check payout status');
         }

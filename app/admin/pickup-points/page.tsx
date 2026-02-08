@@ -29,6 +29,7 @@ import { useLocale } from "@/hooks";
 import { allCameroonCities } from "@/app/data/cities";
 import { Loader2, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import type { CityPickupPoint } from "@/types";
+import { ApiError, adminApiClient } from "@/lib/api-client";
 
 export default function AdminPickupPointsPage() {
   const { isAdmin, loading: adminLoading } = useAdminAccess();
@@ -47,19 +48,15 @@ export default function AdminPickupPointsPage() {
   const loadList = useCallback(async () => {
     try {
       setLoading(true);
-      const url = cityFilter
-        ? `/api/admin/pickup-points?city=${encodeURIComponent(cityFilter)}`
-        : "/api/admin/pickup-points";
-      const res = await fetch(url);
-      const result = await res.json();
-      if (!res.ok || !result.success) {
+      const result = await adminApiClient.getPickupPoints(cityFilter || undefined);
+      if (!result.success) {
         throw new Error(result.error || "Failed to load");
       }
       setList(result.data || []);
     } catch (e) {
       toast({
         title: t("pages.admin.pickupPoints.errors.loadFailed"),
-        description: e instanceof Error ? e.message : "",
+        description: e instanceof ApiError ? e.getDisplayMessage() : (e instanceof Error ? e.message : ""),
         variant: "destructive",
       });
       setList([]);
@@ -109,31 +106,21 @@ export default function AdminPickupPointsPage() {
     setSaving(true);
     try {
       if (editingId) {
-        const res = await fetch(`/api/admin/pickup-points/${editingId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            display_order: formDisplayOrder,
-          }),
+        const result = await adminApiClient.updatePickupPoint(editingId, {
+          name,
+          display_order: formDisplayOrder,
         });
-        const result = await res.json();
-        if (!res.ok || !result.success) {
+        if (!result.success) {
           throw new Error(result.error || "Update failed");
         }
         toast({ title: t("pages.admin.pickupPoints.toast.updated") });
       } else {
-        const res = await fetch("/api/admin/pickup-points", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            city: formCity,
-            name,
-            display_order: formDisplayOrder,
-          }),
+        const result = await adminApiClient.createPickupPoint({
+          city: formCity,
+          name,
+          display_order: formDisplayOrder,
         });
-        const result = await res.json();
-        if (!res.ok || !result.success) {
+        if (!result.success) {
           throw new Error(result.error || "Create failed");
         }
         toast({ title: t("pages.admin.pickupPoints.toast.created") });
@@ -143,7 +130,7 @@ export default function AdminPickupPointsPage() {
     } catch (e) {
       toast({
         title: t("pages.admin.pickupPoints.errors.saveFailed"),
-        description: e instanceof Error ? e.message : "",
+        description: e instanceof ApiError ? e.getDisplayMessage() : (e instanceof Error ? e.message : ""),
         variant: "destructive",
       });
     } finally {
@@ -154,11 +141,8 @@ export default function AdminPickupPointsPage() {
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/admin/pickup-points/${id}`, {
-        method: "DELETE",
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
+      const result = await adminApiClient.deletePickupPoint(id);
+      if (!result.success) {
         throw new Error(result.error || "Delete failed");
       }
       toast({ title: t("pages.admin.pickupPoints.toast.deleted") });
@@ -166,7 +150,7 @@ export default function AdminPickupPointsPage() {
     } catch (e) {
       toast({
         title: t("pages.admin.pickupPoints.errors.deleteFailed"),
-        description: e instanceof Error ? e.message : "",
+        description: e instanceof ApiError ? e.getDisplayMessage() : (e instanceof Error ? e.message : ""),
         variant: "destructive",
       });
     } finally {

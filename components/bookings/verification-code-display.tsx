@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { RefreshCcw, Copy, CheckCircle, Clock } from 'lucide-react'
 import { useLocale } from '@/hooks'
+import { bookingApiClient } from '@/lib/api-client'
 
 interface VerificationCodeDisplayProps {
   bookingId: string
@@ -46,61 +47,57 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
       console.log(`🔄 Fetching verification code for booking: ${bookingId}`);
       
       // Use a more memory-efficient approach with sequential operations
-      let verificationCode = null;
+      let verificationCode: string | null = null;
+      let isVerified = false;
       
       // Only try to generate a new code if explicitly requested
       if (forceRefresh) {
         try {
-          // Try main API endpoint
-          const response = await fetch('/api/bookings/generate-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId }),
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            verificationCode = data.verificationCode;
-          }
+          // Try refresh endpoint (stricter validation)
+          const data = await bookingApiClient.refreshVerificationCode(bookingId);
+          verificationCode = data?.verificationCode ?? null;
         } catch (error) {
           console.error('Error generating code:', error);
         }
       } else {
         // First try to get existing code (most efficient)
         try {
-          const { data, error } = await supabase
-            .from('bookings')
-            .select('verification_code, code_expiry, code_verified')
-            .eq('id', bookingId)
-            .single();
-            
+          const response = await bookingApiClient.getVerificationCode(bookingId);
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to fetch verification code');
+          }
+
+          isVerified = Boolean(response.codeVerified);
+
           // If code is verified, don't show the code anymore
-          if (data?.code_verified) {
-            verificationCode = null;
-          } else if (data?.verification_code) {
-            verificationCode = data.verification_code;
+          if (!isVerified && response.verificationCode) {
+            verificationCode = response.verificationCode;
           }
         } catch (error) {
-          console.error('Error fetching from DB:', error);
+          console.error('Error fetching verification code:', error);
         }
       }
       
       // If we still don't have a code, try the backup endpoint
-      if (!verificationCode) {
+      if (!verificationCode && !isVerified) {
         try {
-          const backupResponse = await fetch('/api/bookings/code-generator', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId }),
-          });
-          
-          if (backupResponse.ok) {
-            const backupData = await backupResponse.json();
-            verificationCode = backupData.verificationCode;
-          }
+          const backupData = await bookingApiClient.generateVerificationCodeBackup(bookingId);
+          verificationCode = backupData?.verificationCode ?? null;
         } catch (error) {
           console.error('Error with backup endpoint:', error);
         }
+      }
+
+      if (isVerified) {
+        setState(prev => ({ 
+          ...prev, 
+          code: null, 
+          loading: false, 
+          regenerating: false,
+          error: null,
+          lastUpdated: Date.now()
+        }));
+        return;
       }
 
       if (verificationCode) {
@@ -125,7 +122,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
         lastUpdated: Date.now()
       }));
     }
-  }, [bookingId, supabase]);
+  }, [bookingId, supabase, t]);
 
   // Copy code to clipboard
   const copyToClipboard = useCallback(() => {

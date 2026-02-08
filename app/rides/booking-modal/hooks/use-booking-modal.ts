@@ -8,7 +8,7 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useBookingStore, useRidesStore } from "@/stores";
 import { useNotificationPromptTrigger, useLocale } from "@/hooks";
 import type { RideWithDriver } from "@/types";
-import { ApiError } from "@/lib/api-client/error";
+import { ApiError, paymentApiClient } from "@/lib/api-client";
 
 interface UseBookingModalProps {
   isOpen: boolean;
@@ -331,17 +331,12 @@ export function useBookingModal({
         phoneNumber: phoneNumber,
       };
 
-      const response = await fetch("/api/payments/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paymentRequest),
+      const data = await paymentApiClient.createPayment({
+        booking_id: paymentRequest.bookingId,
+        amount: paymentRequest.amount,
+        provider: paymentRequest.provider,
+        phone_number: paymentRequest.phoneNumber,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || t("pages.rides.booking.payment.failed"));
-      }
 
       if (data.success && data.data?.transaction_id) {
         setPaymentTransactionId(data.data.transaction_id);
@@ -440,4 +435,3 @@ export function useBookingModal({
       handlePaymentComplete,
     };
 }
-
