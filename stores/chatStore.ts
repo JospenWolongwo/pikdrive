@@ -10,8 +10,9 @@ import type {
   RideMessage
 } from "@/types";
 import { chatApiClient } from "@/lib/api-client/chat";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseClient } from "@/lib/supabase-client";
 import { getVersionedStorageKey } from "@/lib/storage-version";
+import { subscribeToUserConversationMessages, applyIncomingConversationMessage } from "@/lib/services/client";
 
 // Helper function to sort conversations by latest message time
 const sortConversationsByLatest = (conversations: UIConversation[]): UIConversation[] => {
@@ -456,7 +457,7 @@ export const useChatStore = create<ChatState>()(
           return; // Already subscribed
         }
 
-        const channel = chatApiClient.subscribeToMessages(supabase, conversationId, (message) => {
+        const channel = chatApiClient.subscribeToMessages(supabaseClient, conversationId, (message) => {
           // Add new message to local state and update conversation
           set((state) => {
             const messageConversationId = message.conversation_id;
@@ -513,7 +514,7 @@ export const useChatStore = create<ChatState>()(
         const channel = channels.get(conversationId);
         
         if (channel) {
-          chatApiClient.unsubscribe(supabase, channel);
+          chatApiClient.unsubscribe(supabaseClient, channel);
           set((state) => {
             const newChannels = new Map(state.channels);
             newChannels.delete(conversationId);
@@ -534,7 +535,7 @@ export const useChatStore = create<ChatState>()(
         
         if (channels.has('unread-updates')) return; // Already subscribed
 
-        const channel = chatApiClient.subscribeToUnreadUpdates(supabase, userId, (unreadCounts) => {
+        const channel = chatApiClient.subscribeToUnreadUpdates(supabaseClient, userId, (unreadCounts) => {
           set({ unreadCounts });
         });
 
@@ -548,7 +549,7 @@ export const useChatStore = create<ChatState>()(
         const channel = channels.get('unread-updates');
         
         if (channel) {
-          chatApiClient.unsubscribe(supabase, channel);
+          chatApiClient.unsubscribe(supabaseClient, channel);
           set((state) => {
             const newChannels = new Map(state.channels);
             newChannels.delete('unread-updates');
@@ -562,135 +563,18 @@ export const useChatStore = create<ChatState>()(
         
         if (globalChannel) return; // Already subscribed
         
-        const channel = supabase
-          .channel(`user-conversations:${userId}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'messages',
-            },
-            async (payload) => {
-              const message = payload.new;
-              
-              // Fetch sender profile for the message
-              const { data: senderProfile } = await supabase
-                .from('profiles')
-                .select('id, full_name, avatar_url')
-                .eq('id', message.sender_id)
-                .single();
-              
-              // Update conversation and add message to messages array
-              set((state) => {
-                // Check if conversation exists in local state
-                const conversationExists = state.conversations.some(
-                  conv => conv.id === message.conversation_id
-                );
-                
-                // Always update unreadCounts if message is not from current user
-                const isFromCurrentUser = message.sender_id === userId;
-                let updatedUnreadCounts = [...state.unreadCounts];
-                
-                if (!isFromCurrentUser) {
-                  // Find or create unread count entry for this conversation
-                  const existingIndex = updatedUnreadCounts.findIndex(
-                    uc => uc.conversationId === message.conversation_id
-                  );
-                  
-                  if (existingIndex >= 0) {
-                    // Increment existing count
-                    updatedUnreadCounts[existingIndex] = {
-                      ...updatedUnreadCounts[existingIndex],
-                      count: updatedUnreadCounts[existingIndex].count + 1
-                    };
-                  } else {
-                    // Add new unread count
-                    updatedUnreadCounts.push({
-                      conversationId: message.conversation_id,
-                      count: 1
-                    });
-                  }
-                }
-                
-                // If conversation doesn't exist in local state, just update unreadCounts
-                if (!conversationExists) {
-                  return {
-                    unreadCounts: updatedUnreadCounts
-                  };
-                }
-                
-                // Find the conversation in local state
-                const conversation = state.conversations.find(
-                  conv => conv.id === message.conversation_id
-                );
-                
-                if (!conversation) {
-                  return {
-                    unreadCounts: updatedUnreadCounts
-                  };
-                }
-                
-                // Check if message already exists (prevent duplicates)
-                const currentMessages = state.messages[message.conversation_id] || [];
-                const messageExists = currentMessages.some(m => m.id === message.id);
-                
-                // Build message with sender info
-                const newMessage = {
-                  ...message,
-                  sender: senderProfile ? {
-                    id: senderProfile.id,
-                    full_name: senderProfile.full_name,
-                    avatar_url: senderProfile.avatar_url
-                  } : undefined
-                };
-                
-                // Update conversation with new message data
-                const updatedConversations = state.conversations.map(conv => {
-                  if (conv.id === message.conversation_id) {
-                    const newUnreadCount = !isFromCurrentUser
-                      ? (conv.unreadCount || 0) + 1 
-                      : conv.unreadCount;
-                    
-                    return {
-                      ...conv,
-                      lastMessage: message.content,
-                      lastMessageTime: message.created_at,
-                      unreadCount: newUnreadCount,
-                    };
-                  }
-                  return conv;
-                });
-                
-                // Sync unreadCounts array with conversation unreadCount (merge with our updates)
-                const finalUnreadCounts = updatedConversations
-                  .filter(conv => conv.unreadCount > 0)
-                  .map(conv => ({
-                    conversationId: conv.id,
-                    count: conv.unreadCount
-                  }));
-                
-                // Merge: prefer counts from conversations, but keep any that aren't in conversations
-                const mergedUnreadCounts = [...finalUnreadCounts];
-                updatedUnreadCounts.forEach(uc => {
-                  if (!finalUnreadCounts.find(fuc => fuc.conversationId === uc.conversationId)) {
-                    mergedUnreadCounts.push(uc);
-                  }
-                });
-                
-                return {
-                  conversations: sortConversationsByLatest(updatedConversations),
-                  unreadCounts: mergedUnreadCounts,
-                  // Add message to messages array if it doesn't exist
-                  messages: messageExists ? state.messages : {
-                    ...state.messages,
-                    [message.conversation_id]: [...currentMessages, newMessage]
-                  }
-                };
-              });
-            }
-          )
-          .subscribe();
+        const channel = subscribeToUserConversationMessages(supabaseClient, userId, (message) => {
+          // Update conversation and add message to messages array
+          set((state) => {
+            const next = applyIncomingConversationMessage(
+              state,
+              message,
+              userId,
+              sortConversationsByLatest
+            );
+            return next ?? state;
+          });
+        });
         
         set({ globalChannel: channel });
       },
@@ -699,7 +583,7 @@ export const useChatStore = create<ChatState>()(
         const { globalChannel } = get();
         
         if (globalChannel) {
-          supabase.removeChannel(globalChannel);
+          supabaseClient.removeChannel(globalChannel);
           set({ globalChannel: null });
         }
       },

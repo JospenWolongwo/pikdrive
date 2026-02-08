@@ -114,6 +114,7 @@ export class ChatApiClient {
           event: "INSERT",
           schema: "public",
           table: "messages",
+          filter: `receiver_id=eq.${userId}`,
         },
         async (payload: any) => {
           const newMessage = payload.new as any;
