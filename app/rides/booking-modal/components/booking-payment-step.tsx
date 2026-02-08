@@ -24,6 +24,7 @@ interface BookingPaymentStepProps {
   phoneNumber: string;
   isPhoneValid: boolean;
   loading: boolean;
+  isBusy: boolean;
   paymentTransactionId: string | null;
   bookingId: string | undefined;
   existingBooking?: any;
@@ -46,6 +47,7 @@ export function BookingPaymentStep({
   phoneNumber,
   isPhoneValid,
   loading,
+  isBusy,
   paymentTransactionId,
   bookingId,
   existingBooking,
@@ -73,7 +75,7 @@ export function BookingPaymentStep({
             providers={providers}
             selectedProvider={selectedProvider}
             onSelect={onProviderSelect}
-            disabled={loading || paymentTransactionId !== null}
+            disabled={isBusy || paymentTransactionId !== null}
           />
         </div>
 
@@ -82,7 +84,7 @@ export function BookingPaymentStep({
           onChange={onPhoneNumberChange}
           onValidityChange={onPhoneValidityChange}
           provider={selectedProvider?.toLowerCase() as "mtn" | "orange"}
-          disabled={loading || paymentTransactionId !== null}
+          disabled={isBusy || paymentTransactionId !== null}
         />
 
         {isPartialPayment && ride ? (
@@ -143,14 +145,14 @@ export function BookingPaymentStep({
         <Button
           onClick={onBack}
           variant="outline"
-          disabled={loading || paymentTransactionId !== null}
+          disabled={isBusy || paymentTransactionId !== null}
         >
           {t("pages.rides.booking.payment.back")}
         </Button>
         <Button
           onClick={onPayment}
           disabled={
-            loading ||
+            isBusy ||
             paymentTransactionId !== null ||
             !selectedProvider ||
             !isPhoneValid
@@ -174,4 +176,3 @@ export function BookingPaymentStep({
     </div>
   );
 }
-

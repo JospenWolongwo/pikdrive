@@ -64,6 +64,7 @@ export function BookingModal({
     ride,
     onBookingComplete,
   });
+  const isBusy = isCreatingBooking || loading || isPolling;
 
   // Handle retry after payment failure
   const handleRetry = () => {
@@ -97,6 +98,7 @@ export function BookingModal({
             onComplete={handlePassengerInfoComplete}
             onClose={onClose}
             initialName={profileName}
+            isBusy={isBusy}
           />
         );
 
@@ -108,6 +110,7 @@ export function BookingModal({
             existingBooking={existingBooking}
             totalPrice={totalPrice}
             isCreatingBooking={isCreatingBooking}
+            isBusy={isBusy}
             bookingError={bookingError}
             selectedPickupPointId={selectedPickupPointId}
             onSeatsChange={setSeats}
@@ -127,6 +130,7 @@ export function BookingModal({
             phoneNumber={phoneNumber}
             isPhoneValid={isPhoneValid}
             loading={loading}
+            isBusy={isBusy}
             paymentTransactionId={paymentTransactionId}
             bookingId={bookingId}
             existingBooking={existingBooking}
@@ -176,7 +180,7 @@ export function BookingModal({
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open && !isPolling && !loading && !paymentSuccess) {
+        if (!open && !isBusy && !paymentSuccess) {
           onClose();
         }
       }}
@@ -200,4 +204,3 @@ export function BookingModal({
     </Dialog>
   );
 }
-

@@ -11,12 +11,14 @@ interface BookingPassengerInfoStepProps {
   onComplete: (data: { fullName: string; idRecto: string; idVerso: string }) => void;
   onClose: () => void;
   initialName?: string;
+  isBusy?: boolean;
 }
 
 export function BookingPassengerInfoStep({
   onComplete,
   onClose,
   initialName = "",
+  isBusy = false,
 }: BookingPassengerInfoStepProps) {
   const { supabase, user } = useSupabase();
   const { t } = useLocale();
@@ -284,7 +286,7 @@ export function BookingPassengerInfoStep({
       </div>
 
       <div className="flex justify-end space-x-2 mt-6">
-        <Button onClick={onClose} variant="outline" disabled={submitting}>
+        <Button onClick={onClose} variant="outline" disabled={submitting || isBusy}>
           {t("pages.rides.booking.passengerInfo.cancel")}
         </Button>
         <Button
@@ -293,7 +295,8 @@ export function BookingPassengerInfoStep({
             !fullName.trim() ||
             !idRectoFile ||
             !idVersoFile ||
-            submitting
+            submitting ||
+            isBusy
           }
         >
           {submitting ? (
@@ -312,4 +315,3 @@ export function BookingPassengerInfoStep({
     </>
   );
 }
-

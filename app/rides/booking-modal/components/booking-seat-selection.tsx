@@ -14,6 +14,7 @@ interface BookingSeatSelectionProps {
   existingBooking: any;
   totalPrice: number;
   isCreatingBooking: boolean;
+  isBusy: boolean;
   bookingError: string | null;
   selectedPickupPointId?: string;
   onSeatsChange: (seats: number) => void;
@@ -29,6 +30,7 @@ export function BookingSeatSelection({
   existingBooking,
   totalPrice,
   isCreatingBooking,
+  isBusy,
   bookingError,
   selectedPickupPointId,
   onSeatsChange,
@@ -302,7 +304,7 @@ export function BookingSeatSelection({
         )}
 
         <div className="flex flex-wrap justify-end gap-2 w-full">
-          <Button onClick={onClose} variant="outline">
+          <Button onClick={onClose} variant="outline" disabled={isBusy}>
             {t("pages.rides.booking.seatSelection.cancel")}
           </Button>
           <Button
@@ -310,7 +312,7 @@ export function BookingSeatSelection({
             disabled={
               seats < minSeats || 
               seats > maxSeats || 
-              isCreatingBooking ||
+              isBusy ||
               // ONLY disable if COMPLETED payment and no additional seats
               // Allow proceeding for pending/partial bookings (user needs to pay)
               (existingBooking?.payment_status === 'completed' && 
@@ -334,4 +336,3 @@ export function BookingSeatSelection({
     </div>
   );
 }
-
