@@ -52,7 +52,9 @@ export function PickupPointSelector({
         {t("pages.rides.booking.pickupPoint.title")}
       </Label>
       <p className="text-sm text-muted-foreground">
-        {t("pages.rides.booking.pickupPoint.description")}
+        {pickupPoints.length === 1
+          ? t("pages.rides.booking.pickupPoint.descriptionSingle")
+          : t("pages.rides.booking.pickupPoint.description")}
       </p>
 
       {selectedPoint && selectedPickupTime && (

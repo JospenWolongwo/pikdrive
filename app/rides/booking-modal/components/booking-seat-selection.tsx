@@ -267,11 +267,6 @@ export function BookingSeatSelection({
               }
             }}
           />
-          {existingBooking && existingBooking.payment_status === 'completed' && (
-            <p className="text-xs text-muted-foreground">
-              {t("pages.rides.booking.seatSelection.cannotReduce")}
-            </p>
-          )}
           {existingBooking && (
             <p className="text-xs text-muted-foreground">
               {t("pages.rides.booking.seatSelection.maxSeatsExplanation", {

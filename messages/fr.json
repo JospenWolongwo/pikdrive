@@ -1211,7 +1211,6 @@
           "continueToPayment": "Continuer au paiement",
           "updating": "Mise à jour...",
           "creating": "Création...",
-          "cannotReduce": "Vous ne pouvez pas réduire le nombre de places d'une réservation déjà payée",
           "maxSeatsExplanation": "Vous pouvez réserver jusqu'à {max} {max, plural, =1 {place} other {places}} au total ({available} disponibles + {your} {your, plural, =1 {place} other {places}} que vous avez déjà)",
           "addMoreSeatsToContinue": "Veuillez ajouter plus de places pour continuer au paiement",
           "place": "place",
@@ -1225,6 +1224,7 @@
         "pickupPoint": {
           "title": "Sélectionner le Point de Ramassage",
           "description": "Choisissez où vous souhaitez être récupéré",
+          "descriptionSingle": "Point de ramassage pour ce trajet",
           "pickupAt": "Ramassage à",
           "yourPickupSummary": "Votre ramassage : {name} à {time}",
           "noPoints": "Aucun point de ramassage disponible pour ce trajet",
