@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiSupabaseClient } from '@/lib/supabase/server-client';
+import { createApiSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server-client';
 import { PaymentOrchestratorService } from '@/lib/payment/payment-orchestrator.service';
 import type { Environment } from '@/types/payment-ext';
 import { Environment as EnvEnum, PawaPayApiUrl } from '@/types/payment-ext';
@@ -10,6 +10,7 @@ export async function POST(
 ) {
   try {
     const supabase = createApiSupabaseClient();
+    const serviceSupabase = createServiceRoleClient();
     
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -161,7 +162,7 @@ export async function POST(
       console.log('✅ [PARTIAL REFUND] Refund initiated successfully');
       
       // Create refund record
-      await supabase.from('refunds').insert({
+      const { error: refundInsertError } = await serviceSupabase.from('refunds').insert({
         payment_id: primaryPayment.id,
         booking_id: params.id,
         user_id: user.id,
@@ -183,15 +184,22 @@ export async function POST(
       });
 
       // Update payment status to partial_refund
-      await supabase
+      const { error: paymentUpdateError } = await serviceSupabase
         .from('payments')
         .update({ status: 'partial_refund', updated_at: new Date().toISOString() })
         .eq('id', primaryPayment.id);
+
+      if (refundInsertError) {
+        console.error('❌ [PARTIAL REFUND] Failed to create refund record:', refundInsertError);
+      }
+      if (paymentUpdateError) {
+        console.error('❌ [PARTIAL REFUND] Failed to update payment status to partial_refund:', paymentUpdateError);
+      }
     } else {
       console.error('❌ [PARTIAL REFUND] Refund failed:', refundResult.response.message);
       
       // Create failed refund record
-      await supabase.from('refunds').insert({
+      const { error: failedRefundInsertError } = await serviceSupabase.from('refunds').insert({
         payment_id: primaryPayment.id,
         booking_id: params.id,
         user_id: user.id,
@@ -210,6 +218,10 @@ export async function POST(
           refundFailedAt: new Date().toISOString(),
         },
       });
+
+      if (failedRefundInsertError) {
+        console.error('❌ [PARTIAL REFUND] Failed to create failed refund record:', failedRefundInsertError);
+      }
     }
 
     return NextResponse.json({

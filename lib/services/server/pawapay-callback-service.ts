@@ -132,6 +132,8 @@ export class ServerPawaPayCallbackService {
   }): Promise<void> {
     const { transactionReferenceId, status, failureReason, transactionId, callback } = params;
 
+    const mappedStatus = mapPawaPayStatus(status);
+
     let payout;
     try {
       const { data } = await this.supabase
@@ -146,30 +148,27 @@ export class ServerPawaPayCallbackService {
 
     if (!payout) {
       console.error('[CALLBACK] Payout not found:', transactionReferenceId);
-      return;
-    }
-
-    const mappedStatus = mapPawaPayStatus(status);
-
-    const { error: updateError } = await this.supabase
-      .from('payouts')
-      .update({
-        status: mappedStatus,
-        updated_at: new Date().toISOString(),
-        metadata: {
-          ...(payout.metadata || {}),
-          lastCallback: new Date().toISOString(),
-          callbackData: callback,
-          transactionId: transactionId || transactionReferenceId,
-          failureReason: failureReason || null,
-        },
-      })
-      .eq('id', payout.id);
-
-    if (updateError) {
-      console.error('[CALLBACK] Error updating payout:', updateError);
     } else {
-      console.log('[CALLBACK] pawaPay payout callback processed successfully');
+      const { error: updateError } = await this.supabase
+        .from('payouts')
+        .update({
+          status: mappedStatus,
+          updated_at: new Date().toISOString(),
+          metadata: {
+            ...(payout.metadata || {}),
+            lastCallback: new Date().toISOString(),
+            callbackData: callback,
+            transactionId: transactionId || transactionReferenceId,
+            failureReason: failureReason || null,
+          },
+        })
+        .eq('id', payout.id);
+
+      if (updateError) {
+        console.error('[CALLBACK] Error updating payout:', updateError);
+      } else {
+        console.log('[CALLBACK] pawaPay payout callback processed successfully');
+      }
     }
 
     await this.handleRefundFromPayout({
