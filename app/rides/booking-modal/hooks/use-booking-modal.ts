@@ -60,6 +60,17 @@ export function useBookingModal({
   const [selectedPickupPointId, setSelectedPickupPointId] = useState<string | undefined>(undefined);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Auto-select pickup point when there is exactly one option
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!ride?.pickup_points || ride.pickup_points.length !== 1) return;
+    if (selectedPickupPointId) return;
+    const onlyPoint = ride.pickup_points[0];
+    if (onlyPoint?.id) {
+      setSelectedPickupPointId(onlyPoint.id);
+    }
+  }, [isOpen, ride?.pickup_points, selectedPickupPointId]);
+
   // Calculate total price - for paid bookings, only charge for additional seats
   const calculateTotalPrice = (): number => {
     if (!ride?.price) return 0;
