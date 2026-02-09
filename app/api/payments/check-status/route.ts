@@ -346,6 +346,7 @@ function getStatusMessage(status: string): string {
     pending: 'Payment is pending approval',
     processing: 'Payment is being processed',
     completed: 'Payment completed successfully! Your seats have been reserved.',
+    partial_refund: 'Payment partially refunded',
     failed: 'Payment failed. Please try again.',
     cancelled: 'Payment was cancelled',
     refunded: 'Payment has been refunded',

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ServerPaymentService } from "./payment-service";
 import { ServerPaymentOrchestrationService } from "./payment-orchestration-service";
+import { ServerRefundStatusService } from "./refund-status-service";
 import { mapOrangeMoneyStatus } from "@/lib/payment";
 
 export class OrangeMoneyCallbackError extends Error {
@@ -16,10 +17,12 @@ export class OrangeMoneyCallbackError extends Error {
 export class ServerOrangeMoneyCallbackService {
   private paymentService: ServerPaymentService;
   private orchestrationService: ServerPaymentOrchestrationService;
+  private refundStatusService: ServerRefundStatusService;
 
   constructor(private supabase: SupabaseClient) {
     this.paymentService = new ServerPaymentService(supabase);
     this.orchestrationService = new ServerPaymentOrchestrationService(supabase);
+    this.refundStatusService = new ServerRefundStatusService(supabase);
   }
 
   async handleCallback(callback: any): Promise<{
@@ -52,14 +55,41 @@ export class ServerOrangeMoneyCallbackService {
       }
     }
 
+    const mappedStatus = mapOrangeMoneyStatus(status);
+
+    const refundLookupIds = [txid, orderId, callback.transactionId].filter(Boolean) as string[];
+    let refundLinked = false;
+    for (const refundId of refundLookupIds) {
+      const refundResult = await this.refundStatusService.updateRefundByTransactionId(
+        refundId,
+        mappedStatus,
+        {
+          source: "orange_callback",
+          providerStatus: status,
+          callbackPayload: callback,
+          updateEvenIfSame: true,
+        }
+      );
+
+      if (refundResult.refundFound) {
+        refundLinked = true;
+        break;
+      }
+    }
+
+    if (!refundLinked) {
+      console.log("⚠️ Refund record not found for Orange Money callback:", {
+        txid,
+        orderId,
+      });
+    }
+
     if (!payment) {
       throw new OrangeMoneyCallbackError(
         "Callback received, payment not found",
         200
       );
     }
-
-    const mappedStatus = mapOrangeMoneyStatus(status);
 
     await this.orchestrationService.handlePaymentStatusChange(
       payment,

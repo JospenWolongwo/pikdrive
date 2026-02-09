@@ -67,7 +67,8 @@ CREATE TYPE "public"."payment_status" AS ENUM (
     'completed',
     'failed',
     'refunded',
-    'partial'
+    'partial',
+    'partial_refund'
 );
 
 

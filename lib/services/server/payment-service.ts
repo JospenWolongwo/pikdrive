@@ -351,7 +351,8 @@ export class ServerPaymentService {
     const validTransitions: Record<PaymentTransactionStatus, PaymentTransactionStatus[]> = {
       pending: ['processing', 'failed', 'cancelled'],
       processing: ['completed', 'failed'],
-      completed: ['refunded'],
+      completed: ['refunded', 'partial_refund'],
+      partial_refund: ['refunded'],
       failed: [],
       cancelled: [],
       refunded: [],
@@ -371,6 +372,6 @@ export class ServerPaymentService {
    * Check if payment is in final state
    */
   isPaymentFinalized(payment: Payment): boolean {
-    return ['completed', 'refunded', 'cancelled'].includes(payment.status);
+    return ['completed', 'partial_refund', 'refunded', 'cancelled'].includes(payment.status);
   }
 }

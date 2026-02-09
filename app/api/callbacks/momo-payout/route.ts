@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { ServerPaymentService, ServerPaymentOrchestrationService, ServerOneSignalNotificationService } from '@/lib/services/server';
+import { ServerPaymentService, ServerPaymentOrchestrationService, ServerOneSignalNotificationService, ServerRefundStatusService } from '@/lib/services/server';
 import { mapMtnMomoStatus, sendPayoutNotificationIfNeeded } from '@/lib/payment';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const paymentService = new ServerPaymentService(supabase);
     const orchestrationService = new ServerPaymentOrchestrationService(supabase);
     const notificationService = new ServerOneSignalNotificationService(supabase);
+    const refundStatusService = new ServerRefundStatusService(supabase);
 
     // Get the signature from headers
     const signature = request.headers.get('x-mtn-signature');
@@ -51,6 +52,33 @@ export async function POST(request: Request) {
       );
     }
 
+    // Map MOMO status to our payment status
+    const mappedStatus = mapMtnMomoStatus(status);
+
+    // Attempt to link payout callback to refund (refunds are implemented as payouts)
+    const refundLookupIds = [externalId, financialTransactionId].filter(Boolean) as string[];
+    let refundLinked = false;
+    for (const refundId of refundLookupIds) {
+      const refundResult = await refundStatusService.updateRefundByTransactionId(refundId, mappedStatus, {
+        source: 'mtn_payout_callback',
+        providerStatus: status,
+        callbackPayload: callback,
+        updateEvenIfSame: true,
+      });
+
+      if (refundResult.refundFound) {
+        refundLinked = true;
+        break;
+      }
+    }
+
+    if (!refundLinked) {
+      console.log('⚠️ Refund record not found for MOMO payout callback:', {
+        externalId,
+        financialTransactionId,
+      });
+    }
+
     // Find payment by transaction ID (externalId is the payment ID or reference)
     let payment = await paymentService.getPaymentByTransactionId(externalId);
 
@@ -77,9 +105,6 @@ export async function POST(request: Request) {
         { status: 200 }
       );
     }
-
-    // Map MOMO status to our payment status
-    const mappedStatus = mapMtnMomoStatus(status);
 
     // Update payment status via orchestration service
     await orchestrationService.handlePaymentStatusChange(payment, mappedStatus, {

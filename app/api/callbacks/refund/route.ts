@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
+import { ServerRefundStatusService } from '@/lib/services/server';
 
 /**
  * Refund Callback Handler
@@ -58,55 +59,13 @@ export async function POST(request: NextRequest) {
       providerStatus: status,
     });
 
-    // Update refund status
-    const { error: updateError } = await supabase
-      .from('refunds')
-      .update({ 
-        status: mappedStatus, 
-        updated_at: new Date().toISOString(),
-        metadata: {
-          ...refund.metadata,
-          callbackReceived: true,
-          callbackReceivedAt: new Date().toISOString(),
-          providerStatus: status,
-          callbackPayload: body,
-        },
-      })
-      .eq('id', refund.id);
-
-    if (updateError) {
-      console.error('❌ [REFUND CALLBACK] Error updating refund:', updateError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to update refund' },
-        { status: 500 }
-      );
-    }
-
-    // If a partial refund completed, restore booking payment_status to completed
-    if (mappedStatus === 'completed' && refund.refund_type === 'partial' && refund.booking_id) {
-      const { data: booking, error: bookingError } = await supabase
-        .from('bookings')
-        .select('id, status, payment_status')
-        .eq('id', refund.booking_id)
-        .maybeSingle();
-
-      if (bookingError) {
-        console.error('❌ [REFUND CALLBACK] Error fetching booking for partial refund:', bookingError);
-      } else if (booking && booking.status !== 'cancelled' && booking.payment_status === 'partial') {
-        const { error: bookingUpdateError } = await supabase
-          .from('bookings')
-          .update({ payment_status: 'completed', updated_at: new Date().toISOString() })
-          .eq('id', booking.id);
-
-        if (bookingUpdateError) {
-          console.error('❌ [REFUND CALLBACK] Error updating booking payment_status:', bookingUpdateError);
-        } else {
-          console.log('✅ [REFUND CALLBACK] Booking payment_status restored to completed after partial refund:', {
-            bookingId: booking.id,
-          });
-        }
-      }
-    }
+    const refundStatusService = new ServerRefundStatusService(supabase);
+    await refundStatusService.updateRefundStatus(refund, mappedStatus, {
+      source: 'refund_callback',
+      providerStatus: status,
+      callbackPayload: body,
+      updateEvenIfSame: true,
+    });
 
     console.log('✅ [REFUND CALLBACK] Refund status updated successfully');
 

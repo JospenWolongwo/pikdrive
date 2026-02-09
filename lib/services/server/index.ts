@@ -10,6 +10,7 @@ export * from "./booking-service";
 export * from "./booking-cancellation-service";
 export * from "./orange-money-callback-service";
 export * from "./payment-reconciliation-cron-service";
+export * from "./refund-status-service";
 export * from "./chat-service";
 export * from "./city-pickup-points-service";
 export * from "./consent-service";

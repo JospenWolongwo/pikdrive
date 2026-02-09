@@ -3,6 +3,7 @@ import {
   ServerPaymentService,
   ServerPaymentOrchestrationService,
 } from "./index";
+import { ServerRefundStatusService } from "./refund-status-service";
 import { PaymentReconciliationService } from "@/lib/services/payment-reconciliation.service";
 import { PayoutReconciliationService } from "@/lib/services/payout-reconciliation.service";
 import { PawaPayService, mapPawaPayStatus } from "@/lib/payment";
@@ -25,6 +26,7 @@ export class PaymentReconciliationCronService {
     const payoutReconciliationService = new PayoutReconciliationService(
       this.supabase
     );
+    const refundStatusService = new ServerRefundStatusService(this.supabase);
     const usePawaPay = process.env.USE_PAWAPAY === FeatureFlag.USE_PAWAPAY;
 
     const { data: stalePayments, error } = await this.supabase
@@ -104,82 +106,21 @@ export class PaymentReconciliationCronService {
             }
 
             const mappedStatus = mapPawaPayStatus(payoutStatus.status);
-            if (mappedStatus !== refund.status) {
-              const { error: refundUpdateError } = await this.supabase
-                .from("refunds")
-                .update({
-                  status: mappedStatus,
-                  updated_at: new Date().toISOString(),
-                  metadata: {
-                    ...refund.metadata,
-                    reconciledAt: new Date().toISOString(),
-                    reconciliationSource: "cron",
-                    providerStatus: payoutStatus.status,
-                  },
-                })
-                .eq("id", refund.id);
-
-              if (refundUpdateError) {
-                console.error(
-                  "âŒ Error updating refund during reconciliation:",
-                  refundUpdateError
-                );
-                refundResults.push({
-                  id: refund.id,
-                  status: refund.status,
-                  updated: false,
-                  error: refundUpdateError.message,
-                });
-                continue;
+            const refundUpdate = await refundStatusService.updateRefundStatus(
+              refund,
+              mappedStatus,
+              {
+                source: "cron",
+                providerStatus: payoutStatus.status,
+                reconciliationSource: "cron",
               }
+            );
 
-              if (
-                mappedStatus === "completed" &&
-                refund.refund_type === "partial" &&
-                refund.booking_id
-              ) {
-                const { data: booking, error: bookingError } =
-                  await this.supabase
-                    .from("bookings")
-                    .select("id, status, payment_status")
-                    .eq("id", refund.booking_id)
-                    .maybeSingle();
-
-                if (
-                  !bookingError &&
-                  booking &&
-                  booking.status !== "cancelled" &&
-                  booking.payment_status === "partial"
-                ) {
-                  const { error: bookingUpdateError } = await this.supabase
-                    .from("bookings")
-                    .update({
-                      payment_status: "completed",
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", booking.id);
-
-                  if (bookingUpdateError) {
-                    console.error(
-                      "âŒ Error restoring booking payment_status after refund:",
-                      bookingUpdateError
-                    );
-                  }
-                }
-              }
-
-              refundResults.push({
-                id: refund.id,
-                status: mappedStatus,
-                updated: true,
-              });
-            } else {
-              refundResults.push({
-                id: refund.id,
-                status: refund.status,
-                updated: false,
-              });
-            }
+            refundResults.push({
+              id: refund.id,
+              status: refundUpdate.newStatus,
+              updated: refundUpdate.updated,
+            });
           } catch (reconcileError) {
             console.error("âŒ Error reconciling refund:", reconcileError);
             refundResults.push({

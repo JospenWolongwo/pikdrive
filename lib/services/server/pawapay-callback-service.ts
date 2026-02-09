@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server';
+import { ServerPaymentService, ServerPaymentOrchestrationService, ServerRefundStatusService } from '@/lib/services/server';
 import { mapPawaPayStatus } from '@/lib/payment';
 import { TransactionType } from '@/types/payment-ext';
 
@@ -15,10 +15,12 @@ export interface PawaPayCallbackResult {
 export class ServerPawaPayCallbackService {
   private paymentService: ServerPaymentService;
   private orchestrationService: ServerPaymentOrchestrationService;
+  private refundStatusService: ServerRefundStatusService;
 
   constructor(private supabase: SupabaseClient) {
     this.paymentService = new ServerPaymentService(supabase);
     this.orchestrationService = new ServerPaymentOrchestrationService(supabase);
+    this.refundStatusService = new ServerRefundStatusService(supabase);
   }
 
   async handleCallback(callback: any): Promise<PawaPayCallbackResult> {
@@ -188,68 +190,19 @@ export class ServerPawaPayCallbackService {
     const { transactionReferenceId, mappedStatus, status, callback } = params;
 
     try {
-      const { data: refund, error: refundFindError } = await this.supabase
-        .from('refunds')
-        .select('*')
-        .eq('transaction_id', transactionReferenceId)
-        .maybeSingle();
-
-      if (refundFindError) {
-        console.error('[CALLBACK] Error finding refund for payout:', refundFindError);
-        return;
-      }
-
-      if (!refund) return;
-
-      const { error: refundUpdateError } = await this.supabase
-        .from('refunds')
-        .update({
-          status: mappedStatus,
-          updated_at: new Date().toISOString(),
-          metadata: {
-            ...refund.metadata,
-            callbackReceived: true,
-            callbackReceivedAt: new Date().toISOString(),
-            providerStatus: status,
-            callbackPayload: callback,
-          },
-        })
-        .eq('id', refund.id);
-
-      if (refundUpdateError) {
-        console.error('[CALLBACK] Error updating refund from payout callback:', refundUpdateError);
-        return;
-      }
-
-      if (mappedStatus === 'completed' && refund.refund_type === 'partial' && refund.booking_id) {
-        const { data: booking, error: bookingError } = await this.supabase
-          .from('bookings')
-          .select('id, status, payment_status')
-          .eq('id', refund.booking_id)
-          .maybeSingle();
-
-        if (bookingError) {
-          console.error('[CALLBACK] Error fetching booking for partial refund:', bookingError);
-          return;
+      const refundResult = await this.refundStatusService.updateRefundByTransactionId(
+        transactionReferenceId,
+        mappedStatus,
+        {
+          source: 'pawapay_callback',
+          providerStatus: status,
+          callbackPayload: callback,
+          updateEvenIfSame: true,
         }
+      );
 
-        if (booking && booking.status !== 'cancelled' && booking.payment_status === 'partial') {
-          const { error: bookingUpdateError } = await this.supabase
-            .from('bookings')
-            .update({
-              payment_status: 'completed',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', booking.id);
-
-          if (bookingUpdateError) {
-            console.error('[CALLBACK] Error restoring booking payment_status after refund:', bookingUpdateError);
-          } else {
-            console.log('[CALLBACK] Booking payment_status restored to completed after partial refund:', {
-              bookingId: booking.id,
-            });
-          }
-        }
+      if (!refundResult.refundFound) {
+        return;
       }
     } catch (refundError) {
       console.error('[CALLBACK] Error handling refund linkage in pawaPay payout callback:', refundError);
