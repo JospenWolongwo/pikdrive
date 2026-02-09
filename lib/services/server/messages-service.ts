@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import type { Message } from "@/types";
 import { containsSensitiveContactInfo, SENSITIVE_CONTACT_ERROR_CODE } from "@/lib/utils/message-filter";
-import { ServerOneSignalNotificationService } from "@/lib/services/server/notifications";
+import { ServerOneSignalNotificationService } from "@/lib/services/server";
 
 export const SENSITIVE_CONTACT_ERROR = SENSITIVE_CONTACT_ERROR_CODE;
 

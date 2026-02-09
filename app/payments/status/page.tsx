@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { PaymentStatus } from '@/lib/payment/types';
+import { PaymentStatus } from '@/lib/payment';
 
 function PaymentStatusContent() {
   const supabase = createClientComponentClient();

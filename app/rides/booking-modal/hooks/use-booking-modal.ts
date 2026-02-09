@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { PaymentProviderType } from "@/lib/payment/types";
-import { getAvailableProviders } from "@/lib/payment/provider-config";
-import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/types";
+import { PaymentProviderType, PaymentStatus as PaymentTransactionStatus, getAvailableProviders } from "@/lib/payment";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useBookingStore, useRidesStore } from "@/stores";
 import { useNotificationPromptTrigger, useLocale } from "@/hooks";
@@ -50,6 +48,7 @@ export function useBookingModal({
   const [originalSeats, setOriginalSeats] = useState<number | null>(null);
   const [originalPaymentStatus, setOriginalPaymentStatus] = useState<string | null>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
+  const [paymentIdempotencyKey, setPaymentIdempotencyKey] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "SUCCESSFUL" | "FAILED" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [isPolling, setIsPolling] = useState(false);
@@ -59,6 +58,7 @@ export function useBookingModal({
   const [bookingError, setBookingError] = useState<string | null>(null); // NEW: Store booking creation errors
   const [selectedPickupPointId, setSelectedPickupPointId] = useState<string | undefined>(undefined);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPaymentAmountRef = useRef<number>(0);
 
   // Auto-select pickup point when there is exactly one option
   useEffect(() => {
@@ -91,6 +91,17 @@ export function useBookingModal({
   };
 
   const totalPrice = calculateTotalPrice();
+  useEffect(() => {
+    if (lastPaymentAmountRef.current === 0) {
+      lastPaymentAmountRef.current = totalPrice;
+      return;
+    }
+
+    if (totalPrice !== lastPaymentAmountRef.current && !paymentTransactionId) {
+      setPaymentIdempotencyKey(null);
+    }
+    lastPaymentAmountRef.current = totalPrice;
+  }, [totalPrice, paymentTransactionId]);
   const providers = getAvailableProviders().map((p) => ({
     name: p.name as PaymentProviderType,
     logo: p.logo,
@@ -173,6 +184,7 @@ export function useBookingModal({
         setPaymentStatus(null);
         setStatusMessage("");
         setIsPolling(false);
+        setPaymentIdempotencyKey(null);
         setIsPassengerInfoComplete(null);
         setProfileName("");
         setBookingError(null); // Clear booking error when modal closes
@@ -187,6 +199,7 @@ export function useBookingModal({
         setPaymentStatus(null);
         setStatusMessage("");
         setIsPolling(false);
+        setPaymentIdempotencyKey(null);
         setBookingError(null);
       }
     }
@@ -342,11 +355,23 @@ export function useBookingModal({
         phoneNumber: phoneNumber,
       };
 
+      // Idempotency: reuse the same key on retries so the server returns the same payment
+      // and doesn't create duplicates/double-charge.
+      const attemptKey =
+        paymentIdempotencyKey ||
+        (typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `payment_${bookingId}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+      if (!paymentIdempotencyKey) {
+        setPaymentIdempotencyKey(attemptKey);
+      }
+
       const data = await paymentApiClient.createPayment({
         booking_id: paymentRequest.bookingId,
         amount: paymentRequest.amount,
         provider: paymentRequest.provider,
         phone_number: paymentRequest.phoneNumber,
+        idempotency_key: attemptKey,
       });
 
       if (data.success && data.data?.transaction_id) {
@@ -395,6 +420,7 @@ export function useBookingModal({
         }
         router.replace("/bookings");
       }, 2000);
+      setPaymentIdempotencyKey(null);
     } else if (status === "failed") {
       // Reset payment transaction ID to enable form fields
       setPaymentTransactionId(null);

@@ -4,8 +4,7 @@ import { Button } from "@/components/ui";
 import { Loader2, AlertCircle } from "lucide-react";
 import { PaymentMethodSelector, PhoneNumberInput, PaymentStatusChecker } from "@/components/payment";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui";
-import type { PaymentProviderType } from "@/lib/payment/types";
-import type { PaymentStatus as PaymentTransactionStatus } from "@/lib/payment/types";
+import type { PaymentProviderType, PaymentStatus as PaymentTransactionStatus } from "@/lib/payment";
 import { useLocale } from "@/hooks";
 
 interface BookingPaymentStepProps {

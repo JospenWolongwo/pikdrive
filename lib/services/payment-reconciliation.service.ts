@@ -3,8 +3,7 @@
  * Handles status checking and reconciliation for customer payments (payins)
  */
 
-import { PaymentServiceFactory } from '@/lib/payment/payment-service-factory';
-import { mapMtnMomoStatus, mapOrangeMoneyStatus, mapPawaPayStatus } from '@/lib/payment/status-mapper';
+import { PaymentServiceFactory, mapMtnMomoStatus, mapOrangeMoneyStatus, mapPawaPayStatus } from '@/lib/payment';
 import type { ServerPaymentOrchestrationService } from './server/payment-orchestration-service';
 import type { Payment } from '@/types/payment';
 

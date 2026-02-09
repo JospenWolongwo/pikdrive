@@ -35,6 +35,7 @@ export class PaymentApiClient {
       amount: params.amount,
       provider: params.provider,
       phoneNumber: params.phone_number,
+      idempotencyKey: params.idempotency_key,
     });
   }
 

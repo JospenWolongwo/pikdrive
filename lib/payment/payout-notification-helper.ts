@@ -5,7 +5,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ServerOneSignalNotificationService } from '@/lib/services/server/notifications';
+import { ServerOneSignalNotificationService } from '@/lib/services/server';
 
 type NotificationSource = 'callback' | 'cron' | 'status-check' | 'initial';
 type NotificationStatus = 'failed' | 'completed';
@@ -210,4 +210,3 @@ export async function sendPayoutNotificationIfNeeded(
     return false;
   }
 }
-

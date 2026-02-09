@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
-import { ServerCityPickupPointsService } from "@/lib/services/server/pickup-points";
+import { ServerCityPickupPointsService } from "@/lib/services/server";
 
 export const dynamic = "force-dynamic";
 

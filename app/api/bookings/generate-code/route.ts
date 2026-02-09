@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { BookingApiError, ServerBookingService } from '@/lib/services/server/bookings';
+import { BookingApiError, ServerBookingService } from '@/lib/services/server';
 
 // This is a server-side API route for generating verification codes
 export async function POST(request: Request) {

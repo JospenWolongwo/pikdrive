@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { BookingApiError, ServerBookingService } from '@/lib/services/server/bookings';
+import { BookingApiError, ServerBookingService } from '@/lib/services/server';
 
 /**
  * API endpoint to manually refresh/regenerate verification code for a booking

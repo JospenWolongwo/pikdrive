@@ -3,7 +3,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-client";
 import {
   ServerRidesService,
   RideApiError,
-} from "@/lib/services/server/rides";
+} from "@/lib/services/server";
 
 export const dynamic = "force-dynamic";
 

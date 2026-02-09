@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient, getUserWithRetry } from "@/lib/supabase/server-client";
-import { ServerMessagesService, toMessagesErrorResponse } from "@/lib/services/server/messages-service";
+import { ServerMessagesService, toMessagesErrorResponse } from "@/lib/services/server";
 
 export const dynamic = "force-dynamic";
 

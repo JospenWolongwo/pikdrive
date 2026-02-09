@@ -1,9 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
-import { ServerOneSignalNotificationService } from '@/lib/services/server/notifications';
-import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
-import { sendPayoutNotificationIfNeeded } from '@/lib/payment/payout-notification-helper';
+import { ServerPaymentService, ServerPaymentOrchestrationService, ServerOneSignalNotificationService } from '@/lib/services/server';
+import { mapMtnMomoStatus, sendPayoutNotificationIfNeeded } from '@/lib/payment';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';

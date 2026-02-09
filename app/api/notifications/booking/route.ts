@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
-import { ServerOneSignalNotificationService } from "@/lib/services/server/notifications";
+import { ServerOneSignalNotificationService } from "@/lib/services/server";
 
 export async function POST(request: NextRequest) {
   try {

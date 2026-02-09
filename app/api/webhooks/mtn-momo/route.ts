@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
-import { mapMtnMomoStatus } from '@/lib/payment/status-mapper';
+import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server';
+import { mapMtnMomoStatus } from '@/lib/payment';
 import crypto from 'crypto';
 
 // Verify MTN MOMO webhook signature

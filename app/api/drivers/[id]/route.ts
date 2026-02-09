@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-client";
-import { ServerDriverService } from "@/lib/services/server/driver";
+import { ServerDriverService } from "@/lib/services/server";
 
 interface RouteParams {
   params: { id: string };

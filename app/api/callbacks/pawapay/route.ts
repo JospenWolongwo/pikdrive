@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import { ServerPawaPayCallbackService } from '@/lib/services/server/pawapay-callback-service';
+import { ServerPawaPayCallbackService } from '@/lib/services/server';
 import { HTTP_CODE } from '@/types/payment-ext';
 
 export const dynamic = 'force-dynamic';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { BookingApiError, ServerBookingService } from '@/lib/services/server/bookings';
+import { BookingApiError, ServerBookingService } from '@/lib/services/server';
 
 // Backup API endpoint that directly uses the RPC function for simplicity
 export async function POST(request: Request) {

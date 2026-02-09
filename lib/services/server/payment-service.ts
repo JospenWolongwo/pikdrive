@@ -50,6 +50,7 @@ export class ServerPaymentService {
           provider: params.provider, // Column name is 'provider'
           phone_number: params.phone_number,
           transaction_id: params.transaction_id,
+          idempotency_key: params.idempotency_key,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })

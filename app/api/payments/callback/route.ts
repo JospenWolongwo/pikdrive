@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
-import { mapMtnMomoStatus, mapOrangeMoneyStatus } from '@/lib/payment/status-mapper';
+import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server';
+import { mapMtnMomoStatus, mapOrangeMoneyStatus } from '@/lib/payment';
 
 export async function POST(request: NextRequest) {
   try {

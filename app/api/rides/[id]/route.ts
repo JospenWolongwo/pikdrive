@@ -4,7 +4,7 @@ import type { UpdateRideRequest } from "@/types";
 import {
   ServerRidesService,
   RideApiError,
-} from "@/lib/services/server/rides";
+} from "@/lib/services/server";
 
 interface RouteParams {
   params: { id: string };

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
-import { mapOrangeMoneyStatus } from '@/lib/payment/status-mapper';
+import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server';
+import { mapOrangeMoneyStatus } from '@/lib/payment';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';

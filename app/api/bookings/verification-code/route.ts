@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiSupabaseClient } from '@/lib/supabase/server-client';
-import { BookingApiError, ServerBookingService } from '@/lib/services/server/bookings';
+import { BookingApiError, ServerBookingService } from '@/lib/services/server';
 
 export async function GET(request: NextRequest) {
   try {

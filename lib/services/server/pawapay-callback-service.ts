@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server/payment';
-import { mapPawaPayStatus } from '@/lib/payment/status-mapper';
+import { ServerPaymentService, ServerPaymentOrchestrationService } from '@/lib/services/server';
+import { mapPawaPayStatus } from '@/lib/payment';
 import { TransactionType } from '@/types/payment-ext';
 
 export interface PawaPayCallbackResult {
