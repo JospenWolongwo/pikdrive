@@ -33,7 +33,7 @@ import {
   SearchableSelect,
 } from "@/components/ui";
 import { useToast } from "@/hooks/ui";
-import { PickupPointsSelectForm } from "@/components/driver";
+import { PickupPointsSelectForm } from "@/components";
 import { useLocale, useCityPickupPoints, useNotificationPromptTrigger } from "@/hooks";
 import { ridesApiClient, ApiError } from "@/lib/api-client";
 import { cn, getCurrentTimeUTC, dateToUTCDate } from "@/lib/utils";

@@ -1218,7 +1218,8 @@
           "errors": {
             "alreadyPaidTitle": "Booking Already Paid",
             "alreadyPaidMessage": "You already have {seats} {seats, plural, =1 {seat} other {seats}} booked and paid for this ride. To add more seats, please select a higher number above.",
-            "genericError": "An error occurred while creating your booking. Please try again."
+            "genericError": "An error occurred while creating your booking. Please try again.",
+            "offlineQueued": "You're offline. We've saved your booking request and will resume when you're back online."
           }
         },
         "pickupPoint": {
@@ -1443,7 +1444,20 @@
   "offline": {
     "title": "You're Offline",
     "description": "Please check your internet connection and try again",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "subtitle": "Offline mode active",
+    "body": "Some features need a connection. Your saved data is still available.",
+    "tipsTitle": "While you're offline",
+    "tip1": "View your saved rides and bookings",
+    "tip2": "Messages will be sent automatically when you are back online",
+    "tip3": "Payments and new bookings require a connection",
+    "backHome": "Go Home"
+  },
+  "offlineSync": {
+    "pending": "Pending Sync",
+    "pendingSectionTitle": "Pending Sync",
+    "pendingSectionBody": "We'll finish these actions when you're back online.",
+    "retry": "Retry"
   },
   "phone": {
     "label": "Phone Number",

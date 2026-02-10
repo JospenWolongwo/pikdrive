@@ -3,6 +3,7 @@
  */
 import { SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { CACHE_CONTROL_IMMUTABLE } from "@/lib/storage";
 
 /**
  * Upload a vehicle image with proper bucket access
@@ -27,7 +28,7 @@ export async function uploadVehicleImage(
     const { data, error: uploadError } = await supabase.storage
       .from('driver_documents')
       .upload(filePath, file, {
-        cacheControl: '3600',
+        cacheControl: CACHE_CONTROL_IMMUTABLE,
         upsert: true
       });
       

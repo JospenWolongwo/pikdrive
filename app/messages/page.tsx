@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChatStore } from "@/stores/chatStore";
+import { useChatStore } from "@/stores";
 import type { UIConversation } from "@/types";
 import { getAvatarUrl } from "@/lib/utils/avatar-url";
 import { Button, Input, Card, CardContent, Badge, Avatar, AvatarFallback, AvatarImage, Tabs, TabsContent, TabsList, TabsTrigger, Skeleton } from "@/components/ui";
@@ -13,7 +13,7 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react";
-import { ChatDialog } from "@/components/chat";
+import { ChatDialog } from "@/components";
 import { useNotificationPromptTrigger } from "@/hooks";
 
 import { formatDistanceToNow } from "date-fns";

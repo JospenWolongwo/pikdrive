@@ -5,13 +5,13 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { useLocale } from "@/hooks";
 import { Card, CardContent, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, Skeleton } from "@/components/ui";
 import { BookingModal } from "./booking-modal";
-import { ChatDialog } from "@/components/chat";
 import {
+  ChatDialog,
   NavigationOverlay,
+  PassengerRideCard,
   RidesEmptyState,
   RideFiltersComponent,
-  PassengerRideCard,
-} from "@/components/passenger";
+} from "@/components";
 import {
   useRideFilters,
   useRidesPageData,

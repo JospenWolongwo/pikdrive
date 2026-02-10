@@ -8,6 +8,7 @@ import { toast } from "@/hooks/ui"
 import { Camera } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
 import { useLocale } from "@/hooks"
+import { CACHE_CONTROL_IMMUTABLE } from "@/lib/storage"
 
 interface AvatarUploadProps {
   uid: string
@@ -57,7 +58,10 @@ export function AvatarUpload({ uid, url, size = 150, onUpload }: AvatarUploadPro
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file)
+        .upload(filePath, file, {
+          cacheControl: CACHE_CONTROL_IMMUTABLE,
+          upsert: true,
+        })
 
       if (uploadError) {
         throw uploadError

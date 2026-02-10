@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useSupabase } from '@/providers/SupabaseProvider';
-import { usePayoutsStore } from '@/stores/payoutsStore';
+import { usePayoutsStore } from "@/stores";
 import type { PayoutWithDetails, PayoutStatistics } from '@/types/payout';
 
 interface UsePayoutStatisticsOptions {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 
 /**
  * Converts an avatar URL (filename or full URL) to a full Supabase Storage URL
@@ -21,7 +22,7 @@ export function getAvatarUrl(
   const { data: { publicUrl } } = supabase.storage
     .from('avatars')
     .getPublicUrl(avatarUrl);
-  
-  return publicUrl;
+
+  return withCacheBuster(publicUrl);
 }
 

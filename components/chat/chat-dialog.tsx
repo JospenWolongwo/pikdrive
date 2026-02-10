@@ -16,7 +16,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChatStore } from "@/stores/chatStore";
+import { useChatStore } from "@/stores";
 import { useNotificationPromptTrigger } from "@/hooks";
 import { format } from "date-fns";
 import { Send } from "lucide-react";

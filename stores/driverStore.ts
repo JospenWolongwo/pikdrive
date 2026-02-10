@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { RideWithPassengers } from "@/types";
 import { apiClient } from "@/lib/api-client";
-import { getVersionedStorageKey } from "@/lib/storage-version";
+import { createPersistConfig, CACHE_LIMITS, trimArray } from "@/lib/storage";
 
 interface DriverState {
   // Reservations state
@@ -23,6 +23,11 @@ interface DriverState {
   setReservationsLoading: (loading: boolean) => void;
   setReservationsError: (error: string | null) => void;
 }
+
+type DriverPersistedState = Pick<
+  DriverState,
+  "reservations" | "lastFetched" | "rides"
+>;
 
 export const useDriverStore = create<DriverState>()(
   persist(
@@ -93,14 +98,13 @@ export const useDriverStore = create<DriverState>()(
         set({ reservationsError: error });
       },
     }),
-    {
-      name: getVersionedStorageKey('driver-storage'),
-      // Only persist the data, not loading states
+    createPersistConfig<DriverState, DriverPersistedState>("driver-storage", {
+      // Persist data only; trim to keep storage bounded
       partialize: (state) => ({
-        reservations: state.reservations,
+        reservations: trimArray(state.reservations, CACHE_LIMITS.driverReservations),
         lastFetched: state.lastFetched,
-        rides: state.rides,
+        rides: trimArray(state.rides, CACHE_LIMITS.driverRides),
       }),
-    }
+    })
   )
 );

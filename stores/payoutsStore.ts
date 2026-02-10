@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PayoutWithDetails, PayoutStatistics } from "@/types/payout";
-import { getVersionedStorageKey } from "@/lib/storage-version";
+import { createPersistConfig, CACHE_LIMITS, trimArray } from "@/lib/storage";
 
 interface PayoutsState {
   // All payouts state
@@ -26,6 +26,11 @@ interface PayoutsState {
   getFilteredPayouts: (status?: 'pending' | 'processing' | 'completed' | 'failed' | 'all') => PayoutWithDetails[];
   getStatistics: () => PayoutStatistics;
 }
+
+type PayoutsPersistedState = Pick<
+  PayoutsState,
+  "allPayouts" | "statistics" | "lastFetch"
+>;
 
 // Calculate statistics from payouts array
 function calculateStatistics(payouts: PayoutWithDetails[]): PayoutStatistics {
@@ -275,15 +280,17 @@ export const usePayoutsStore = create<PayoutsState>()(
         }
       },
     }),
-    {
-      name: getVersionedStorageKey('payouts-storage'),
-      // Only persist the data, not loading states
-      partialize: (state) => ({
-        allPayouts: state.allPayouts,
-        statistics: state.statistics,
-        lastFetch: state.lastFetch,
-      }),
-    }
+    createPersistConfig<PayoutsState, PayoutsPersistedState>("payouts-storage", {
+      // Persist data only; trim to keep storage bounded
+      partialize: (state) => {
+        const trimmedPayouts = trimArray(state.allPayouts, CACHE_LIMITS.payouts);
+        return {
+          allPayouts: trimmedPayouts,
+          statistics: calculateStatistics(trimmedPayouts),
+          lastFetch: state.lastFetch,
+        };
+      },
+    })
   )
 );
 

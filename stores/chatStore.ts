@@ -11,8 +11,15 @@ import type {
 } from "@/types";
 import { chatApiClient } from "@/lib/api-client/chat";
 import { supabaseClient } from "@/lib/supabase-client";
-import { getVersionedStorageKey } from "@/lib/storage-version";
+import {
+  createPersistConfig,
+  CACHE_LIMITS,
+  trimArray,
+  trimRecordArrays,
+} from "@/lib/storage";
 import { subscribeToUserConversationMessages, applyIncomingConversationMessage } from "@/lib/services/client";
+import { useOfflineQueueStore } from "@/stores";
+import type { ApiRequestPayload } from "@/lib/offline/offline-queue-handlers";
 
 const MIN_CONVERSATIONS_SYNC_INTERVAL_MS = 5000;
 let conversationsSyncInFlight = false;
@@ -88,6 +95,11 @@ interface ChatState {
   getOrCreateConversation: (conversationData: CreateConversationRequest) => Promise<Conversation>;
   getRideMessages: (rideId: string) => Promise<RideMessage[]>;
 }
+
+type ChatPersistedState = Pick<
+  ChatState,
+  "conversations" | "messages" | "unreadCounts"
+>;
 
 export const useChatStore = create<ChatState>()(
   persist(
@@ -263,6 +275,29 @@ export const useChatStore = create<ChatState>()(
 
       sendMessage: async (messageData: CreateMessageRequest) => {
         try {
+          if (typeof navigator !== "undefined" && !navigator.onLine) {
+            const now = new Date().toISOString();
+            const tempId = `offline-${Date.now()}`;
+            const conversationId = messageData.conversation_id || "";
+            const payload: ApiRequestPayload = {
+              method: "POST",
+              url: "/api/messages",
+              body: messageData,
+            };
+            useOfflineQueueStore
+              .getState()
+              .enqueue("api.request", payload);
+
+            return {
+              id: tempId,
+              conversation_id: conversationId,
+              sender_id: "",
+              content: messageData.content,
+              created_at: now,
+              updated_at: now,
+            };
+          }
+
           const response = await chatApiClient.sendMessage(messageData);
           
           if (!response.success || !response.data) {
@@ -643,14 +678,17 @@ export const useChatStore = create<ChatState>()(
         }
       },
     }),
-    {
-      name: getVersionedStorageKey('chat-storage'),
-      // Only persist data, not loading states or channels
+    createPersistConfig<ChatState, ChatPersistedState>("chat-storage", {
+      // Persist data only; trim to keep storage bounded
       partialize: (state) => ({
-        conversations: state.conversations,
-        messages: state.messages,
-        unreadCounts: state.unreadCounts,
+        conversations: trimArray(state.conversations, CACHE_LIMITS.conversations),
+        messages: trimRecordArrays(
+          state.messages,
+          CACHE_LIMITS.messagesPerConversation,
+          "end"
+        ),
+        unreadCounts: trimArray(state.unreadCounts, CACHE_LIMITS.unreadCounts),
       }),
-    }
+    })
   )
 );

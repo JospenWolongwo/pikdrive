@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Payment, CreatePaymentRequest, PaymentTransactionStatus } from "@/types";
 import { paymentApiClient } from "@/lib/api-client/payment";
-import { getVersionedStorageKey } from "@/lib/storage-version";
+import { createPersistConfig, CACHE_LIMITS, trimArray } from "@/lib/storage";
 
 interface PaymentStatusResult {
   readonly success: boolean;
@@ -52,6 +52,11 @@ interface PaymentState {
   // Utility actions
   getCachedPaymentByBooking: (bookingId: string) => Payment | null;
 }
+
+type PaymentPersistedState = Pick<
+  PaymentState,
+  "userPayments" | "lastUserPaymentsFetch" | "currentPayment"
+>;
 
 export const usePaymentStore = create<PaymentState>()(
   persist(
@@ -250,14 +255,13 @@ export const usePaymentStore = create<PaymentState>()(
         return userPayments.find(payment => payment.booking_id === bookingId) || null;
       },
     }),
-    {
-      name: getVersionedStorageKey('payment-storage'),
-      // Only persist the data, not loading states
+    createPersistConfig<PaymentState, PaymentPersistedState>("payment-storage", {
+      // Persist data only; trim to keep storage bounded
       partialize: (state) => ({
-        userPayments: state.userPayments,
+        userPayments: trimArray(state.userPayments, CACHE_LIMITS.payments),
         lastUserPaymentsFetch: state.lastUserPaymentsFetch,
         currentPayment: state.currentPayment,
       }),
-    }
+    })
   )
 );

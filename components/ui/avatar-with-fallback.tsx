@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from './avatar'
 import { User } from '@supabase/supabase-js'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { useEffect, useState } from 'react'
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 
 interface AvatarWithFallbackProps {
   user?: User | null
@@ -30,8 +31,7 @@ export function AvatarWithFallback({
         .storage
         .from('avatars')
         .getPublicUrl(profile.avatar_url)
-      // Use a static cache buster to avoid hydration issues
-      setAvatarUrl(`${publicUrl}?v=1`)
+      setAvatarUrl(withCacheBuster(publicUrl))
     }
   }, [profile?.avatar_url, supabase])
 

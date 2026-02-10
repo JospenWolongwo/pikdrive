@@ -4,18 +4,18 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { ridesApiClient, ApiError } from "@/lib/api-client";
-import { useChatStore } from "@/stores/chatStore";
+import { useChatStore } from "@/stores";
 import { Tabs, TabsContent, TabsList, TabsTrigger, Dialog, DialogContent, ContentLoader } from "@/components/ui";
-import { ChatDialog } from "@/components/chat";
 import {
+  CancellationNotifications,
+  ChatDialog,
   CodeVerificationForm,
   DashboardHeader,
-  CancellationNotifications,
-  SearchAndFilters,
-  RidesTab,
   PaymentStatistics,
-} from "@/components/driver";
-import { PaymentStatusChecker } from "@/components/payment";
+  PaymentStatusChecker,
+  RidesTab,
+  SearchAndFilters,
+} from "@/components";
 
 // Custom hooks - using centralized rides store
 import { useToast, useRidesStoreData, useRidesFilteringStore, useLocale, useNotificationPromptTrigger } from "@/hooks";

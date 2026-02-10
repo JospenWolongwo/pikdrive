@@ -58,7 +58,7 @@ import {
 import { format, addDays, parse } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import { useLocale, useCityPickupPoints } from "@/hooks";
-import { PickupPointsSelectForm } from "@/components/driver";
+import { PickupPointsSelectForm } from "@/components";
 import type { CityPickupPoint, RidePickupPointInput } from "@/types";
 
 type RideFormValues = {

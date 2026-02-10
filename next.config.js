@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+const path = require("path");
 
 const nextConfig = {
   reactStrictMode: true,
@@ -42,6 +43,10 @@ const nextConfig = {
   },
   // Bundle optimization
   webpack: (config, { dev, isServer }) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      "@/components": path.resolve(__dirname, "components/index.ts"),
+    };
     if (!dev && !isServer) {
       // Optimize bundle splitting
       config.optimization.splitChunks = {
@@ -83,6 +88,16 @@ const nextConfig = {
           {
             key: "X-XSS-Protection",
             value: "1; mode=block",
+          },
+        ],
+      },
+      // Cache hero video aggressively; version filename when updating
+      {
+        source: "/hero-background.mp4",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },

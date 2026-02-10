@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, Badge } from "@/components/ui";
 import { Car, Shield } from "lucide-react";
 import { useLocale } from "@/hooks";
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 
 interface VehicleGalleryProps {
   vehicle_images: string[];
@@ -58,7 +59,7 @@ export function VehicleGallery({
               className="relative aspect-video rounded-lg overflow-hidden bg-muted"
             >
               <img
-                src={imageUrl}
+                src={withCacheBuster(imageUrl)}
                 alt={`${t("pages.becomeDriver.vehicleImages.vehiclePhoto")} ${index + 1}`}
                 className="w-full h-full object-cover"
                 onError={(e) => {

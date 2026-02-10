@@ -19,6 +19,7 @@ import {
   FileIcon,
   ZoomInIcon,
 } from "lucide-react";
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 
 interface PassengerDocumentViewerProps {
   documents: {
@@ -36,12 +37,12 @@ export default function PassengerDocumentViewer({ documents }: PassengerDocument
     
     // URLs are already complete from storage
     if (url.startsWith("http")) {
-      return url;
+      return withCacheBuster(url);
     }
 
     // Fallback for relative paths
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    return `${supabaseUrl}/storage/v1/object/public/${url}`;
+    return withCacheBuster(`${supabaseUrl}/storage/v1/object/public/${url}`);
   };
 
   const renderFilePreview = (url: string, label: string) => {
@@ -197,4 +198,3 @@ export default function PassengerDocumentViewer({ documents }: PassengerDocument
     </div>
   );
 }
-

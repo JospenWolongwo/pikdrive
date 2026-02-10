@@ -4,6 +4,7 @@
  */
 import { SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { CACHE_CONTROL_IMMUTABLE } from "@/lib/storage";
 
 /**
  * Interface for document upload parameters
@@ -57,7 +58,7 @@ export async function uploadDocument(
         const { data, error: uploadError } = await supabase.storage
           .from(publicBucket)
           .upload(filePath, file, {
-            cacheControl: '3600',
+            cacheControl: CACHE_CONTROL_IMMUTABLE,
             upsert: true
           });
           
@@ -79,7 +80,7 @@ export async function uploadDocument(
     const { data, error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(filePath, file, {
-        cacheControl: '3600',
+        cacheControl: CACHE_CONTROL_IMMUTABLE,
         upsert: true
       });
       
@@ -91,7 +92,7 @@ export async function uploadDocument(
       const { data: retryData, error: retryError } = await supabase.storage
         .from(bucketName)
         .upload(retryPath, file, {
-          cacheControl: '3600',
+          cacheControl: CACHE_CONTROL_IMMUTABLE,
           upsert: true
         });
         

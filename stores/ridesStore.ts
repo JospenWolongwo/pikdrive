@@ -11,7 +11,7 @@ import type {
 } from "@/types";
 import { ridesApiClient } from "@/lib/api-client/rides";
 import { ApiError } from "@/lib/api-client/error";
-import { getVersionedStorageKey } from "@/lib/storage-version";
+import { createPersistConfig, CACHE_LIMITS, trimArray } from "@/lib/storage";
 
 interface RidesState {
   // All rides state (for search/browse)
@@ -130,6 +130,20 @@ interface RidesState {
   setSearchFilters: (filters: Partial<RidesState['searchFilters']>) => void;
   clearSearchFilters: () => void;
 }
+
+type RidesPersistedState = Pick<
+  RidesState,
+  | "allRides"
+  | "allRidesPagination"
+  | "lastAllRidesFetch"
+  | "lastAllRidesPage"
+  | "lastAllRidesHadFilters"
+  | "driverRides"
+  | "lastDriverRidesFetch"
+  | "currentRide"
+  | "userRides"
+  | "searchFilters"
+>;
 
 export const useRidesStore = create<RidesState>()(
   persist(
@@ -624,12 +638,20 @@ export const useRidesStore = create<RidesState>()(
         set({ searchFilters: {} });
       },
     }),
-    {
-      name: getVersionedStorageKey('rides-storage'),
-      // Only persist user preferences; ride lists are always fetched fresh to avoid stale data
+    createPersistConfig<RidesState, RidesPersistedState>("rides-storage", {
+      // Persist key ride data for offline use; trim to keep storage bounded
       partialize: (state) => ({
+        allRides: trimArray(state.allRides, CACHE_LIMITS.allRides),
+        allRidesPagination: state.allRidesPagination,
+        lastAllRidesFetch: state.lastAllRidesFetch,
+        lastAllRidesPage: state.lastAllRidesPage,
+        lastAllRidesHadFilters: state.lastAllRidesHadFilters,
+        driverRides: trimArray(state.driverRides, CACHE_LIMITS.driverRides),
+        lastDriverRidesFetch: state.lastDriverRidesFetch,
+        currentRide: state.currentRide,
+        userRides: trimArray(state.userRides, CACHE_LIMITS.userRides),
         searchFilters: state.searchFilters,
       }),
-    }
+    })
   )
 );

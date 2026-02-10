@@ -29,6 +29,7 @@ import {
   ZoomInIcon,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 
 interface DocumentViewerProps {
   documents: {
@@ -188,14 +189,14 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
 
             // We don't actually need to create a signed URL since we're adding service role credentials
             // Just using the original URL is fine with our admin client
-            return url;
+            return withCacheBuster(url);
           } catch (e) {
             console.error("Error creating signed URL:", e);
-            return url; // Fallback to original URL
+            return withCacheBuster(url); // Fallback to original URL
           }
         }
 
-        return url;
+        return withCacheBuster(url);
       }
 
       // For any other case (legacy or relative URLs)
@@ -211,18 +212,18 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
 
         const completeUrl = `${supabaseUrl}/storage/v1/object/public/${storagePath}`;
         console.log("Built storage URL:", completeUrl);
-        return completeUrl;
+        return withCacheBuster(completeUrl);
       }
 
       // Handle direct bucket paths
       if (url.includes("driver_documents/")) {
         const completeUrl = `${supabaseUrl}/storage/v1/object/public/${url}`;
         console.log("Built bucket URL:", completeUrl);
-        return completeUrl;
+        return withCacheBuster(completeUrl);
       }
 
       // For all other paths (likely a raw bucket/object path)
-      return `${supabaseUrl}/storage/v1/object/public/${url}`;
+      return withCacheBuster(`${supabaseUrl}/storage/v1/object/public/${url}`);
     } catch (error) {
       console.error("Error processing URL:", error, "for URL:", url);
       return url; // Return the original URL instead of empty string to be more forgiving

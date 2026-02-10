@@ -3,8 +3,7 @@
  * Provides translations for server-side code (API routes, services)
  */
 
-import enMessages from '@/messages/en.json';
-import frMessages from '@/messages/fr.json';
+import { enMessages, frMessages } from '@/messages';
 
 type Locale = 'en' | 'fr';
 

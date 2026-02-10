@@ -20,7 +20,7 @@ import {
 } from "."
 import { submitDriverApplication, DriverApplicationData } from "@/lib/driver-application-utils"
 import { useLocale } from "@/hooks"
-import { TermsAcceptance } from "@/components/legal/terms-acceptance"
+import { TermsAcceptance } from "@/components"
 import { apiClient } from "@/lib/api-client"
 
 export default function DriverApplicationForm() {

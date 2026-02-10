@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui";
 import { Loader2, AlertCircle } from "lucide-react";
-import { PaymentMethodSelector, PhoneNumberInput, PaymentStatusChecker } from "@/components/payment";
+import { PaymentMethodSelector, PhoneNumberInput, PaymentStatusChecker } from "@/components";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui";
 import type { PaymentProviderType, PaymentStatus as PaymentTransactionStatus } from "@/lib/payment";
 import { useLocale } from "@/hooks";

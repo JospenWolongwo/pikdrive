@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRidesStore, useBookingStore } from "@/stores";
-import { useChatStore } from "@/stores/chatStore";
+import { useChatStore } from "@/stores";
 import { useToast } from "@/hooks/ui";
 import { mapUnreadCountsByRideId } from "@/lib/utils/unread-counts";
 import { subscribeToNewRides } from "@/lib/services/client/rides";

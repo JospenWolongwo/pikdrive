@@ -1,6 +1,6 @@
 'use client';
 
-import { LegalLayout } from '@/components/legal/legal-layout';
+import { LegalLayout } from '@/components';
 import { useLocale } from '@/hooks';
 
 export default function TermsPage() {

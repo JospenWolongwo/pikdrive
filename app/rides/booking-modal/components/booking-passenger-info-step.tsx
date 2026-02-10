@@ -6,6 +6,7 @@ import { Loader2, Upload, X, ArrowRight, User } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { toast } from "sonner";
 import { useLocale } from "@/hooks";
+import { CACHE_CONTROL_IMMUTABLE } from "@/lib/storage";
 
 interface BookingPassengerInfoStepProps {
   onComplete: (data: { fullName: string; idRecto: string; idVerso: string }) => void;
@@ -62,7 +63,7 @@ export function BookingPassengerInfoStep({
     const { error: uploadError } = await supabase.storage
       .from("passenger-documents")
       .upload(filePath, file, {
-        cacheControl: "3600",
+        cacheControl: CACHE_CONTROL_IMMUTABLE,
         upsert: false,
       });
 

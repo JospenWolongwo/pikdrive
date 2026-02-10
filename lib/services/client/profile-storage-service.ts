@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { CACHE_CONTROL_IMMUTABLE } from "@/lib/storage";
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 
 type Result<T> = { success: true; data: T } | { success: false; error: Error };
 
@@ -10,7 +12,7 @@ export class ProfileStorageService {
     const {
       data: { publicUrl },
     } = this.supabase.storage.from("avatars").getPublicUrl(avatarUrl);
-    return publicUrl;
+    return withCacheBuster(publicUrl);
   }
 
   async uploadAvatar(
@@ -23,7 +25,10 @@ export class ProfileStorageService {
 
       const { error: uploadError } = await this.supabase.storage
         .from("avatars")
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: CACHE_CONTROL_IMMUTABLE,
+          upsert: true,
+        });
 
       if (uploadError) {
         return {
@@ -60,7 +65,10 @@ export class ProfileStorageService {
 
       const { error: uploadError } = await this.supabase.storage
         .from("driver_documents")
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: CACHE_CONTROL_IMMUTABLE,
+          upsert: true,
+        });
 
       if (uploadError) {
         return {

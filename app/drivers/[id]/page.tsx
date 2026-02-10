@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { DriverProfileHeader } from "@/components/passenger/driver-profile-header";
-import { DriverStatistics } from "@/components/passenger/driver-statistics";
-import { VehicleGallery } from "@/components/passenger/vehicle-gallery";
-import { TrustBadges } from "@/components/passenger/trust-badges";
-import { DriverRecentRides } from "@/components/passenger/driver-recent-rides";
+import {
+  DriverProfileHeader,
+  DriverRecentRides,
+  DriverStatistics,
+  TrustBadges,
+  VehicleGallery,
+} from "@/components";
 import { Button } from "@/components/ui";
 import { ArrowLeft, AlertCircle, MapPin } from "lucide-react";
 import Link from "next/link";

@@ -3,7 +3,7 @@
 import { ThemeProvider } from 'next-themes'
 import { SupabaseProvider } from './SupabaseProvider'
 import { Toaster } from '@/components/ui'
-import { Navbar } from '@/components/navbar'
+import { Navbar } from '@/components'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

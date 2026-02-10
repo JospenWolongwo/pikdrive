@@ -8,7 +8,16 @@ import type {
   DriverBooking 
 } from "@/types";
 import { bookingApiClient } from "@/lib/api-client/booking";
-import { getVersionedStorageKey } from "@/lib/storage-version";
+import {
+  createPersistConfig,
+  CACHE_LIMITS,
+  trimArray,
+} from "@/lib/storage";
+import { useOfflineQueueStore } from "@/stores";
+import type {
+  ApiRequestPayload,
+  BookingIntentPayload,
+} from "@/lib/offline/offline-queue-handlers";
 
 interface BookingState {
   // User bookings state
@@ -75,6 +84,20 @@ interface BookingState {
   getCachedPassengerInfo: () => { isComplete: boolean | null; profileName: string } | null;
   invalidatePassengerInfoCache: () => void;
 }
+
+export const OFFLINE_BOOKING_INTENT_ERROR = "OFFLINE_BOOKING_INTENT_QUEUED";
+
+type BookingPersistedState = Pick<
+  BookingState,
+  | "userBookings"
+  | "driverBookings"
+  | "currentBooking"
+  | "lastUserBookingsFetch"
+  | "lastDriverBookingsFetch"
+  | "passengerInfoComplete"
+  | "passengerInfoProfileName"
+  | "lastPassengerInfoFetch"
+>;
 
 export const useBookingStore = create<BookingState>()(
   persist(
@@ -273,6 +296,20 @@ export const useBookingStore = create<BookingState>()(
         set({ isCreatingBooking: true, createBookingError: null });
 
         try {
+          if (typeof navigator !== "undefined" && !navigator.onLine) {
+            const payload: BookingIntentPayload = params;
+            useOfflineQueueStore
+              .getState()
+              .enqueue("booking.intent", payload, {
+                description: "Booking request",
+                entityId: params.ride_id,
+              });
+
+            set({ isCreatingBooking: false, createBookingError: null });
+
+            throw new Error(OFFLINE_BOOKING_INTENT_ERROR);
+          }
+
           const response = await bookingApiClient.createBooking(params);
           
           if (!response.success) {
@@ -299,6 +336,39 @@ export const useBookingStore = create<BookingState>()(
 
       updateBooking: async (bookingId: string, params: UpdateBookingRequest) => {
         try {
+          if (typeof navigator !== "undefined" && !navigator.onLine) {
+            const payload: ApiRequestPayload = {
+              method: "PUT",
+              url: `/api/bookings/${bookingId}`,
+              body: params,
+            };
+            useOfflineQueueStore
+              .getState()
+              .enqueue("api.request", payload);
+
+            const { userBookings, driverBookings, currentBooking } = get();
+            const updatedUserBookings = userBookings.map((booking) =>
+              booking.id === bookingId ? { ...booking, ...params } : booking
+            );
+            const updatedDriverBookings = driverBookings.map((booking) =>
+              booking.id === bookingId ? { ...booking, ...params } : booking
+            );
+
+            if (currentBooking?.id === bookingId) {
+              set({ currentBooking: { ...currentBooking, ...params } });
+            }
+
+            set({
+              userBookings: updatedUserBookings,
+              driverBookings: updatedDriverBookings,
+            });
+
+            return {
+              ...((currentBooking ?? userBookings.find(b => b.id === bookingId)) as Booking),
+              ...params,
+            } as Booking;
+          }
+
           const response = await bookingApiClient.updateBooking(bookingId, params);
           
           if (!response.success) {
@@ -335,6 +405,32 @@ export const useBookingStore = create<BookingState>()(
 
       cancelBooking: async (bookingId: string) => {
         try {
+          if (typeof navigator !== "undefined" && !navigator.onLine) {
+            const payload: ApiRequestPayload = {
+              method: "DELETE",
+              url: `/api/bookings/${bookingId}`,
+            };
+            useOfflineQueueStore
+              .getState()
+              .enqueue("api.request", payload);
+
+            const { userBookings, driverBookings, currentBooking } = get();
+            const filteredUserBookings = userBookings.filter(
+              (booking) => booking.id !== bookingId
+            );
+            const filteredDriverBookings = driverBookings.filter(
+              (booking) => booking.id !== bookingId
+            );
+
+            set({
+              userBookings: filteredUserBookings,
+              driverBookings: filteredDriverBookings,
+              currentBooking:
+                currentBooking?.id === bookingId ? null : currentBooking,
+            });
+            return;
+          }
+
           const response = await bookingApiClient.cancelBooking(bookingId);
           
           if (!response.success) {
@@ -496,14 +592,18 @@ export const useBookingStore = create<BookingState>()(
         });
       },
     }),
-    {
-      name: getVersionedStorageKey('booking-storage'),
-      // Only persist passenger info UX cache; booking lists are always fetched fresh to avoid stale data
+    createPersistConfig<BookingState, BookingPersistedState>("booking-storage", {
+      // Persist booking data for offline access; avoid loading/error flags
       partialize: (state) => ({
+        userBookings: trimArray(state.userBookings, CACHE_LIMITS.userBookings),
+        driverBookings: trimArray(state.driverBookings, CACHE_LIMITS.driverBookings),
+        currentBooking: state.currentBooking,
+        lastUserBookingsFetch: state.lastUserBookingsFetch,
+        lastDriverBookingsFetch: state.lastDriverBookingsFetch,
         passengerInfoComplete: state.passengerInfoComplete,
         passengerInfoProfileName: state.passengerInfoProfileName,
         lastPassengerInfoFetch: state.lastPassengerInfoFetch,
       }),
-    }
+    })
   )
 );

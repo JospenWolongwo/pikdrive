@@ -1,0 +1,1 @@
+export const CACHE_CONTROL_IMMUTABLE = "31536000";

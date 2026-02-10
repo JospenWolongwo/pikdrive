@@ -3,16 +3,18 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/lib/theme-colors";
 import { Providers } from "@/app/providers";
+import { SupabaseProvider } from "@/providers/SupabaseProvider";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { SupabaseProvider } from "@/providers/SupabaseProvider";
 import { RouteOptimizer } from "@/components/performance/route-optimizer";
 import PWAPrompts from "@/components/pwa/PWAPrompts";
-import { Analytics } from "@vercel/analytics/react";
+import { OfflineStatus } from "@/components/offline/OfflineStatus";
+import { OfflineQueueProcessor } from "@/components/offline/OfflineQueueProcessor";
+import { OfflineServiceWorker } from "@/components/offline/OfflineServiceWorker";
 import { OneSignalInitializer } from "@/components/notifications/OneSignalInitializer";
+import { Analytics } from "@vercel/analytics/react";
 import { defaultLocale } from "@/i18n/config";
-import enMessages from "@/messages/en.json";
-import frMessages from "@/messages/fr.json";
+import { enMessages, frMessages } from "@/messages";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -149,6 +151,9 @@ export default function RootLayout({
             <OneSignalInitializer />
             <RouteOptimizer>
               <div className="relative flex min-h-screen flex-col">
+                <OfflineServiceWorker />
+                <OfflineStatus />
+                <OfflineQueueProcessor />
                 <PWAPrompts />
                 <Navbar />
                 <main className="flex-1">{children}</main>

@@ -8,7 +8,7 @@ import { useSupabase } from "@/providers/SupabaseProvider";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { useLocale } from "@/hooks";
-import { TermsAcceptance } from "@/components/legal/terms-acceptance";
+import { TermsAcceptance } from "@/components";
 import { apiClient } from "@/lib/api-client";
 
 function LoadingFallback() {

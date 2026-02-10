@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { PaymentProviderType, PaymentStatus as PaymentTransactionStatus, getAvailableProviders } from "@/lib/payment";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useBookingStore, useRidesStore } from "@/stores";
+import { OFFLINE_BOOKING_INTENT_ERROR, useBookingStore, useRidesStore } from "@/stores";
 import { useNotificationPromptTrigger, useLocale } from "@/hooks";
 import type { RideWithDriver } from "@/types";
 import { ApiError, paymentApiClient } from "@/lib/api-client";
@@ -355,6 +355,11 @@ export function useBookingModal({
         errorMessage = error.message;
       }
       
+      if (errorMessage === OFFLINE_BOOKING_INTENT_ERROR) {
+        setBookingError(t("pages.rides.booking.seatSelection.errors.offlineQueued"));
+        return;
+      }
+
       // Store error to display in modal instead of toast
       if (errorMessage) {
         setBookingError(errorMessage);

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChatStore } from "@/stores/chatStore";
+import { useChatStore } from "@/stores";
 import { useToast } from "@/hooks/ui";
 import type { RideWithDriver } from "@/types";
 

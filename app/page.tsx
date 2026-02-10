@@ -11,7 +11,8 @@ import Image from 'next/image'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { handleDriverAction } from '@/lib/driver-routing-utils'
 import { useLocale } from "@/hooks";
-import { PassengerAdvantages } from '@/components/passenger/passenger-advantages';
+import { PassengerAdvantages } from '@/components';
+import { useEffect, useState } from "react";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -45,6 +46,20 @@ export default function Home() {
   const { user, supabase } = useSupabase()
   const router = useRouter()
   const { t } = useLocale()
+  const [loadHeroVideo, setLoadHeroVideo] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if ("requestIdleCallback" in window) {
+      const id = (window as any).requestIdleCallback(
+        () => setLoadHeroVideo(true),
+        { timeout: 1500 }
+      );
+      return () => (window as any).cancelIdleCallback?.(id);
+    }
+    const timeout = setTimeout(() => setLoadHeroVideo(true), 1200);
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
     <main className="min-h-screen">
@@ -52,13 +67,17 @@ export default function Home() {
       <section className="relative h-[90vh] flex items-center justify-center bg-gradient-to-r from-primary to-primary-foreground overflow-hidden">
         <div className="absolute inset-0 bg-black/50 z-10" />
         <video
-          autoPlay
+          autoPlay={loadHeroVideo}
           loop
           muted
           playsInline
+          preload="none"
           className="absolute inset-0 w-full h-full object-cover"
+          aria-hidden="true"
         >
-          <source src="/hero-background.mp4" type="video/mp4" />
+          {loadHeroVideo && (
+            <source src="/hero-background.mp4" type="video/mp4" />
+          )}
         </video>
         
         <motion.div 

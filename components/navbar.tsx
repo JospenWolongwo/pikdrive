@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useSupabase } from "@/providers/SupabaseProvider";
-import { useChatStore } from "@/stores/chatStore";
+import { useChatStore } from "@/stores";
 import {
   Button,
   Avatar,
@@ -43,6 +43,7 @@ import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
 import { useShowAndroidPrompt } from "@/components/pwa/PWAPrompts";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLocale, usePWA, useDeviceDetect } from "@/hooks";
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 
 export function Navbar() {
   const { supabase, user, loading } = useSupabase();
@@ -122,7 +123,7 @@ export function Navbar() {
               const {
                 data: { publicUrl },
               } = supabase.storage.from("avatars").getPublicUrl(existingProfile.avatar_url);
-              setAvatarUrl(publicUrl);
+              setAvatarUrl(withCacheBuster(publicUrl));
             }
           }
           return;
@@ -144,7 +145,7 @@ export function Navbar() {
               const {
                 data: { publicUrl },
               } = supabase.storage.from("avatars").getPublicUrl(newProfile.avatar_url);
-              setAvatarUrl(publicUrl);
+              setAvatarUrl(withCacheBuster(publicUrl));
             }
           }
         }
@@ -159,7 +160,7 @@ export function Navbar() {
         const {
           data: { publicUrl },
         } = supabase.storage.from("avatars").getPublicUrl(data.avatar_url);
-        setAvatarUrl(publicUrl);
+        setAvatarUrl(withCacheBuster(publicUrl));
       }
     };
 
@@ -205,7 +206,7 @@ export function Navbar() {
               const {
                 data: { publicUrl },
               } = supabase.storage.from("avatars").getPublicUrl(updatedProfile.avatar_url);
-              setAvatarUrl(publicUrl);
+              setAvatarUrl(withCacheBuster(publicUrl));
             } else {
               setAvatarUrl(null);
             }

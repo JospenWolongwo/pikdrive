@@ -6,12 +6,14 @@ import { useToast, useLocale, useProfile} from "@/hooks";
 import { Button } from "@/components/ui";
 import { User, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
-import { ProfileHeader } from "@/components/profile/ProfileHeader";
-import { ProfileOverviewCard } from "@/components/profile/ProfileOverviewCard";
-import { PersonalInfoCard } from "@/components/profile/PersonalInfoCard";
-import { DriverDocumentsCard } from "@/components/profile/DriverDocumentsCard";
-import { StatusCard } from "@/components/profile/StatusCard";
-import { QuickActionsCard } from "@/components/profile/QuickActionsCard";
+import {
+  DriverDocumentsCard,
+  PersonalInfoCard,
+  ProfileHeader,
+  ProfileOverviewCard,
+  QuickActionsCard,
+  StatusCard,
+} from "@/components";
 import type { DriverDocuments } from "@/types/user";
 
 export default function ProfilePage() {

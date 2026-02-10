@@ -32,14 +32,12 @@ import {
 import { useToast } from "@/hooks/ui";
 import { formatDate } from "@/lib/utils";
 import { format } from "date-fns";
-import { VerificationCodeDisplay } from "@/components/bookings";
 import { useState, useEffect, useCallback } from "react";
 import { ChevronDown, ChevronUp, X, MessageCircle, Minus } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useRouter } from "next/navigation";
-import { useChatStore } from "@/stores/chatStore";
-import { useBookingStore } from "@/stores";
-import { ChatDialog } from "@/components/chat";
+import { useBookingStore, useChatStore } from "@/stores";
+import { PendingSyncBadge, ChatDialog, VerificationCodeDisplay } from "@/components";
 import { useLocale, useBookingVerificationSubscription } from "@/hooks";
 import { ApiError, bookingApiClient } from "@/lib/api-client";
 
@@ -291,6 +289,9 @@ export function BookingCard({ booking }: BookingCardProps) {
       <CardHeader>
         <CardTitle>
           {booking.ride.from_city} → {booking.ride.to_city}
+          <span className="ml-2">
+            <PendingSyncBadge rideId={booking.ride.id} />
+          </span>
         </CardTitle>
         <CardDescription>
           {formatDate(booking.ride.departure_time)}

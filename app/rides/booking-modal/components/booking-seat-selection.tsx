@@ -6,7 +6,7 @@ import { MapPin, Users, Clock, Car, ArrowRight, Loader2, AlertCircle, X } from "
 import { format } from "date-fns";
 import type { RideWithDriver } from "@/types";
 import { useLocale } from "@/hooks";
-import { PickupPointSelector } from "@/components/passenger/pickup-point-selector";
+import { PickupPointSelector } from "@/components";
 
 interface BookingSeatSelectionProps {
   ride: RideWithDriver;

@@ -1218,7 +1218,8 @@
           "errors": {
             "alreadyPaidTitle": "Réservation Déjà Payée",
             "alreadyPaidMessage": "Vous avez déjà {seats} {seats, plural, =1 {place} other {places}} réservée(s) et payée(s) pour ce trajet. Pour ajouter plus de places, veuillez sélectionner un nombre plus élevé ci-dessus.",
-            "genericError": "Une erreur s'est produite lors de la création de votre réservation. Veuillez réessayer."
+            "genericError": "Une erreur s'est produite lors de la création de votre réservation. Veuillez réessayer.",
+            "offlineQueued": "Vous êtes hors ligne. Nous avons enregistré votre demande et reprendrons dès que vous serez en ligne."
           }
         },
         "pickupPoint": {
@@ -1443,7 +1444,20 @@
   "offline": {
     "title": "Vous êtes Hors Ligne",
     "description": "Veuillez vérifier votre connexion internet et réessayer",
-    "tryAgain": "Réessayer"
+    "tryAgain": "Réessayer",
+    "subtitle": "Mode hors ligne actif",
+    "body": "Certaines fonctionnalités nécessitent une connexion. Vos données enregistrées restent disponibles.",
+    "tipsTitle": "Pendant que vous êtes hors ligne",
+    "tip1": "Consultez vos trajets et réservations enregistrés",
+    "tip2": "Les messages seront envoyés automatiquement au retour en ligne",
+    "tip3": "Les paiements et nouvelles réservations nécessitent une connexion",
+    "backHome": "Accueil"
+  },
+  "offlineSync": {
+    "pending": "Synchronisation en attente",
+    "pendingSectionTitle": "Synchronisation en attente",
+    "pendingSectionBody": "Nous terminerons ces actions dès que vous serez en ligne.",
+    "retry": "Réessayer"
   },
   "phone": {
     "label": "Numéro de Téléphone",

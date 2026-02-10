@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage, Badge } from "@/components/ui";
 import { MapPin, Shield } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useLocale } from "@/hooks";
+import { withCacheBuster } from "@/lib/utils/cache-buster";
 import { useEffect, useState } from "react";
 
 interface DriverProfileHeaderProps {
@@ -27,13 +28,13 @@ export function DriverProfileHeader({
     if (avatar_url) {
       // Check if it's already a full URL
       if (avatar_url.startsWith('http')) {
-        setAvatarUrl(avatar_url);
+        setAvatarUrl(withCacheBuster(avatar_url));
       } else {
         // Convert storage path to full URL
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(avatar_url);
-        setAvatarUrl(publicUrl);
+        setAvatarUrl(withCacheBuster(publicUrl));
       }
     }
   }, [avatar_url, supabase]);
@@ -87,4 +88,3 @@ export function DriverProfileHeader({
     </div>
   );
 }
-

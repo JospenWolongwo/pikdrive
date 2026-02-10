@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Input, Badge, Button, Skeleton } from "@/components/ui";
 import { useToast } from "@/hooks/ui";
 import { BookingCard } from "./booking-card";
-import { useBookingStore } from "@/stores";
+import { useBookingStore, useOfflineQueueStore } from "@/stores";
 import { useLocale } from "@/hooks";
 import { Search, X } from "lucide-react";
 
@@ -106,6 +106,14 @@ export function BookingsList({ page }: { page: number }) {
     fetchUserBookings,
     refreshUserBookings 
   } = useBookingStore();
+  const queue = useOfflineQueueStore((state) => state.queue);
+  const retryFailed = useOfflineQueueStore((state) => state.retryFailed);
+  const hasPendingQueue = queue.some(
+    (action) => action.type === "booking.intent"
+  );
+  const hasFailedQueue = queue.some(
+    (action) => action.type === "booking.intent" && action.status === "failed"
+  );
   
   const [searchQuery, setSearchQuery] = useState("");
   const [totalBookings, setTotalBookings] = useState(0);
@@ -257,6 +265,26 @@ export function BookingsList({ page }: { page: number }) {
           </Badge>
         )}
       </div>
+
+      {hasPendingQueue && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold">
+                {t("offlineSync.pendingSectionTitle")}
+              </p>
+              <p className="text-sm text-amber-800">
+                {t("offlineSync.pendingSectionBody")}
+              </p>
+            </div>
+            {hasFailedQueue && (
+              <Button variant="outline" size="sm" onClick={retryFailed}>
+                {t("offlineSync.retry")}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {!filteredBookings.length ? (
         <div className="text-center py-8">
