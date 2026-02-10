@@ -1,4 +1,4 @@
-import { PassengerAdvantages } from '@/components'
+import { PassengerAdvantages } from '@/components/passenger/passenger-advantages'
 import { HomeHeroSection } from '@/components/home/home-hero-section'
 import { HomeHowItWorksSection } from '@/components/home/home-how-it-works-section'
 import { HomePopularRoutesSection } from '@/components/home/home-popular-routes-section'
@@ -17,4 +17,3 @@ export default function Home() {
     </main>
   )
 }
-
