@@ -1248,7 +1248,13 @@
           "validationError": "Veuillez sélectionner un mode de paiement et entrer un numéro de téléphone valide",
           "requestSent": "Demande de paiement envoyée. Vérifiez votre téléphone pour approuver.",
           "failed": "Le paiement a échoué",
-          "failedRetry": "Le paiement a échoué. Veuillez réessayer."
+          "failedRetry": "Le paiement a échoué. Veuillez réessayer.",
+          "tryAnotherMethod": "Veuillez essayer un autre moyen de paiement (MTN ou Orange).",
+          "tryAnotherMethodMtn": "Veuillez essayer MTN MoMo.",
+          "tryAnotherMethodOrange": "Veuillez essayer Orange Money.",
+          "cancelAndTryAnother": "Annuler et essayer un autre moyen",
+          "promptNoticeTitle": "Confirmation du paiement",
+          "promptNoticeBody": "Vous pouvez recevoir une demande pour saisir votre code PIN ou confirmer le paiement."
         },
         "success": {
           "title": "Réservation réussie !",
@@ -1460,6 +1466,9 @@
     "status": {
       "checking": "Vérification du statut du paiement...",
       "pleaseCheckPhone": "Veuillez vérifier votre téléphone pour la demande de paiement",
+      "awaitingPrompt": "Si vous n’avez pas reçu la demande, vous pouvez valider manuellement :",
+      "ussdMtn": "USSD MTN MoMo : *126#",
+      "ussdOrange": "USSD Orange Money : #150*14#",
       "verificationTimeout": "Le délai de vérification du paiement a expiré. Veuillez contacter le support.",
       "failedToVerify": "Échec de la vérification du statut du paiement. Veuillez contacter le support.",
       "failed": "Paiement échoué",

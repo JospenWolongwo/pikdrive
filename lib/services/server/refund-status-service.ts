@@ -120,11 +120,17 @@ export class ServerRefundStatusService {
         return;
       }
 
-      if (booking && booking.status !== 'cancelled' && booking.payment_status === 'partial') {
+      if (
+        booking &&
+        booking.status !== 'cancelled' &&
+        (booking.payment_status === 'partial' ||
+          booking.payment_status === 'completed' ||
+          booking.payment_status === 'partial_refund')
+      ) {
         const { error: bookingUpdateError } = await this.supabase
           .from('bookings')
           .update({
-            payment_status: 'completed',
+            payment_status: 'partial_refund',
             updated_at: new Date().toISOString(),
           })
           .eq('id', booking.id);

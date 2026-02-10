@@ -583,6 +583,7 @@ BEGIN
         WHEN 'processing' THEN 'processing'
         WHEN 'completed' THEN 'completed'
         WHEN 'refunded' THEN 'refunded'
+        WHEN 'partial_refund' THEN 'partial_refund'
         ELSE 'pending'
     END;
 END;
@@ -1030,7 +1031,7 @@ BEGIN
     END IF;
     
     -- Prevent seat reduction on paid bookings
-    IF v_existing_payment_status IN ('completed') AND p_seats < v_existing_booking_seats THEN
+    IF v_existing_payment_status IN ('completed', 'partial_refund') AND p_seats < v_existing_booking_seats THEN
       RETURN QUERY SELECT FALSE, NULL::UUID, 
         'Cannot reduce seats on a paid booking'::TEXT;
       RETURN;
@@ -1047,7 +1048,7 @@ BEGIN
     END IF;
     
     -- Determine payment_status based on existing payment_status and seat change
-    IF v_existing_payment_status = 'completed' AND p_seats > v_existing_booking_seats THEN
+    IF v_existing_payment_status IN ('completed', 'partial_refund') AND p_seats > v_existing_booking_seats THEN
       -- Adding seats to paid booking: set to partial
       v_new_payment_status := 'partial';
     ELSE
@@ -1378,7 +1379,7 @@ BEGIN
   IF TG_OP = 'INSERT' THEN
     -- Only decrement seats if payment is completed
     -- Unpaid bookings should not block seats
-    IF NEW.payment_status = 'completed' THEN
+    IF NEW.payment_status IN ('completed', 'partial_refund') THEN
       UPDATE rides 
       SET seats_available = GREATEST(0, seats_available - NEW.seats),
           updated_at = NOW()
@@ -1388,7 +1389,7 @@ BEGIN
   ELSIF TG_OP = 'DELETE' THEN
     -- Only restore seats if booking was paid
     -- Unpaid bookings never decremented seats, so no need to restore
-    IF OLD.payment_status = 'completed' THEN
+    IF OLD.payment_status IN ('completed', 'partial_refund') THEN
       UPDATE rides 
       SET seats_available = seats_available + OLD.seats,
           updated_at = NOW()
@@ -1400,7 +1401,7 @@ BEGIN
     
     -- Case 1: Payment just completed (pending/partial/failed → completed)
     -- Decrement seats for the first time
-    IF OLD.payment_status != 'completed' AND NEW.payment_status = 'completed' THEN
+    IF OLD.payment_status NOT IN ('completed', 'partial_refund') AND NEW.payment_status IN ('completed', 'partial_refund') THEN
       UPDATE rides 
       SET seats_available = GREATEST(0, seats_available - NEW.seats),
           updated_at = NOW()
@@ -1409,7 +1410,7 @@ BEGIN
     
     -- Case 2: Payment was cancelled/refunded (completed → pending/failed/refunded)
     -- Restore seats that were previously decremented
-    IF OLD.payment_status = 'completed' AND NEW.payment_status != 'completed' THEN
+    IF OLD.payment_status IN ('completed', 'partial_refund') AND NEW.payment_status NOT IN ('completed', 'partial_refund') THEN
       UPDATE rides 
       SET seats_available = seats_available + OLD.seats,
           updated_at = NOW()
@@ -1418,7 +1419,7 @@ BEGIN
     
     -- Case 3: Both OLD and NEW are completed, but seats changed
     -- Adjust seats: restore OLD.seats, decrement NEW.seats
-    IF OLD.payment_status = 'completed' AND NEW.payment_status = 'completed' AND OLD.seats != NEW.seats THEN
+    IF OLD.payment_status IN ('completed', 'partial_refund') AND NEW.payment_status IN ('completed', 'partial_refund') AND OLD.seats != NEW.seats THEN
       UPDATE rides 
       SET seats_available = GREATEST(0, seats_available + OLD.seats - NEW.seats),
           updated_at = NOW()
@@ -1437,7 +1438,7 @@ $$;
 ALTER FUNCTION "public"."update_seats_on_booking_change"() OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."update_seats_on_booking_change"() IS 'Updates seats_available in rides table only when payment_status = completed. Prevents seats from being blocked by unpaid bookings.';
+COMMENT ON FUNCTION "public"."update_seats_on_booking_change"() IS 'Updates seats_available in rides table only when payment_status is paid (completed or partial_refund). Prevents seats from being blocked by unpaid bookings.';
 
 
 

@@ -106,7 +106,21 @@ export class ServerPaymentCreationService {
       !payinResult.response.success ||
       !payinResult.response.verificationToken
     ) {
-      throw new Error(payinResult.response.message || "Failed to initiate payment");
+      const failureMessage =
+        payinResult.response.message || "Failed to initiate payment";
+      const failureTransactionId = payinResult.response.verificationToken;
+
+      try {
+        await this.paymentService.updatePaymentStatus(
+          payment.id,
+          "failed",
+          failureTransactionId ? { transaction_id: failureTransactionId } : undefined
+        );
+      } catch (updateError) {
+        console.error("Failed to mark payment as failed after initiation error:", updateError);
+      }
+
+      throw new Error(failureMessage);
     }
 
     const transactionId = payinResult.response.verificationToken;

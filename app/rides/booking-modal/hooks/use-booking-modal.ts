@@ -60,6 +60,27 @@ export function useBookingModal({
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastPaymentAmountRef = useRef<number>(0);
 
+  const buildFailureMessage = useCallback(
+    (message?: string) => {
+      const base = message || t("pages.rides.booking.payment.failedRetry");
+
+      if (/MTN|Orange|another method|autre moyen/i.test(base)) {
+        return base;
+      }
+
+      if (selectedProvider === "orange") {
+        return `${base} ${t("pages.rides.booking.payment.tryAnotherMethodMtn")}`;
+      }
+
+      if (selectedProvider === "mtn") {
+        return `${base} ${t("pages.rides.booking.payment.tryAnotherMethodOrange")}`;
+      }
+
+      return `${base} ${t("pages.rides.booking.payment.tryAnotherMethod")}`;
+    },
+    [t, selectedProvider]
+  );
+
   // Auto-select pickup point when there is exactly one option
   useEffect(() => {
     if (!isOpen) return;
@@ -76,7 +97,10 @@ export function useBookingModal({
     if (!ride?.price) return 0;
     
     // For existing paid bookings, only charge for additional seats
-    if (originalPaymentStatus === 'completed' && originalSeats !== null) {
+    if (
+      (originalPaymentStatus === 'completed' || originalPaymentStatus === 'partial_refund') &&
+      originalSeats !== null
+    ) {
       // If user hasn't added any seats yet, nothing to pay
       if (seats <= originalSeats) {
         return 0;
@@ -242,7 +266,7 @@ export function useBookingModal({
         setBookingId(cachedBooking.id);
 
         // Smart step detection based on payment status
-        if (cachedBooking.payment_status === "completed") {
+        if (cachedBooking.payment_status === "completed" || cachedBooking.payment_status === "partial_refund") {
           // Paid booking - stay at seat selection to add more seats
           setStep(1);
         } else if (cachedBooking.payment_status === "pending" || cachedBooking.payment_status === "partial") {
@@ -264,7 +288,7 @@ export function useBookingModal({
         setSelectedPickupPointId(existing.selected_pickup_point_id);
 
         // Smart step detection based on payment status
-        if (existing.payment_status === "completed") {
+        if (existing.payment_status === "completed" || existing.payment_status === "partial_refund") {
           // Paid booking - stay at seat selection to add more seats
           setStep(1);
         } else if (existing.payment_status === "pending" || existing.payment_status === "partial") {
@@ -390,7 +414,12 @@ export function useBookingModal({
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage);
+      const friendlyMessage = buildFailureMessage(errorMessage);
+      toast.error(friendlyMessage);
+      setPaymentStatus("FAILED");
+      setStatusMessage(friendlyMessage);
+      setPaymentTransactionId(null);
+      setPaymentIdempotencyKey(null);
     } finally {
       setLoading(false);
     }
@@ -400,7 +429,9 @@ export function useBookingModal({
     if (status === "completed" && ride) {
       // Optimistically update the ride's available seats for instant UI feedback
       // Only decrement if this is a new booking or adding seats to existing
-      const seatsToDecrement = originalPaymentStatus === 'completed' && originalSeats !== null
+      const seatsToDecrement =
+        (originalPaymentStatus === 'completed' || originalPaymentStatus === 'partial_refund') &&
+        originalSeats !== null
         ? seats - originalSeats  // Only new seats for paid bookings
         : seats;  // All seats for new bookings
       
@@ -425,9 +456,19 @@ export function useBookingModal({
       // Reset payment transaction ID to enable form fields
       setPaymentTransactionId(null);
       // Store error message for display
-      setStatusMessage(message || t("pages.rides.booking.payment.failedRetry"));
+      const friendlyMessage = buildFailureMessage(message);
+      setStatusMessage(friendlyMessage);
       setPaymentStatus("FAILED");
+      setPaymentIdempotencyKey(null);
     }
+  };
+
+  const handleCancelPendingPayment = () => {
+    const friendlyMessage = buildFailureMessage();
+    setPaymentTransactionId(null);
+    setPaymentStatus("FAILED");
+    setStatusMessage(friendlyMessage);
+    setPaymentIdempotencyKey(null);
   };
 
     return {
@@ -470,5 +511,6 @@ export function useBookingModal({
       handleCreateBooking,
       handlePayment,
       handlePaymentComplete,
+      handleCancelPendingPayment,
     };
 }

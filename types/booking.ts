@@ -29,7 +29,8 @@ export type PaymentStatus =
   | 'completed'
   | 'failed'
   | 'refunded'
-  | 'partial';
+  | 'partial'
+  | 'partial_refund';
 
 export interface BookingWithDetails extends Booking {
   readonly ride: RideWithDriver;

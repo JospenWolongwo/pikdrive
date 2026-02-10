@@ -1248,7 +1248,13 @@
           "validationError": "Please select a payment method and enter a valid phone number",
           "requestSent": "Payment request sent. Please check your phone to approve.",
           "failed": "Payment failed",
-          "failedRetry": "Payment failed. Please try again."
+          "failedRetry": "Payment failed. Please try again.",
+          "tryAnotherMethod": "Please try another payment method (MTN or Orange).",
+          "tryAnotherMethodMtn": "Please try MTN MoMo instead.",
+          "tryAnotherMethodOrange": "Please try Orange Money instead.",
+          "cancelAndTryAnother": "Cancel and try another method",
+          "promptNoticeTitle": "Payment confirmation",
+          "promptNoticeBody": "You may receive a prompt to enter your PIN or confirm the payment."
         },
         "success": {
           "title": "Booking Successful!",
@@ -1460,6 +1466,9 @@
     "status": {
       "checking": "Checking payment status...",
       "pleaseCheckPhone": "Please check your phone for the payment request",
+      "awaitingPrompt": "If you haven't seen the prompt yet, you can approve manually:",
+      "ussdMtn": "MTN MoMo USSD: *126#",
+      "ussdOrange": "Orange Money USSD: #150*14#",
       "verificationTimeout": "Payment verification timed out. Please contact support.",
       "failedToVerify": "Failed to verify payment status. Please contact support.",
       "failed": "Payment failed",

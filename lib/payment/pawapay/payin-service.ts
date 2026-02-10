@@ -97,6 +97,32 @@ export class PawaPayPayinService {
 
       // pawaPay v2 returns depositId in the response (or use the one we sent)
       const returnedDepositId = depositResult.depositId || depositId;
+      const depositStatus = (depositResult as any)?.status || (depositResult as any)?.data?.status;
+      const normalizedStatus = depositStatus ? String(depositStatus).toUpperCase() : null;
+
+      if (
+        normalizedStatus === PawaPayStatus.REJECTED ||
+        normalizedStatus === PawaPayStatus.FAILED ||
+        normalizedStatus === PawaPayStatus.FAILURE
+      ) {
+        const isOrange = isOrangePhoneNumber(phoneWithCountryCode);
+        const isMtn = isMTNPhoneNumber(phoneWithCountryCode);
+        const providerMessage = isOrange
+          ? "Payment rejected. Please try MTN MoMo instead."
+          : isMtn
+          ? "Payment rejected. Please try Orange Money instead."
+          : "Payment rejected. Please try another method (MTN or Orange).";
+
+        return {
+          statusCode: HTTP_CODE.BAD_REQUEST,
+          response: {
+            success: false,
+            message: providerMessage,
+            verificationToken: returnedDepositId,
+            apiResponse: depositResult,
+          },
+        };
+      }
 
       return {
         statusCode: HTTP_CODE.OK,

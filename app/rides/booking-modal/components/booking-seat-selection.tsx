@@ -59,7 +59,9 @@ export function BookingSeatSelection({
     : ride.seats_available;                          // No existing booking, standard maximum
 
   // Calculate minimum seats user can book (can't reduce paid bookings)
-  const minSeats = existingBooking && existingBooking.payment_status === 'completed' && typeof existingBooking.seats === 'number'
+  const minSeats = existingBooking &&
+    (existingBooking.payment_status === 'completed' || existingBooking.payment_status === 'partial_refund') &&
+    typeof existingBooking.seats === 'number'
     ? existingBooking.seats  // Can't reduce seats below what's already paid
     : 1;                      // Standard minimum
 
@@ -138,7 +140,7 @@ export function BookingSeatSelection({
 
         {existingBooking && !parsedError && (
           <div className={`border rounded-lg p-3 min-w-0 break-words ${
-            existingBooking.payment_status === 'completed'
+            existingBooking.payment_status === 'completed' || existingBooking.payment_status === 'partial_refund'
               ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
               : existingBooking.payment_status === 'pending'
               ? 'bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800'
@@ -146,7 +148,7 @@ export function BookingSeatSelection({
               ? 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-800'
               : 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800'
           }`}>
-            {existingBooking.payment_status === 'completed' ? (
+            {existingBooking.payment_status === 'completed' || existingBooking.payment_status === 'partial_refund' ? (
               <p className="text-sm text-green-800 dark:text-green-200">
                 <strong>{t("pages.rides.booking.seatSelection.alreadyPaid")}</strong> {t("pages.rides.booking.seatSelection.alreadyPaidDesc", { seats: existingBooking.seats })}
               </p>
@@ -280,7 +282,8 @@ export function BookingSeatSelection({
 
         <div className="flex flex-wrap justify-between items-center gap-2 text-lg font-semibold min-w-0">
           <span className="break-words min-w-0">
-            {existingBooking && existingBooking.payment_status === 'completed'
+            {existingBooking &&
+            (existingBooking.payment_status === 'completed' || existingBooking.payment_status === 'partial_refund')
               ? t("pages.rides.booking.seatSelection.additionalPrice")
               : t("pages.rides.booking.seatSelection.totalPrice")}
           </span>
@@ -290,8 +293,8 @@ export function BookingSeatSelection({
 
       <div className="space-y-3 mt-6 flex flex-wrap gap-2 justify-end min-w-0">
         {/* Show message when user hasn't added seats to PAID booking */}
-        {existingBooking && 
-         existingBooking.payment_status === 'completed' && 
+            {existingBooking && 
+         (existingBooking.payment_status === 'completed' || existingBooking.payment_status === 'partial_refund') && 
          seats === existingBooking.seats && (
           <p className="text-sm text-amber-600 dark:text-amber-500 text-center">
             {t("pages.rides.booking.seatSelection.addMoreSeatsToContinue")}
@@ -310,7 +313,7 @@ export function BookingSeatSelection({
               isBusy ||
               // ONLY disable if COMPLETED payment and no additional seats
               // Allow proceeding for pending/partial bookings (user needs to pay)
-              (existingBooking?.payment_status === 'completed' && 
+              ((existingBooking?.payment_status === 'completed' || existingBooking?.payment_status === 'partial_refund') && 
                seats === existingBooking.seats)
             }
           >

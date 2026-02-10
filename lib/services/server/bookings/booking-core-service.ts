@@ -142,7 +142,11 @@ export class ServerBookingCoreService {
         .limit(1)
         .maybeSingle();
 
-      if (completedPayment && booking.payment_status !== 'completed') {
+      if (
+        completedPayment &&
+        booking.payment_status !== 'completed' &&
+        booking.payment_status !== 'partial_refund'
+      ) {
         console.log('ðŸ”„ [BOOKING SERVICE] Reconciling booking with completed payment:', {
           bookingId: result.booking_id,
           paymentId: completedPayment.id,
@@ -410,7 +414,7 @@ export class ServerBookingCoreService {
         throw new Error('Ride price not found');
       }
 
-      if (paymentStatus === 'completed') {
+      if (paymentStatus === 'completed' || paymentStatus === 'partial_refund') {
         if (newSeats <= currentSeats) {
           throw new Error('Cannot reduce seats on a paid booking');
         }

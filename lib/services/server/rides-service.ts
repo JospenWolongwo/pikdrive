@@ -465,13 +465,18 @@ export class ServerRidesService {
     const hasBookings = Array.isArray(bookings) && bookings.length > 0;
     const hasPaidBookings =
       hasBookings &&
-      bookings!.some((b: { payment_status?: string }) => b.payment_status === 'completed');
+      bookings!.some(
+        (b: { payment_status?: string }) =>
+          b.payment_status === 'completed' || b.payment_status === 'partial_refund'
+      );
     const totalBookedSeats = hasBookings
       ? (bookings as { seats: number }[]).reduce((sum, b) => sum + (b.seats ?? 0), 0)
       : 0;
     const paidBookedSeats = hasBookings
       ? (bookings as { seats: number; payment_status?: string }[])
-          .filter((b) => b.payment_status === 'completed')
+          .filter(
+            (b) => b.payment_status === 'completed' || b.payment_status === 'partial_refund'
+          )
           .reduce((sum, b) => sum + (b.seats ?? 0), 0)
       : 0;
 
@@ -544,7 +549,11 @@ export class ServerRidesService {
         );
         if (hasPaidBookings && Array.isArray(bookings)) {
           const paidPickupIds = (bookings as { payment_status?: string; selected_pickup_point_id?: string }[])
-            .filter((b) => b.payment_status === 'completed' && b.selected_pickup_point_id)
+            .filter(
+              (b) =>
+                (b.payment_status === 'completed' || b.payment_status === 'partial_refund') &&
+                b.selected_pickup_point_id
+            )
             .map((b) => b.selected_pickup_point_id as string);
           for (const id of paidPickupIds) {
             if (!newPickupPointIds.has(id)) {

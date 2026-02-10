@@ -45,7 +45,7 @@ export class ServerRideReminderService {
           )
         `)
         .eq('status', 'confirmed')
-        .eq('payment_status', 'completed')
+        .in('payment_status', ['completed', 'partial_refund'])
         .gte('ride.departure_time', tomorrow.toISOString())
         .lt('ride.departure_time', new Date(tomorrow.getTime() + 60 * 60 * 1000).toISOString());
 
@@ -129,7 +129,7 @@ export class ServerRideReminderService {
           )
         `)
         .eq('status', 'confirmed')
-        .eq('payment_status', 'completed')
+        .in('payment_status', ['completed', 'partial_refund'])
         .gte('ride.departure_time', twoHoursLater.toISOString())
         .lt('ride.departure_time', new Date(twoHoursLater.getTime() + 60 * 60 * 1000).toISOString());
 

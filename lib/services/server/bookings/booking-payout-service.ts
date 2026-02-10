@@ -49,7 +49,7 @@ export class ServerBookingPayoutService {
       throw new BookingApiError('Only the driver can verify ride codes', 403);
     }
 
-    const allowedPaymentStatuses = ['completed', 'partial'];
+    const allowedPaymentStatuses = ['completed', 'partial', 'partial_refund'];
     if (!allowedPaymentStatuses.includes(booking.payment_status)) {
       throw new BookingApiError('Payment must be completed before verification', 400);
     }
@@ -89,7 +89,7 @@ export class ServerBookingPayoutService {
       0
     );
     const isPartialBooking =
-      booking.payment_status === 'partial' &&
+      (booking.payment_status === 'partial' || booking.payment_status === 'partial_refund') &&
       (payments?.length ?? 0) > 0 &&
       completedTotal === 0;
     const ridePrice = typeof ride.price === 'number' ? ride.price : Number(ride.price);

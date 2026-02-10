@@ -54,7 +54,7 @@ export class ServerBookingRefundService {
       throw new BookingApiError('Use booking update to add seats', 400);
     }
 
-    if (booking.payment_status !== 'completed') {
+    if (!['completed', 'partial_refund'].includes(booking.payment_status)) {
       throw new BookingApiError('Can only reduce seats for paid bookings', 400);
     }
 

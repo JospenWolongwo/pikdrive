@@ -53,6 +53,7 @@ export function mapPawaPayStatus(
     case PawaPayStatus.COMPLETED:
     case PawaPayStatus.SUCCESSFUL:
       return 'completed';
+    case PawaPayStatus.REJECTED:
     case PawaPayStatus.FAILED:
     case PawaPayStatus.FAILURE:
       return 'failed';
@@ -61,6 +62,7 @@ export function mapPawaPayStatus(
     case PawaPayStatus.PROCESSING:
     case PawaPayStatus.ENQUEUED:
     case PawaPayStatus.FOUND:
+    case PawaPayStatus.NOT_FOUND:
       return 'processing';
     case PawaPayStatus.PENDING:
       return 'pending';

@@ -37,6 +37,7 @@ interface BookingPaymentStepProps {
   onBack: () => void;
   onPaymentComplete: (status: PaymentTransactionStatus, message?: string) => void;
   onRetry?: () => void;
+  onCancelPending?: () => void;
 }
 
 export function BookingPaymentStep({
@@ -60,10 +61,11 @@ export function BookingPaymentStep({
   onBack,
   onPaymentComplete,
   onRetry,
+  onCancelPending,
 }: BookingPaymentStepProps) {
   const { t } = useLocale();
   const isPartialPayment = existingBooking && 
-    existingBooking.payment_status === 'completed' &&
+    (existingBooking.payment_status === 'completed' || existingBooking.payment_status === 'partial_refund') &&
     seats && seats > existingBooking.seats;
   return (
     <div className="min-w-0 space-y-6">
@@ -77,6 +79,15 @@ export function BookingPaymentStep({
             disabled={isBusy || paymentTransactionId !== null}
           />
         </div>
+
+        {paymentTransactionId ? (
+          <Alert>
+            <AlertTitle>{t("pages.rides.booking.payment.promptNoticeTitle")}</AlertTitle>
+            <AlertDescription>
+              {t("pages.rides.booking.payment.promptNoticeBody")}
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         <PhoneNumberInput
           value={phoneNumber}
@@ -141,6 +152,15 @@ export function BookingPaymentStep({
       </div>
 
       <div className="flex flex-wrap justify-end gap-2 mt-6">
+        {paymentTransactionId && onCancelPending && (
+          <Button
+            onClick={onCancelPending}
+            variant="outline"
+            disabled={isBusy}
+          >
+            {t("pages.rides.booking.payment.cancelAndTryAnother")}
+          </Button>
+        )}
         <Button
           onClick={onBack}
           variant="outline"

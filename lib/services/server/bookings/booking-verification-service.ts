@@ -108,7 +108,10 @@ export class ServerBookingVerificationService {
 
     assertOwner(booking, userId);
 
-    if (booking.status !== 'confirmed' && booking.payment_status !== 'completed') {
+    if (
+      booking.status !== 'confirmed' &&
+      !['completed', 'partial_refund'].includes(booking.payment_status ?? '')
+    ) {
       throw new BookingApiError(
         'Booking must be confirmed and paid to generate verification code',
         400

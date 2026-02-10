@@ -31,6 +31,13 @@ export function PaymentStatusChecker({
   const [message, setMessage] = useState(t("payment.status.checking"));
   const [lastUpdated, setLastUpdated] = useState(Date.now()); // Add timestamp for forcing re-renders
 
+  const ussdHint =
+    provider === "orange"
+      ? t("payment.status.ussdOrange")
+      : provider === "mtn"
+      ? t("payment.status.ussdMtn")
+      : null;
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
@@ -169,9 +176,11 @@ export function PaymentStatusChecker({
         </span>
       </div>
       {isPolling && (
-        <p className="text-sm text-gray-500">
-          {t("payment.status.pleaseCheckPhone")}
-        </p>
+        <div className="text-sm text-gray-500 text-center space-y-1">
+          <p>{t("payment.status.pleaseCheckPhone")}</p>
+          <p>{t("payment.status.awaitingPrompt")}</p>
+          {ussdHint ? <p className="font-medium">{ussdHint}</p> : null}
+        </div>
       )}
     </div>
   );

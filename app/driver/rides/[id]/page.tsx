@@ -111,7 +111,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     ride?.bookings?.reduce((sum: number, b: any) => sum + (b.seats ?? 0), 0) ?? 0;
   const paidBookedSeats =
     ride?.bookings
-      ?.filter((b: any) => b.payment_status === "completed")
+      ?.filter((b: any) => b.payment_status === "completed" || b.payment_status === "partial_refund")
       .reduce((sum: number, b: any) => sum + (b.seats ?? 0), 0) ?? 0;
   const hasPaidBookings = paidBookedSeats > 0;
   const minSeatsAllowed = Math.max(1, totalBookedSeats, paidBookedSeats);
@@ -119,7 +119,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     hasPaidBookings && ride?.bookings
       ? [...new Set(
           ride.bookings
-            .filter((b) => b.payment_status === "completed")
+            .filter((b) => b.payment_status === "completed" || b.payment_status === "partial_refund")
             .map((b) => b.selected_pickup_point_id)
             .filter((id): id is string => Boolean(id))
         )]

@@ -85,12 +85,14 @@ export function BookingCard({ booking }: BookingCardProps) {
   useBookingVerificationSubscription(booking.id, onVerified);
 
   // Determine if we should show verification code (use displayStatus for instant UI)
-  // Include 'partial' so user still sees code after reducing seats (one paid seat left)
+  // Include 'partial' and 'partial_refund' so user still sees code after reducing seats (one paid seat left)
   const shouldShowVerification =
     !codeVerified &&
     (displayStatus === "pending_verification" ||
       displayStatus === "confirmed") &&
-    (booking.payment_status === "completed" || booking.payment_status === "partial");
+    (booking.payment_status === "completed" ||
+      booking.payment_status === "partial" ||
+      booking.payment_status === "partial_refund");
 
   // Use displayStatus so the card updates instantly when we optimistically set cancelled
   // Block cancel/reduce once driver has verified code (driver already paid – company protection)
@@ -100,7 +102,7 @@ export function BookingCard({ booking }: BookingCardProps) {
 
   // Determine if booking can have seats reduced (paid booking with > 1 seat, and not yet verified)
   const canReduceSeats =
-    booking.payment_status === "completed" &&
+    (booking.payment_status === "completed" || booking.payment_status === "partial_refund") &&
     booking.seats > 1 &&
     canCancel;
 

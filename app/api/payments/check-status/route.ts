@@ -167,6 +167,18 @@ export async function POST(request: NextRequest) {
           || checkResult.response.apiResponse?.status 
           || statusString;
         newStatus = mapPawaPayStatus(pawapayStatus);
+
+        const createdAtMs = payment.created_at ? new Date(payment.created_at).getTime() : null;
+        const ageMs = createdAtMs ? Date.now() - createdAtMs : null;
+        const notFoundTtlMs = 90 * 1000;
+
+        if (String(pawapayStatus).toUpperCase() === 'NOT_FOUND' && ageMs !== null && ageMs > notFoundTtlMs) {
+          newStatus = 'failed';
+          userFriendlyErrorMessage = buildFailureMessage(
+            userFriendlyErrorMessage,
+            payment.provider || provider || actualProvider
+          );
+        }
         
         // Parse failure reason to user-friendly message if payment failed
         if (newStatus === 'failed' && failureReason) {
@@ -180,8 +192,34 @@ export async function POST(request: NextRequest) {
           userFriendlyMessage: userFriendlyErrorMessage,
         });
 
+        if (newStatus === 'failed') {
+          userFriendlyErrorMessage = buildFailureMessage(
+            userFriendlyErrorMessage,
+            payment.provider || provider || actualProvider
+          );
+        }
+
         // Update payment if status changed
         if (newStatus !== payment.status) {
+          if (!paymentService.validateStateTransition(payment.status, newStatus)) {
+            console.warn('⚠️ [CHECK-STATUS] Invalid status transition ignored:', {
+              paymentId: payment.id,
+              oldStatus: payment.status,
+              newStatus,
+            });
+
+            return NextResponse.json({
+              success: true,
+              data: {
+                status: payment.status,
+                message: getStatusMessage(payment.status),
+                paymentId: payment.id,
+                transactionId: payment.transaction_id,
+                warning: 'Status transition ignored',
+              },
+            });
+          }
+
           console.log('🔄 [CHECK-STATUS] Status changed, orchestrating update:', {
             oldStatus: payment.status,
             newStatus,
@@ -264,6 +302,32 @@ export async function POST(request: NextRequest) {
 
         // Update payment if status changed
         if (newStatus !== payment.status) {
+          if (newStatus === 'failed') {
+            userFriendlyErrorMessage = buildFailureMessage(
+              userFriendlyErrorMessage,
+              payment.provider || provider || actualProvider
+            );
+          }
+
+          if (!paymentService.validateStateTransition(payment.status, newStatus)) {
+            console.warn('⚠️ [CHECK-STATUS] Invalid status transition ignored:', {
+              paymentId: payment.id,
+              oldStatus: payment.status,
+              newStatus,
+            });
+
+            return NextResponse.json({
+              success: true,
+              data: {
+                status: payment.status,
+                message: getStatusMessage(payment.status),
+                paymentId: payment.id,
+                transactionId: payment.transaction_id,
+                warning: 'Status transition ignored',
+              },
+            });
+          }
+
           console.log('🔄 [CHECK-STATUS] Status changed, orchestrating update:', {
             oldStatus: payment.status,
             newStatus,
@@ -353,4 +417,18 @@ function getStatusMessage(status: string): string {
   };
   
   return messages[status] || 'Unknown payment status';
+}
+
+function buildFailureMessage(baseMessage: string | undefined, provider: string): string {
+  const fallback = baseMessage || 'Payment failed. Please try again.';
+
+  if (provider === 'mtn') {
+    return `${fallback} Please try Orange Money instead.`;
+  }
+
+  if (provider === 'orange') {
+    return `${fallback} Please try MTN MoMo instead.`;
+  }
+
+  return `${fallback} Please try another method (MTN or Orange).`;
 }
