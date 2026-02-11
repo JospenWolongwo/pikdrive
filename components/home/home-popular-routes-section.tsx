@@ -5,6 +5,7 @@ import { useLocale } from '@/hooks'
 import { Card } from '@/components/ui'
 import { useRouter } from 'next/navigation'
 import { Building2, Mountain, Waves, MapPin, ChevronRight, Clock } from 'lucide-react'
+import Image from 'next/image'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -44,7 +45,8 @@ export function HomePopularRoutesSection() {
       price: '5000',
       duration: '4h',
       icon: 'city',
-      description: t('pages.home.popularRoutes.routes.route1.description')
+      description: t('pages.home.popularRoutes.routes.route1.description'),
+      image: '/images/towns/douala-yaounde.jpg'
     },
     {
       from: t('pages.home.popularRoutes.routes.route2.from'),
@@ -52,7 +54,8 @@ export function HomePopularRoutesSection() {
       price: '4000',
       duration: '3h',
       icon: 'mountain',
-      description: t('pages.home.popularRoutes.routes.route2.description')
+      description: t('pages.home.popularRoutes.routes.route2.description'),
+      image: '/images/towns/yaounde-bafoussam.jpg'
     },
     {
       from: t('pages.home.popularRoutes.routes.route3.from'),
@@ -60,7 +63,8 @@ export function HomePopularRoutesSection() {
       price: '3500',
       duration: '3h',
       icon: 'beach',
-      description: t('pages.home.popularRoutes.routes.route3.description')
+      description: t('pages.home.popularRoutes.routes.route3.description'),
+      image: '/images/towns/douala-kribi.jpg'
     }
   ]
 
@@ -110,19 +114,28 @@ export function HomePopularRoutesSection() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full"></div>
 
                 <div className="relative p-6">
+                  <div className="relative h-40 rounded-xl overflow-hidden mb-5">
+                    <Image
+                      src={route.image}
+                      alt={`${route.from} ${t('pages.home.popularRoutes.popularRoute')}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 90vw, 30vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                    <div className="absolute bottom-3 left-3 w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md">
+                      {getRouteIcon(route.icon)}
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg">
-                        {getRouteIcon(route.icon)}
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                          {t('pages.home.popularRoutes.popularRoute')}
-                        </p>
-                        <h3 className="text-lg font-bold text-foreground">
-                          {route.from} &rarr; {route.to}
-                        </h3>
-                      </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                        {t('pages.home.popularRoutes.popularRoute')}
+                      </p>
+                      <h3 className="text-lg font-bold text-foreground">
+                        {route.from} &rarr; {route.to}
+                      </h3>
                     </div>
                     <div className="w-12 h-12 bg-gradient-to-br from-primary to-amber-500 rounded-full flex items-center justify-center group-hover:animate-pulse">
                       <ChevronRight className="w-6 h-6 text-primary-foreground" />

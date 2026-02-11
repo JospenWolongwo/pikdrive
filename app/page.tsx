@@ -7,7 +7,7 @@ import { HomeCtaSection } from '@/components/home/home-cta-section'
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen select-none">
       <HomeHeroSection />
       <HomeHowItWorksSection />
       <PassengerAdvantages />

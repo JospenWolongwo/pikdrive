@@ -39,6 +39,8 @@ import {
 } from "@/components/ui";
 import type { RideWithDetails, DashboardBooking } from "@/types";
 import { useLocale } from "@/hooks";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { getAvatarUrl } from "@/lib/utils/avatar-url";
 
 interface RideCardProps {
   ride: RideWithDetails;
@@ -81,6 +83,7 @@ export function RideCard({
   isPastRide = false,
 }: RideCardProps) {
   const { t } = useLocale();
+  const { supabase } = useSupabase();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -295,7 +298,7 @@ export function RideCard({
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10 flex-shrink-0">
                           <AvatarImage
-                            src={booking.user?.avatar_url || undefined}
+                            src={getAvatarUrl(supabase, booking.user?.avatar_url) || undefined}
                             alt={booking.user?.full_name || "User"}
                           />
                           <AvatarFallback className="text-sm">

@@ -79,7 +79,7 @@ export function PassengerAdvantages() {
         relative overflow-hidden h-full
         bg-gradient-to-br ${advantage.gradient}
         border-2 ${advantage.borderColor}
-        hover:shadow-xl hover:scale-105
+        hover:shadow-xl md:hover:scale-105
         transition-all duration-300
         group
       `}
@@ -104,7 +104,7 @@ export function PassengerAdvantages() {
           w-16 h-16 rounded-xl
           flex items-center justify-center
           text-primary
-          group-hover:scale-110
+          md:group-hover:scale-110
           transition-transform duration-300
         `}>
           {advantage.icon}
@@ -148,9 +148,9 @@ export function PassengerAdvantages() {
           <Carousel
             setApi={setAdvantagesApi}
             opts={{ align: "start" }}
-            className="-mx-1"
+            className="-mx-1 py-2"
           >
-            <CarouselContent>
+            <CarouselContent className="py-1">
               {advantages.map((advantage, index) => (
                 <CarouselItem key={index} className="basis-[88%] pl-4">
                   <motion.div
