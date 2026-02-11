@@ -74,6 +74,11 @@ const getStatusColor = (status: string): string => {
   }
 };
 
+const isPaidBookingStatus = (paymentStatus?: string | null): boolean => {
+  if (!paymentStatus) return false;
+  return ["completed", "partial_refund"].includes(paymentStatus.toLowerCase());
+};
+
 export function RideCard({
   ride,
   onOpenChat,
@@ -247,7 +252,7 @@ export function RideCard({
               {/* Show payment status indicator */}
               {(() => {
                 const paidBookings = ride.bookings.filter(
-                  (b) => b.payment_status === "completed"
+                  (b) => isPaidBookingStatus(b.payment_status)
                 );
                 if (paidBookings.length > 0) {
                   return (
@@ -350,13 +355,13 @@ export function RideCard({
                             {!isPastRide && booking.payment_status && (
                               <Badge
                                 variant={
-                                  booking.payment_status === "completed"
+                                  isPaidBookingStatus(booking.payment_status)
                                     ? "default"
                                     : "secondary"
                                 }
                                 className="flex items-center gap-1 text-xs px-2 py-1"
                               >
-                                {booking.payment_status === "completed" ? (
+                                {isPaidBookingStatus(booking.payment_status) ? (
                                   <>
                                     <CreditCard className="h-3 w-3" />
                                     {t("pages.driver.dashboard.rideCard.paidStatus")}
@@ -377,7 +382,7 @@ export function RideCard({
                       {!isPastRide && (
                         <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
                           {/* Payment verification button */}
-                          {booking.payment_status !== "completed" &&
+                          {!isPaidBookingStatus(booking.payment_status) &&
                             booking.transaction_id &&
                             booking.payment_provider && (
                               <Button
