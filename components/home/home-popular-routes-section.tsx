@@ -46,7 +46,7 @@ export function HomePopularRoutesSection() {
       duration: '4h',
       icon: 'city',
       description: t('pages.home.popularRoutes.routes.route1.description'),
-      image: '/images/towns/douala-yaounde.jpg'
+      image: '/images/towns/douala-deido.jpg'
     },
     {
       from: t('pages.home.popularRoutes.routes.route2.from'),
@@ -55,7 +55,7 @@ export function HomePopularRoutesSection() {
       duration: '3h',
       icon: 'mountain',
       description: t('pages.home.popularRoutes.routes.route2.description'),
-      image: '/images/towns/yaounde-bafoussam.jpg'
+      image: '/images/towns/yaounde-reunification.jpg'
     },
     {
       from: t('pages.home.popularRoutes.routes.route3.from'),
@@ -64,7 +64,7 @@ export function HomePopularRoutesSection() {
       duration: '3h',
       icon: 'beach',
       description: t('pages.home.popularRoutes.routes.route3.description'),
-      image: '/images/towns/douala-kribi.jpg'
+      image: '/images/towns/kribi-beach.jpg'
     }
   ]
 
