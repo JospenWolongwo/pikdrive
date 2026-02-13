@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     // Find refund by transaction_id
     const { data: refund, error: findError } = await supabase

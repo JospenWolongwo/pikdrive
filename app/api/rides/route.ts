@@ -22,7 +22,7 @@ function optionalInt(searchParams: URLSearchParams, key: string): number | undef
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const { searchParams } = new URL(request.url);
 
     const params = {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     const {
       data: { session },

@@ -4,7 +4,7 @@ import { PaymentApiError, ServerPaymentCreationService } from "@/lib/services/se
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     const {
       data: { session },

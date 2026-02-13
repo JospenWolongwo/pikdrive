@@ -5,7 +5,7 @@ import { BookingApiError, ServerBookingService } from '@/lib/services/server';
 // Backup API endpoint that directly uses the RPC function for simplicity
 export async function POST(request: Request) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

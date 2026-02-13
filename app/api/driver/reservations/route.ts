@@ -4,7 +4,7 @@ import type { RideWithPassengers, Passenger } from "@/types";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     // Verify user session
     const {

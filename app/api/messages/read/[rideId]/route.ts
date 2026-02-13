@@ -19,7 +19,7 @@ export async function POST(
       );
     }
 
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const { user, errorType, error: authError } = await getUserWithRetry(supabase);
 
     if (!user) {

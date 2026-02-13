@@ -30,7 +30,7 @@ export async function PATCH(
       );
     }
 
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const result = await changeDriverStatusAsAdmin(supabase, driverId, status as 'approved' | 'rejected' | 'inactive');
 
     if (!result.success) {

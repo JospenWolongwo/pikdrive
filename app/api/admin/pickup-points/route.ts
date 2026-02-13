@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const auth = await requireAdmin(supabase);
     if ("status" in auth) {
       return NextResponse.json(
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const auth = await requireAdmin(supabase);
     if ("status" in auth) {
       return NextResponse.json(

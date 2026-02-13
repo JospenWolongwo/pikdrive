@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Create a Supabase client using cookie-based authentication
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     // Verify user session
     const {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Create a Supabase client using cookie-based authentication
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     // Verify user session
     const {

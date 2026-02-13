@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const service = new ServerCityPickupPointsService(supabase);
     const data = await service.list(city.trim());
     return NextResponse.json({ success: true, data });

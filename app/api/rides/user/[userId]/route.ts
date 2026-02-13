@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     // Verify user session
     const {

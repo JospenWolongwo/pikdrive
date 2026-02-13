@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const serviceSupabase = createServiceRoleClient();
     const bookingService = new ServerBookingService(supabase, serviceSupabase);
 

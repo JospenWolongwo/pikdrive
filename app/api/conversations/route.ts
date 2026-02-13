@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a Supabase client using cookie-based authentication
-    const supabaseClient = createApiSupabaseClient();
+    const supabaseClient = await createApiSupabaseClient();
 
     // Verify user authentication with retry
     const { user, errorType, error: authError } = await getUserWithRetry(supabaseClient);

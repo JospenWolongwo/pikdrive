@@ -8,7 +8,7 @@ import { OrangeMoneyCallbackError, ServerOrangeMoneyCallbackService } from "@/li
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const callbackService = new ServerOrangeMoneyCallbackService(supabase);
 
     const callback = await request.json();

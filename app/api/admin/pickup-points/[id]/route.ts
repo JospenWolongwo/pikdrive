@@ -10,7 +10,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const auth = await requireAdmin(supabase);
     if ("status" in auth) {
       return NextResponse.json(
@@ -46,7 +46,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const auth = await requireAdmin(supabase);
     if ("status" in auth) {
       return NextResponse.json(

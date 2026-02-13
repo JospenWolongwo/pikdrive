@@ -5,7 +5,7 @@ import { Environment, PawaPayApiUrl } from '@/types/payment-ext';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     // Verify user session
     const {

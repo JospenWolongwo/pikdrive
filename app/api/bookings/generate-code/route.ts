@@ -5,7 +5,7 @@ import { BookingApiError, ServerBookingService } from '@/lib/services/server';
 // This is a server-side API route for generating verification codes
 export async function POST(request: Request) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

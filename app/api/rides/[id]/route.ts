@@ -29,7 +29,7 @@ function toErrorResponse(error: unknown): NextResponse {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const {
       data: { session },
       error: sessionError,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const {
       data: { session },
       error: sessionError,
@@ -94,7 +94,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const {
       data: { session },
       error: sessionError,

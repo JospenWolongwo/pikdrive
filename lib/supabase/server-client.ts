@@ -4,15 +4,16 @@
  */
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getVersionedStorageKey } from "@/lib/storage-version";
 
 /**
  * Creates a server-side Supabase client for API routes
  * Handles cookie management and authentication configuration
+ * Dynamically imports next/headers to avoid server-only module errors
  */
-export function createApiSupabaseClient(): SupabaseClient {
+export async function createApiSupabaseClient(): Promise<SupabaseClient> {
+  const { cookies } = await import('next/headers');
   const cookieStore = cookies();
   const storageKey = getVersionedStorageKey("auth-storage");
   
@@ -110,7 +111,7 @@ export async function createAuthenticatedSupabaseClient(): Promise<{
   supabase: SupabaseClient;
   user: any;
 }> {
-  const supabase = createApiSupabaseClient();
+  const supabase = await createApiSupabaseClient();
   
   const { data: { user }, error } = await supabase.auth.getUser();
   

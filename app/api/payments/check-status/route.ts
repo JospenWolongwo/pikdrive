@@ -7,7 +7,7 @@ import { Environment as EnvEnum, PawaPayApiUrl } from '@/types/payment-ext';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const paymentService = new ServerPaymentService(supabase);
     const orchestrationService = new ServerPaymentOrchestrationService(supabase);
 

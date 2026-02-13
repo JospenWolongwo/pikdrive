@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const driverService = new ServerDriverService(supabase);
 
     const profile = await driverService.getPublicDriverProfile(params.id);

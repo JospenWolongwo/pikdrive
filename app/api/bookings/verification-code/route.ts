@@ -4,7 +4,7 @@ import { BookingApiError, ServerBookingService } from '@/lib/services/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
 
     const {
       data: { user },

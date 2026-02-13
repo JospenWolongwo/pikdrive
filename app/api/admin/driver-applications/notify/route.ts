@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiSupabaseClient();
+    const supabase = await createApiSupabaseClient();
     const body = await request.json().catch(() => ({}));
     const driverId = body?.driverId as string | undefined;
     const submittedAt = body?.submittedAt as string | undefined;
