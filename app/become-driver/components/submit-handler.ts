@@ -78,9 +78,7 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
 
     try {
       setIsSubmitting(true);
-      console.log("✅ User can proceed with driver application");
 
-      // ISO format timestamp for PostgreSQL compatibility
       const submissionIsoTimestamp = new Date().toISOString();
       // Numeric timestamp for duration calculations
       const submissionTimestamp = Date.now();
