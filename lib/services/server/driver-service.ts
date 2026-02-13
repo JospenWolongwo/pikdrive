@@ -17,7 +17,7 @@ export class ServerDriverService {
     // Fetch driver profile - only approved drivers
     const { data: profile, error: profileError } = await this.supabase
       .from('profiles')
-      .select('id, full_name, avatar_url, city, driver_status, created_at')
+      .select('id, full_name, avatar_url, city, driver_status, created_at, average_rating, total_reviews')
       .eq('id', driverId)
       .eq('driver_status', 'approved')
       .single();
@@ -110,6 +110,8 @@ export class ServerDriverService {
       created_at: profile.created_at,
       vehicle_images: vehicleImages,
       verification_status: verificationStatus,
+      average_rating: profile.average_rating || undefined,
+      total_reviews: profile.total_reviews || undefined,
       statistics: {
         totalTrips: totalTrips || 0,
         totalPassengers,

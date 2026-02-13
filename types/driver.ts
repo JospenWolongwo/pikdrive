@@ -68,6 +68,8 @@ export interface DriverPublicProfile {
   readonly created_at: string;
   readonly vehicle_images: string[];
   readonly verification_status: string;
+  readonly average_rating?: number;
+  readonly total_reviews?: number;
   readonly statistics: {
     readonly totalTrips: number;
     readonly totalPassengers: number;

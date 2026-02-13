@@ -468,14 +468,6 @@ export function useBookingModal({
     }
   };
 
-  const handleCancelPendingPayment = () => {
-    const friendlyMessage = buildFailureMessage();
-    setPaymentTransactionId(null);
-    setPaymentStatus("FAILED");
-    setStatusMessage(friendlyMessage);
-    setPaymentIdempotencyKey(null);
-  };
-
     return {
       // State
       step,
@@ -516,6 +508,5 @@ export function useBookingModal({
       handleCreateBooking,
       handlePayment,
       handlePaymentComplete,
-      handleCancelPendingPayment,
     };
 }

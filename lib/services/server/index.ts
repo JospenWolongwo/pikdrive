@@ -33,3 +33,5 @@ export * from "./ride-reminder-service";
 export * from "./rides-service";
 export * from "./validate-ride-pickup-points";
 export * from "./whatsapp-notification-service";
+export * from "./review-service";
+export * from "./review-request-service";

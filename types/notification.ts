@@ -22,6 +22,9 @@ export type NotificationType =
   | 'ride_cancelled'
   | 'ride_reminder'
   | 'pickup_point_update'
+  | 'review_request_passenger'
+  | 'review_request_driver'
+  | 'review_received'
   | 'announcement';
 
 export interface NotificationData {
@@ -80,6 +83,9 @@ export const NOTIFICATION_SOUNDS: Record<NotificationType, string> = {
   ride_cancelled: '/sounds/booking-cancelled.wav', // Reuse for now
   ride_reminder: '/sounds/new-message.wav', // Reuse for now
   pickup_point_update: '/sounds/new-message.wav', // Reuse for now
+  review_request_passenger: '/sounds/new-message.wav',
+  review_request_driver: '/sounds/new-message.wav',
+  review_received: '/sounds/payment-success.wav',
   announcement: '/sounds/announcement.wav',
 };
 
@@ -113,6 +119,9 @@ export const NOTIFICATION_ACTIONS: Record<NotificationType, (data: NotificationD
   ride_cancelled: () => `/bookings`,
   ride_reminder: () => `/bookings`,
   pickup_point_update: () => `/bookings`,
+  review_request_passenger: (data) => data.bookingId ? `/reviews/submit?booking_id=${data.bookingId}` : `/bookings`,
+  review_request_driver: (data) => data.bookingId ? `/reviews/submit?booking_id=${data.bookingId}` : `/bookings`,
+  review_received: () => `/profile`,
   announcement: () => '/announcements',
 };
 

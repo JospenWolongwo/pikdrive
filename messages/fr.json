@@ -587,12 +587,16 @@
     "driverProfile": {
       "certifiedDriver": "Conducteur certifié PikDrive",
       "memberSince": "Membre depuis",
+      "reviewsCount": "avis",
       "totalTrips": "Trajets réalisés",
       "totalTripsDescription": "Trajets complétés",
       "totalPassengers": "Passagers transportés",
       "totalPassengersDescription": "Passagers au total",
       "memberSinceLabel": "Membre depuis",
       "memberSinceDescription": "Date d'inscription",
+      "reviews": {
+        "title": "Avis"
+      },
       "recentRides": {
         "title": "Trajets récents",
         "viewAllRides": "Voir tous les trajets de ce conducteur"
@@ -1596,6 +1600,68 @@
       "understandPassword": "J'ai lu et accepte le système mot de passe + séquestre",
       "giveCodeAfterMeet": "Je donnerai mon code uniquement après avoir rencontré le conducteur",
       "confirmUnderstanding": "Je confirme avoir lu et compris le fonctionnement de PikDrive"
+    }
+  },
+  "reviews": {
+    "tags": {
+      "punctual": "Ponctuel",
+      "friendly": "Sympa",
+      "cleanCar": "Voiture Propre",
+      "safeDriver": "Conduite Sûre",
+      "professional": "Professionnel",
+      "respectful": "Respectueux",
+      "onTime": "À l'Heure",
+      "goodCommunication": "Bonne Communication",
+      "pleasant": "Agréable"
+    },
+    "submit": {
+      "title": "Laisser un Avis",
+      "subtitle": "Partagez votre expérience",
+      "reviewingLabel": "Vous évaluez",
+      "routeLabel": "Trajet",
+      "ratingLabel": "Comment s'est passé votre trajet ?",
+      "tagsLabel": "Commentaire rapide",
+      "commentLabel": "Commentaire additionnel",
+      "optional": "optionnel",
+      "commentPlaceholder": "Parlez-nous de votre expérience...",
+      "submitButton": "Envoyer l'Avis",
+      "submitting": "Envoi en cours...",
+      "loading": "Chargement des informations de réservation...",
+      "ratings": {
+        "excellent": "Excellent !",
+        "good": "Bien",
+        "average": "Moyen",
+        "poor": "Médiocre",
+        "veryPoor": "Très Médiocre"
+      },
+      "success": {
+        "title": "Merci !",
+        "description": "Votre avis a été soumis avec succès.",
+        "backToBookings": "Retour aux Réservations"
+      },
+      "error": {
+        "title": "Impossible de Soumettre l'Avis",
+        "description": "Impossible de soumettre l'avis pour le moment.",
+        "backToBookings": "Retour aux Réservations"
+      },
+      "errors": {
+        "ratingRequired": "Veuillez sélectionner une note",
+        "failed": "Échec de l'envoi de l'avis",
+        "network": "Erreur réseau. Veuillez réessayer."
+      }
+    },
+    "list": {
+      "noReviews": "Aucun avis pour le moment",
+      "reviewsCount": "avis",
+      "filter": "Filtrer",
+      "allRatings": "Toutes les notes",
+      "loading": "Chargement...",
+      "loadMore": "Charger Plus",
+      "noReviewsWithFilter": "Aucun avis avec cette note"
+    },
+    "summary": {
+      "noReviews": "Aucun avis pour le moment",
+      "reviewsLabel": "avis"
     }
   },
   "footer": {

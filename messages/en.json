@@ -587,12 +587,16 @@
     "driverProfile": {
       "certifiedDriver": "Certified PikDrive Driver",
       "memberSince": "Member since",
+      "reviewsCount": "reviews",
       "totalTrips": "Total Trips",
       "totalTripsDescription": "Completed trips",
       "totalPassengers": "Passengers Transported",
       "totalPassengersDescription": "Total passengers",
       "memberSinceLabel": "Member Since",
       "memberSinceDescription": "Registration date",
+      "reviews": {
+        "title": "Reviews"
+      },
       "recentRides": {
         "title": "Recent Rides",
         "viewAllRides": "View all rides from this driver"
@@ -1598,6 +1602,68 @@
       "confirmUnderstanding": "I confirm I have read and understood how PikDrive works"
     }
   },
+  "reviews": {
+    "tags": {
+      "punctual": "Punctual",
+      "friendly": "Friendly",
+      "cleanCar": "Clean Car",
+      "safeDriver": "Safe Driver",
+      "professional": "Professional",
+      "respectful": "Respectful",
+      "onTime": "On Time",
+      "goodCommunication": "Good Communication",
+      "pleasant": "Pleasant"
+    },
+    "submit": {
+      "title": "Leave a Review",
+      "subtitle": "Share your experience",
+      "reviewingLabel": "Reviewing",
+      "routeLabel": "Route",
+      "ratingLabel": "How was your experience?",
+      "tagsLabel": "Quick feedback",
+      "commentLabel": "Additional comments",
+      "optional": "optional",
+      "commentPlaceholder": "Tell us more about your experience...",
+      "submitButton": "Submit Review",
+      "submitting": "Submitting...",
+      "loading": "Loading booking information...",
+      "ratings": {
+        "excellent": "Excellent!",
+        "good": "Good",
+        "average": "Average",
+        "poor": "Poor",
+        "veryPoor": "Very Poor"
+      },
+      "success": {
+        "title": "Thank You!",
+        "description": "Your review has been submitted successfully.",
+        "backToBookings": "Back to Bookings"
+      },
+      "error": {
+        "title": "Cannot Submit Review",
+        "description": "Unable to submit review at this time.",
+        "backToBookings": "Back to Bookings"
+      },
+      "errors": {
+        "ratingRequired": "Please select a rating",
+        "failed": "Failed to submit review",
+        "network": "Network error. Please try again."
+      }
+    },
+    "list": {
+      "noReviews": "No reviews yet",
+      "reviewsCount": "reviews",
+      "filter": "Filter",
+      "allRatings": "All ratings",
+      "loading": "Loading...",
+      "loadMore": "Load More",
+      "noReviewsWithFilter": "No reviews with this rating"
+    },
+    "summary": {
+      "noReviews": "No reviews yet",
+      "reviewsLabel": "reviews"
+    }
+  },
   "footer": {
     "tagline": "Discover Cameroon, Together",
     "copyright": "{year} PikDrive. All rights reserved."
@@ -1607,6 +1673,5 @@
     "description": "Connect with trusted drivers for safe and affordable intercity travel in Cameroon."
   }
 }
-
 
 

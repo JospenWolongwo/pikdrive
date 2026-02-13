@@ -693,4 +693,76 @@ export class ServerMultiChannelNotificationService {
       whatsapp: whatsappResult.success === true,
     };
   }
+
+  /**
+   * Send review request notification (passenger or driver)
+   */
+  async sendReviewRequest(data: {
+    readonly userId: string;
+    readonly phoneNumber?: string;
+    readonly userName: string;
+    readonly otherPartyName: string;
+    readonly route: string;
+    readonly reviewUrl: string;
+    readonly bookingId: string;
+    readonly isDriver: boolean;
+  }): Promise<{ onesignal: boolean; whatsapp: boolean }> {
+    const reviewType = data.isDriver ? 'le passager' : 'le conducteur';
+    const notificationType = data.isDriver ? 'review_request_driver' : 'review_request_passenger';
+
+    // Build OneSignal message
+    let message = `Comment s'est passé votre trajet avec ${data.otherPartyName} sur la ligne ${data.route}?\n\n`;
+    message += `Votre avis nous aide à améliorer PikDrive!\n\n`;
+    message += `Laissez un avis: ${data.reviewUrl}`;
+
+    // Always send OneSignal
+    const onesignalPromise = this.oneSignalService.sendNotification({
+      userId: data.userId,
+      title: `⭐ Laissez un Avis`,
+      message: message,
+      notificationType: notificationType as any,
+      imageUrl: 'https://pikdrive.com/icons/icon-192x192.png',
+      data: {
+        bookingId: data.bookingId,
+        type: notificationType,
+        action: 'submit_review',
+        deepLink: data.reviewUrl,
+        priority: 'medium',
+        otherPartyName: data.otherPartyName,
+        route: data.route,
+      },
+    });
+
+    // Conditionally send WhatsApp
+    const whatsappEnabled = await this.shouldSendWhatsApp(data.userId, data.phoneNumber);
+    const templateName = data.isDriver ? 'review_request_driver' : 'review_request_passenger';
+    
+    const whatsappPromise = whatsappEnabled
+      ? this.whatsappService.sendTemplateMessage({
+          templateName,
+          phoneNumber: data.phoneNumber!,
+          variables: [
+            data.userName,
+            data.otherPartyName,
+            data.route,
+            data.reviewUrl,
+          ],
+          language: 'fr',
+        }).catch(err => {
+          console.error('[MULTI-CHANNEL] WhatsApp review request failed (non-critical):', err);
+          return { success: false, error: err.message };
+        })
+      : Promise.resolve({ success: false, error: 'WhatsApp not enabled or no phone' });
+
+    // Execute both in parallel
+    const [onesignalResult, whatsappResult] = await Promise.all([
+      onesignalPromise,
+      whatsappPromise,
+    ]);
+
+    return {
+      onesignal: onesignalResult.success !== false,
+      whatsapp: whatsappResult.success === true,
+    };
+  }
 }

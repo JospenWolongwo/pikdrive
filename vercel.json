@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/check-pending-payments",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/send-review-requests",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

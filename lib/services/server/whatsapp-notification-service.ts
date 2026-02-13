@@ -67,6 +67,8 @@ export class ServerWhatsAppNotificationService {
       booking_cancelled: 4, // user_name, route, refund_amount, refund_status
       driver_application_submitted_admin: 4, // admin_name, applicant_name, city, submitted_at
       driver_application_status_update: 4, // driver_name, status_label, updated_at, next_step
+      review_request_passenger: 4, // passenger_name, driver_name, route, review_link
+      review_request_driver: 4, // driver_name, passenger_name, route, review_link
     };
 
     const expectedCount = templateVariableCounts[templateName];

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Shield, Star } from 'lucide-react'
 import { useLocale } from '@/hooks'
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui'
+import type { ReviewWithProfiles } from '@/types/review'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -97,8 +98,35 @@ export function HomeTestimonialsSection() {
   const [testimonialsCurrent, setTestimonialsCurrent] = useState(0)
   const [testimonialsCount, setTestimonialsCount] = useState(0)
   const [isAutoplayPaused, setIsAutoplayPaused] = useState(false)
+  const [realReviews, setRealReviews] = useState<ReviewWithProfiles[]>([])
+  const [reviewsLoading, setReviewsLoading] = useState(true)
 
-  const testimonials: Testimonial[] = [
+  // Fetch real reviews on mount
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        // Fetch latest 5-star verified reviews
+        const response = await fetch('/api/reviews?rating=5&limit=5')
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          const reviews = data.data.filter((review: ReviewWithProfiles) => 
+            review.is_verified && review.comment && review.comment.length > 20
+          )
+          setRealReviews(reviews)
+        }
+      } catch (err) {
+        console.error('Error fetching reviews:', err)
+      } finally {
+        setReviewsLoading(false)
+      }
+    }
+
+    fetchReviews()
+  }, [])
+
+  // Featured testimonials (handpicked)
+  const featuredTestimonials: Testimonial[] = [
     {
       name: t('pages.home.testimonials.testimonial1.name'),
       role: t('pages.home.testimonials.testimonial1.role'),
@@ -114,16 +142,21 @@ export function HomeTestimonialsSection() {
       comment: t('pages.home.testimonials.testimonial2.comment'),
       rating: 5,
       verified: true
-    },
-    {
-      name: t('pages.home.testimonials.testimonial3.name'),
-      role: t('pages.home.testimonials.testimonial3.role'),
-      image: '/testimonials/user3.jpg',
-      comment: t('pages.home.testimonials.testimonial3.comment'),
-      rating: 5,
-      verified: true
     }
   ]
+
+  // Convert real reviews to testimonial format
+  const realReviewsAsTestimonials: Testimonial[] = realReviews.map(review => ({
+    name: review.reviewer.full_name,
+    role: review.reviewer_type === 'passenger' ? 'Passager vérifié' : 'Conducteur vérifié',
+    image: review.reviewer.avatar_url || '/defaults/avatar.svg',
+    comment: review.comment || '',
+    rating: review.rating,
+    verified: review.is_verified
+  }))
+
+  // Combine featured and real reviews (max 6 total)
+  const testimonials = [...featuredTestimonials, ...realReviewsAsTestimonials].slice(0, 6)
 
   useEffect(() => {
     if (!testimonialsApi) return

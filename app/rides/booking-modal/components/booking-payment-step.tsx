@@ -37,7 +37,6 @@ interface BookingPaymentStepProps {
   onBack: () => void;
   onPaymentComplete: (status: PaymentTransactionStatus, message?: string) => void;
   onRetry?: () => void;
-  onCancelPending?: () => void;
 }
 
 export function BookingPaymentStep({
@@ -61,7 +60,6 @@ export function BookingPaymentStep({
   onBack,
   onPaymentComplete,
   onRetry,
-  onCancelPending,
 }: BookingPaymentStepProps) {
   const { t } = useLocale();
   const isPartialPayment = existingBooking && 
@@ -152,15 +150,6 @@ export function BookingPaymentStep({
       </div>
 
       <div className="flex flex-wrap justify-end gap-2 mt-6">
-        {paymentTransactionId && onCancelPending && (
-          <Button
-            onClick={onCancelPending}
-            variant="outline"
-            disabled={isBusy}
-          >
-            {t("pages.rides.booking.payment.cancelAndTryAnother")}
-          </Button>
-        )}
         <Button
           onClick={onBack}
           variant="outline"

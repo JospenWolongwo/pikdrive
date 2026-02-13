@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage, Badge } from "@/components/ui";
-import { MapPin, Shield } from "lucide-react";
+import { MapPin, Shield, Star } from "lucide-react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useLocale } from "@/hooks";
 import { withCacheBuster } from "@/lib/utils/cache-buster";
@@ -11,6 +11,8 @@ interface DriverProfileHeaderProps {
   city: string | null;
   memberSince: string;
   isVerified: boolean;
+  average_rating?: number;
+  total_reviews?: number;
 }
 
 export function DriverProfileHeader({
@@ -19,6 +21,8 @@ export function DriverProfileHeader({
   city,
   memberSince,
   isVerified,
+  average_rating,
+  total_reviews,
 }: DriverProfileHeaderProps) {
   const { supabase } = useSupabase();
   const { t } = useLocale();
@@ -59,6 +63,19 @@ export function DriverProfileHeader({
       {/* Driver name */}
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">{full_name}</h1>
+        
+        {/* Rating */}
+        {average_rating && total_reviews && total_reviews > 0 && (
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center gap-1">
+              <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+              <span className="text-xl font-semibold">{average_rating.toFixed(1)}</span>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              ({total_reviews} {t("pages.driverProfile.reviewsCount")})
+            </span>
+          </div>
+        )}
         
         {/* City location */}
         {city && (

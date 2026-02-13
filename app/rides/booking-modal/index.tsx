@@ -59,7 +59,6 @@ export function BookingModal({
     handleCreateBooking,
     handlePayment,
     handlePaymentComplete,
-    handleCancelPendingPayment,
   } = useBookingModal({
     isOpen,
     ride,
@@ -149,7 +148,6 @@ export function BookingModal({
             }}
             onPaymentComplete={handlePaymentComplete}
             onRetry={handleRetry}
-            onCancelPending={handleCancelPendingPayment}
           />
         );
 

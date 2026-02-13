@@ -9,6 +9,7 @@ import {
   TrustBadges,
   VehicleGallery,
 } from "@/components";
+import { RatingSummary, ReviewList } from "@/components/reviews";
 import { Button } from "@/components/ui";
 import { ArrowLeft, AlertCircle, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +17,7 @@ import { driverApiClient } from "@/lib/api-client/driver";
 import { ApiError } from "@/lib/api-client/error";
 import { useLocale } from "@/hooks";
 import type { DriverPublicProfile } from "@/types/driver";
+import type { ReviewWithProfiles, ReviewStatistics } from "@/types/review";
 
 export default function DriverProfilePage() {
   const params = useParams();
@@ -23,7 +25,10 @@ export default function DriverProfilePage() {
   const { t } = useLocale();
   const driverId = params.id as string;
   const [profile, setProfile] = useState<DriverPublicProfile | null>(null);
+  const [reviews, setReviews] = useState<ReviewWithProfiles[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStatistics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +60,39 @@ export default function DriverProfilePage() {
     if (driverId) {
       fetchDriverProfile();
     }
+  }, [driverId]);
+
+  // Fetch reviews and statistics
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!driverId) return;
+
+      try {
+        setReviewsLoading(true);
+
+        // Fetch reviews
+        const reviewsResponse = await fetch(`/api/reviews?reviewee_id=${driverId}&limit=10`);
+        const reviewsData = await reviewsResponse.json();
+
+        if (reviewsData.success && reviewsData.data) {
+          setReviews(reviewsData.data);
+        }
+
+        // Fetch statistics
+        const statsResponse = await fetch(`/api/reviews/user/${driverId}?include_stats=true`);
+        const statsData = await statsResponse.json();
+
+        if (statsData.success && statsData.data?.statistics) {
+          setReviewStats(statsData.data.statistics);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
   }, [driverId]);
 
   if (loading) {
@@ -116,6 +154,8 @@ export default function DriverProfilePage() {
         city={profile.city}
         memberSince={profile.statistics.memberSince}
         isVerified={isVerified}
+        average_rating={profile.average_rating}
+        total_reviews={profile.total_reviews}
       />
 
       {/* Statistics Section */}
@@ -142,6 +182,31 @@ export default function DriverProfilePage() {
           isVerified={isVerified}
         />
       </div>
+
+      {/* Reviews Section */}
+      {profile.total_reviews && profile.total_reviews > 0 && (
+        <div className="my-8">
+          <h2 className="text-2xl font-bold mb-6">{t("pages.driverProfile.reviews.title")}</h2>
+          
+          {/* Rating Summary */}
+          {reviewStats && !reviewsLoading && (
+            <div className="mb-6">
+              <RatingSummary statistics={reviewStats} />
+            </div>
+          )}
+
+          {/* Reviews List */}
+          {!reviewsLoading && reviews.length > 0 && (
+            <ReviewList reviews={reviews} showFilters={false} />
+          )}
+
+          {reviewsLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Recent Rides Section */}
       {profile.recentRides && profile.recentRides.length > 0 && (
