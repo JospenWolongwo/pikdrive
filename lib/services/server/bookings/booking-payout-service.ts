@@ -88,24 +88,26 @@ export class ServerBookingPayoutService {
       (sum: number, p: { amount: number }) => sum + Number(p.amount),
       0
     );
-    const isPartialBooking =
-      (booking.payment_status === 'partial' || booking.payment_status === 'partial_refund') &&
-      (payments?.length ?? 0) > 0 &&
-      completedTotal === 0;
     const ridePrice = typeof ride.price === 'number' ? ride.price : Number(ride.price);
+    const isPartialBooking =
+      booking.payment_status === 'partial' || booking.payment_status === 'partial_refund';
+
+    //CRITICAL: For partial bookings, always use booking.seats * ridePrice.
     const totalAmount =
-      completedTotal > 0
-        ? completedTotal
-        : isPartialBooking && booking.seats != null && ridePrice >= 0
+      isPartialBooking && booking.seats != null && ridePrice >= 0
         ? booking.seats * ridePrice
+        : completedTotal > 0
+        ? completedTotal
         : 0;
 
     if (isPartialBooking && totalAmount > 0) {
-      console.log('ðŸ’° [PAYOUT] Partial booking: paying for remaining seats', {
+      console.log('[PAYOUT] Partial booking: paying for remaining seats', {
         bookingId,
         seats: booking.seats,
         pricePerSeat: ridePrice,
         totalAmount,
+        completedTotal,
+        note: 'Using booking.seats as source of truth (not completedTotal)',
       });
     }
 

@@ -169,10 +169,12 @@ export class ServerBookingRefundService {
         },
       });
 
+      // Mark ALL completed payments as partial_refund (not just the primary one).
+      const allPaymentIds = payments.map((p: { id: string }) => p.id);
       const { error: paymentUpdateError } = await adminSupabase
         .from('payments')
         .update({ status: 'partial_refund', updated_at: new Date().toISOString() })
-        .eq('id', primaryPayment.id);
+        .in('id', allPaymentIds);
 
       if (refundInsertError) {
         console.error('âŒ [PARTIAL REFUND] Failed to create refund record:', refundInsertError);
