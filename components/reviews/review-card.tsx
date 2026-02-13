@@ -64,7 +64,7 @@ export function ReviewCard({ review, compact = false }: ReviewCardProps) {
                 {review.reviewer.full_name}
               </p>
               {review.is_verified && (
-                <Shield className="h-4 w-4 text-primary" title="Verified ride" />
+                <Shield className="h-4 w-4 text-primary" aria-label="Verified ride" />
               )}
             </div>
             <p className="text-xs text-muted-foreground">{timeAgo}</p>
