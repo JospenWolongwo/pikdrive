@@ -528,4 +528,169 @@ export class ServerMultiChannelNotificationService {
       whatsapp: whatsappResult.success === true,
     };
   }
+
+  /**
+   * Notify admin when a new driver application is submitted
+   */
+  async sendAdminDriverApplicationSubmitted(data: {
+    readonly adminId: string;
+    readonly adminPhone?: string;
+    readonly adminName?: string;
+    readonly applicantName: string;
+    readonly applicantCity?: string;
+    readonly submittedAt: string;
+    readonly applicantId: string;
+  }): Promise<{ onesignal: boolean; whatsapp: boolean }> {
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    };
+
+    const adminDisplayName = data.adminName || 'Admin';
+    const city = data.applicantCity || 'Non renseignee';
+    const submittedLabel = formatDate(data.submittedAt);
+
+    const onesignalPromise = this.oneSignalService.sendNotification({
+      userId: data.adminId,
+      title: 'Nouvelle candidature chauffeur',
+      message: `${data.applicantName} a soumis une candidature chauffeur (${city}) le ${submittedLabel}.`,
+      notificationType: 'announcement',
+      imageUrl: 'https://pikdrive.com/icons/icon-192x192.png',
+      data: {
+        type: 'driver_application_submitted_admin',
+        applicantId: data.applicantId,
+        action: 'view_driver_application',
+        deepLink: `pikdrive.com/admin/drivers`,
+        priority: 'high',
+      },
+    });
+
+    const whatsappEnabled = await this.shouldSendWhatsApp(data.adminId, data.adminPhone);
+    const whatsappPromise = whatsappEnabled
+      ? this.whatsappService.sendTemplateMessage({
+          templateName: 'driver_application_submitted_admin',
+          phoneNumber: data.adminPhone!,
+          variables: [
+            adminDisplayName,
+            data.applicantName,
+            city,
+            submittedLabel,
+          ],
+          language: 'fr',
+        }).catch(err => {
+          console.error('[MULTI-CHANNEL] Admin WhatsApp send failed (non-critical):', err);
+          return { success: false, error: err.message };
+        })
+      : Promise.resolve({ success: false, error: 'WhatsApp not enabled or no phone' });
+
+    const [onesignalResult, whatsappResult] = await Promise.all([
+      onesignalPromise,
+      whatsappPromise,
+    ]);
+
+    return {
+      onesignal: onesignalResult.success !== false,
+      whatsapp: whatsappResult.success === true,
+    };
+  }
+
+  /**
+   * Notify driver when application status changes (approved/rejected/inactive)
+   */
+  async sendDriverApplicationStatusChanged(data: {
+    readonly driverId: string;
+    readonly driverPhone?: string;
+    readonly driverName: string;
+    readonly status: 'approved' | 'rejected' | 'inactive';
+    readonly updatedAt: string;
+  }): Promise<{ onesignal: boolean; whatsapp: boolean }> {
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    };
+
+    const statusConfig: Record<'approved' | 'rejected' | 'inactive', {
+      title: string;
+      statusLabel: string;
+      nextStep: string;
+      message: string;
+    }> = {
+      approved: {
+        title: 'Candidature approuvee',
+        statusLabel: 'Approuvee',
+        nextStep: 'Connectez-vous et publiez votre premier trajet.',
+        message: 'Votre candidature chauffeur a ete approuvee.',
+      },
+      rejected: {
+        title: 'Candidature rejetee',
+        statusLabel: 'Rejetee',
+        nextStep: 'Mettez a jour vos documents et soumettez a nouveau.',
+        message: 'Votre candidature chauffeur a ete rejetee.',
+      },
+      inactive: {
+        title: 'Statut chauffeur mis a jour',
+        statusLabel: 'Inactif',
+        nextStep: 'Contactez le support pour plus de details.',
+        message: 'Votre statut chauffeur est maintenant inactif.',
+      },
+    };
+
+    const cfg = statusConfig[data.status];
+    const updatedLabel = formatDate(data.updatedAt);
+
+    const onesignalPromise = this.oneSignalService.sendNotification({
+      userId: data.driverId,
+      title: cfg.title,
+      message: `${cfg.message} Mise a jour le ${updatedLabel}. ${cfg.nextStep}`,
+      notificationType: 'announcement',
+      imageUrl: 'https://pikdrive.com/icons/icon-192x192.png',
+      data: {
+        type: 'driver_application_status_update',
+        status: data.status,
+        action: 'view_driver_status',
+        deepLink: 'pikdrive.com/driver/pending',
+        priority: 'high',
+      },
+    });
+
+    const whatsappEnabled = await this.shouldSendWhatsApp(data.driverId, data.driverPhone);
+    const whatsappPromise = whatsappEnabled
+      ? this.whatsappService.sendTemplateMessage({
+          templateName: 'driver_application_status_update',
+          phoneNumber: data.driverPhone!,
+          variables: [
+            data.driverName,
+            cfg.statusLabel,
+            updatedLabel,
+            cfg.nextStep,
+          ],
+          language: 'fr',
+        }).catch(err => {
+          console.error('[MULTI-CHANNEL] Driver WhatsApp status update failed (non-critical):', err);
+          return { success: false, error: err.message };
+        })
+      : Promise.resolve({ success: false, error: 'WhatsApp not enabled or no phone' });
+
+    const [onesignalResult, whatsappResult] = await Promise.all([
+      onesignalPromise,
+      whatsappPromise,
+    ]);
+
+    return {
+      onesignal: onesignalResult.success !== false,
+      whatsapp: whatsappResult.success === true,
+    };
+  }
 }

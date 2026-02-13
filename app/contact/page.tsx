@@ -37,12 +37,12 @@ export default function ContactPage() {
     {
       icon: Mail,
       title: t("pages.contact.email"),
-      details: ["support@pikdrive.com", "info@pikdrive.com"],
+      details: ["info@pikdrive.com"],
     },
     {
       icon: MapPin,
       title: t("pages.contact.office"),
-      details: ["Silicon Mountain", "Buea, Cameroun"],
+      details: ["Douala", "Cameroun"],
     },
   ]
 
@@ -115,7 +115,7 @@ export default function ContactPage() {
                     </label>
                     <Input
                       id="firstName"
-                      placeholder="John"
+                      placeholder="Ayuk"
                       required
                       disabled={isLoading}
                     />
@@ -126,7 +126,7 @@ export default function ContactPage() {
                     </label>
                     <Input
                       id="lastName"
-                      placeholder="Doe"
+                      placeholder="Collins"
                       required
                       disabled={isLoading}
                     />
@@ -140,7 +140,7 @@ export default function ContactPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="ayuk@example.com"
                     required
                     disabled={isLoading}
                   />

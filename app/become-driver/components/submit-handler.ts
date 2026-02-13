@@ -7,6 +7,8 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "@/hooks/ui";
 import { isValidDocumentUrl } from "../upload-utils";
 import { trackSubmissionEvent } from "@/lib/analytics";
+import { apiClient } from "@/lib/api-client";
+import { submitDriverApplication, DriverApplicationData } from "@/lib/driver-application-utils";
 import { formSchema } from "../form-schema";
 import { useLocale } from "@/hooks";
 
@@ -78,35 +80,14 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
       setIsSubmitting(true);
       console.log("✅ User can proceed with driver application");
 
-      // Get the user profile to update it
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) throw profileError;
-
       // ISO format timestamp for PostgreSQL compatibility
       const submissionIsoTimestamp = new Date().toISOString();
       // Numeric timestamp for duration calculations
       const submissionTimestamp = Date.now();
 
-      // Construct submission data
-      const driverDocument = {
+      // Delegate submission logic to shared service
+      const driverData: DriverApplicationData = {
         driver_id: user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        status: "pending",
-
-        // Document details
-        national_id_number: profile?.national_id || "",
-        license_number: profile?.license_number || "",
-        registration_number: profile?.registration_number || "",
-        insurance_number: profile?.insurance_number || "",
-        road_tax_number: profile?.road_tax_number || "", // included for compatibility
-
-        // Document files - recto/verso (front/back)
         national_id_file_recto: nationalIdFileRecto,
         national_id_file_verso: nationalIdFileVerso,
         license_file_recto: licenseFileRecto,
@@ -115,40 +96,23 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
         registration_file_verso: registrationFileVerso,
         insurance_file_recto: insuranceFileRecto,
         insurance_file_verso: insuranceFileVerso,
-        vehicle_images: vehicleImages, // Required - validated above
+        vehicle_images: vehicleImages,
       };
 
-      // Write to database
-      console.log("📝 Submitting driver application...", driverDocument);
+      const submitResult = await submitDriverApplication(supabase, user.id, driverData);
+      if (!submitResult.success) {
+        throw new Error(submitResult.error || 'Failed to submit application');
+      }
 
-      // First, update profile with driver application status
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          driver_application_status: "pending",
-          driver_application_date: submissionIsoTimestamp,
-          is_driver_applicant: true,
-          is_driver: false,
-          driver_status: "pending",
-          role: "user",
-        })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-
-      // Then, insert document record
-      const { data: docData, error: docError } = await supabase
-        .from("driver_documents")
-        .insert(driverDocument)
-        .select();
-
-      if (docError) throw docError;
-
+      // Notify admins about new driver application (best-effort, does not block UX)
+      void apiClient.post('/api/admin/driver-applications/notify', {
+        driverId: user.id,
+        submittedAt: submissionIsoTimestamp,
+      }).catch((notifyError) => {
+        console.error('Failed to notify admins for driver application submission:', notifyError);
+      });
       // Calculate submission duration for analytics
       const submissionDuration = Date.now() - submissionTimestamp;
-      console.log(
-        `✅ Driver application successful in ${submissionDuration}ms`
-      );
 
       // Track event for analytics
       trackSubmissionEvent({
@@ -183,3 +147,4 @@ export function useFormSubmission(supabase: SupabaseClient, user: any) {
     onSubmit,
   };
 }
+

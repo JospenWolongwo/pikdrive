@@ -690,6 +690,12 @@
       "form": {
         "submit": "Submit my application",
         "submitting": "Submitting...",
+        "approved": {
+          "title": "You are already an approved driver",
+          "message": "To prevent duplicate submissions and keep the experience clean, we hide the application form for approved drivers. You can manage rides directly from your driver dashboard.",
+          "button": "Go to Driver Dashboard",
+          "loading": "Loading your driver status..."
+        },
         "errors": {
           "missingDocuments": "Missing Documents",
           "missingDocumentsDesc": "Please upload the required documents: {documents}",
@@ -1601,3 +1607,6 @@
     "description": "Connect with trusted drivers for safe and affordable intercity travel in Cameroon."
   }
 }
+
+
+

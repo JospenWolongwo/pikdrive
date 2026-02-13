@@ -102,9 +102,9 @@ export function LegalLayout({
                 <p>
                   <strong>PikDrive</strong>
                 </p>
-                <p>{t('legal.contact.address')}: Silicon Mountain, Buea, Cameroun</p>
+                <p>{t('legal.contact.address')}: Douala Cameroon</p>
                 <p>
-                  {t('legal.contact.email')}: support@pikdrive.com, info@pikdrive.com
+                  {t('legal.contact.email')}: info@pikdrive.com
                 </p>
                 <p>{t('legal.contact.phone')}: +237 6 21 79 34 23</p>
               </div>
@@ -136,3 +136,4 @@ export function LegalLayout({
     </div>
   );
 }
+

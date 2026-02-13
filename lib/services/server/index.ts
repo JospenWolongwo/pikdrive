@@ -18,6 +18,8 @@ export * from "./driver-service";
 export * from "./enrich-ride-pickup-point-names";
 export * from "./messages-service";
 export * from "./multi-channel-notification-service";
+export * from "./driver-status-service";
+export * from "./driver-application-notification-service";
 export * from "./onesignal-notification-service";
 export * from "./pawapay-callback-service";
 export * from "./payment-notification-service";
