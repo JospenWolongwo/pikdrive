@@ -1,38 +1,37 @@
 # PikDrive Documentation Index
 
-## 📚 Quick Navigation
-
-Welcome to PikDrive's documentation. This index helps you find what you need quickly.
+## Quick Navigation
 
 ---
 
-## 🏗️ Architecture & Design
+## Architecture & Design
 
 ### Core Architecture
-- **[Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md)** - Service layer pattern and best practices
+- **[Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md)** - Service layer patterns and principles
 - **[Supabase Client Architecture](SUPABASE_CLIENT_ARCHITECTURE.md)** - Client/server separation patterns
 - **[Service Layer Complete](SERVICE_LAYER_COMPLETE.md)** - Service layer implementation guide
-- **[Database Schema](DATABASE_SCHEMA.md)** - Complete database schema, tables, and RLS policies
-
-### Module-Specific Architecture
-- **[Payment Architecture Analysis](PAYMENT_ARCHITECTURE_ANALYSIS.md)** - Comprehensive payment module analysis
-- **[Payment Refactoring Summary](PAYMENT_REFACTORING_SUMMARY.md)** - Payment refactoring implementation
-- **[Payment Red Flags & Fixes](PAYMENT_RED_FLAGS_AND_FIXES.md)** - Issues identified and resolved
-- **[Payment Implementation Complete](PAYMENT_IMPLEMENTATION_COMPLETE.md)** ⭐ **NEW** - Final implementation status
+- **[Database Schema](DATABASE_SCHEMA.md)** - Complete database schema, tables, RLS policies
 
 ---
 
-## 💳 Payment Integration
+## Payment System
 
-### Setup & Configuration
-- **[Payment Flow](payments/payment-flow.md)** - End-to-end payment flow documentation
-- **[Payment Status Management](payments/status-management.md)** - Status transitions and management
+### Overview & Status
+- **[Payment Implementation Complete](PAYMENT_IMPLEMENTATION_COMPLETE.md)** - Current architecture and status
+- **[Payment Architecture Analysis](PAYMENT_ARCHITECTURE_ANALYSIS.md)** - Comprehensive payment module analysis
+- **[Payment Red Flags & Fixes](PAYMENT_RED_FLAGS_AND_FIXES.md)** - Historical issues and resolutions
+
+### Guides
+- **[Payment Flow](payments/payment-flow.md)** - End-to-end payin, payout, and refund flows
+- **[Payment Status Management](payments/status-management.md)** - Status transitions including partial_refund
 - **[API Endpoints](payments/api-endpoints.md)** - Payment API reference
+- **[Environment Variables](payments/ENVIRONMENT_VARIABLES.md)** - Payment env var reference
 
 ### Provider Integration
 - **[MTN MOMO Integration](payments/mtn-momo-integration.md)** - MTN Mobile Money setup
-- **[Orange Money Integration](payments/orange-money-integration.md)** - Orange Money setup
-- **[Orange Money Setup Guide](payments/orange-money-setup-guide.md)** - Detailed Orange Money guide
+- **[Orange Money Setup Guide](payments/orange-money-setup-guide.md)** - Orange Money integration guide
+- **[Sandbox Testing Checklist](payments/SANDBOX_TESTING_CHECKLIST.md)** - Testing guide
+- **[Sandbox to Production Guide](payments/SANDBOX_TO_PRODUCTION_GUIDE.md)** - Go-live checklist
 
 ### Deployment
 - **[Payment Deployment Guide](payments/deployment-guide.md)** - Production deployment checklist
@@ -40,21 +39,38 @@ Welcome to PikDrive's documentation. This index helps you find what you need qui
 
 ---
 
-## 📱 Notifications
+## Notifications
 
-### Push Notifications
-- **[Push Notifications Setup](push-notifications-setup.md)** - Web push notifications configuration
-- **[Implementation Summary](notifications/IMPLEMENTATION_SUMMARY.md)** - Notification system overview
-- **[Troubleshooting](notifications/TROUBLESHOOTING.md)** - Common issues and solutions
+### Multi-Channel System
+- **[Notification System Overview](NOTIFICATION_SYSTEM_OVERVIEW.md)** - Architecture: OneSignal + WhatsApp + Browser
+- **[Notification Templates](NOTIFICATION_TEMPLATES.md)** - Notification content templates
+- **[Notification Sounds Guide](NOTIFICATION_SOUNDS_GUIDE.md)** - Sound configuration
 
-### SMS Notifications
-- **[SMS Service Setup](notifications/sms-service-setup.md)** - Twilio SMS configuration
-- **[Twilio Sandbox Setup](notifications/twilio-sandbox-setup.md)** - Development environment
-- **[Twilio Production Setup](notifications/twilio-production-setup.md)** - Production environment
+### WhatsApp
+- **[WhatsApp Implementation Summary](WHATSAPP_IMPLEMENTATION_SUMMARY.md)** - WhatsApp integration details
+- **[WhatsApp Webhook Setup](WHATSAPP_WEBHOOK_SETUP.md)** - Webhook configuration
+
+### OneSignal
+- **[OneSignal Setup Guide](ONESIGNAL_SETUP_GUIDE.md)** - Initial setup
+- **[OneSignal Integration Complete](ONESIGNAL_INTEGRATION_COMPLETE.md)** - Integration status
+
+### Reference
+- **[SMS Removal Summary](SMS_REMOVAL_SUMMARY.md)** - Why SMS was removed
+- **[Notifications Troubleshooting](notifications/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ---
 
-## 🚀 Deployment
+## Review System
+
+- **[Database Schema](DATABASE_SCHEMA.md)** - `reviews` table definition
+- Review API: `app/api/reviews/` (create, fetch, check eligibility)
+- Review UI: `components/reviews/` (ReviewCard, ReviewList, RatingSummary)
+- Review Requests: `lib/services/server/review-request-service.ts` (cron-triggered)
+- Types: `types/review.ts`
+
+---
+
+## Deployment
 
 - **[Deployment Guide](deployment/deployment-guide.md)** - Complete deployment instructions
 - **[Vercel + Hostinger Setup](deployment/vercel-hostinger-setup.md)** - Hosting configuration
@@ -62,7 +78,7 @@ Welcome to PikDrive's documentation. This index helps you find what you need qui
 
 ---
 
-## 🔧 Development
+## Development
 
 ### Getting Started
 - **[Environment Setup](environment-setup.md)** - Local development setup
@@ -74,100 +90,25 @@ Welcome to PikDrive's documentation. This index helps you find what you need qui
 
 ---
 
-## 📋 Project Management
+## Historical / Reference
 
-- **[TODO](../TODO.md)** - Current project tasks and priorities
-- **[Repository Cleanup Plan](REPOSITORY_CLEANUP_PLAN.md)** - Recent cleanup documentation
-
----
-
-## 🗂️ Documentation by Feature
-
-### Authentication & Users
-- Database Schema → `profiles` table
-- Supabase Client Architecture → Auth patterns
-
-### Driver Management
-- Database Schema → `driver_documents` table
-- Architecture Best Practices → Service patterns
-
-### Rides & Bookings
-- Database Schema → `rides` and `bookings` tables
-- Service Layer Complete → Booking service
-
-### Payments
-- Payment Architecture Analysis → Complete payment system
-- Payment Refactoring Summary → Implementation guide
-- payments/ folder → All payment documentation
-
-### Messaging
-- Database Schema → `conversations` and `messages` tables
-- Supabase Client Architecture → Real-time patterns
+- **[Payment Refactoring Summary](PAYMENT_REFACTORING_SUMMARY.md)** - Payment module refactoring history
+- **[Booking Payment Bug Fix](BOOKING_PAYMENT_BUG_FIX.md)** - Booking payment fix details
+- **[Authentication Stability Fixes](AUTHENTICATION_STABILITY_FIXES.md)** - Auth fixes
+- **[Cleanup Complete Summary](CLEANUP_COMPLETE_SUMMARY.md)** - Repository cleanup history
 
 ---
 
-## 🔍 Quick Reference
+## Quick Reference
 
-### Common Tasks
+**Setting up development:** [Environment Setup](environment-setup.md) -> [Database Schema](DATABASE_SCHEMA.md)
 
-**Setting up development environment:**
-1. Read [Environment Setup](environment-setup.md)
-2. Check [Database Schema](DATABASE_SCHEMA.md)
-3. Review [Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md)
+**Adding a feature:** [Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md) -> [Service Layer](SERVICE_LAYER_COMPLETE.md)
 
-**Adding a new feature:**
-1. Review [Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md)
-2. Check [Service Layer Complete](SERVICE_LAYER_COMPLETE.md)
-3. Follow existing patterns in [Supabase Client Architecture](SUPABASE_CLIENT_ARCHITECTURE.md)
+**Deploying:** [Deployment Guide](deployment/deployment-guide.md) -> [Post-Deployment Checklist](deployment/post-deployment-checklist.md)
 
-**Deploying to production:**
-1. Follow [Deployment Guide](deployment/deployment-guide.md)
-2. Check [Post-Deployment Checklist](deployment/post-deployment-checklist.md)
-3. Review provider-specific setup (MTN MOMO, Orange Money)
-
-**Troubleshooting:**
-1. Check [Troubleshooting Guide](notifications/TROUBLESHOOTING.md)
-2. Review [Database Schema](DATABASE_SCHEMA.md) for data issues
-3. Check [Payment Red Flags & Fixes](PAYMENT_RED_FLAGS_AND_FIXES.md)
+**Troubleshooting payments:** [Payment Red Flags](PAYMENT_RED_FLAGS_AND_FIXES.md) -> [Status Management](payments/status-management.md)
 
 ---
 
-## 📝 Documentation Standards
-
-All documentation follows these principles:
-- ✅ Clear, concise explanations
-- ✅ Code examples included
-- ✅ Updated with changes
-- ✅ Organized by feature/module
-- ✅ Cross-referenced for easy navigation
-
----
-
-## 🔄 Recent Updates
-
-**January 2025:**
-- ✅ **COMPLETED** - Payment module refactoring (production ready)
-- ✅ Updated payment API routes to use new architecture
-- ✅ Added comprehensive payment architecture documentation
-- ✅ Created database schema reference
-- ✅ Cleaned up outdated fix documentation (31 files removed)
-- ✅ Organized documentation by feature area
-- ✅ Added this index for easy navigation
-
-**Latest**: See `PAYMENT_IMPLEMENTATION_COMPLETE.md` for full implementation status
-
----
-
-## 💡 Contributing to Docs
-
-When adding or updating documentation:
-1. Follow existing structure and format
-2. Update this index if adding new docs
-3. Include code examples where relevant
-4. Cross-reference related documentation
-5. Keep language clear and concise
-
----
-
-**Last Updated**: January 2025  
-**Maintained By**: Development Team
+**Last Updated**: February 2026

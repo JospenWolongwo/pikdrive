@@ -111,7 +111,6 @@ export const usePayoutsStore = create<PayoutsState>()(
         set({ loading: true, error: null });
 
         try {
-          // Fetch all payouts without status filter
           const response = await fetch('/api/driver/payouts?limit=1000');
           
           if (!response.ok) {
@@ -120,8 +119,6 @@ export const usePayoutsStore = create<PayoutsState>()(
 
           const data = await response.json();
           const payouts = data.payouts || [];
-          
-          // Calculate statistics from fetched data
           const statistics = calculateStatistics(payouts);
 
           set({
@@ -190,8 +187,6 @@ export const usePayoutsStore = create<PayoutsState>()(
       // Subscribe to real-time payout updates
       subscribeToPayoutUpdates: (supabase: SupabaseClient, userId: string) => {
         const { realTimeChannel } = get();
-
-        // Unsubscribe from existing channel if any
         if (realTimeChannel) {
           supabase.removeChannel(realTimeChannel);
         }
@@ -207,7 +202,6 @@ export const usePayoutsStore = create<PayoutsState>()(
               filter: `driver_id=eq.${userId}`,
             },
             async (payload) => {
-              // Update the specific payout in the array
               set((state) => {
                 let updatedPayouts = [...state.allPayouts];
 
@@ -248,13 +242,11 @@ export const usePayoutsStore = create<PayoutsState>()(
                     updatedPayouts = [payload.new as PayoutWithDetails, ...updatedPayouts];
                   }
                 } else if (payload.eventType === 'DELETE') {
-                  // Remove deleted payout
                   updatedPayouts = updatedPayouts.filter(
                     (payout) => payout.id !== payload.old.id
                   );
                 }
 
-                // Recalculate statistics
                 const statistics = calculateStatistics(updatedPayouts);
 
                 return {
@@ -269,8 +261,7 @@ export const usePayoutsStore = create<PayoutsState>()(
 
         set({ realTimeChannel: channel });
       },
-
-      // Unsubscribe from real-time updates
+      
       unsubscribeFromPayoutUpdates: (supabase: SupabaseClient) => {
         const { realTimeChannel } = get();
 

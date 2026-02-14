@@ -50,7 +50,6 @@ export function useVehicleImages(
 
     const files = Array.from(e.target.files);
 
-    // Check file sizes (max 5MB each)
     for (const file of files) {
       if (file.size > 5 * 1024 * 1024) {
         toast({
@@ -62,7 +61,6 @@ export function useVehicleImages(
       }
     }
 
-    // Create preview URLs for new images
     const newUrls: string[] = [];
     files.forEach((file) => {
       const url = URL.createObjectURL(file);
@@ -72,7 +70,6 @@ export function useVehicleImages(
     setNewVehicleImages((prev) => [...prev, ...files]);
     setNewVehicleImageUrls((prev) => [...prev, ...newUrls]);
 
-    // Clear the input
     e.target.value = "";
   };
 
@@ -101,11 +98,6 @@ export function useVehicleImages(
       const currentImages = driverDocuments?.vehicle_images || [];
       const updatedVehicleImages = [...currentImages, ...uploadedUrls];
 
-      console.log("[PROFILE] Updating vehicle images for driver:", driverId);
-      console.log("[PROFILE] Current images:", currentImages);
-      console.log("[PROFILE] New images:", uploadedUrls);
-      console.log("[PROFILE] Updated images:", updatedVehicleImages);
-
       const result = await driverDocumentsService.updateDriverDocuments(
         driverId,
         {
@@ -122,7 +114,6 @@ export function useVehicleImages(
         onDocumentsUpdated(result.data);
       }
 
-      // Clear temporary data
       setNewVehicleImages([]);
       setNewVehicleImageUrls([]);
       setIsEditing(false);
@@ -148,8 +139,6 @@ export function useVehicleImages(
 
     try {
       setIsLoading(true);
-
-      console.log("🗑️ Removing vehicle image:", imageUrl);
 
       const result = await driverDocumentsService.removeVehicleImage(
         driverId,
@@ -192,7 +181,6 @@ export function useVehicleImages(
   };
 
   const handleCancel = () => {
-    // Clear temporary data
     setNewVehicleImages([]);
     setNewVehicleImageUrls([]);
     setIsEditing(false);

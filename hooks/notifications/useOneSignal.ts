@@ -66,9 +66,7 @@ export function useOneSignal(): UseOneSignalReturn {
       }
     };
 
-    const handleForegroundDisplay = (event: any) => {
-      console.log('📬 Notification displayed:', event?.notification);
-    };
+    const handleForegroundDisplay = (_event: any) => {};
 
     try {
       window.OneSignal.Notifications.addEventListener('click', handleNotificationClick);
@@ -78,7 +76,7 @@ export function useOneSignal(): UseOneSignalReturn {
         window.OneSignal?.Notifications.removeEventListener('foregroundWillDisplay', handleForegroundDisplay);
       };
     } catch (error) {
-      console.error('❌ Failed to set up notification listeners:', error);
+      console.error('Failed to set up notification listeners:', error);
     }
   }, [isInitialized]);
 
@@ -94,11 +92,10 @@ export function useOneSignal(): UseOneSignalReturn {
 
     try {
       await window.OneSignal.login(userId);
-      console.log(`✅ User ID linked: ${userId}`);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to set user ID');
       setError(error);
-      console.error('❌ Failed to set user ID:', error);
+      console.error('Failed to set user ID:', error);
       throw error;
     }
   }, []);
@@ -114,11 +111,10 @@ export function useOneSignal(): UseOneSignalReturn {
 
     try {
       await window.OneSignal.logout();
-      console.log('✅ User ID unlinked');
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to remove user ID');
       setError(error);
-      console.error('❌ Failed to remove user ID:', error);
+      console.error('Failed to remove user ID:', error);
     }
   }, []);
 
@@ -158,7 +154,7 @@ export function useOneSignal(): UseOneSignalReturn {
 
       // Check if Notification API is available (iOS Safari doesn't support it)
       if (typeof Notification === 'undefined' || !('Notification' in window)) {
-        console.warn('⚠️ Notification API not supported on this device');
+        console.warn(' Notification API not supported on this device');
         return false;
       }
 
@@ -172,16 +168,12 @@ export function useOneSignal(): UseOneSignalReturn {
       }
 
       if (currentPermission === "granted") {
-        console.log('✅ Notification permission already granted');
         return true;
       }
 
       if (currentPermission === "denied") {
-        console.log('❌ Notification permission was previously denied');
         return false;
       }
-
-      console.log('📱 Requesting notification permission via native API...');
       let permission: NotificationPermission;
       try {
         permission = await Notification.requestPermission();
@@ -192,22 +184,17 @@ export function useOneSignal(): UseOneSignalReturn {
       const granted = permission === "granted";
       
       if (granted) {
-        console.log('✅ Notification permission granted via native API');
-        
         // Sync with OneSignal after native permission is granted
         try {
           await window.OneSignal.Notifications.requestPermission();
-          console.log('✅ OneSignal permission sync successful');
         } catch (oneSignalError) {
-          console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
+          console.warn(' OneSignal sync failed but native permission granted:', oneSignalError);
         }
-      } else {
-        console.log('❌ Notification permission denied via native API');
       }
 
       return granted;
     } catch (error) {
-      console.error('❌ Error requesting permission:', error);
+      console.error(' Error requesting permission:', error);
       return false;
     }
   }, []);

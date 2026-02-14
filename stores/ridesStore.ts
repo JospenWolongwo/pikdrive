@@ -237,7 +237,6 @@ export const useRidesStore = create<RidesState>()(
       subscribeToRideUpdates: (supabase: SupabaseClient) => {
         const { allRides, realTimeChannel } = get();
         
-        // Unsubscribe from existing channel if any
         if (realTimeChannel) {
           supabase.removeChannel(realTimeChannel);
         }
@@ -256,7 +255,6 @@ export const useRidesStore = create<RidesState>()(
           }, (payload) => {
             const updatedRide = payload.new;
             
-            // Update the specific ride in the allRides array
             set((state) => ({
               allRides: state.allRides.map(ride =>
                 ride.id === updatedRide.id
@@ -274,7 +272,6 @@ export const useRidesStore = create<RidesState>()(
         set({ realTimeChannel: channel });
       },
       
-      // Unsubscribe from real-time updates
       unsubscribeFromRideUpdates: () => {
         const { realTimeChannel } = get();
         
@@ -531,7 +528,6 @@ export const useRidesStore = create<RidesState>()(
           );
           set({ driverRides: updatedDriverRides });
           
-          // Update current ride if it's the same
           const { currentRide } = get();
           if (currentRide?.id === rideId) {
             set({ currentRide: { ...currentRide, ...updatedRide } });
@@ -556,7 +552,6 @@ export const useRidesStore = create<RidesState>()(
           const filteredDriverRides = driverRides.filter(ride => ride.id !== rideId);
           set({ driverRides: filteredDriverRides });
           
-          // Clear current ride if it's the same
           const { currentRide } = get();
           if (currentRide?.id === rideId) {
             set({ currentRide: null });

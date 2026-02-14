@@ -46,15 +46,13 @@ export function useRidesPageData(): UseRidesPageDataReturn {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Map unread counts by rideId
   const unreadCounts = mapUnreadCountsByRideId(unreadCountsArray, conversations);
 
   const loadRides = useCallback(
     async (newFilters?: Partial<RideFilters>, page?: number) => {
       try {
         const pageToUse = page ?? currentPage;
-        
-        // Default filters
+
         const defaultFilters: RideFilters = {
           fromCity: null,
           toCity: null,
@@ -62,8 +60,8 @@ export function useRidesPageData(): UseRidesPageDataReturn {
           maxPrice: 20000,
           minSeats: 1,
         };
-        
-        // Merge with defaults - if a field is explicitly null, keep it null
+
+        // Explicit null in newFilters preserved for "any" selection
         const activeFilters: RideFilters = newFilters
           ? {
               fromCity: newFilters.fromCity ?? defaultFilters.fromCity,
@@ -74,7 +72,6 @@ export function useRidesPageData(): UseRidesPageDataReturn {
             }
           : defaultFilters;
 
-        // Check if any filters are active
         const hasFilters = Boolean(
           (activeFilters.fromCity && activeFilters.fromCity !== "any") ||
           (activeFilters.toCity && activeFilters.toCity !== "any") ||
@@ -112,15 +109,14 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     [currentPage, searchRides, refreshAllRides, allRidesPagination, toast]
   );
 
-  // Sync pagination total pages from store when it updates after fetch
   useEffect(() => {
     if (allRidesPagination?.total_pages != null) {
       setTotalPages(allRidesPagination.total_pages);
     }
   }, [allRidesPagination?.total_pages]);
 
-  // Load rides on component mount (no reliance on persisted list; always load or use in-memory cache)
   useEffect(() => {
+    // Always load fresh or use 5min cache; no persisted list
     const fresh =
       lastAllRidesFetch && Date.now() - lastAllRidesFetch < 5 * 60 * 1000;
     if (!fresh || allRides.length === 0) {
@@ -129,11 +125,10 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Refetch when user returns to the tab (throttled to avoid hammering the API)
   useEffect(() => {
     const handleFocus = () => {
       const now = Date.now();
-      if (now - lastFocusRefetchRef.current < FOCUS_REFETCH_THROTTLE_MS) return;
+      if (now - lastFocusRefetchRef.current < FOCUS_REFETCH_THROTTLE_MS) return; // Throttle refetch on tab focus
       lastFocusRefetchRef.current = now;
       loadRides(undefined, currentPage);
     };
@@ -141,14 +136,12 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     return () => window.removeEventListener("focus", handleFocus);
   }, [loadRides, currentPage]);
 
-  // Subscribe to new ride INSERTs: refetch only when store says we're viewing default list (page 1, no filters)
   useEffect(() => {
     if (!supabase) return;
-    const unsubscribe = subscribeToNewRides(supabase, refetchFirstPageIfViewingDefault);
+    const unsubscribe = subscribeToNewRides(supabase, refetchFirstPageIfViewingDefault); // Refetch only when viewing default list
     return unsubscribe;
   }, [supabase, refetchFirstPageIfViewingDefault]);
 
-  // Subscribe to real-time ride updates for seat availability
   useEffect(() => {
     if (supabase && allRides.length > 0) {
       subscribeToRideUpdates(supabase);
@@ -164,11 +157,8 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     unsubscribeFromRideUpdates,
   ]);
 
-
-  // Subscribe to each ride's conversation for chat updates
   useEffect(() => {
     allRides.forEach((ride) => {
-      // Find the conversation for this ride
       const conversation = conversations.find(conv => conv.rideId === ride.id);
       if (conversation) {
         subscribeToRide(conversation.id);
@@ -176,14 +166,11 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     });
   }, [allRides, conversations, subscribeToRide]);
 
-  // Preload user bookings for instant modal performance
   useEffect(() => {
     if (user?.id && fetchUserBookings) {
-      fetchUserBookings(user.id);
+      fetchUserBookings(user.id); // Preload for instant modal
     }
   }, [user?.id]);
-
-  // Note: Booking notifications are handled by OneSignal via server-side triggers
 
   return {
     loading: allRidesLoading,

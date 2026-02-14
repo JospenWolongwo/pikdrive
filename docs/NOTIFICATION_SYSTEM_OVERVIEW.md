@@ -1,214 +1,176 @@
-# 🔔 PikDrive Notification System Overview
+# PikDrive Notification System Overview
 
-## 🎯 **System Architecture**
+## Architecture
 
-Your notification system is **perfectly organized** with clear separation between **notifications** and **messages**:
+PikDrive uses a **multi-channel notification system** with three delivery channels:
 
-### **📱 Two Main Systems:**
-
-1. **🔔 PUSH NOTIFICATIONS** (OneSignal) - Server-side
-2. **💬 MESSAGE NOTIFICATIONS** (Browser) - Client-side
+```
+Event (payment, booking, review request, message)
+    |
+    v
+ServerMultiChannelNotificationService
+    |
+    +-- OneSignal (Push Notifications)
+    |       Web Push (Chrome, Firefox, Safari)
+    |       iOS / Android (via PWA)
+    |
+    +-- WhatsApp Business API
+    |       Template messages via Meta API
+    |       Supabase Edge Function (send-whatsapp-message)
+    |
+    +-- Browser Notifications
+            Real-time chat messages
+            Audio alerts
+```
 
 ---
 
-## 🏗️ **1. PUSH NOTIFICATIONS (OneSignal)**
+## 1. Push Notifications (OneSignal)
 
-### **Purpose:** Server-to-device notifications (like Uber, WhatsApp)
+### Purpose
+Server-to-device notifications for payment events, ride updates, booking confirmations, and review requests.
 
-### **Files:**
+### Key Files
 ```
 lib/services/server/
-├── onesignal-notification-service.ts    # OneSignal API wrapper
-└── payment-notification-service.ts      # Payment-specific notifications
+├── onesignal-notification-service.ts     # OneSignal API wrapper
+├── payment-notification-service.ts       # Payment-specific notifications
+└── multi-channel-notification-service.ts # Orchestrates push + WhatsApp
 
 supabase/functions/
-└── send-notification/index.ts           # OneSignal Edge Function
+└── send-onesignal-notification/index.ts  # Edge Function
 ```
 
-### **Usage Examples:**
-```typescript
-// ✅ Payment notifications
-const notificationService = new ServerPaymentNotificationService(supabase);
-await notificationService.notifyPaymentCompleted(payment);
+### Notification Types
+- `payment_success` / `payment_failed` — Payment status changes
+- `booking_confirmed` — Booking confirmation
+- `driver_new_booking` — Driver receives new booking
+- `review_request_passenger` / `review_request_driver` — Post-ride review requests
+- `review_received` — New review received
+- `new_message` — Chat message notification
 
-// ✅ General notifications
-const oneSignalService = new ServerOneSignalNotificationService(supabase);
-await oneSignalService.sendNotification({
-  userId: 'user123',
-  title: '✅ Paiement Confirmé!',
-  message: 'Votre paiement est confirmé',
-  notificationType: 'payment_success'
-});
-```
-
-### **Features:**
-- ✅ **Multi-platform** (iOS, Android, Web)
-- ✅ **Rich content** (images, buttons, deep links)
-- ✅ **French localization**
-- ✅ **Custom sounds** per notification type
-- ✅ **High priority** notifications
-- ✅ **Offline delivery** (queued when offline)
+### Features
+- Multi-platform (Web, iOS, Android via PWA)
+- Custom sounds per notification type
+- French localization
+- High priority for critical events
+- Offline delivery queue
 
 ---
 
-## 💬 **2. MESSAGE NOTIFICATIONS (Browser)**
+## 2. WhatsApp Business API
 
-### **Purpose:** Real-time chat notifications (like WhatsApp, Telegram)
+### Purpose
+Template-based messages for payment confirmations, booking details, driver notifications, and review requests.
 
-### **Files:**
+### Key Files
+```
+lib/services/server/
+└── whatsapp-notification-service.ts      # WhatsApp template sender
+
+supabase/functions/
+└── send-whatsapp-message/index.ts        # Edge Function (calls Meta API)
+```
+
+### Templates
+- `booking_confirmation` — Sent to passenger after payment
+- `driver_new_booking` — Sent to driver for new bookings
+- `review_request_passenger` — Post-ride review request (passenger)
+- `review_request_driver` — Post-ride review request (driver)
+
+### Setup
+- Templates must be approved in Meta Business Manager
+- Variables cannot be at start or end of template body
+- See `docs/WHATSAPP_WEBHOOK_SETUP.md` for webhook configuration
+
+### Environment Variables
+```
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_BUSINESS_ACCOUNT_ID=
+META_APP_SECRET=
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=pikdrive_verify
+WHATSAPP_API_VERSION=v24.0
+```
+
+---
+
+## 3. Browser Notifications (Chat)
+
+### Purpose
+Real-time chat message alerts using the Browser Notification API with Supabase real-time subscriptions.
+
+### Key Files
 ```
 lib/notifications/
 ├── notification-service.ts              # Core browser notification API
-├── message-notification-manager.ts      # Chat message notifications
+├── message-notification-manager.ts      # Chat message subscriptions
 ├── audio-manager.ts                     # Sound management
 └── notification-queue.ts                # Offline message queue
 ```
 
-### **Usage Examples:**
-```typescript
-// ✅ Message notifications
-const messageManager = new MessageNotificationManager({
-  supabase,
-  userId: 'user123',
-  onMessageClick: (rideId) => navigateToChat(rideId)
-});
-await messageManager.start();
-
-// ✅ General browser notifications
-const notificationService = new NotificationService();
-await notificationService.showNotification({
-  title: 'New Message',
-  body: 'You have a new message from John',
-  sound: true,
-  vibrate: [200, 100, 200]
-});
-```
-
-### **Features:**
-- ✅ **Real-time** message detection
-- ✅ **Sound notifications** with custom audio
-- ✅ **Vibration patterns**
-- ✅ **Click-to-navigate** to conversations
-- ✅ **Offline queue** for missed messages
-- ✅ **Permission management**
+### Features
+- Real-time message detection via Supabase channels
+- Custom audio alerts
+- Vibration patterns
+- Click-to-navigate to conversations
+- Offline queue for missed messages
 
 ---
 
-## 🎯 **How to Use Each System**
+## Multi-Channel Orchestration
 
-### **🔔 For Push Notifications (Server-side):**
+`ServerMultiChannelNotificationService` coordinates sending across channels:
 
 ```typescript
-// In API routes or server components
-import { ServerPaymentNotificationService } from '@/lib/services/server/payment-notification-service';
-
-// Payment notifications
-const paymentNotifier = new ServerPaymentNotificationService(supabase);
-await paymentNotifier.notifyPaymentCompleted(payment);
-await paymentNotifier.notifyPaymentFailed(payment, 'Insufficient funds');
-
-// General notifications
-import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
-const notifier = new ServerOneSignalNotificationService(supabase);
-await notifier.sendNotification({
-  userId: 'user123',
-  title: '🎉 Ride Confirmed!',
-  message: 'Your ride is confirmed for tomorrow at 10 AM',
-  notificationType: 'ride_confirmed'
+// Example: Send review request via both push + WhatsApp
+await multiChannelService.sendReviewRequest({
+  userId,
+  phoneNumber,
+  userName,
+  otherPartyName,
+  route,
+  reviewUrl,
+  bookingId,
+  isDriver: false,
 });
 ```
 
-### **💬 For Message Notifications (Server-side Push):**
-
-```typescript
-// Messages automatically trigger push notifications via OneSignal
-// No client-side code needed - handled in API route
-
-// In app/api/messages/route.ts - automatically sends push notifications
-// when messages are sent between driver and passenger
-
-// Manual push notifications
-import { ServerOneSignalNotificationService } from '@/lib/services/server/onesignal-notification-service';
-const notificationService = new ServerOneSignalNotificationService(supabase);
-
-await notificationService.sendMessageNotification(
-  recipientId,
-  senderId,
-  senderName,
-  messagePreview,
-  conversationId,
-  rideId
-);
-```
+This sends:
+1. OneSignal push notification (immediate, clickable)
+2. WhatsApp template message (persistent, includes link)
 
 ---
 
-## 📊 **Current Status After SMS Removal**
+## Cost
 
-### **✅ What's Working:**
-- **Push Notifications:** OneSignal (free, unlimited)
-- **Message Notifications:** Browser API (free, real-time)
-- **Payment Notifications:** Enhanced with emojis and French
-- **Sound System:** Custom audio with fallbacks
-- **Offline Support:** Queued notifications
-
-### **❌ What's Removed:**
-- **SMS Notifications:** Eliminated to save costs ($600-2400/year)
-- **Twilio Dependencies:** Cleaned up
-
-### **💰 Cost Impact:**
-- **Before:** $50-200/month (SMS costs)
-- **After:** $0/month (OneSignal + Browser API)
-- **Annual Savings:** $600-2400
+| Channel | Cost |
+|---------|------|
+| OneSignal Push | Free (up to 10K users) |
+| WhatsApp | Free (1,000 conversations/month on Meta free tier) |
+| Browser Notifications | Free |
 
 ---
 
-## 🚀 **Best Practices**
+## Adding New Notifications
 
-### **Use Push Notifications For:**
-- ✅ Payment confirmations
-- ✅ Ride status updates
-- ✅ Driver notifications
-- ✅ System announcements
-- ✅ Booking confirmations
-
-### **Use Message Notifications For:**
-- ✅ New chat messages (via OneSignal push notifications)
-- ✅ Real-time conversations (server-side push)
-- ✅ Driver-passenger communication (automatic)
-- ✅ Quick responses (instant delivery)
-
-### **When to Use Both:**
-- ✅ **Critical events** (payment success) → Push + Message
-- ✅ **Urgent messages** → Push + Message
-- ✅ **Regular chat** → Push notification only (automatic)
+1. Define the `NotificationType` in `types/notification.ts`
+2. Add sound mapping in `NOTIFICATION_SOUNDS`
+3. Add action URL in `NOTIFICATION_ACTIONS`
+4. Implement in `ServerMultiChannelNotificationService` or the relevant service
+5. Create WhatsApp template in Meta Business Manager (if WhatsApp delivery needed)
+6. Add template variable count in `whatsapp-notification-service.ts`
 
 ---
 
-## 🔧 **Adding New Notifications**
+## Related Documentation
 
-### **For Push Notifications:**
-1. Add to `ServerOneSignalNotificationService`
-2. Create notification template
-3. Add to Edge Function if needed
-4. Test with OneSignal dashboard
-
-### **For Message Notifications:**
-1. Add to `MessageNotificationManager`
-2. Configure sound/visual settings
-3. Add click handlers
-4. Test in browser
+- `docs/WHATSAPP_IMPLEMENTATION_SUMMARY.md` — WhatsApp integration details
+- `docs/WHATSAPP_WEBHOOK_SETUP.md` — Webhook configuration
+- `docs/ONESIGNAL_SETUP_GUIDE.md` — OneSignal initial setup
+- `docs/NOTIFICATION_TEMPLATES.md` — Notification content templates
+- `docs/NOTIFICATION_SOUNDS_GUIDE.md` — Sound configuration
+- `docs/SMS_REMOVAL_SUMMARY.md` — Why SMS was removed
 
 ---
-
-## 🎉 **Summary**
-
-Your notification system is **perfectly organized** and **cost-effective**:
-
-- **🔔 Push Notifications:** Professional, scalable, free
-- **💬 Message Notifications:** Real-time, responsive, free
-- **💰 Cost Savings:** $600-2400/year
-- **🎨 User Experience:** Rich, localized, accessible
-- **🔧 Maintainability:** Clean, modular, reusable
-
-**Both systems work independently and can be called from anywhere in your app!** 🚀
+Last Updated: February 2026

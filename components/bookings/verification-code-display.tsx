@@ -1,4 +1,3 @@
-// Booking verification code display component
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
@@ -34,7 +33,6 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     lastUpdated: 0
   })
 
-  // Simplified version with memory optimizations
   const fetchVerificationCode = useCallback(async (forceRefresh = false) => {
     setState(prev => ({ 
       ...prev, 
@@ -44,23 +42,17 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     }));
     
     try {
-      console.log(`🔄 Fetching verification code for booking: ${bookingId}`);
-      
-      // Use a more memory-efficient approach with sequential operations
       let verificationCode: string | null = null;
       let isVerified = false;
       
-      // Only try to generate a new code if explicitly requested
       if (forceRefresh) {
         try {
-          // Try refresh endpoint (stricter validation)
           const data = await bookingApiClient.refreshVerificationCode(bookingId);
           verificationCode = data?.verificationCode ?? null;
         } catch (error) {
           console.error('Error generating code:', error);
         }
       } else {
-        // First try to get existing code (most efficient)
         try {
           const response = await bookingApiClient.getVerificationCode(bookingId);
           if (!response.success) {
@@ -69,7 +61,6 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
 
           isVerified = Boolean(response.codeVerified);
 
-          // If code is verified, don't show the code anymore
           if (!isVerified && response.verificationCode) {
             verificationCode = response.verificationCode;
           }
@@ -77,8 +68,7 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
           console.error('Error fetching verification code:', error);
         }
       }
-      
-      // If we still don't have a code, try the backup endpoint
+
       if (!verificationCode && !isVerified) {
         try {
           const backupData = await bookingApiClient.generateVerificationCodeBackup(bookingId);
@@ -124,25 +114,21 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     }
   }, [bookingId, supabase, t]);
 
-  // Copy code to clipboard
   const copyToClipboard = useCallback(() => {
     if (state.code) {
       navigator.clipboard.writeText(state.code)
       setState(prev => ({ ...prev, copied: true }))
       toast.success(t("pages.bookings.verificationCode.copiedToClipboard"))
-      
-      // Reset copied state after 3 seconds
+
       setTimeout(() => {
         setState(prev => ({ ...prev, copied: false }))
       }, 3000)
     }
   }, [state.code, toast])
 
-  // Initial load effect
   useEffect(() => {
     fetchVerificationCode()
-    
-    // Set up real-time subscription for code verification
+
     const subscription = supabase
       .channel(`booking-${bookingId}`)
       .on('postgres_changes', { 
@@ -160,45 +146,35 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
         }; 
         old: any; 
       }) => {
-        console.log('🔄 Booking updated via subscription:', payload);
-        
-        // Check if code_verified changed to true
         if (payload.new && 
             payload.new.code_verified === true &&
             payload.old?.code_verified !== true) {
-          console.log('✅ Code verified! Updating state...');
-          // Update state to show verified status
           setState(prev => ({
             ...prev,
-            code: '', // Clear code when verified
+            code: '',
             loading: false,
             error: null,
             lastUpdated: Date.now()
           }));
           return;
         }
-        
-        // Check if verification code has been updated
+
         if (payload.new && 
             (payload.new.verification_code !== payload.old?.verification_code ||
              payload.new.status !== payload.old?.status ||
              payload.new.payment_status !== payload.old?.payment_status)) {
-          
-          console.log('📋 Verification code or status changed, refreshing...');
           fetchVerificationCode();
         }
       })
       .subscribe();
-      
-    // Poll for verification code every 10 seconds as backup
-    // This ensures we get the code even if the subscription fails
+
+    // Backup if subscription fails
     const pollingInterval = setInterval(() => {
       if (!state.code && !state.error) {
-        console.log('⏱️ Polling for verification code...');
         fetchVerificationCode();
       }
-    }, 10000); // 10 seconds polling interval
-    
+    }, 10000);
+
     return () => {
       subscription.unsubscribe();
       clearInterval(pollingInterval);
@@ -219,7 +195,6 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     )
   }
 
-  // If code is verified
   if (!state.code && !state.loading && !state.error) {
     return (
       <Card className="bg-green-50 border border-green-200 shadow-sm">
@@ -236,7 +211,6 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     )
   }
 
-  // If there's an error
   if (state.error) {
     return (
       <Card className="bg-red-50 border border-red-200 shadow-sm">
@@ -285,7 +259,6 @@ export function VerificationCodeDisplay({ bookingId }: VerificationCodeDisplayPr
     )
   }
 
-  // Show the verification code
   return (
     <Card className="bg-primary-50 border border-primary-200 shadow-sm">
       <CardContent className="p-6">

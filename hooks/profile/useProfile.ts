@@ -26,7 +26,6 @@ export function useProfile(userId: string | undefined): UseProfileReturn {
     try {
       setIsLoading(true);
 
-      // Load profile data
       let profileResult = await profileService.loadProfile(userId);
 
       // If profile doesn't exist, try to create it
@@ -53,22 +52,15 @@ export function useProfile(userId: string | undefined): UseProfileReturn {
       const profile = profileResult.data;
       setProfileData(profile);
 
-      // Load driver documents if user is a driver applicant
       if (profile.is_driver_applicant) {
-        console.log("[PROFILE] Loading driver documents for user:", userId);
         const documentsResult = await driverDocumentsService.loadDriverDocuments(
           userId
         );
 
         if (documentsResult.success) {
           if (documentsResult.data) {
-            console.log(
-              "[PROFILE] Driver documents loaded:",
-              documentsResult.data
-            );
             setDriverDocuments(documentsResult.data);
           } else {
-            console.log("[PROFILE] No driver documents found for user");
             setDriverDocuments(null);
           }
         } else {
@@ -85,7 +77,6 @@ export function useProfile(userId: string | undefined): UseProfileReturn {
     }
   };
 
-  // Load profile on mount and when userId changes
   useEffect(() => {
     if (!userId) return;
     loadProfile();
@@ -106,7 +97,6 @@ export function useProfile(userId: string | undefined): UseProfileReturn {
           filter: `id=eq.${userId}`,
         },
         (payload: any) => {
-          console.log("[PROFILE] Profile updated in real-time:", payload);
           if (payload.new) {
             setProfileData((prev) =>
               prev ? { ...prev, ...payload.new } : null

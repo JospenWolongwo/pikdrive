@@ -39,7 +39,6 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
    * Uses native Notification.permission as source of truth, then syncs with OneSignal
    */
   const checkPermission = useCallback(async () => {
-    // STEP 1: Check native permission first (immediate, synchronous, reliable)
     if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && 'permission' in Notification) {
       try {
         const nativePermission = Notification.permission;
@@ -58,7 +57,6 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
       }
     }
 
-    // STEP 2: Sync with OneSignal if available (for accurate subscription state)
     if (window.OneSignal && window.__oneSignalReady) {
       try {
         const currentPermission = await window.OneSignal.Notifications.permission;
@@ -116,19 +114,14 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
       if (currentPermission === "granted") {
         setPermission('granted');
         setIsSubscribed(true);
-        console.log('✅ Notification permission already granted');
         return true;
       }
 
       if (currentPermission === "denied") {
         setPermission('denied');
         setIsSubscribed(false);
-        console.log('❌ Notification permission was previously denied');
         return false;
       }
-
-      // Request permission using native API (this will show browser popup)
-      console.log('🔔 Requesting notification permission via native API...');
       let permission: NotificationPermission;
       try {
         permission = await Notification.requestPermission();
@@ -143,25 +136,19 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
       if (granted) {
         setPermission('granted');
         setIsSubscribed(true);
-        console.log('✅ Notification permission granted via native API');
         
         // Sync with OneSignal after native permission is granted (if OneSignal is available)
         if (window.OneSignal && window.__oneSignalReady) {
           try {
-            console.log('🔄 Syncing permission with OneSignal...');
             await window.OneSignal.Notifications.requestPermission();
-            console.log('✅ OneSignal permission sync successful');
           } catch (oneSignalError) {
             console.warn('⚠️ OneSignal sync failed but native permission granted:', oneSignalError);
             // Native permission still works even if OneSignal sync fails
           }
-        } else {
-          console.log('ℹ️ OneSignal not ready yet, but native permission granted');
         }
       } else {
         setPermission('denied');
         setIsSubscribed(false);
-        console.log('❌ Notification permission denied via native API');
       }
 
       return granted;
@@ -179,10 +166,9 @@ export function useNotificationPermission(): UseNotificationPermissionReturn {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // IMMEDIATE CHECK: Use native permission first (synchronous, no waiting)
     checkPermission();
 
-    // POLLING: Wait for OneSignal to initialize and sync subscription state
+    // Poll for OneSignal to initialize and sync subscription state
     // This fixes the race condition where OneSignal isn't ready when component mounts
     let attempts = 0;
     const maxAttempts = 60; // 30 seconds max (60 * 500ms)

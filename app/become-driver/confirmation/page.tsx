@@ -1,16 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
 import { SuccessCard } from "@/components/ui"
 import { useLocale } from "@/hooks"
 
 export default function ApplicationConfirmationPage() {
   const { t } = useLocale();
-  
-  // Log page view for analytics
-  useEffect(() => {
-    console.log("📊 Driver Application Confirmation Page Viewed")
-  }, [])
 
   return (
     <SuccessCard

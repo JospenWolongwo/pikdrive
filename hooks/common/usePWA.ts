@@ -52,15 +52,6 @@ export function usePWA() {
         // Dismissal is only valid if it happened less than DISMISSAL_EXPIRY ago
         isDismissalValid = timeSinceDismissal < DISMISSAL_EXPIRY;
         
-        console.log('🕒 PWA dismissal check:', { 
-          dismissedTime, 
-          currentTime, 
-          timeSinceDismissal, 
-          expiryTime: DISMISSAL_EXPIRY,
-          isDismissalValid,
-          daysUntilExpiry: Math.ceil((DISMISSAL_EXPIRY - timeSinceDismissal) / ONE_DAY)
-        });
-        
         // If dismissal has expired, clean up localStorage
         if (!isDismissalValid) {
           localStorage.removeItem('pwa-dismissed');
@@ -69,21 +60,16 @@ export function usePWA() {
       }
       
       if (hasUserInstalled || isDismissalValid) {
-        console.log('🔍 User previously installed PWA or has a valid dismissal');
         return;
       }
       
-      // Store the event for later use
       window.deferredPrompt = e;
       setDeferredPrompt(e);
       setIsInstallable(true);
       setLastUpdated(Date.now());
-      
-      console.log('🎯 Install Prompt Ready:', { hasPrompt: true });
     };
 
     const handleAppInstalled = () => {
-      console.log('✅ PWA Installed Successfully');
       localStorage.setItem('pwa-installed', 'true');
       setIsInstalled(true);
       setIsInstallable(false);
@@ -93,16 +79,13 @@ export function usePWA() {
     };
 
     const checkInstalled = () => {
-      // Multiple checks for installed state
+      // Multiple checks for installed state (standalone, iOS, Android app shell)
       const isInStandaloneMode = 
         window.matchMedia('(display-mode: standalone)').matches || 
         (window.navigator as any).standalone === true ||
         document.referrer.includes('android-app://');
       
-      // Check local storage as well
       const hasStoredInstallFlag = localStorage.getItem('pwa-installed') === 'true';
-      
-      // Set as installed if either condition is true
       const isAppInstalled = isInStandaloneMode || hasStoredInstallFlag;
       
       setIsInstalled(isAppInstalled);
@@ -113,28 +96,19 @@ export function usePWA() {
       }
       
       setLastUpdated(Date.now());
-      console.log('📱 PWA Install Check:', { 
-        isInStandaloneMode, 
-        hasStoredInstallFlag,
-        isAppInstalled 
-      });
     };
 
-    // Set up event listeners
     if (typeof window !== 'undefined') {
-      // Check if there's a deferred prompt already stored in the window object
+      // Window object may already have a deferred prompt from prior navigation
       if (window.deferredPrompt) {
         handleBeforeInstallPrompt(window.deferredPrompt);
       }
 
-      // Listen for the beforeinstallprompt event
       window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.addEventListener('appinstalled', handleAppInstalled);
 
-      // Check if already installed
       checkInstalled();
 
-      // Check display mode changes
       const displayModeMediaQuery = window.matchMedia('(display-mode: standalone)');
       const handleDisplayModeChange = (e: MediaQueryListEvent) => {
         if (e.matches) {
@@ -143,13 +117,11 @@ export function usePWA() {
           setIsInstallable(false);
         }
         setLastUpdated(Date.now());
-        console.log('🔄 Display Mode Changed:', { isStandalone: e.matches });
       };
       
       displayModeMediaQuery.addEventListener('change', handleDisplayModeChange);
 
-      // Periodically check for installability on Android
-      // This helps if the event was missed during initial page load
+      // Delayed check for Android - helps if beforeinstallprompt was missed during initial load
       const checkForInstallability = () => {
         const userAgent = navigator.userAgent.toLowerCase();
         const isAndroid = /android/.test(userAgent);
@@ -177,14 +149,11 @@ export function usePWA() {
         // Only set installable if not already installed or within valid dismissal period
         if (isAndroid && !isInstalled && !deferredPrompt && !isDismissalValid && !hasUserInstalled) {
           setIsInstallable(true);
-          console.log('🔍 Android device detected, setting installable');
         }
       };
       
-      // Run once after a short delay
       setTimeout(checkForInstallability, 2000);
 
-      // Cleanup
       return () => {
         window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.removeEventListener('appinstalled', handleAppInstalled);
@@ -194,36 +163,29 @@ export function usePWA() {
   }, [deferredPrompt, isInstalled]);
 
   const install = useCallback(async () => {
-    console.log('🚀 Install requested', { hasPrompt: !!deferredPrompt });
-    
-    // Check if we have a stored prompt first in the component state
     let promptToUse = deferredPrompt;
     
-    // If not in state, check window object as fallback
+    // Window object as fallback if event was captured before mount
     if (!promptToUse && window.deferredPrompt) {
       promptToUse = window.deferredPrompt;
       setDeferredPrompt(window.deferredPrompt);
     }
     
     if (!promptToUse) {
-      console.log('❌ No installation prompt available');
       return false;
     }
 
     try {
-      console.log('🚀 Triggering install prompt...');
       await promptToUse.prompt();
       const choiceResult = await promptToUse.userChoice;
       
       if (choiceResult.outcome === 'accepted') {
-        console.log('✅ User accepted the PWA installation');
         localStorage.setItem('pwa-installed', 'true');
         setIsInstalled(true);
         setDeferredPrompt(null);
         window.deferredPrompt = undefined;
         return true;
       } else {
-        console.log('❌ User dismissed the PWA installation');
         localStorage.setItem('pwa-dismissed', 'true');
         localStorage.setItem('pwa-dismissed-time', Date.now().toString());
         return false;
@@ -235,7 +197,6 @@ export function usePWA() {
   }, [deferredPrompt]);
 
   const dismissPrompt = useCallback(() => {
-    // Store current timestamp with dismissal
     localStorage.setItem('pwa-dismissed', 'true');
     localStorage.setItem('pwa-dismissed-time', Date.now().toString());
     setIsInstallable(false);

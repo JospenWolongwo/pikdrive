@@ -70,6 +70,13 @@ CREATE TABLE public.profiles (
   driver_application_status TEXT,
   driver_approval_date TIMESTAMP WITH TIME ZONE,
   
+  -- Notification preferences
+  whatsapp_notifications_enabled BOOLEAN DEFAULT TRUE,
+  
+  -- Review aggregates (denormalized, updated by trigger)
+  average_rating DECIMAL(2,1) DEFAULT 0.0,
+  total_reviews INTEGER DEFAULT 0,
+  
   -- User settings
   preferred_language TEXT DEFAULT 'fr',
   theme TEXT DEFAULT 'system',
@@ -466,6 +473,134 @@ CREATE INDEX idx_push_subscriptions_active ON public.push_subscriptions(active);
 
 ---
 
+### 11. **reviews**
+
+User reviews (passengers review drivers and vice versa).
+
+```sql
+CREATE TABLE public.reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id UUID NOT NULL REFERENCES public.bookings(id) ON DELETE CASCADE,
+  ride_id UUID NOT NULL REFERENCES public.rides(id) ON DELETE CASCADE,
+  reviewer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  reviewer_type TEXT NOT NULL CHECK (reviewer_type IN ('passenger', 'driver')),
+  reviewee_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  reviewee_type TEXT NOT NULL CHECK (reviewee_type IN ('passenger', 'driver')),
+  
+  -- Review content
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  tags TEXT[],
+  
+  -- Moderation
+  is_public BOOLEAN DEFAULT TRUE,
+  is_verified BOOLEAN DEFAULT FALSE,
+  moderation_status TEXT DEFAULT 'approved'
+    CHECK (moderation_status IN ('pending', 'approved', 'rejected')),
+  
+  -- Timestamps
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- Constraints
+  UNIQUE(booking_id, reviewer_id),
+  CHECK (reviewer_id != reviewee_id)
+);
+
+-- Indexes
+CREATE INDEX idx_reviews_reviewee ON public.reviews(reviewee_id);
+CREATE INDEX idx_reviews_booking ON public.reviews(booking_id);
+CREATE INDEX idx_reviews_rating ON public.reviews(rating);
+```
+
+**RLS Policies:**
+- `reviews_select_public` - Anyone can view approved public reviews
+- `reviews_select_own` - Users can view their own reviews
+- `reviews_insert_authenticated` - Authenticated users can create reviews
+- `reviews_update_own` - Users can update their own reviews
+
+**Trigger:** `trigger_update_profile_rating` — After INSERT or UPDATE, recalculates `average_rating` and `total_reviews` on the reviewee's profile.
+
+---
+
+### 12. **payouts**
+
+Driver payouts initiated when a booking code is verified.
+
+```sql
+CREATE TABLE public.payouts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  driver_id UUID NOT NULL REFERENCES public.profiles(id),
+  booking_id UUID NOT NULL REFERENCES public.bookings(id),
+  payment_id UUID REFERENCES public.payments(id),
+  
+  -- Amounts
+  amount DECIMAL(10,2) NOT NULL,
+  original_amount DECIMAL(10,2) NOT NULL,
+  transaction_fee DECIMAL(10,2) DEFAULT 0,
+  commission DECIMAL(10,2) DEFAULT 0,
+  currency TEXT DEFAULT 'XAF',
+  
+  -- Provider details
+  provider TEXT NOT NULL,
+  phone_number TEXT NOT NULL,
+  transaction_id TEXT,
+  status TEXT DEFAULT 'processing'
+    CHECK (status IN ('processing', 'completed', 'failed')),
+  reason TEXT,
+  metadata JSONB,
+  
+  -- Timestamps
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_payouts_driver ON public.payouts(driver_id);
+CREATE INDEX idx_payouts_booking ON public.payouts(booking_id);
+CREATE INDEX idx_payouts_status ON public.payouts(status);
+```
+
+---
+
+### 13. **refunds**
+
+Partial and full refunds for bookings (e.g., seat reductions).
+
+```sql
+CREATE TABLE public.refunds (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  payment_id UUID NOT NULL REFERENCES public.payments(id),
+  booking_id UUID NOT NULL REFERENCES public.bookings(id),
+  user_id UUID NOT NULL REFERENCES public.profiles(id),
+  
+  -- Amounts
+  amount DECIMAL(10,2) NOT NULL,
+  currency TEXT DEFAULT 'XAF',
+  
+  -- Provider details
+  provider TEXT NOT NULL,
+  phone_number TEXT NOT NULL,
+  transaction_id TEXT,
+  status TEXT DEFAULT 'processing'
+    CHECK (status IN ('processing', 'completed', 'failed')),
+  refund_type TEXT CHECK (refund_type IN ('partial', 'full')),
+  reason TEXT,
+  metadata JSONB,
+  
+  -- Timestamps
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_refunds_payment ON public.refunds(payment_id);
+CREATE INDEX idx_refunds_booking ON public.refunds(booking_id);
+CREATE INDEX idx_refunds_status ON public.refunds(status);
+```
+
+---
+
 ## 🔐 Row Level Security (RLS) Policies
 
 ### Global Rules
@@ -698,7 +833,7 @@ supabase/migrations/
 
 | Category | Count |
 |----------|-------|
-| Core Tables | 9 |
+| Core Tables | 13 |
 | Total Migrations | 47 |
 | Storage Buckets | 3 |
 | RLS Policies | 35+ |
@@ -732,6 +867,6 @@ supabase/migrations/
 
 ---
 
-**Last Updated**: January 2025  
+**Last Updated**: February 2026  
 **Maintained By**: Development Team  
-**Schema Version**: 2.1
+**Schema Version**: 3.0

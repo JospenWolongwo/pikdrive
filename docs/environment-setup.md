@@ -1,106 +1,119 @@
-# Environment Variables Setup Guide
+# Environment Setup Guide
 
-## 🔑 Required Environment Variables
+## Quick Start
 
-Create a `.env.local` file in your project root with the following variables:
-
-### Push Notifications
-
-```env
-# VAPID Keys for Push Notifications
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=BOMea1XVc07az4qon-sfhQF_61RohAHZjf1_0ZFhLdJm-tgxo53Z-5rmayns-RPmH7bIBcn0fG7kIrAgo-UjUpg
-VAPID_PRIVATE_KEY=2Y7Beab3Qg1fHo5uEjHDcv4r3XVPAWvp9R2U2lyoKfM
-```
-
-### Supabase Configuration
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-### Twilio Configuration (Optional)
-
-```env
-# Twilio SMS Configuration
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_FROM_NUMBER=your_twilio_phone_number
-TWILIO_MESSAGE_SERVICE_SID=your_messaging_service_sid
-```
-
-### Send SMS Hook (Auth OTP)
-
-When using the Send SMS Hook for auth OTP (see `supabase/config.toml` `[auth.hook.send_sms]`), set:
-
-```env
-# Required for hook request verification (use a long random string; e.g. v1,whsec_...)
-SEND_SMS_HOOK_SECRET=your_hook_secret
-```
-
-Optional, for gradual migration to WhatsApp:
-
-```env
-OTP_WHATSAPP_PERCENTAGE=0
-OTP_USE_WHATSAPP_KILL_SWITCH=false
-OTP_WHATSAPP_TEMPLATE_NAME=auth_otp
-```
-
-## 🚀 How to Get VAPID Keys
-
-### Option 1: Use Generated Keys (Recommended for Development)
-
-The VAPID keys above were generated for this project and can be used for development.
-
-### Option 2: Generate New Keys
-
-If you want to generate new keys:
+1. Copy the example file:
 
 ```bash
-# Install web-push globally (if you want to generate new keys)
-npm install -g web-push
-
-# Generate new VAPID keys
-web-push generate-vapid-keys
+cp .env.local.example .env.local
 ```
 
-## 📱 Testing Push Notifications
+2. Fill in the required values (marked `[REQUIRED]` in the file).
 
-1. **Enable Push Notifications:**
+---
 
-   - Go to `/messages` page
-   - Click "Activer Push" button
-   - Grant notification permission
+## Required Variables
 
-2. **Test Notifications:**
-   - Use the test component (development mode)
-   - Send test notifications
-   - Check browser console for debugging
+### Supabase
+```env
+NEXT_PUBLIC_SUPABASE_URL=          # Supabase project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=     # Supabase anon/public key
+SUPABASE_SERVICE_ROLE_KEY=         # Supabase service role key (server-side only)
+```
 
-## 🔒 Security Notes
+Get these from: **Supabase Dashboard > Project Settings > API**
 
-- **Never commit** `.env.local` to version control
-- **VAPID Private Key** should be kept secret
-- **VAPID Public Key** is safe to expose (used in frontend)
-- Use different keys for development and production
+### App Configuration
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000   # Your app URL (update for production)
+```
 
-## 🌍 Production Deployment
+---
 
-For production, you should:
+## Payment Providers
 
-1. Generate new VAPID keys
-2. Update environment variables
-3. Ensure HTTPS is enabled
-4. Test push notifications thoroughly
-5. Monitor notification delivery rates
+### PawaPay (Primary - Recommended)
+```env
+USE_PAWAPAY=true
+PAWAPAY_API_TOKEN=
+PAWAPAY_BASE_URL=https://api.sandbox.pawapay.cloud
+PAWAPAY_ENVIRONMENT=sandbox
+```
 
-## 🧪 Development Testing
+When `USE_PAWAPAY=true`, all payments route through PawaPay (supports both MTN and Orange Money).
 
-The current setup includes:
+### MTN MoMo (Direct - Fallback)
+Only needed if `USE_PAWAPAY=false`:
+```env
+MOMO_SUBSCRIPTION_KEY=
+MOMO_API_KEY=
+MOMO_TARGET_ENVIRONMENT=sandbox
+MOMO_CALLBACK_HOST=
+MOMO_COLLECTION_PRIMARY_KEY=
+MOMO_COLLECTION_USER_ID=
+MOMO_DISBURSEMENT_API_USER=
+MOMO_DISBURSEMENT_API_KEY=
+MOMO_DISBURSEMENT_SUBSCRIPTION_KEY=
+```
 
-- Development test component
-- Console logging for debugging
-- Error handling and fallbacks
-- Service worker debugging
+### Orange Money (Direct - Fallback)
+Only needed if `USE_PAWAPAY=false`:
+```env
+ORANGE_MONEY_MERCHANT_ID=
+ORANGE_MONEY_MERCHANT_KEY=
+ORANGE_MONEY_ENVIRONMENT=sandbox
+```
 
+---
+
+## Notifications
+
+### WhatsApp Business API
+```env
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_BUSINESS_ACCOUNT_ID=
+META_APP_SECRET=
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=pikdrive_verify
+WHATSAPP_API_VERSION=v24.0
+```
+
+Get these from: **Meta Business Manager > WhatsApp > API Setup**
+
+### OneSignal (Push Notifications)
+```env
+NEXT_PUBLIC_ONESIGNAL_APP_ID=
+NEXT_PUBLIC_ONESIGNAL_API_KEY=
+NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID=
+```
+
+Get these from: **OneSignal Dashboard > Settings > Keys & IDs**
+
+---
+
+## Cron Jobs
+
+```env
+CRON_SECRET=    # Secret for securing cron endpoints (vercel.json)
+```
+
+---
+
+## Sandbox Testing
+
+```env
+SANDBOX_PAWAPAY_TEST_PHONE=    # Test phone for PawaPay sandbox payouts
+SANDBOX_MTN_TEST_PHONE=        # Test phone for MTN sandbox payouts
+```
+
+---
+
+## Security Notes
+
+- Never commit `.env.local` to version control
+- `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS — keep it server-side only
+- Use different credentials for development and production
+- See `.env.local.example` for the complete variable list
+
+---
+Last Updated: February 2026

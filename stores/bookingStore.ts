@@ -375,23 +375,18 @@ export const useBookingStore = create<BookingState>()(
             throw new Error(response.error || "Failed to update booking");
           }
 
-          // Update booking in local state if it exists
           const { userBookings, driverBookings } = get();
           const updatedBooking = response.data!;
-
-          // Update in user bookings
           const updatedUserBookings = userBookings.map(booking => 
             booking.id === bookingId ? { ...booking, ...updatedBooking } : booking
           );
           set({ userBookings: updatedUserBookings });
 
-          // Update in driver bookings
           const updatedDriverBookings = driverBookings.map(booking => 
             booking.id === bookingId ? { ...booking, ...updatedBooking } : booking
           );
           set({ driverBookings: updatedDriverBookings });
 
-          // Update current booking if it's the same
           const { currentBooking } = get();
           if (currentBooking?.id === bookingId) {
             set({ currentBooking: { ...currentBooking, ...updatedBooking } });
@@ -437,7 +432,6 @@ export const useBookingStore = create<BookingState>()(
             throw new Error(response.error || "Failed to cancel booking");
           }
 
-          // Remove booking from local state
           const { userBookings, driverBookings } = get();
           const filteredUserBookings = userBookings.filter(booking => booking.id !== bookingId);
           const filteredDriverBookings = driverBookings.filter(booking => booking.id !== bookingId);
@@ -447,7 +441,6 @@ export const useBookingStore = create<BookingState>()(
             driverBookings: filteredDriverBookings
           });
           
-          // Clear current booking if it's the same
           const { currentBooking } = get();
           if (currentBooking?.id === bookingId) {
             set({ currentBooking: null });

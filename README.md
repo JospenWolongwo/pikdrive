@@ -14,15 +14,18 @@ Pikdrive is a comprehensive ride-sharing application built with Next.js, offerin
 
 ## Features
 
-- **User Authentication** - Secure login and registration with Supabase Auth
-- **Ride Booking** - Easy and intuitive ride scheduling interface
-- **Driver Dashboard** - Dedicated section for drivers to manage rides and availability
-- **Real-time Tracking** - Live updates on ride status and location
+- **User Authentication** - Secure login and registration with Supabase Auth (phone OTP)
+- **Ride Booking** - Easy and intuitive ride scheduling with pickup point selection
+- **Driver Dashboard** - Dedicated section for drivers to manage rides, bookings, and payouts
+- **Real-time Chat** - In-app messaging between drivers and passengers
 - **Mobile-First Design** - Responsive interface optimized for all devices
 - **PWA Support** - Install as a native app on mobile devices
-- **Payment Integration** - Secure payment processing with multiple options
-- **Rating System** - Quality assurance through user feedback
-- **Notifications** - Real-time alerts for ride updates
+- **Payment Integration** - PawaPay, MTN MoMo, and Orange Money with automatic provider routing
+- **Driver Payouts** - Automated driver payouts on code verification with fee calculation
+- **Partial Refunds** - Seat reduction with automatic refund processing
+- **Review System** - Two-way reviews (passenger ↔ driver) with rating aggregation
+- **Multi-Channel Notifications** - OneSignal push + WhatsApp Business API
+- **Cron Jobs** - Automated review requests and pending payment checks
 
 ## Tech Stack
 
@@ -30,11 +33,12 @@ Pikdrive is a comprehensive ride-sharing application built with Next.js, offerin
 - **UI Components:** Radix UI with Tailwind CSS
 - **Authentication:** Supabase Auth
 - **Database:** Supabase PostgreSQL
-- **State Management:** React Context API
-- **Payments:** MTN MoMo integration, Orange Money
+- **State Management:** Zustand + React Context API
+- **Payments:** PawaPay (primary), MTN MoMo, Orange Money
+- **Notifications:** OneSignal (push) + WhatsApp Business API (templates)
 - **Styling:** Tailwind CSS with shadcn/ui
-- **Analytics:** Vercel Analytics
-- **Deployment:** Vercel
+- **Internationalization:** next-intl (French / English)
+- **Deployment:** Vercel (with daily cron jobs)
 
 ## Screenshots
 
@@ -70,42 +74,12 @@ npm install
 ```
 
 3. Set up environment variables
-   Create a `.env.local` file with the following variables:
 
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# MTN Mobile Money (MOMO) Configuration - Payin (Collection)
-DIRECT_MOMO_BASE_URL=https://sandbox.momodeveloper.mtn.com
-DIRECT_MOMO_API_USER=your_momo_api_user
-DIRECT_MOMO_API_KEY=your_momo_api_key
-DIRECT_MOMO_APIM_SUBSCRIPTION_KEY=your_subscription_key
-DIRECT_MOMO_CALLBACK_URL=https://yourapp.com/api/callbacks/momo
-MOMO_TARGET_ENVIRONMENT=sandbox  # or "production"
-
-# MTN Mobile Money (MOMO) Configuration - Payout (Disbursement) - Optional
-DIRECT_MOMO_API_USER_DISBURSMENT=your_payout_api_user
-DIRECT_MOMO_API_KEY_DISBURSMENT=your_payout_api_key
-DIRECT_MOMO_APIM_PAY_OUT_SUBSCRIPTION_KEY=your_payout_subscription_key
-DIRECT_MOMO_PAYOUT_CALLBACK_URL=https://yourapp.com/api/callbacks/momo-payout
-
-# Orange Money Configuration
-DIRECT_OM_TOKEN_URL=https://api.orange-sonatel.com/oauth/
-DIRECT_OM_BASE_URL=https://api.orange-sonatel.com/
-DIRECT_OM_CONSUMER_USER=your_om_consumer_user
-DIRECT_OM_CONSUMER_SECRET=your_om_consumer_secret
-DIRECT_OM_API_USERNAME=your_om_api_username
-DIRECT_OM_API_PASSWORD=your_om_api_password
-DIRECT_OM_PIN_CODE=your_om_pin
-DIRECT_OM_MERCHAND_NUMBER=your_merchant_number
-DIRECT_OM_CALLBACK_URL=https://yourapp.com/api/callbacks/om
-ORANGE_MONEY_ENVIRONMENT=sandbox  # or "production"
-
-# App Configuration
-NEXT_PUBLIC_APP_URL=http://localhost:3000  # Update for production
+```bash
+cp .env.local.example .env.local
 ```
+
+Fill in the values in `.env.local`. See `.env.local.example` for the full list of variables with descriptions.
 
 4. Run the development server
 

@@ -43,7 +43,7 @@ export class ServerPaymentOrchestrationService {
     }
   ): Promise<void> {
     try {
-      console.log('🔄 Orchestrating payment status change:', {
+      console.log(' Orchestrating payment status change:', {
         payment_id: payment.id,
         booking_id: payment.booking_id,
         old_status: payment.status,
@@ -74,7 +74,7 @@ export class ServerPaymentOrchestrationService {
         await this.handleFailedPayment(updatedPayment, metadata?.error_message);
       }
 
-      console.log('✅ Payment status change orchestrated successfully');
+      console.log('Payment status change orchestrated successfully');
     } catch (error) {
       console.error('ServerPaymentOrchestrationService.handlePaymentStatusChange error:', error);
       throw error;
@@ -94,10 +94,10 @@ export class ServerPaymentOrchestrationService {
         .single();
 
       if (bookingFetchError) {
-        console.error('❌ [ORCHESTRATION] Error fetching booking for payment status check:', bookingFetchError);
+        console.error(' [ORCHESTRATION] Error fetching booking for payment status check:', bookingFetchError);
         // FIX: Return early if booking doesn't exist yet (race condition: payment completed before booking created)
         // The booking creation will handle reconciliation when it's created
-        console.warn('⚠️ [ORCHESTRATION] Booking not found for completed payment - will be reconciled on booking creation:', {
+        console.warn(' [ORCHESTRATION] Booking not found for completed payment - will be reconciled on booking creation:', {
           paymentId: payment.id,
           bookingId: payment.booking_id
         });
@@ -105,7 +105,7 @@ export class ServerPaymentOrchestrationService {
       }
 
       if (!currentBooking) {
-        console.warn('⚠️ [ORCHESTRATION] Booking not found for completed payment - will be reconciled on booking creation:', {
+        console.warn(' [ORCHESTRATION] Booking not found for completed payment - will be reconciled on booking creation:', {
           paymentId: payment.id,
           bookingId: payment.booking_id
         });
@@ -131,7 +131,7 @@ export class ServerPaymentOrchestrationService {
         .single();
 
       if (bookingError || !bookingData) {
-        console.error('❌ [ORCHESTRATION] Booking query failed:', {
+        console.error(' [ORCHESTRATION] Booking query failed:', {
           error: bookingError,
           code: bookingError?.code,
           message: bookingError?.message,
@@ -147,7 +147,7 @@ export class ServerPaymentOrchestrationService {
           .single();
           
         if (!simpleBooking) {
-          console.error('❌ [ORCHESTRATION] Booking not found in fallback:', {
+          console.error(' [ORCHESTRATION] Booking not found in fallback:', {
             paymentId: payment.id,
             bookingId: payment.booking_id,
             error: simpleError
@@ -178,7 +178,7 @@ export class ServerPaymentOrchestrationService {
       const { data: userData, error: userError } = userResult;
 
       if (rideError || !rideData) {
-        console.error('❌ [ORCHESTRATION] Ride not found:', {
+        console.error('[ORCHESTRATION] Ride not found:', {
           rideId: bookingData.ride_id,
           error: rideError
         });
@@ -186,7 +186,7 @@ export class ServerPaymentOrchestrationService {
       }
 
       if (userError || !userData) {
-        console.error('❌ [ORCHESTRATION] User not found:', {
+        console.error('[ORCHESTRATION] User not found:', {
           userId: bookingData.user_id,
           error: userError
         });
@@ -201,7 +201,7 @@ export class ServerPaymentOrchestrationService {
         .single();
 
       if (driverError || !driverData) {
-        console.error('❌ [ORCHESTRATION] Driver not found:', {
+        console.error('[ORCHESTRATION] Driver not found:', {
           driverId: rideData.driver_id,
           error: driverError
         });
@@ -221,7 +221,7 @@ export class ServerPaymentOrchestrationService {
         user: userData
       };
 
-      console.log('✅ [ORCHESTRATION] Booking and related data fetched successfully');
+      console.log('[ORCHESTRATION] Booking and related data fetched successfully');
 
       // Continue with notification logic using the merged booking
       return this.processNotificationFlow(mergedBooking, payment);
@@ -240,7 +240,7 @@ export class ServerPaymentOrchestrationService {
       );
 
       if (codeError) {
-        console.error('❌ Error generating verification code:', codeError);
+        console.error('Error generating verification code:', codeError);
       }
 
       const verificationCode = verificationCodeData || 'ERROR';
@@ -254,7 +254,7 @@ export class ServerPaymentOrchestrationService {
 
       const actualCode = updatedBooking?.verification_code || verificationCode;
 
-      console.log('🔔 [ORCHESTRATION] Booking details fetched:', {
+      console.log('[ORCHESTRATION] Booking details fetched:', {
         bookingId: booking.id,
         userId: booking.user.id,
         driverId: booking.ride.driver.id,
@@ -266,13 +266,13 @@ export class ServerPaymentOrchestrationService {
       await Promise.all([
         // Create receipt (with error handling for duplicates)
         this.receiptService.createReceipt(payment.id).catch(err => {
-          console.warn('⚠️ Receipt creation error (non-critical):', err);
+          console.warn(' Receipt creation error (non-critical):', err);
           // Don't throw - receipt creation failure shouldn't block the workflow
         }),
 
         // Send multi-channel notification to passenger (OneSignal + WhatsApp)
         (async () => {
-          console.log('🔔 [ORCHESTRATION] Sending multi-channel notification to passenger:', booking.user.id);
+          console.log(' [ORCHESTRATION] Sending multi-channel notification to passenger:', booking.user.id);
           
           return this.multiChannelService.sendPaymentConfirmed({
             userId: booking.user.id,
@@ -291,12 +291,12 @@ export class ServerPaymentOrchestrationService {
             transactionId: payment.transaction_id,
           });
         })().catch(err => {
-          console.error('❌ Passenger notification error (non-critical):', err);
+          console.error('Passenger notification error (non-critical):', err);
         }),
 
         // Send multi-channel notification to driver (OneSignal + WhatsApp)
         (async () => {
-          console.log('🔔 [ORCHESTRATION] Sending multi-channel notification to driver:', booking.ride.driver.id);
+          console.log('[ORCHESTRATION] Sending multi-channel notification to driver:', booking.ride.driver.id);
           
           return this.multiChannelService.sendDriverNewBooking({
             driverId: booking.ride.driver.id,
@@ -325,10 +325,10 @@ export class ServerPaymentOrchestrationService {
           driverWhatsApp: results[2]?.whatsapp || false,
         });
       }).catch(err => {
-        console.error('❌ [ORCHESTRATION] Error in notification tasks:', err);
+        console.error('[ORCHESTRATION] Error in notification tasks:', err);
       });
 
-      console.log('✅ [ORCHESTRATION] Completed payment workflow finished with smart notifications');
+      console.log('[ORCHESTRATION] Completed payment workflow finished with smart notifications');
     } catch (error) {
       console.error('Error in completed payment workflow:', error);
       throw error;
@@ -382,17 +382,17 @@ export class ServerPaymentOrchestrationService {
             retryLink: `pikdrive.com/payments/retry/${payment.id}`,
             paymentId: payment.id,
           }).catch(err => {
-            console.error('❌ Payment failure notification error (non-critical):', err);
+            console.error('Payment failure notification error (non-critical):', err);
           });
         }
       }
 
       // Legacy notification service (keep for compatibility)
       this.notificationService.notifyPaymentFailed(payment, reason).catch(err =>
-        console.warn('⚠️ Legacy notification error (non-critical):', err)
+        console.warn('Legacy notification error (non-critical):', err)
       );
 
-      console.log('✅ Failed payment workflow finished with smart notifications');
+      console.log('Failed payment workflow finished with smart notifications');
     } catch (error) {
       console.error('Error in failed payment workflow:', error);
       throw error;

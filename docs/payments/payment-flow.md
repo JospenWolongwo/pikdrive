@@ -1,142 +1,139 @@
-# Payment Flow
+# Payment Flows
 
-## Overview
-PikDrive's payment system follows a robust flow to ensure reliable and traceable transactions. This document details each step of the payment process.
+## 1. Payin Flow (Customer Pays)
 
-## Flow Diagram
 ```mermaid
 sequenceDiagram
     participant U as User
     participant F as Frontend
     participant B as Backend
-    participant M as MTN MOMO
+    participant P as Provider
     participant D as Database
 
-    U->>F: Initiate Payment
+    U->>F: Click "Pay Now"
     F->>B: POST /api/payments/create
-    B->>M: Request Payment
-    M-->>B: Transaction ID
-    B->>D: Create Payment Record
+    B->>D: Create payment record (pending)
+    B->>P: Initiate payment (PawaPay/MTN/OM)
+    P-->>B: Transaction ID
+    B->>D: Update payment (processing)
     B-->>F: Return Transaction ID
-    F->>F: Start Status Polling
-    
-    loop Every 5 seconds
-        F->>B: GET /api/payments/status
-        B->>M: Check Status
-        M-->>B: Payment Status
-        B->>D: Update Status
-        B-->>F: Return Status
+    F->>F: Start status polling
+
+    loop Every 5 seconds (max 60 attempts)
+        F->>B: POST /api/payments/check-status
+        B->>P: Check payment status
+        P-->>B: Status response
+        B->>D: Update if changed
+        B-->>F: Return status
     end
 
-    Note over F,B: If status = completed
-    F->>B: Generate Receipt
-    B->>D: Store Receipt
-    B-->>F: Show Success
+    Note over B,D: On completed
+    B->>D: Update booking (pending_verification)
+    B->>D: Generate receipt
+    B->>B: Send push + WhatsApp notifications
 ```
 
-## Step-by-Step Process
+### Key Files
+- `app/api/payments/create/route.ts` — Payment initiation
+- `app/api/payments/check-status/route.ts` — Status polling
+- `lib/services/server/payment-creation-service.ts` — Provider routing
+- `lib/services/server/payment-orchestration-service.ts` — Status change handling
 
-### 1. Payment Initiation
-- User clicks "Pay Now" in booking modal
-- Frontend collects:
-  - Phone number
-  - Amount (calculated from ride price × seats)
-  - Booking ID
+---
 
-### 2. Payment Creation
-```typescript
-POST /api/payments/create
-{
-  phoneNumber: string;
-  amount: number;
-  bookingId: string;
-}
+## 2. Payout Flow (Driver Gets Paid)
+
+```mermaid
+sequenceDiagram
+    participant D as Driver
+    participant F as Frontend
+    participant B as Backend
+    participant P as Provider
+    participant DB as Database
+
+    D->>F: Enter verification code
+    F->>B: POST /api/bookings/verify-code
+    B->>DB: Verify code (RPC)
+    B->>DB: Fetch booking + ride + payments
+    B->>B: Calculate payout amount
+    Note over B: booking.seats * ride.price (source of truth)
+    B->>B: FeeCalculator.calculate(totalAmount)
+    Note over B: Deduct commission + transaction fee
+    B->>P: Initiate payout (driverEarnings)
+    P-->>B: Payout result
+    B->>DB: Create payout record
+    B->>DB: Mark booking code_verified=true
+    B-->>F: Return payout status
 ```
 
-### 3. Status Management
-Status transitions follow this flow:
+### Key Files
+- `lib/services/server/bookings/booking-payout-service.ts` — Payout logic
+- `lib/payment/fee-calculator.ts` — Fee calculation
+
+### Payout Calculation
 ```
-pending → processing → completed/failed
+totalAmount = booking.seats * ride.price
+transactionFee = FeeCalculator.transactionFee(totalAmount)
+commission = FeeCalculator.commission(totalAmount)
+driverEarnings = totalAmount - transactionFee - commission
 ```
 
-#### Status Checking Methods
-1. **Frontend Polling**
-   - Starts immediately after payment creation
-   - Polls every 5 seconds
-   - Maximum 60 attempts (5 minutes)
+For partial bookings (seats reduced after refund), `booking.seats` is always the source of truth.
 
-2. **Background Jobs**
-   - Runs every 5 minutes
-   - Checks stale pending payments
-   - Updates status automatically
+---
 
-3. **Webhooks (Coming Soon)**
-   - Instant status updates
-   - More reliable than polling
-   - Requires public endpoint
+## 3. Refund Flow (Seat Reduction)
 
-### 4. Receipt Generation
-Automatically triggered when:
-- Payment status becomes 'completed'
-- Financial transaction ID is verified
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant P as Provider
+    participant DB as Database
+
+    U->>F: Reduce seats (e.g., 3 to 1)
+    F->>B: POST /api/bookings/{id}/reduce-seats
+    B->>DB: Verify booking ownership + code not verified
+    B->>DB: Update booking.seats = newSeats
+    B->>DB: Update booking.payment_status = 'partial'
+    B->>B: Calculate refund = seatsRemoved * pricePerSeat
+    B->>P: Initiate refund
+    P-->>B: Refund result
+    B->>DB: Create refund record
+    B->>DB: Mark ALL payments as 'partial_refund'
+    B-->>F: Return refund status
+
+    Note over P,DB: Later (refund callback)
+    P->>B: Refund completed callback
+    B->>DB: Update refund status = 'completed'
+    B->>DB: Update booking.payment_status = 'partial_refund'
+```
+
+### Key Files
+- `lib/services/server/bookings/booking-refund-service.ts` — Refund logic
+- `app/api/bookings/[id]/reduce-seats/route.ts` — API endpoint
+- `lib/services/server/refund-status-service.ts` — Refund callback handling
+
+### Important: All payments are marked `partial_refund`
+When a booking has multiple individual payments (e.g., user added seats one by one), ALL completed payments are marked as `partial_refund` during seat reduction — not just one. This prevents the payout service from overpaying the driver.
+
+---
 
 ## Error Handling
 
 ### Common Errors
-1. **Invalid Phone Number**
-   - Must be in format: 237XXXXXXXXX
-   - Must be active MTN number
-
-2. **Payment Timeout**
-   - After 5 minutes of pending status
-   - Marked as failed
-   - User must retry
-
-3. **Network Issues**
-   - Automatic retry mechanism
-   - Maximum 3 retries
-   - Exponential backoff
-
-## Testing
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| Invalid phone number | Wrong format | Must be 237XXXXXXXXX |
+| Payment timeout | No response in 5 min | Marked as failed, user retries |
+| Insufficient funds | User balance too low | User tops up and retries |
+| Provider unavailable | API down | Retry or switch provider |
 
 ### Sandbox Testing
-1. Use test number: 237670000000
-2. Amount limits: 100-500,000 XAF
-3. Instant success flow available
+- PawaPay sandbox: Use test numbers from PawaPay dashboard
+- MTN sandbox: `SANDBOX_MTN_TEST_PHONE` env var
+- Amount limits: 100 - 500,000 XAF
 
-### Production Testing
-1. Real MTN MOMO account required
-2. Test with small amounts first
-3. Monitor transaction logs
-
-## Monitoring
-
-### Key Metrics
-1. Payment Success Rate
-2. Average Processing Time
-3. Error Rate by Type
-4. Stale Payment Count
-
-### Alerts
-Set up alerts for:
-1. High failure rate
-2. Increased processing time
-3. Stale payments > 15 minutes
-4. API errors
-
-## Maintenance Tasks
-
-### Daily
-1. Monitor error logs
-2. Check stale payments
-3. Verify webhook health
-
-### Weekly
-1. Review success rates
-2. Check performance metrics
-3. Update test cases
-
-### Monthly
-1. Audit payment records
-2. Update documentation
-3. Review security measures
+---
+Last Updated: February 2026

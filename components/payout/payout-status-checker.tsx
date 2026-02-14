@@ -62,8 +62,7 @@ export function PayoutStatusChecker({
       if (!isPolling || !isMounted) return;
 
       const elapsed = Date.now() - startTime;
-      
-      // Stop polling after max time
+
       if (elapsed >= MAX_POLLING_TIME) {
         setIsPolling(false);
         setMessage(t("payment.status.checkingBackground"));
@@ -98,14 +97,12 @@ export function PayoutStatusChecker({
         const shouldRetry = responseData.data?.shouldRetry;
         
         setLastCheck(Date.now());
-        
-        // Update status if changed
+
         if (payoutStatus && payoutStatus !== status) {
           setStatus(payoutStatus);
           onStatusChange?.(payoutStatus);
         }
-        
-        // Handle final statuses
+
         if (payoutStatus === 'completed') {
           setIsPolling(false);
           const successMessage = t("payment.status.completedSuccess");
@@ -128,14 +125,12 @@ export function PayoutStatusChecker({
           return;
         }
 
-        // Update message based on status
         if (payoutStatus === 'processing') {
           setMessage(t("payment.status.processing"));
         } else if (payoutStatus === 'pending') {
           setMessage(t("payment.status.awaitingProcessing"));
         }
 
-        // Continue polling if still pending or processing
         if ((payoutStatus === 'pending' || payoutStatus === 'processing') && isPolling && isMounted) {
           const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
           const nextInterval = getPollingInterval(elapsedSeconds, provider);
@@ -160,7 +155,6 @@ export function PayoutStatusChecker({
       }
     };
 
-    // Start polling immediately
     checkStatus();
 
     return () => {

@@ -157,7 +157,6 @@ export const useChatStore = create<ChatState>()(
             };
           });
           
-          // Merge with unread counts
           const conversationsWithUnreadCounts = uiConversations.map(conv => {
             const unreadCount = get().unreadCounts.find(uc => uc.conversationId === conv.id)?.count || 0;
             return {
@@ -313,7 +312,6 @@ export const useChatStore = create<ChatState>()(
             const withoutOptimistic = existingMessages.filter((m) => !m.id.startsWith('temp-'));
             const updatedMessages = [...withoutOptimistic, newMessage];
             
-            // Update conversation's last_message and move to top
             // Match by conversation_id for exact conversation, not rideId
             const updatedConversations = state.conversations.map(conv => {
               if (conv.id === conversationId) {
@@ -327,12 +325,9 @@ export const useChatStore = create<ChatState>()(
               return conv;
             });
             
-            // Move the updated conversation to the top and sort
             const updatedConv = updatedConversations.find(conv => conv.id === conversationId);
             const otherConvs = updatedConversations.filter(conv => conv.id !== conversationId);
             const reorderedConversations = updatedConv ? [updatedConv, ...otherConvs] : updatedConversations;
-            
-            // Apply full sort by lastMessageTime
             const sortedConversations = sortConversationsByLatest(reorderedConversations);
             
             return {
@@ -415,15 +410,12 @@ export const useChatStore = create<ChatState>()(
           
           await chatApiClient.markMessagesAsRead(conversation.rideId, userId);
           set((state) => {
-            // Update unread counts
             const newUnreadCounts = state.unreadCounts.filter((count) => count.conversationId !== conversationId);
             
-            // Update conversations to remove unread count
             const updatedConversations = state.conversations.map(conv => 
               conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
             );
             
-            // Update messages array to mark them as read locally
             const conversationMessages = state.messages[conversationId] || [];
             const updatedMessages = conversationMessages.map(msg => 
               msg.sender_id !== userId ? { ...msg, read: true } : msg
@@ -455,11 +447,9 @@ export const useChatStore = create<ChatState>()(
             newUnreadCounts = [...state.unreadCounts];
             newUnreadCounts[existingIndex] = { conversationId, count };
           } else {
-            // Add new count
             newUnreadCounts = [...state.unreadCounts, { conversationId, count }];
           }
 
-          // Update conversations with new unread count
           const updatedConversations = state.conversations.map(conv => 
             conv.id === conversationId ? { ...conv, unreadCount: count } : conv
           );
@@ -497,7 +487,6 @@ export const useChatStore = create<ChatState>()(
         }
 
         const channel = chatApiClient.subscribeToMessages(supabaseClient, conversationId, (message) => {
-          // Add new message to local state and update conversation
           set((state) => {
             const messageConversationId = message.conversation_id;
             const existingMessages = state.messages[messageConversationId] || [];
@@ -507,7 +496,6 @@ export const useChatStore = create<ChatState>()(
 
             const updatedMessages = [...existingMessages, message];
             
-            // Update conversation's last_message and move to top
             const updatedConversations = state.conversations.map(conv => {
               if (conv.id === messageConversationId) {
                 return {
@@ -520,12 +508,9 @@ export const useChatStore = create<ChatState>()(
               return conv;
             });
             
-            // Move the updated conversation to the top and sort
             const updatedConv = updatedConversations.find(conv => conv.id === messageConversationId);
             const otherConvs = updatedConversations.filter(conv => conv.id !== messageConversationId);
             const reorderedConversations = updatedConv ? [updatedConv, ...otherConvs] : updatedConversations;
-            
-            // Apply full sort by lastMessageTime
             const sortedConversations = sortConversationsByLatest(reorderedConversations);
 
             return {

@@ -180,19 +180,11 @@ export default function NewRidePage() {
         throw new Error(result.error || "Failed to create ride");
       }
 
-      console.log("✅ Created ride:", {
-        id: result.data?.id,
-        driver_id: result.data?.driver_id,
-        from: result.data?.from_city,
-        to: result.data?.to_city,
-        seats: result.data?.seats_available
-      });
-
       if (!result.data) {
         throw new Error("Failed to create ride");
       }
 
-      // ✅ OPTIMISTIC UPDATE: Add ride to store immediately (no API call needed!)
+      //  OPTIMISTIC UPDATE: Add ride to store immediately (no API call needed!)
       const newRide: RideWithDetails = {
         ...(result.data as Ride),
         bookings: [],
@@ -200,13 +192,11 @@ export default function NewRidePage() {
       };
       addDriverRide(newRide);
 
-      // Store ride info for success dialog
       setCreatedRide({
         fromCity: values.fromCity,
         toCity: values.toCity,
       });
 
-      // Show success dialog
       setShowSuccessDialog(true);
 
       // Trigger notification prompt after ride creation
@@ -231,10 +221,7 @@ export default function NewRidePage() {
     setIsRedirecting(true);
     setShowSuccessDialog(false);
     
-    // Small delay to show loading state
     await new Promise((resolve) => setTimeout(resolve, 500));
-    
-    // Navigate to dashboard
     router.replace("/driver/dashboard");
   };
 

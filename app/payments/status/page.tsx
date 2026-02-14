@@ -28,9 +28,7 @@ function PaymentStatusContent() {
           return;
         }
 
-        // Check payment status every 3 seconds until it's final
         const interval = setInterval(async () => {
-          console.log('🔄 Checking payment status for:', txid);
           const { data: payment, error } = await supabase
             .from('payments')
             .select('*')
@@ -38,7 +36,7 @@ function PaymentStatusContent() {
             .single();
 
           if (error) {
-            console.error('❌ Error fetching payment:', error);
+            console.error('Error fetching payment:', error);
             setPaymentState(prev => ({
               ...prev,
               status: 'error',
@@ -50,7 +48,6 @@ function PaymentStatusContent() {
           }
 
           if (payment) {
-            console.log('📦 Payment status:', payment.status);
             if (payment.status === 'completed') {
               setPaymentState(prev => ({
                 ...prev,
@@ -78,7 +75,7 @@ function PaymentStatusContent() {
         // Clean up interval on unmount
         return () => clearInterval(interval);
       } catch (error) {
-        console.error('❌ Error in payment status check:', error);
+        console.error('Error in payment status check:', error);
         setPaymentState(prev => ({
           ...prev,
           status: 'error',

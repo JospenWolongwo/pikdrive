@@ -1,167 +1,110 @@
 # Payment Status Management
 
-## Status Types
+## Payment Status Types
 
 ```typescript
-type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed';
+type PaymentTransactionStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'partial_refund'
+  | 'failed'
+  | 'cancelled'
+  | 'refunded';
 ```
 
 ## Status Flow
 
+```
+pending ──> processing ──> completed ──> partial_refund ──> refunded
+  │              │                            │
+  └──> failed    └──> failed                  └──> refunded
+  └──> cancelled
+```
+
 ### 1. Pending
 - Initial state when payment is created
 - Waiting for user to approve on their phone
-- Maximum duration: 5 minutes
-- Transitions to:
-  - Processing (when user approves)
-  - Failed (on timeout or error)
+- Maximum duration: ~5 minutes
+- Transitions to: `processing`, `failed`, `cancelled`
 
 ### 2. Processing
-- Payment approved by user
-- MTN MOMO processing the transaction
-- Maximum duration: 2 minutes
-- Transitions to:
-  - Completed (on success)
-  - Failed (on error)
+- Payment approved by user, provider is processing
+- Transitions to: `completed`, `failed`
 
 ### 3. Completed
-- Final successful state
-- Payment confirmed by MTN MOMO
-- Has financialTransactionId
-- Triggers:
-  - Receipt generation
-  - Booking status update
-  - Success notification
+- Payment confirmed by provider
+- Triggers: receipt generation, booking status update, notifications
+- Transitions to: `partial_refund`, `refunded`
 
-### 4. Failed
-- Final failure state
-- Reasons:
-  - User rejection
-  - Insufficient funds
-  - Timeout
-  - System error
-- Allows retry with new payment
+### 4. Partial Refund
+- Some seats were reduced, partial refund issued
+- Booking still active with remaining seats
+- Driver payout uses `booking.seats * ridePrice` (not payment amount)
+- Transitions to: `refunded`
 
-## Status Check Implementation
+### 5. Failed
+- Final failure state (user rejection, insufficient funds, timeout)
+- Allows retry with a new payment
 
-### 1. Frontend Polling
+### 6. Cancelled
+- Payment cancelled before processing
+- Final state
+
+### 7. Refunded
+- Full refund issued (booking cancelled entirely)
+- Final state
+
+## State Transitions (Code)
+
 ```typescript
-// components/payment/payment-status-checker.tsx
-export function PaymentStatusChecker({
-  transactionId,
-  provider,
-  onPaymentComplete,
-  pollingInterval = 5000, // 5 seconds
-  maxAttempts = 60 // 5 minutes total
-})
-```
-
-### 2. Background Job
-```typescript
-// app/api/cron/check-pending-payments/route.ts
-// Runs every 5 minutes
-export async function GET(request: Request) {
-  // Check stale pending payments
-  // Update status if changed
-  // Generate receipts if completed
-}
-```
-
-### 3. Webhook Handler (Coming Soon)
-```typescript
-// app/api/webhooks/mtn-momo/route.ts
-export async function POST(request: Request) {
-  // Verify webhook signature
-  // Update payment status
-  // Handle completion/failure
-}
-```
-
-## Status Update Triggers
-
-### 1. Direct Updates
-- Frontend polling
-- Background job checks
-- Webhook notifications
-- Manual admin action
-
-### 2. Automatic Updates
-- Timeout after 5 minutes
-- System error detection
-- Network failure handling
-
-## Database Schema
-
-```sql
-CREATE TYPE payment_status AS ENUM (
-  'pending',
-  'processing',
-  'completed',
-  'failed'
-);
-
-ALTER TABLE payments
-ADD COLUMN status payment_status DEFAULT 'pending';
-```
-
-## Status Validation
-
-### 1. State Transitions
-```typescript
-const validTransitions = {
-  pending: ['processing', 'failed'],
+const validTransitions: Record<PaymentTransactionStatus, PaymentTransactionStatus[]> = {
+  pending: ['processing', 'failed', 'cancelled'],
   processing: ['completed', 'failed'],
-  completed: [],
-  failed: []
+  completed: ['refunded', 'partial_refund'],
+  partial_refund: ['refunded'],
+  failed: [],
+  cancelled: [],
+  refunded: [],
 };
 ```
 
-### 2. Validation Rules
-1. Can only move to allowed next states
-2. Cannot revert to previous states
-3. Completed/Failed are final states
-4. Must have transaction ID
-5. Must track transition timestamps
+## Booking Payment Status
 
-## Monitoring
+The `bookings.payment_status` field tracks the booking-level payment state:
 
-### 1. Status Metrics
-- Time in each state
-- Transition success rates
-- Error frequency
-- Stale payment count
+| Status | Meaning |
+|--------|---------|
+| `pending` | No payment yet |
+| `completed` | Fully paid |
+| `partial` | Seats reduced, refund initiated (transient) |
+| `partial_refund` | Refund completed, booking still active with remaining seats |
 
-### 2. Alerts
-- Stale pending > 15 minutes
-- High failure rate
-- Unusual state transitions
-- System errors
+### Seat Reduction Flow
+1. User reduces seats -> `booking.payment_status = 'partial'`
+2. ALL completed payments marked `'partial_refund'`
+3. Refund callback completes -> `booking.payment_status = 'partial_refund'`
+4. Driver verifies code -> payout = `booking.seats * ride.price`
 
-## Error Recovery
+## Status Check Implementation
 
-### 1. Automatic Recovery
-- Retry failed status checks
-- Reset stuck processing state
-- Clear invalid states
+### Frontend Polling
+```typescript
+// Polls /api/payments/check-status every 5 seconds
+// Maximum 60 attempts (5 minutes)
+// Stops on: completed, failed, cancelled, refunded
+```
 
-### 2. Manual Recovery
-- Admin dashboard actions
-- Support ticket system
-- Direct database fixes
+### Cron Job
+```
+/api/cron/check-pending-payments (daily at 3 AM UTC)
+```
+Checks stale pending/processing payments and marks them as failed if expired.
 
-## Testing
+### Provider Callbacks
+- PawaPay: `/api/callbacks/pawapay`
+- Orange Money: `/api/callbacks/om`
+- MTN MoMo: `/api/webhooks/mtn-momo`
 
-### 1. Unit Tests
-- State transition logic
-- Validation rules
-- Error handling
-
-### 2. Integration Tests
-- Full payment flow
-- Status update triggers
-- Receipt generation
-
-### 3. Load Tests
-- Multiple concurrent payments
-- High frequency status checks
-- Background job performance
+---
+Last Updated: February 2026

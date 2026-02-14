@@ -35,8 +35,7 @@ interface Receipt {
 
 export default async function ReceiptPage({ params }: ReceiptPageProps) {
   const supabase = createServerComponentClient({ cookies });
-  
-  // Get receipt details
+
   const { data: receipt } = await supabase
     .from('payment_receipts')
     .select(`
@@ -64,7 +63,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
     .single() as { data: Receipt | null };
 
   if (!receipt) {
-    console.error('❌ Receipt not found:', params.id);
+    console.error('Receipt not found:', params.id);
     notFound();
   }
 

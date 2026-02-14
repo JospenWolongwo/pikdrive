@@ -62,10 +62,7 @@ export function useDocumentUploadHandlers(
 
     try {
       setLoading(true);
-      
-      // Timestamp to force state updates as per company patterns
-      const uploadStartTime = Date.now();
-      
+
       // Validate file type
       const fileExt = file.name.split(".").pop()?.toLowerCase();
       const allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'];
@@ -91,8 +88,6 @@ export function useDocumentUploadHandlers(
         return;
       }
 
-      console.log(`💾 Uploading ${formFieldName} using resilient upload utilities`);
-      
       // Use our utility function for more reliable uploads with better fallbacks
       const uploadResult = await uploadDocument(supabase, {
         file,
@@ -102,13 +97,8 @@ export function useDocumentUploadHandlers(
       });
       
       if (uploadResult.success) {
-        // Upload successful (either real or mock)
         const { url, isMock } = uploadResult;
-        
-        // Log success with timestamp and mock status
-        const uploadTime = Date.now() - uploadStartTime;
-        console.log(`✅ Uploaded ${formFieldName} ${isMock ? '(mock)' : ''} in ${uploadTime}ms: ${url}`);
-        
+
         if (isMock) {
           toast({
             title: "Document Processed",
@@ -144,7 +134,7 @@ export function useDocumentUploadHandlers(
         throw new Error(uploadResult.error || 'Unknown upload error');
       }
     } catch (error) {
-      console.error("❌ Document upload failed:", error);
+      console.error("Document upload failed:", error);
       
       // Extract clear error message
       let errorMessage = "There was an error uploading your document. Please try again or contact support if the issue persists.";
@@ -290,10 +280,7 @@ export function useDocumentUploadHandlers(
             shouldValidate: true,
             shouldDirty: true,
           });
-          
-          // Log success with timestamp
-          console.log(`✅ Uploaded ${uploadResult.urls.length} vehicle images. Total: ${newImages.length}`);
-          
+
           return newImages;
         });
         
@@ -307,7 +294,7 @@ export function useDocumentUploadHandlers(
         throw new Error(uploadResult.errors[0] || 'Unknown upload error');
       }
     } catch (error) {
-      console.error("❌ Vehicle image upload failed:", error);
+      console.error("Vehicle image upload failed:", error);
       
       // Extract clear error message
       let errorMessage = "There was an error uploading your images. Please try again.";

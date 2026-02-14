@@ -17,16 +17,12 @@ export function InstallPrompt() {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
-    // Check if user has already dismissed or installed
     const hasInteracted = localStorage.getItem('pwaPromptInteraction');
     if (hasInteracted) return;
 
     const handler = (e: Event) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
-      e.preventDefault();
-      // Stash the event so it can be triggered later
+      e.preventDefault(); // Chrome 67 and earlier would auto-show; we use custom UI
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show our custom prompt after a delay
       setTimeout(() => setShowPrompt(true), 2000);
     };
 
@@ -40,34 +36,22 @@ export function InstallPrompt() {
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
-    // Show the install prompt
     deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
 
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    // Clear the deferredPrompt for next time
     setDeferredPrompt(null);
     setShowPrompt(false);
-    
-    // Record the interaction
+
     localStorage.setItem('pwaPromptInteraction', 'true');
-    
-    // Optional: Track the outcome
-    if (outcome === 'accepted') {
-      // You could send analytics here
-    }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
     setIsDismissed(true);
-    // Store the dismissal but allow the prompt to show again after 24 hours
     const dismissalTime = Date.now();
-    localStorage.setItem('pwaPromptDismissalTime', dismissalTime.toString());
+    localStorage.setItem('pwaPromptDismissalTime', dismissalTime.toString()); // Allows re-prompt after 24h
   };
 
-  // Don't render anything if conditions aren't met
   if (!showPrompt || isDismissed) return null;
 
   return (

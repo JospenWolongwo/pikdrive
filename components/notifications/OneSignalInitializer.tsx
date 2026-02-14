@@ -25,23 +25,19 @@ export function OneSignalInitializer() {
   // State to track IndexedDB cleanup completion
   const [dbCleanupComplete, setDbCleanupComplete] = useState(false);
 
-  // PHASE 1: Clear corrupted OneSignal IndexedDB databases BEFORE initialization
   useEffect(() => {
     const cleanupOneSignalDatabases = async () => {
       try {
-        // Defensive check: Ensure we're in a browser environment
         if (typeof window === 'undefined') {
           setDbCleanupComplete(true);
           return;
         }
 
-        // Defensive check: Ensure indexedDB is available
         if (typeof indexedDB === 'undefined') {
           setDbCleanupComplete(true);
           return;
         }
         
-        // Check if indexedDB.databases() is supported
         if (!('databases' in indexedDB)) {
           setDbCleanupComplete(true);
           return;
@@ -55,24 +51,20 @@ export function OneSignalInitializer() {
           return;
         }
         
-        // Delete all OneSignal databases
         for (const db of oneSignalDbs) {
           if (db.name) {
             try {
               indexedDB.deleteDatabase(db.name);
             } catch (deleteError) {
-              // Silently fail - proceed with cleanup
             }
           }
         }
         
-        // Wait for deletions to complete
         await new Promise(resolve => setTimeout(resolve, 200));
         
         setDbCleanupComplete(true);
         
       } catch (error) {
-        // Always set cleanup complete even on error to prevent blocking initialization
         setDbCleanupComplete(true);
       }
     };
@@ -105,16 +97,13 @@ export function OneSignalInitializer() {
     handleAuthChange();
   }, [user, isInitialized, setUserId, removeUserId]);
 
-  // PHASE 2: Initialize OneSignal ONLY after IndexedDB cleanup is complete
   useEffect(() => {
-    // Don't initialize until cleanup is complete
     if (!dbCleanupComplete) {
       return;
     }
 
     const initOneSignal = () => {
       try {
-        // Defensive check: Ensure we're in a browser environment
         if (typeof window === 'undefined') {
           return;
         }
@@ -124,24 +113,19 @@ export function OneSignalInitializer() {
           return;
         }
         
-        // Use the proper OneSignal initialization pattern with defensive check
         if (!window.OneSignalDeferred) {
           window.OneSignalDeferred = [];
         }
         window.OneSignalDeferred.push(async function(OneSignal) {
           try {
-            // CRITICAL FIX: Get current user and link external user ID BEFORE initialization
-            // This prevents race condition where subscription happens before user ID is set
             const currentUserId = user?.id;
             if (currentUserId) {
               try {
                 await OneSignal.login(currentUserId);
               } catch (linkError) {
-                // Silently fail - will retry
               }
             }
             
-            // CRITICAL: Add timeout wrapper to catch hanging initialization
             const initWithTimeout = async (OneSignal: any, config: any, timeoutMs = 30000) => {
               let timeoutId: NodeJS.Timeout | undefined;
               
@@ -157,13 +141,11 @@ export function OneSignalInitializer() {
                   timeoutPromise
                 ]);
                 
-                // Clear timeout if init succeeds
                 if (timeoutId) {
                   clearTimeout(timeoutId);
                 }
                 return result;
               } catch (error) {
-                // Clear timeout on error too
                 if (timeoutId) {
                   clearTimeout(timeoutId);
                 }
@@ -177,15 +159,14 @@ export function OneSignalInitializer() {
               serviceWorkerParam: { scope: '/' },
               serviceWorkerPath: 'OneSignalSDKWorker.js',
               notifyButton: {
-                enable: false, // We'll use custom UI
+                enable: false,
               },
               promptOptions: {
                 slidedown: {
-                  enabled: false, // Disable automatic prompts
+                  enabled: false,
                 },
               },
               safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
-              // Configure SDK proxy to avoid tracking protection
               path: '/api/onesignal/sdk/',
             };
             
@@ -194,14 +175,10 @@ export function OneSignalInitializer() {
             window.__oneSignalReady = true;
             
           } catch (error) {
-            // Gracefully degrade - don't crash the app
-            // The app should continue to work without push notifications
           }
         });
         
       } catch (error) {
-        // Gracefully degrade if setup fails
-        // The app should continue to work without push notifications
       }
     };
 
@@ -213,9 +190,7 @@ export function OneSignalInitializer() {
     <NotificationPrompt
       isOpen={showPrompt}
       onClose={closePrompt}
-      onEnable={() => {
-        // User enabled notifications
-      }}
+      onEnable={() => {}}
     />
   );
 }

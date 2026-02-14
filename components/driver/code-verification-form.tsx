@@ -32,14 +32,12 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase()
-    // Only allow letters and numbers, max 6 characters
     if (/^[A-Z0-9]*$/.test(value) && value.length <= 6) {
       setState(prev => ({ ...prev, code: value }))
     }
   }
 
   const verifyCode = useCallback(async () => {
-    // Validate code length
     if (state.code.length !== 6) {
       toast.error(t("pages.driver.codeVerification.enterCode"))
       return
@@ -66,22 +64,20 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
         return
       }
 
-      // Success
       setState(prev => ({
         ...prev,
         loading: false,
         verified: true,
-        lastUpdated: Date.now()  // Using timestamp pattern for state updates as per best practices
+        lastUpdated: Date.now()
       }))
-      
-      console.log('🟢 Verification successful for booking:', bookingId)
+
       toast.success(t("common.success"))
       
       if (onSuccess) {
         setTimeout(() => onSuccess(), 1500)
       }
     } catch (error) {
-      console.error('🔴 Error verifying code:', error)
+      console.error('Error verifying code:', error)
       setState(prev => ({
         ...prev,
         loading: false,
@@ -92,7 +88,6 @@ export function CodeVerificationForm({ bookingId, onSuccess }: CodeVerificationF
     }
   }, [bookingId, state.code, onSuccess, t])
 
-  // If already verified
   if (state.verified) {
     return (
       <Card className="bg-green-50 border border-green-200 shadow-sm">

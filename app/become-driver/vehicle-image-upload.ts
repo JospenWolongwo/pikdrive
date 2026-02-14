@@ -33,7 +33,7 @@ export async function uploadVehicleImage(
       });
       
     if (uploadError) {
-      console.error(`❌ Vehicle image upload error:`, uploadError);
+      console.error('Vehicle image upload error:', uploadError);
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
     
@@ -41,9 +41,7 @@ export async function uploadVehicleImage(
     const { data: { publicUrl } } = supabase.storage
       .from('driver_documents')
       .getPublicUrl(filePath);
-    
-    console.log(`✅ Vehicle image uploaded successfully: ${publicUrl}`);
-    
+
     return {
       success: true,
       url: publicUrl
