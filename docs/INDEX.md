@@ -7,6 +7,7 @@
 ## Architecture & Design
 
 ### Core Architecture
+- **[API Reference](API_REFERENCE.md)** - Complete REST API documentation (all endpoints)
 - **[Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md)** - Service layer patterns and principles
 - **[Supabase Client Architecture](SUPABASE_CLIENT_ARCHITECTURE.md)** - Client/server separation patterns
 - **[Service Layer Complete](SERVICE_LAYER_COMPLETE.md)** - Service layer implementation guide
@@ -103,7 +104,7 @@
 
 **Setting up development:** [Environment Setup](environment-setup.md) -> [Database Schema](DATABASE_SCHEMA.md)
 
-**Adding a feature:** [Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md) -> [Service Layer](SERVICE_LAYER_COMPLETE.md)
+**Adding a feature:** [Architecture Best Practices](ARCHITECTURE_BEST_PRACTICES.md) -> [Service Layer](SERVICE_LAYER_COMPLETE.md) -> [API Reference](API_REFERENCE.md)
 
 **Deploying:** [Deployment Guide](deployment/deployment-guide.md) -> [Post-Deployment Checklist](deployment/post-deployment-checklist.md)
 
