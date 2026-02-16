@@ -116,22 +116,14 @@ export function BookingPassengerInfoStep({
 
       if (dbError) throw dbError;
 
-      // Update profile.full_name ONLY if it's currently null/empty
-      const { data: profile } = await supabase
+      // Always update profile.full_name with ID-verified name (authenticity enforcement)
+      const { error: profileError } = await supabase
         .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
+        .update({ full_name: fullName.trim() })
+        .eq("id", user.id);
 
-      if (profile && !profile.full_name) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ full_name: fullName.trim() })
-          .eq("id", user.id);
-
-        if (profileError) {
-          console.warn("Failed to update profile full_name:", profileError);
-        }
+      if (profileError) {
+        console.warn("Failed to update profile full_name:", profileError);
       }
 
       toast.success(t("pages.rides.booking.passengerInfo.success"));

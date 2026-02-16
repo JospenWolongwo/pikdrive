@@ -692,6 +692,9 @@
         "vehiclePhoto": "Photo du véhicule"
       },
       "form": {
+        "fullNameLabel": "Nom complet",
+        "fullNameHint": "Indiquez votre nom exactement tel qu'inscrit sur votre carte d'identité (CNI). Vérifiez l'orthographe exacte.",
+        "fullNamePlaceholder": "Ex: Jean-Pierre Mbeki",
         "submit": "Soumettre ma candidature",
         "submitting": "Soumission en cours...",
         "approved": {
@@ -701,6 +704,8 @@
           "loading": "Chargement de votre statut chauffeur..."
         },
         "errors": {
+          "missingFullName": "Nom manquant",
+          "fullNameAsOnId": "Veuillez indiquer votre nom exactement tel qu'inscrit sur votre carte d'identité.",
           "missingDocuments": "Documents manquants",
           "missingDocumentsDesc": "Veuillez télécharger les documents requis: {documents}",
           "vehicleImagesRequired": "Images du véhicule requises",
@@ -1179,9 +1184,9 @@
         },
         "passengerInfo": {
           "title": "Informations personnelles",
-          "description": "Veuillez remplir vos informations pour compléter votre réservation",
+          "description": "Indiquez votre nom exactement tel qu'inscrit sur votre carte d'identité. Vérifiez l'orthographe avant de continuer.",
           "fullName": "Nom complet",
-          "fullNamePlaceholder": "Votre nom complet",
+          "fullNamePlaceholder": "Exactement comme sur votre CNI (ex: Jean-Pierre Mbeki)",
           "clickToUpload": "Cliquez pour télécharger",
           "saving": "Enregistrement...",
           "cancel": "Annuler",

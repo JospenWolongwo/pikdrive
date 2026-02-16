@@ -692,6 +692,9 @@
         "vehiclePhoto": "Vehicle photo"
       },
       "form": {
+        "fullNameLabel": "Full name",
+        "fullNameHint": "Enter your name exactly as written on your identity document (ID). Verify the exact spelling.",
+        "fullNamePlaceholder": "e.g. Jean-Pierre Mbeki",
         "submit": "Submit my application",
         "submitting": "Submitting...",
         "approved": {
@@ -701,6 +704,8 @@
           "loading": "Loading your driver status..."
         },
         "errors": {
+          "missingFullName": "Name required",
+          "fullNameAsOnId": "Please enter your name exactly as written on your ID document.",
           "missingDocuments": "Missing Documents",
           "missingDocumentsDesc": "Please upload the required documents: {documents}",
           "vehicleImagesRequired": "Vehicle Images Required",
@@ -1179,9 +1184,9 @@
         },
         "passengerInfo": {
           "title": "Personal Information",
-          "description": "Please fill in your information to complete your booking",
+          "description": "Enter your name exactly as written on your ID document. Verify spelling before continuing.",
           "fullName": "Full Name",
-          "fullNamePlaceholder": "Your full name",
+          "fullNamePlaceholder": "Exactly as on your ID (e.g. Jean-Pierre Mbeki)",
           "clickToUpload": "Click to upload",
           "saving": "Saving...",
           "cancel": "Cancel",

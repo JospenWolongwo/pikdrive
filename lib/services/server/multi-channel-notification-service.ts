@@ -55,6 +55,7 @@ export class ServerMultiChannelNotificationService {
     readonly userId: string;
     readonly phoneNumber?: string;
     readonly passengerName: string;
+    readonly driverPhone?: string;
     readonly route: string; // e.g., "Douala → Bafoussam"
     readonly departureTime: string;
     readonly pickupPointName?: string;
@@ -87,7 +88,10 @@ export class ServerMultiChannelNotificationService {
     if (data.pickupPointName && data.pickupTime) {
       message += `Point de ramassage: ${data.pickupPointName} à ${formatDate(data.pickupTime)}\n`;
     }
-    message += `📱 Note: Présentez ce code au conducteur à l'embarquement.`;
+    if (data.driverPhone) {
+      message += `\n📞 Contact chauffeur: ${data.driverPhone}`;
+    }
+    message += `\n\n📱 Note: Présentez ce code au conducteur à l'embarquement.`;
 
     // Always send OneSignal
     const onesignalPromise = this.oneSignalService.sendNotification({
@@ -124,6 +128,7 @@ export class ServerMultiChannelNotificationService {
             data.seats.toString(),
             formatAmount(data.amount),
             data.verificationCode,
+            data.driverPhone || 'Non renseigné',
           ],
           language: 'fr',
         }).catch(err => {
@@ -153,6 +158,7 @@ export class ServerMultiChannelNotificationService {
     readonly driverPhone?: string;
     readonly driverName: string;
     readonly passengerName: string;
+    readonly passengerPhone?: string;
     readonly route: string;
     readonly seats: number;
     readonly amount: number;
@@ -181,7 +187,10 @@ export class ServerMultiChannelNotificationService {
     if (data.pickupPointName && data.pickupTime) {
       message += `Point de ramassage: ${data.pickupPointName} à ${formatDate(data.pickupTime)}\n`;
     }
-    message += `\n🔒 Note: Demandez le code de vérification au passager à l'embarquement.`;
+    if (data.passengerPhone) {
+      message += `\n📞 Contact passager: ${data.passengerPhone}`;
+    }
+    message += `\n\n🔒 Note: Demandez le code de vérification au passager à l'embarquement.`;
 
     // Always send OneSignal
     const onesignalPromise = this.oneSignalService.sendNotification({
@@ -221,6 +230,7 @@ export class ServerMultiChannelNotificationService {
             formatAmount(data.amount),
             data.pickupPointName || 'Point de départ',
             data.pickupTime ? formatDate(data.pickupTime) : formatDate(data.departureTime),
+            data.passengerPhone || 'Non renseigné',
           ],
           language: 'fr',
         }).catch(err => {

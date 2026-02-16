@@ -3,9 +3,9 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useSupabase } from "@/providers/SupabaseProvider"
-import { Button, Card, Form } from "@/components/ui"
+import { Button, Card, Form, Input } from "@/components/ui"
 import { toast } from "@/hooks/ui"
-import { Loader2, Camera } from "lucide-react"
+import { Loader2, Camera, User } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useDriverStatus } from "@/hooks/useDriverStatus"
 import { useRouter } from "next/navigation"
@@ -64,6 +64,7 @@ export default function DriverApplicationForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      fullName: "",
       nationalIdFileRecto: "",
       nationalIdFileVerso: "",
       licenseFileRecto: "",
@@ -341,8 +342,20 @@ export default function DriverApplicationForm() {
     try {
       setIsSubmitting(true)
 
+      const fullName = form.getValues("fullName")?.trim()
+      if (!fullName || fullName.length < 2) {
+        toast({
+          title: t("pages.becomeDriver.form.errors.missingFullName"),
+          description: t("pages.becomeDriver.form.errors.fullNameAsOnId"),
+          variant: "destructive",
+        })
+        setIsSubmitting(false)
+        return
+      }
+
       const driverData: DriverApplicationData = {
         driver_id: user.id,
+        full_name: fullName,
         national_id_file_recto: nationalIdFileRecto,
         national_id_file_verso: nationalIdFileVerso,
         license_file_recto: licenseFileRecto,
@@ -418,6 +431,31 @@ export default function DriverApplicationForm() {
           <form onSubmit={onSubmit} className="space-y-8">
             <Card className="p-6">
               <div className="space-y-8">
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    {t("pages.becomeDriver.form.fullNameLabel")} <span className="text-destructive">*</span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t("pages.becomeDriver.form.fullNameHint")}
+                  </p>
+                  <Form.Field
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <Form.Item>
+                        <Form.Control>
+                          <Input
+                            {...field}
+                            placeholder={t("pages.becomeDriver.form.fullNamePlaceholder")}
+                          />
+                        </Form.Control>
+                        <Form.Message />
+                      </Form.Item>
+                    )}
+                  />
+                </div>
+
                 <DriverDocuments
                   form={form}
                   nationalIdFileRecto={nationalIdFileRecto}
@@ -472,7 +510,7 @@ export default function DriverApplicationForm() {
             <Button
               type="submit"
               className="w-full md:w-auto md:px-8 mx-auto block"
-              disabled={isSubmitting || !driverTermsAccepted}
+              disabled={isSubmitting || !driverTermsAccepted || !form.watch("fullName")?.trim()}
             >
               {isSubmitting ? (
                 <>

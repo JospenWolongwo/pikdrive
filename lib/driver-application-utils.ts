@@ -2,6 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 export interface DriverApplicationData {
   driver_id: string;
+  full_name?: string;
   national_id_number?: string;
   license_number?: string;
   registration_number?: string;
@@ -21,6 +22,7 @@ export interface DriverApplicationData {
 }
 
 export interface ProfileUpdateData {
+  full_name?: string;
   driver_application_status:
     | "pending"
     | "approved"
@@ -43,6 +45,10 @@ export function validateDriverApplication(data: DriverApplicationData): {
   errors: string[];
 } {
   const errors: string[] = [];
+
+  if (!data.full_name?.trim() || data.full_name.trim().length < 2) {
+    errors.push("Full name (as on ID document) is required");
+  }
 
   // Check for at least one document file
   const hasNationalId =
@@ -123,8 +129,9 @@ export async function submitDriverApplication(
       vehicle_images: driverData.vehicle_images,
     };
 
-    // Prepare the profile update data
+    // Prepare the profile update data (include full_name for authenticity - as on ID)
     const profileUpdate: ProfileUpdateData = {
+      ...(driverData.full_name?.trim() && { full_name: driverData.full_name.trim() }),
       driver_application_status: "pending",
       driver_application_date: new Date().toISOString(),
       is_driver_applicant: true,

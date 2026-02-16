@@ -2,6 +2,12 @@ import * as z from "zod"
 
 // Define form schema for driver documents form
 export const formSchema = z.object({
+  // Full name as on ID document (required for authenticity)
+  fullName: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(120, "Name must be at most 120 characters")
+    .refine((val) => !/\d/.test(val), "Name must not contain numbers"),
   // Document files - recto (front) and verso (back) for each document
   // using optional() to allow empty string during form initialization,
   // but we'll validate these separately before form submission
