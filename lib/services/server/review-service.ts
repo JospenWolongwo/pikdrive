@@ -253,8 +253,7 @@ export class ServerReviewService {
             driver_id,
             from_city,
             to_city,
-            departure_time,
-            status
+            departure_time
           )
         `)
         .eq('id', bookingId)
@@ -296,15 +295,15 @@ export class ServerReviewService {
         };
       }
 
-      // 5. Check if ride is completed or enough time has passed
+      // 5. Check minimum delay after departure
       const departureTime = new Date(ride.departure_time);
       const now = new Date();
       const hoursSinceDeparture = (now.getTime() - departureTime.getTime()) / (1000 * 60 * 60);
 
-      if (ride.status !== 'completed' && hoursSinceDeparture < 6) {
+      if (hoursSinceDeparture < 6) {
         return {
           canReview: false,
-          reason: 'Please wait until the ride is completed',
+          reason: 'Please wait at least 6 hours after departure',
         };
       }
 

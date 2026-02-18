@@ -58,8 +58,10 @@ export class ServerWhatsAppNotificationService {
   validateTemplateVariables(templateName: string, variables: readonly string[]): void {
     // Template variable count mapping
     const templateVariableCounts: Record<string, number> = {
+      booking_confirmation_v2: 9, // passenger_name, route, departure_time, pickup_point_name, pickup_time, seats, amount, verification_code, driver_phone
       booking_confirmation: 9, // passenger_name, route, departure_time, pickup_point_name, pickup_time, seats, amount, verification_code, driver_phone
       payment_confirmed: 4, // passenger_name, amount, route, transaction_id
+      driver_new_booking_v2: 8, // driver_name, passenger_name, route, seats, amount, pickup_point_name, pickup_time, passenger_phone
       driver_new_booking: 8, // driver_name, passenger_name, route, seats, amount, pickup_point_name, pickup_time, passenger_phone
       ride_reminder: 5, // user_name, route, departure_time, pickup_point_name, pickup_time
       pickup_point_update: 5, // passenger_name, driver_name, current_pickup_point, estimated_arrival, route
@@ -216,4 +218,3 @@ export class ServerWhatsAppNotificationService {
     throw error;
   }
 }
-

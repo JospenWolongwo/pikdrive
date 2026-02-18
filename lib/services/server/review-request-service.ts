@@ -3,9 +3,9 @@ import { ServerMultiChannelNotificationService } from './multi-channel-notificat
 
 /**
  * Server-side Review Request Service
- * 
+ *
  * SINGLE RESPONSIBILITY: Send review request notifications
- * Automatically requests reviews 6-7 hours after ride completion
+ * Automatically requests reviews after a short post-ride delay
  * Uses multi-channel approach: WhatsApp + Push notifications
  */
 export class ServerReviewRequestService {
@@ -17,7 +17,7 @@ export class ServerReviewRequestService {
 
   /**
    * Send review requests for eligible bookings
-   * Called by cron job every hour
+   * Called by cron job daily (Vercel Hobby plan constraint)
    */
   async sendReviewRequests(): Promise<{
     success: boolean;
@@ -27,15 +27,16 @@ export class ServerReviewRequestService {
   }> {
     try {
       console.log('[REVIEW-REQUEST] Starting review request job...');
-      
+
       const now = new Date();
-      const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-      const sevenHoursAgo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const minHoursAfterDeparture = 6;
+      // With once-daily cron, max must be >= min + 24 to avoid missing trips.
+      const maxHoursAfterDeparture = 30;
 
       // Find eligible bookings:
       // 1. Paid and verified
-      // 2. Departure time was 6-7 hours ago OR ride status is 'completed'
-      // 3. Review not yet requested
+      // 2. Departure time in [6h, 30h] to balance timeliness and daily coverage
+      // 3. Review not yet requested (per recipient)
       const { data: bookings, error: fetchError } = await this.supabase
         .from('bookings')
         .select(`
@@ -48,8 +49,7 @@ export class ServerReviewRequestService {
             driver_id,
             from_city,
             to_city,
-            departure_time,
-            status
+            departure_time
           ),
           passenger:user_id (
             id,
@@ -86,98 +86,130 @@ export class ServerReviewRequestService {
             continue;
           }
 
-          // Check if review request already sent
-          const metadata = booking.metadata as any || {};
-          if (metadata.review_requested_at) {
+          const metadata = (booking.metadata as Record<string, any>) || {};
+          const passengerAlreadyRequestedAt =
+            metadata.review_request_passenger_sent_at || metadata.review_requested_at;
+          const driverAlreadyRequestedAt =
+            metadata.review_request_driver_sent_at || metadata.review_requested_at;
+
+          if (passengerAlreadyRequestedAt && driverAlreadyRequestedAt) {
             continue;
           }
 
-          // Check timing: 6-7 hours after departure OR ride completed
           const departureTime = new Date(ride.departure_time);
           const hoursSinceDeparture = (now.getTime() - departureTime.getTime()) / (1000 * 60 * 60);
+          const isTimeEligible =
+            hoursSinceDeparture >= minHoursAfterDeparture &&
+            hoursSinceDeparture <= maxHoursAfterDeparture;
 
-          const isTimeEligible = hoursSinceDeparture >= 6 && hoursSinceDeparture <= 24;
-          const isRideCompleted = ride.status === 'completed';
-
-          if (!isTimeEligible && !isRideCompleted) {
+          if (!isTimeEligible) {
             continue;
           }
 
-          // Fetch driver details
-          const { data: driver } = await this.supabase
+          const { data: driver, error: driverError } = await this.supabase
             .from('profiles')
             .select('id, full_name, phone')
             .eq('id', ride.driver_id)
-            .single();
+            .maybeSingle();
 
-          if (!driver) {
+          if (driverError || !driver) {
+            if (driverError) {
+              console.error(`[REVIEW-REQUEST] Error fetching driver for booking ${booking.id}:`, driverError);
+              errors++;
+            }
             continue;
           }
 
-          const route = `${ride.from_city} → ${ride.to_city}`;
+          const route = `${ride.from_city} -> ${ride.to_city}`;
           const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reviews/submit?booking_id=${booking.id}`;
 
-          // Send review request to passenger (WhatsApp + Push Notification)
-          try {
-            const passengerResult = await this.multiChannelService.sendReviewRequest({
-              userId: passenger.id,
-              phoneNumber: passenger.phone,
-              userName: passenger.full_name || 'Passager',
-              otherPartyName: driver.full_name || 'Conducteur',
-              route,
-              reviewUrl,
-              bookingId: booking.id,
-              isDriver: false, // This is for passenger
-            });
+          let passengerSent = Boolean(passengerAlreadyRequestedAt);
+          let driverSent = Boolean(driverAlreadyRequestedAt);
+          let metadataChanged = false;
+          const nextMetadata: Record<string, any> = { ...metadata };
 
-            if (passengerResult.onesignal || passengerResult.whatsapp) {
-              passengerRequestsSent++;
-              console.log(`[REVIEW-REQUEST] Sent passenger review request for booking ${booking.id}`, {
-                onesignal: passengerResult.onesignal,
-                whatsapp: passengerResult.whatsapp,
+          if (!passengerAlreadyRequestedAt) {
+            try {
+              const passengerResult = await this.multiChannelService.sendReviewRequest({
+                userId: passenger.id,
+                phoneNumber: passenger.phone,
+                userName: passenger.full_name || 'Passager',
+                otherPartyName: driver.full_name || 'Conducteur',
+                route,
+                reviewUrl,
+                bookingId: booking.id,
+                isDriver: false,
               });
+
+              if (passengerResult.onesignal || passengerResult.whatsapp) {
+                passengerSent = true;
+                passengerRequestsSent++;
+                nextMetadata.review_request_passenger_sent_at = now.toISOString();
+                metadataChanged = true;
+                console.log(`[REVIEW-REQUEST] Sent passenger review request for booking ${booking.id}`, {
+                  onesignal: passengerResult.onesignal,
+                  whatsapp: passengerResult.whatsapp,
+                });
+              } else {
+                errors++;
+                console.warn(`[REVIEW-REQUEST] Passenger request not delivered for booking ${booking.id}`);
+              }
+            } catch (err) {
+              console.error(`[REVIEW-REQUEST] Error sending passenger request for booking ${booking.id}:`, err);
+              errors++;
             }
-          } catch (err) {
-            console.error(`[REVIEW-REQUEST] Error sending passenger request for booking ${booking.id}:`, err);
-            errors++;
           }
 
-          // Send review request to driver (WhatsApp + Push Notification)
-          try {
-            const driverResult = await this.multiChannelService.sendReviewRequest({
-              userId: driver.id,
-              phoneNumber: driver.phone,
-              userName: driver.full_name || 'Conducteur',
-              otherPartyName: passenger.full_name || 'Passager',
-              route,
-              reviewUrl,
-              bookingId: booking.id,
-              isDriver: true, // This is for driver
-            });
-
-            if (driverResult.onesignal || driverResult.whatsapp) {
-              driverRequestsSent++;
-              console.log(`[REVIEW-REQUEST] Sent driver review request for booking ${booking.id}`, {
-                onesignal: driverResult.onesignal,
-                whatsapp: driverResult.whatsapp,
+          if (!driverAlreadyRequestedAt) {
+            try {
+              const driverResult = await this.multiChannelService.sendReviewRequest({
+                userId: driver.id,
+                phoneNumber: driver.phone,
+                userName: driver.full_name || 'Conducteur',
+                otherPartyName: passenger.full_name || 'Passager',
+                route,
+                reviewUrl,
+                bookingId: booking.id,
+                isDriver: true,
               });
+
+              if (driverResult.onesignal || driverResult.whatsapp) {
+                driverSent = true;
+                driverRequestsSent++;
+                nextMetadata.review_request_driver_sent_at = now.toISOString();
+                metadataChanged = true;
+                console.log(`[REVIEW-REQUEST] Sent driver review request for booking ${booking.id}`, {
+                  onesignal: driverResult.onesignal,
+                  whatsapp: driverResult.whatsapp,
+                });
+              } else {
+                errors++;
+                console.warn(`[REVIEW-REQUEST] Driver request not delivered for booking ${booking.id}`);
+              }
+            } catch (err) {
+              console.error(`[REVIEW-REQUEST] Error sending driver request for booking ${booking.id}:`, err);
+              errors++;
             }
-          } catch (err) {
-            console.error(`[REVIEW-REQUEST] Error sending driver request for booking ${booking.id}:`, err);
-            errors++;
           }
 
-          // Update booking metadata to mark review as requested
-          await this.supabase
-            .from('bookings')
-            .update({
-              metadata: {
-                ...metadata,
-                review_requested_at: now.toISOString(),
-              },
-            })
-            .eq('id', booking.id);
+          if (passengerSent && driverSent && !metadata.review_requested_at) {
+            nextMetadata.review_requested_at = now.toISOString();
+            metadataChanged = true;
+          }
 
+          if (metadataChanged) {
+            const { error: updateError } = await this.supabase
+              .from('bookings')
+              .update({
+                metadata: nextMetadata,
+              })
+              .eq('id', booking.id);
+
+            if (updateError) {
+              console.error(`[REVIEW-REQUEST] Error updating metadata for booking ${booking.id}:`, updateError);
+              errors++;
+            }
+          }
         } catch (err) {
           console.error(`[REVIEW-REQUEST] Error processing booking ${booking.id}:`, err);
           errors++;
@@ -207,3 +239,4 @@ export class ServerReviewRequestService {
     }
   }
 }
+

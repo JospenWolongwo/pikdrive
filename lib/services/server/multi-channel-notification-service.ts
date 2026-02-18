@@ -117,7 +117,7 @@ export class ServerMultiChannelNotificationService {
     const whatsappEnabled = await this.shouldSendWhatsApp(data.userId, data.phoneNumber);
     const whatsappPromise = whatsappEnabled
       ? this.whatsappService.sendTemplateMessage({
-          templateName: 'booking_confirmation',
+          templateName: 'booking_confirmation_v2',
           phoneNumber: data.phoneNumber!,
           variables: [
             data.passengerName,
@@ -220,7 +220,7 @@ export class ServerMultiChannelNotificationService {
     const whatsappEnabled = await this.shouldSendWhatsApp(data.driverId, data.driverPhone);
     const whatsappPromise = whatsappEnabled
       ? this.whatsappService.sendTemplateMessage({
-          templateName: 'driver_new_booking',
+          templateName: 'driver_new_booking_v2',
           phoneNumber: data.driverPhone!,
           variables: [
             data.driverName,

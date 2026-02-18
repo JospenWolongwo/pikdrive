@@ -8,7 +8,7 @@ export const runtime = 'edge';
 /**
  * GET /api/cron/send-review-requests
  * Cron job to send review requests for eligible bookings
- * Should be called hourly via Vercel Cron
+ * Should be called daily via Vercel Cron (Hobby plan constraint)
  */
 export async function GET(request: Request) {
   try {
