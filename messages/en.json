@@ -810,6 +810,8 @@
           "save": "Save changes",
           "saving": "Saving...",
           "delete": "Delete ride",
+          "cancelAndRefund": "Cancel ride and refund passengers",
+          "cancellingAndRefunding": "Cancelling and refunding...",
           "deleting": "Deleting..."
         },
         "alerts": {
@@ -830,6 +832,11 @@
             "description": "This action is irreversible and will permanently delete this ride.",
             "cancel": "Cancel",
             "confirm": "Delete"
+          },
+          "cancelRideConfirm": {
+            "title": "Cancel this ride and refund all passengers?",
+            "description": "All active bookings will be cancelled, paid passengers will be refunded, and passengers will be notified via push and WhatsApp.",
+            "confirm": "Cancel ride and refund"
           }
         },
         "toast": {
@@ -840,6 +847,10 @@
           "deleted": {
             "title": "Ride deleted",
             "description": "The ride has been deleted successfully"
+          },
+          "cancelled": {
+            "title": "Ride cancelled",
+            "description": "Ride cancelled. Passengers are being notified and refunds are processing."
           },
           "updateSuccess": {
             "text": "Ride updated successfully! Changes have been saved.",
@@ -1678,5 +1689,4 @@
     "description": "Connect with trusted drivers for safe and affordable intercity travel in Cameroon."
   }
 }
-
 

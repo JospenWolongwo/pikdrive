@@ -3,7 +3,16 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useSupabase } from "@/providers/SupabaseProvider"
-import { Button, Card, Form, Input } from "@/components/ui"
+import {
+  Button,
+  Card,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+  Input,
+} from "@/components/ui"
 import { toast } from "@/hooks/ui"
 import { Loader2, Camera, User } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -439,19 +448,19 @@ export default function DriverApplicationForm() {
                   <p className="text-sm text-muted-foreground">
                     {t("pages.becomeDriver.form.fullNameHint")}
                   </p>
-                  <Form.Field
+                  <FormField
                     control={form.control}
                     name="fullName"
                     render={({ field }) => (
-                      <Form.Item>
-                        <Form.Control>
+                      <FormItem>
+                        <FormControl>
                           <Input
                             {...field}
                             placeholder={t("pages.becomeDriver.form.fullNamePlaceholder")}
                           />
-                        </Form.Control>
-                        <Form.Message />
-                      </Form.Item>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
                   />
                 </div>
@@ -525,5 +534,4 @@ export default function DriverApplicationForm() {
     </>
   )
 }
-
 

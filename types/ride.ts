@@ -31,6 +31,7 @@ export interface PickupPoint {
 export interface Ride {
   readonly id: string;
   readonly driver_id: string;
+  readonly status?: 'active' | 'cancelled';
   readonly from_city: string;
   readonly to_city: string;
   readonly departure_time: string;
@@ -41,6 +42,9 @@ export interface Ride {
   readonly car_model?: string;
   readonly car_color?: string;
   readonly pickup_points?: readonly PickupPoint[];
+  readonly cancelled_at?: string | null;
+  readonly cancelled_by?: string | null;
+  readonly cancellation_reason?: string | null;
   readonly created_at: string;
   readonly updated_at: string;
 }

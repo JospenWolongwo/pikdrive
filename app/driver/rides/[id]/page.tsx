@@ -96,7 +96,15 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
   const { supabase, user } = useSupabase();
   const { toast } = useToast();
   const { t, locale } = useLocale();
-  const { currentRide, currentRideLoading, currentRideError, fetchRideById, updateRide, deleteRide: deleteRideFromStore } = useRidesStore();
+  const {
+    currentRide,
+    currentRideLoading,
+    currentRideError,
+    fetchRideById,
+    updateRide,
+    deleteRide: deleteRideFromStore,
+    cancelRide: cancelRideFromStore,
+  } = useRidesStore();
   const ride = currentRide;
   const loading = currentRideLoading;
   const error = currentRideError;
@@ -126,6 +134,22 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
       : [];
   const showLoading =
     loading || Boolean(params.id && !ride && !error);
+  const isCancelFlow = hasBookings;
+  const destructiveButtonLabel = isCancelFlow
+    ? t("pages.driver.manageRide.form.cancelAndRefund")
+    : t("pages.driver.manageRide.form.delete");
+  const destructiveProgressLabel = isCancelFlow
+    ? t("pages.driver.manageRide.form.cancellingAndRefunding")
+    : t("pages.driver.manageRide.form.deleting");
+  const destructiveConfirmTitle = isCancelFlow
+    ? t("pages.driver.manageRide.alerts.cancelRideConfirm.title")
+    : t("pages.driver.manageRide.alerts.deleteConfirm.title");
+  const destructiveConfirmDescription = isCancelFlow
+    ? t("pages.driver.manageRide.alerts.cancelRideConfirm.description")
+    : t("pages.driver.manageRide.alerts.deleteConfirm.description");
+  const destructiveConfirmActionLabel = isCancelFlow
+    ? t("pages.driver.manageRide.alerts.cancelRideConfirm.confirm")
+    : t("pages.driver.manageRide.alerts.deleteConfirm.confirm");
 
   const rideFormSchema = z.object({
     from_city: z.string().min(2, {
@@ -345,24 +369,25 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     try {
       setDeleting(true);
 
-      // Check if the ride has active bookings
       if (hasBookings) {
-        toast({
-          title: t("pages.driver.manageRide.alerts.cannotDelete.title"),
-          description: t("pages.driver.manageRide.alerts.cannotDelete.description"),
-          variant: "destructive",
-        });
-        setDeleting(false);
-        return;
+        // Cancel ride with passenger refunds/notifications
+        await cancelRideFromStore(ride.id);
+      } else {
+        // Delete the ride when no active bookings exist
+        await deleteRideFromStore(ride.id);
       }
 
-      // Delete the ride using Zustand store
-      await deleteRideFromStore(ride.id);
-
-      toast({
-        title: t("pages.driver.manageRide.toast.deleted.title"),
-        description: t("pages.driver.manageRide.toast.deleted.description"),
-      });
+      toast(
+        isCancelFlow
+          ? {
+              title: t("pages.driver.manageRide.toast.cancelled.title"),
+              description: t("pages.driver.manageRide.toast.cancelled.description"),
+            }
+          : {
+              title: t("pages.driver.manageRide.toast.deleted.title"),
+              description: t("pages.driver.manageRide.toast.deleted.description"),
+            }
+      );
 
       // Redirect back to dashboard
       router.push("/driver/dashboard");
@@ -651,20 +676,20 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                         <Button
                           type="button"
                           variant="destructive"
-                          disabled={updating || hasBookings}
+                          disabled={updating}
                           className="w-full sm:w-auto"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          {t("pages.driver.manageRide.form.delete")}
+                          {destructiveButtonLabel}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>
-                            {t("pages.driver.manageRide.alerts.deleteConfirm.title")}
+                            {destructiveConfirmTitle}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t("pages.driver.manageRide.alerts.deleteConfirm.description")}
+                            {destructiveConfirmDescription}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -673,7 +698,7 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
                             onClick={deleteRide}
                             className="bg-red-500 hover:bg-red-600"
                           >
-                            {deleting ? t("pages.driver.manageRide.form.deleting") : t("pages.driver.manageRide.alerts.deleteConfirm.confirm")}
+                            {deleting ? destructiveProgressLabel : destructiveConfirmActionLabel}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

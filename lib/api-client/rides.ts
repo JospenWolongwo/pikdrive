@@ -74,6 +74,38 @@ export class RidesApiClient {
   }
 
   /**
+   * Cancel a ride (driver initiated)
+   */
+  async cancelRide(
+    rideId: string,
+    reason?: string
+  ): Promise<ApiResponse<{
+    rideCancelled: boolean;
+    rideAlreadyCancelled: boolean;
+    activeBookingsFound: number;
+    cancelledBookings: number;
+    paidBookings: number;
+    refundsInitiated: number;
+    refundsFailed: number;
+    notificationOnesignalSent: number;
+    notificationWhatsAppSent: number;
+    failedBookings: Array<{ bookingId: string; error: string }>;
+  }>> {
+    return apiClient.post<ApiResponse<{
+      rideCancelled: boolean;
+      rideAlreadyCancelled: boolean;
+      activeBookingsFound: number;
+      cancelledBookings: number;
+      paidBookings: number;
+      refundsInitiated: number;
+      refundsFailed: number;
+      notificationOnesignalSent: number;
+      notificationWhatsAppSent: number;
+      failedBookings: Array<{ bookingId: string; error: string }>;
+    }>>(`/api/rides/${rideId}/cancel`, reason ? { reason } : {});
+  }
+
+  /**
    * Fetch rides for the current driver with optional filtering
    * If no params are provided, fetches ALL rides (both upcoming and past)
    */

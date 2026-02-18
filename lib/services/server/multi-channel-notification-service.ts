@@ -478,18 +478,29 @@ export class ServerMultiChannelNotificationService {
     readonly route: string;
     readonly refundAmount?: number;
     readonly refundStatus?: string;
+    readonly cancelledByDriver?: boolean;
+    readonly cancellationReason?: string;
     readonly bookingId: string;
   }): Promise<{ onesignal: boolean; whatsapp: boolean }> {
     const formatAmount = (amt: number) => new Intl.NumberFormat('fr-FR').format(amt);
 
     // Build OneSignal message
     let message = `🚫 Réservation annulée\n\n`;
+    if (data.cancelledByDriver) {
+      message += `Le chauffeur a annule ce trajet. Nous sommes desoles pour ce contretemps.\n`;
+      if (data.cancellationReason) {
+        message += `Motif: ${data.cancellationReason}\n`;
+      }
+      message += `\n`;
+    }
     message += `Trajet: ${data.route}\n`;
     if (data.refundAmount) {
       message += `Remboursement: ${formatAmount(data.refundAmount)} XAF\n`;
       if (data.refundStatus) {
         message += `Statut: ${data.refundStatus}\n`;
       }
+    } else if (data.refundStatus) {
+      message += `Statut: ${data.refundStatus}\n`;
     }
 
     // Always send OneSignal
@@ -510,16 +521,29 @@ export class ServerMultiChannelNotificationService {
 
     // Conditionally send WhatsApp
     const whatsappEnabled = await this.shouldSendWhatsApp(data.userId, data.phoneNumber);
+    const supportLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://pikdrive.com'}/support`;
+    const whatsappTemplateName = data.cancelledByDriver
+      ? 'ride_cancelled_by_driver_v1'
+      : 'booking_cancelled';
+    const whatsappVariables = data.cancelledByDriver
+      ? [
+          data.userName,
+          data.route,
+          data.refundAmount ? `${formatAmount(data.refundAmount)} XAF` : 'Aucun paiement',
+          data.refundStatus || 'En attente',
+          supportLink,
+        ]
+      : [
+          data.userName,
+          data.route,
+          data.refundAmount ? formatAmount(data.refundAmount) : '0',
+          data.refundStatus || 'En attente',
+        ];
     const whatsappPromise = whatsappEnabled
       ? this.whatsappService.sendTemplateMessage({
-          templateName: 'booking_cancelled',
+          templateName: whatsappTemplateName,
           phoneNumber: data.phoneNumber!,
-          variables: [
-            data.userName,
-            data.route,
-            data.refundAmount ? formatAmount(data.refundAmount) : '0',
-            data.refundStatus || 'En attente',
-          ],
+          variables: whatsappVariables,
           language: 'fr',
         }).catch(err => {
           console.error('[MULTI-CHANNEL] WhatsApp send failed (non-critical):', err);

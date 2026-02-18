@@ -810,6 +810,8 @@
           "save": "Enregistrer les modifications",
           "saving": "Enregistrement...",
           "delete": "Supprimer le trajet",
+          "cancelAndRefund": "Annuler le trajet et rembourser les passagers",
+          "cancellingAndRefunding": "Annulation et remboursements en cours...",
           "deleting": "Suppression..."
         },
         "alerts": {
@@ -830,6 +832,11 @@
             "description": "Cette action est irréversible et supprimera définitivement ce trajet.",
             "cancel": "Annuler",
             "confirm": "Supprimer"
+          },
+          "cancelRideConfirm": {
+            "title": "Annuler ce trajet et rembourser tous les passagers ?",
+            "description": "Toutes les reservations actives seront annulees, les passagers payes seront rembourses, et les passagers seront notifies via push et WhatsApp.",
+            "confirm": "Annuler et rembourser"
           }
         },
         "toast": {
@@ -840,6 +847,10 @@
           "deleted": {
             "title": "Trajet supprimé",
             "description": "Le trajet a été supprimé avec succès"
+          },
+          "cancelled": {
+            "title": "Trajet annulé",
+            "description": "Trajet annulé. Les passagers sont notifiés et les remboursements sont en cours."
           },
           "updateSuccess": {
             "text": "Trajet mis à jour avec succès ! Les modifications ont été enregistrées.",
@@ -1678,6 +1689,4 @@
     "description": "Connectez-vous avec des chauffeurs de confiance pour des voyages intercités sûrs et abordables au Cameroun."
   }
 }
-
-
 

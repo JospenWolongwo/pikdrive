@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       .from("rides")
       .select("id")
       .eq("driver_id", userId)
+      .eq("status", "active")
       .order("created_at", { ascending: false }); // Newest first
 
     // Only apply time filters if specifically requested
@@ -86,6 +87,7 @@ export async function GET(request: NextRequest) {
         .from("rides")
         .select("*")
         .in("id", rideIds)
+        .eq("status", "active")
         .order("created_at", { ascending: false }),
       supabase
         .from("bookings")

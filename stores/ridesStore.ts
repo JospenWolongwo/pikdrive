@@ -110,6 +110,7 @@ interface RidesState {
   createRide: (rideData: CreateRideRequest) => Promise<Ride>;
   updateRide: (rideId: string, updateData: UpdateRideRequest) => Promise<Ride>;
   deleteRide: (rideId: string) => Promise<void>;
+  cancelRide: (rideId: string, reason?: string) => Promise<void>;
 
   // User rides for messages/chat
   userRides: Ride[];
@@ -552,6 +553,28 @@ export const useRidesStore = create<RidesState>()(
           const filteredDriverRides = driverRides.filter(ride => ride.id !== rideId);
           set({ driverRides: filteredDriverRides });
           
+          const { currentRide } = get();
+          if (currentRide?.id === rideId) {
+            set({ currentRide: null });
+          }
+        } catch (error) {
+          throw error;
+        }
+      },
+
+      cancelRide: async (rideId: string, reason?: string) => {
+        try {
+          const response = await ridesApiClient.cancelRide(rideId, reason);
+
+          if (!response.success) {
+            throw new Error(response.error || 'Failed to cancel ride');
+          }
+
+          // Remove cancelled ride from active lists
+          const { driverRides } = get();
+          const filteredDriverRides = driverRides.filter(ride => ride.id !== rideId);
+          set({ driverRides: filteredDriverRides });
+
           const { currentRide } = get();
           if (currentRide?.id === rideId) {
             set({ currentRide: null });

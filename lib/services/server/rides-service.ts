@@ -56,6 +56,7 @@ export class ServerRidesService {
         driver:profiles(id, full_name, avatar_url),
         bookings(id, seats, status, payment_status)
       `)
+      .eq('status', 'active')
       .order('departure_time', { ascending: true });
 
     // Apply filters
@@ -84,7 +85,8 @@ export class ServerRidesService {
     // Get total count
     let countQuery = this.supabase
       .from('rides')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
 
     // Apply same filters to count query
     if (params?.driver_id) countQuery = countQuery.eq('driver_id', params.driver_id);
@@ -189,6 +191,7 @@ export class ServerRidesService {
         )
       `)
       .eq('id', rideId)
+      .neq('status', 'cancelled')
       .single();
 
     if (error) {
@@ -223,6 +226,7 @@ export class ServerRidesService {
         )
       `)
       .eq('id', rideId)
+      .neq('status', 'cancelled')
       .single();
 
     if (rideError) {
@@ -439,7 +443,7 @@ export class ServerRidesService {
   ): Promise<RideWithDetails> {
     const { data: existingRide, error: checkError } = await this.supabase
       .from('rides')
-      .select('driver_id, from_city')
+      .select('driver_id, from_city, status')
       .eq('id', rideId)
       .single();
 
@@ -454,6 +458,13 @@ export class ServerRidesService {
       throw new RideApiError(
         'Access denied. You can only update your own rides.',
         403
+      );
+    }
+
+    if (existingRide.status === 'cancelled') {
+      throw new RideApiError(
+        'This ride is cancelled and can no longer be updated.',
+        400
       );
     }
 
@@ -645,7 +656,7 @@ export class ServerRidesService {
   }
 
   /**
-   * Delete ride by driver: checks ownership and that there are no confirmed/pending bookings.
+   * Delete ride by driver: checks ownership and ensures no booking history exists.
    * Throws RideApiError(404|403|400|500) as appropriate.
    */
   async deleteRideByDriver(rideId: string, userId: string): Promise<void> {
@@ -673,7 +684,7 @@ export class ServerRidesService {
       .from('bookings')
       .select('id, status')
       .eq('ride_id', rideId)
-      .in('status', ['confirmed', 'pending']);
+      .limit(1);
 
     if (bookingsError) {
       throw new RideApiError('Failed to check bookings', 500);
@@ -681,7 +692,7 @@ export class ServerRidesService {
 
     if (bookings && bookings.length > 0) {
       throw new RideApiError(
-        'Cannot delete ride with confirmed or pending bookings',
+        'Cannot delete ride that has booking history. Cancel the ride instead.',
         400
       );
     }
@@ -721,6 +732,7 @@ export class ServerRidesService {
       .from('rides')
       .select('id')
       .eq('driver_id', driverId)
+      .eq('status', 'active')
       .order('departure_time', { ascending: true });
 
     // Apply time filters if specified
@@ -759,6 +771,7 @@ export class ServerRidesService {
         )
       `)
       .in('id', rideIds)
+      .eq('status', 'active')
       .order('departure_time', { ascending: true });
 
     if (detailsError) {
@@ -785,6 +798,7 @@ export class ServerRidesService {
       .from('rides')
       .select('*')
       .eq('driver_id', userId)
+      .eq('status', 'active')
       .order('departure_time', { ascending: false });
 
     if (driverError) {
@@ -811,6 +825,7 @@ export class ServerRidesService {
       .from('rides')
       .select('*')
       .in('id', passengerRideIds)
+      .eq('status', 'active')
       .order('departure_time', { ascending: false });
 
     if (passengerError) {

@@ -67,6 +67,7 @@ export class ServerWhatsAppNotificationService {
       pickup_point_update: 5, // passenger_name, driver_name, current_pickup_point, estimated_arrival, route
       payment_failed: 4, // passenger_name, amount, reason, retry_link
       booking_cancelled: 4, // user_name, route, refund_amount, refund_status
+      ride_cancelled_by_driver_v1: 5, // user_name, route, refund_amount, refund_status, support_link
       driver_application_submitted_admin: 4, // admin_name, applicant_name, city, submitted_at
       driver_application_status_update: 4, // driver_name, status_label, updated_at, next_step
       review_request_passenger: 4, // passenger_name, driver_name, route, review_link

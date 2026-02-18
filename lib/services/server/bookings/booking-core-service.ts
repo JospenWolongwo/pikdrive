@@ -24,6 +24,24 @@ export class ServerBookingCoreService {
     }
   ): Promise<Booking> {
     try {
+      const { data: ride, error: rideError } = await this.supabase
+        .from('rides')
+        .select('id, status')
+        .eq('id', params.ride_id)
+        .maybeSingle();
+
+      if (rideError) {
+        throw new Error(`Failed to fetch ride: ${rideError.message}`);
+      }
+
+      if (!ride) {
+        throw new Error('Ride not found');
+      }
+
+      if ((ride as { status?: string }).status === 'cancelled') {
+        throw new Error('This ride has been cancelled by the driver');
+      }
+
       const { data: existingBooking } = await this.supabase
         .from('bookings')
         .select('id, seats, status, payment_status')
