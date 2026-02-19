@@ -149,15 +149,15 @@
         },
         "step2": {
           "title": "Effectuez le Paiement",
-          "description": "Réservez votre trajet en payant de manière sécurisée"
+          "description": "Payez en toute sécurité pour réserver votre trajet. L'argent est conservé temporairement par PikDrive comme garantie et n'est pas encore versé au chauffeur."
         },
         "step3": {
           "title": "Recevez le Code",
-          "description": "Un code de vérification vous est envoyé après le paiement"
+          "description": "Après le paiement, vous recevez un code de vérification. Gardez ce code secret et partagez-le uniquement au bon moment, quand vous êtes dans la voiture avec le chauffeur."
         },
         "step4": {
           "title": "Validez le Trajet",
-          "description": "Présentez le code au chauffeur pour valider le paiement"
+          "description": "Validez le code avec le chauffeur une fois dans la voiture. Le trajet est confirmé et le paiement du chauffeur est déclenché immédiatement."
         }
       },
       "popularRoutes": {
@@ -295,15 +295,15 @@
         },
         "step2": {
           "title": "2. Effectuez le Paiement",
-          "description": "Réservez votre place en payant via Mobile Money, carte bancaire ou en espèces chez nos partenaires. Le paiement est temporairement bloqué."
+          "description": "Réservez votre place en payant via Mobile Money, carte bancaire ou en espèces chez nos partenaires. Votre argent est conservé temporairement par PikDrive comme sécurité et n'est pas encore versé au chauffeur."
         },
         "step3": {
           "title": "3. Recevez Votre Code",
-          "description": "Après paiement, vous recevez un code de vérification unique par SMS et dans l'application. Gardez-le précieusement."
+          "description": "Après paiement, vous recevez un code de vérification unique par SMS et dans l'application. Gardez ce code secret et ne le donnez qu'au bon moment, lorsque vous êtes dans la voiture avec le chauffeur."
         },
         "step4": {
           "title": "4. Validez le Trajet",
-          "description": "Présentez votre code au chauffeur lors de votre embarquement. Ce code débloque le paiement et confirme votre trajet."
+          "description": "Présentez votre code au chauffeur quand vous êtes installé dans la voiture. Dès que le code est validé, le trajet est confirmé et le paiement du chauffeur est effectué immédiatement."
         }
       },
       "whyCode": {

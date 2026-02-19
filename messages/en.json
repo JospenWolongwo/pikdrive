@@ -149,15 +149,15 @@
         },
         "step2": {
           "title": "Make Payment",
-          "description": "Book your ride by paying securely"
+          "description": "Pay securely to book your ride. Your money is temporarily held by PikDrive as security and is not sent to the driver yet."
         },
         "step3": {
           "title": "Receive Code",
-          "description": "A verification code is sent to you after payment"
+          "description": "After payment, you receive a verification code. Keep this code secret and share it only at the right moment, when you are inside the car with the driver."
         },
         "step4": {
           "title": "Validate Ride",
-          "description": "Present the code to the driver to validate payment"
+          "description": "Validate the code with the driver once you are in the car. The ride is confirmed and the driver's payment is released instantly."
         }
       },
       "popularRoutes": {
@@ -295,15 +295,15 @@
         },
         "step2": {
           "title": "2. Make Payment",
-          "description": "Reserve your seat by paying via Mobile Money, bank card or cash at our partners. Payment is temporarily blocked."
+          "description": "Reserve your seat by paying via Mobile Money, bank card or cash at our partners. Your money is temporarily held by PikDrive as security and is not sent to the driver yet."
         },
         "step3": {
           "title": "3. Receive Your Code",
-          "description": "After payment, you receive a unique verification code by SMS and in the app. Keep it safe."
+          "description": "After payment, you receive a unique verification code by SMS and in the app. Keep this code secret and share it only at the right moment, when you are inside the car with the driver."
         },
         "step4": {
           "title": "4. Validate Ride",
-          "description": "Present your code to the driver when you board. This code unlocks payment and confirms your ride."
+          "description": "Present your code to the driver when you are in the car. As soon as the code is validated, the ride is confirmed and the driver's payment is made instantly."
         }
       },
       "whyCode": {
@@ -1689,4 +1689,3 @@
     "description": "Connect with trusted drivers for safe and affordable intercity travel in Cameroon."
   }
 }
-
