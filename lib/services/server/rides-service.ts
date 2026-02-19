@@ -53,7 +53,7 @@ export class ServerRidesService {
       .from('rides')
       .select(`
         *,
-        driver:profiles(id, full_name, avatar_url),
+        driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url),
         bookings(id, seats, status, payment_status)
       `)
       .eq('status', 'active')
@@ -179,7 +179,7 @@ export class ServerRidesService {
       .from('rides')
       .select(`
         *,
-        driver:profiles(id, full_name, avatar_url, phone),
+        driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url, phone),
         bookings(
           id,
           user_id,
@@ -213,7 +213,7 @@ export class ServerRidesService {
       .from('rides')
       .select(`
         *,
-        driver:profiles(id, full_name, avatar_url),
+        driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url),
         bookings(
           id,
           user_id,
@@ -593,7 +593,7 @@ export class ServerRidesService {
       .from('rides')
       .update(updateFields)
       .eq('id', rideId)
-      .select(`*, driver:profiles(id, full_name, avatar_url)`)
+      .select(`*, driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url)`)
       .single();
 
     if (updateError) {
@@ -629,7 +629,7 @@ export class ServerRidesService {
       .eq('id', rideId)
       .select(`
         *,
-        driver:profiles(id, full_name, avatar_url)
+        driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url)
       `)
       .single();
 
@@ -759,7 +759,7 @@ export class ServerRidesService {
       .from('rides')
       .select(`
         *,
-        driver:profiles(id, full_name, avatar_url, phone),
+        driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url, phone),
         bookings(
           id,
           user_id,
@@ -841,3 +841,4 @@ export class ServerRidesService {
     return uniqueRides;
   }
 }
+
