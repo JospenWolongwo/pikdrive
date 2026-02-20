@@ -1,7 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import type { Message } from "@/types";
-import { containsSensitiveContactInfo, SENSITIVE_CONTACT_ERROR_CODE } from "@/lib/utils/message-filter";
+import {
+  containsSensitiveContactInfo,
+  containsSensitiveContactInMessageSequence,
+  shouldRunSensitiveContactSequenceCheck,
+  SENSITIVE_CONTACT_ERROR_CODE,
+} from "@/lib/utils/message-filter";
 import { ServerOneSignalNotificationService } from "@/lib/services/server";
 
 export const SENSITIVE_CONTACT_ERROR = SENSITIVE_CONTACT_ERROR_CODE;
@@ -155,6 +160,36 @@ export class ServerMessagesService {
         SENSITIVE_CONTACT_ERROR,
         400
       );
+    }
+
+    if (shouldRunSensitiveContactSequenceCheck(content)) {
+      const { data: recentMessages, error: recentMessagesError } = await this.supabase
+        .from("messages")
+        .select("content")
+        .eq("conversation_id", conversationId)
+        .eq("sender_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (recentMessagesError) {
+        throw new MessagesServiceError(
+          "Error checking recent messages for moderation",
+          "MODERATION_CONTEXT_FETCH_FAILED",
+          500
+        );
+      }
+
+      const recentContents = (recentMessages ?? []).map(
+        (message: { content?: string | null }) => String(message.content ?? "")
+      );
+
+      if (containsSensitiveContactInMessageSequence(content, recentContents)) {
+        throw new MessagesServiceError(
+          "Message contains sensitive contact information",
+          SENSITIVE_CONTACT_ERROR,
+          400
+        );
+      }
     }
 
     const { data: message, error: messageError } = await this.supabase

@@ -149,15 +149,15 @@
         },
         "step2": {
           "title": "Make Payment",
-          "description": "Pay securely to book your ride. Your money is temporarily held by PikDrive as security and is not sent to the driver yet."
+          "description": "Make an instant payment with Mobile Money to book your ride. Your money is temporarily held by PikDrive as security and is not sent to the driver yet."
         },
         "step3": {
-          "title": "Receive Code",
-          "description": "After payment, you receive a verification code. Keep this code secret and share it only at the right moment, when you are inside the car with the driver."
+          "title": "Receive Secret Code",
+          "description": "After payment, you receive a secret verification code. Keep this code secret and share it only at the right moment, when you are inside the car with the driver."
         },
         "step4": {
           "title": "Validate Ride",
-          "description": "Validate the code with the driver once you are in the car. The ride is confirmed and the driver's payment is released instantly."
+          "description": "Give your secret code to the driver once you are in the car. The ride is confirmed and the driver's payment is released instantly."
         }
       },
       "popularRoutes": {
@@ -295,15 +295,15 @@
         },
         "step2": {
           "title": "2. Make Payment",
-          "description": "Reserve your seat by paying via Mobile Money, bank card or cash at our partners. Your money is temporarily held by PikDrive as security and is not sent to the driver yet."
+          "description": "Reserve your seat with an instant Mobile Money payment. Your money is temporarily held by PikDrive as security and is not sent to the driver yet."
         },
         "step3": {
-          "title": "3. Receive Your Code",
-          "description": "After payment, you receive a unique verification code by SMS and in the app. Keep this code secret and share it only at the right moment, when you are inside the car with the driver."
+          "title": "3. Receive Your Secret Code",
+          "description": "After payment, you receive a unique secret verification code by SMS and in the app. Keep this code secret and share it only at the right moment, when you are inside the car with the driver."
         },
         "step4": {
           "title": "4. Validate Ride",
-          "description": "Present your code to the driver when you are in the car. As soon as the code is validated, the ride is confirmed and the driver's payment is made instantly."
+          "description": "Give your secret code to the driver when you are in the car. As soon as the code is validated, the ride is confirmed and the driver's payment is made instantly."
         }
       },
       "whyCode": {
@@ -339,7 +339,7 @@
         "title": "Frequently Asked Questions",
         "howWorks": {
           "question": "How does PikDrive work exactly?",
-          "answer": "PikDrive is an intercity ride-sharing platform in Cameroon that works in 4 simple steps: 1) You choose your destination and a verified driver. 2) You pay to reserve your seat via Mobile Money, bank card or cash at our partners. 3) You receive a unique verification code after payment. 4) You show this code to the driver at departure time, which validates the ride and releases payment to the driver."
+          "answer": "PikDrive is an intercity ride-sharing platform in Cameroon that works in 4 simple steps: 1) You choose your destination and a verified driver. 2) You make an instant Mobile Money payment to reserve your seat. 3) You receive a unique secret verification code after payment. 4) You give this secret code to the driver once you are in the car, which validates the ride and instantly releases payment to the driver."
         },
         "howBook": {
           "question": "How do I book a ride?",
@@ -1689,3 +1689,5 @@
     "description": "Connect with trusted drivers for safe and affordable intercity travel in Cameroon."
   }
 }
+
+

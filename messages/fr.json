@@ -149,15 +149,15 @@
         },
         "step2": {
           "title": "Effectuez le Paiement",
-          "description": "Payez en toute sécurité pour réserver votre trajet. L'argent est conservé temporairement par PikDrive comme garantie et n'est pas encore versé au chauffeur."
+          "description": "Effectuez un paiement instantané via Mobile Money pour réserver votre trajet. L'argent est conservé temporairement par PikDrive comme garantie et n'est pas encore versé au chauffeur."
         },
         "step3": {
-          "title": "Recevez le Code",
-          "description": "Après le paiement, vous recevez un code de vérification. Gardez ce code secret et partagez-le uniquement au bon moment, quand vous êtes dans la voiture avec le chauffeur."
+          "title": "Recevez le Code Secret",
+          "description": "Après le paiement, vous recevez un code secret de vérification. Gardez ce code secret et partagez-le uniquement au bon moment, quand vous êtes dans la voiture avec le chauffeur."
         },
         "step4": {
           "title": "Validez le Trajet",
-          "description": "Validez le code avec le chauffeur une fois dans la voiture. Le trajet est confirmé et le paiement du chauffeur est déclenché immédiatement."
+          "description": "Donnez votre code secret au chauffeur une fois dans la voiture. Le trajet est confirmé et le paiement du chauffeur est déclenché instantanément."
         }
       },
       "popularRoutes": {
@@ -295,15 +295,15 @@
         },
         "step2": {
           "title": "2. Effectuez le Paiement",
-          "description": "Réservez votre place en payant via Mobile Money, carte bancaire ou en espèces chez nos partenaires. Votre argent est conservé temporairement par PikDrive comme sécurité et n'est pas encore versé au chauffeur."
+          "description": "Réservez votre place avec un paiement instantané via Mobile Money. Votre argent est conservé temporairement par PikDrive comme sécurité et n'est pas encore versé au chauffeur."
         },
         "step3": {
-          "title": "3. Recevez Votre Code",
-          "description": "Après paiement, vous recevez un code de vérification unique par SMS et dans l'application. Gardez ce code secret et ne le donnez qu'au bon moment, lorsque vous êtes dans la voiture avec le chauffeur."
+          "title": "3. Recevez Votre Code Secret",
+          "description": "Après paiement, vous recevez un code secret de vérification unique par SMS et dans l'application. Gardez ce code secret et ne le donnez qu'au bon moment, lorsque vous êtes dans la voiture avec le chauffeur."
         },
         "step4": {
           "title": "4. Validez le Trajet",
-          "description": "Présentez votre code au chauffeur quand vous êtes installé dans la voiture. Dès que le code est validé, le trajet est confirmé et le paiement du chauffeur est effectué immédiatement."
+          "description": "Donnez votre code secret au chauffeur quand vous êtes installé dans la voiture. Dès que le code est validé, le trajet est confirmé et le paiement du chauffeur est effectué instantanément."
         }
       },
       "whyCode": {
@@ -339,7 +339,7 @@
         "title": "Questions Fréquentes",
         "howWorks": {
           "question": "Comment fonctionne PikDrive exactement ?",
-          "answer": "PikDrive est une plateforme de covoiturage intercités au Cameroun qui fonctionne en 4 étapes simples : 1) Vous choisissez votre destination et un chauffeur vérifié. 2) Vous payez pour réserver votre place via Mobile Money, carte bancaire ou en espèces chez nos partenaires. 3) Vous recevez un code de vérification unique après paiement. 4) Vous montrez ce code au chauffeur au moment du départ, ce qui valide le trajet et libère le paiement au chauffeur."
+          "answer": "PikDrive est une plateforme de covoiturage intercit�s au Cameroun qui fonctionne en 4 �tapes simples : 1) Vous choisissez votre destination et un chauffeur v�rifi�. 2) Vous effectuez un paiement instantan� via Mobile Money pour r�server votre place. 3) Vous recevez un code secret de v�rification unique apr�s paiement. 4) Vous donnez ce code secret au chauffeur une fois dans la voiture, ce qui valide le trajet et lib�re instantan�ment le paiement du chauffeur."
         },
         "howBook": {
           "question": "Comment réserver un trajet ?",
@@ -1689,4 +1689,7 @@
     "description": "Connectez-vous avec des chauffeurs de confiance pour des voyages intercités sûrs et abordables au Cameroun."
   }
 }
+
+
+
 
