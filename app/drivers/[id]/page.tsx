@@ -10,7 +10,7 @@ import {
   VehicleGallery,
 } from "@/components";
 import { RatingSummary, ReviewList } from "@/components/reviews";
-import { Button } from "@/components/ui";
+import { Button, Skeleton } from "@/components/ui";
 import { ArrowLeft, AlertCircle, MapPin } from "lucide-react";
 import Link from "next/link";
 import { driverApiClient } from "@/lib/api-client/driver";
@@ -98,9 +98,32 @@ export default function DriverProfilePage() {
   if (loading) {
     return (
       <div className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="flex flex-col justify-center items-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-          <p className="text-muted-foreground">{t("pages.driverProfile.loading")}</p>
+        <div className="mb-6">
+          <Skeleton className="h-10 w-40" />
+        </div>
+
+        <div className="space-y-8">
+          <div className="rounded-lg border p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Skeleton className="h-24 w-24 rounded-full" />
+              <div className="space-y-3 flex-1">
+                <Skeleton className="h-7 w-64 max-w-full" />
+                <Skeleton className="h-4 w-48 max-w-full" />
+                <Skeleton className="h-4 w-56 max-w-full" />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Skeleton className="h-28 w-full rounded-lg" />
+            <Skeleton className="h-28 w-full rounded-lg" />
+            <Skeleton className="h-28 w-full rounded-lg" />
+          </div>
+
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-56 w-full rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-12 w-64 mx-auto rounded-md" />
         </div>
       </div>
     );

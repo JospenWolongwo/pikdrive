@@ -1159,6 +1159,74 @@
           "goHome": "Retour à l'accueil"
         }
       },
+      "profile": {
+        "title": "Profil chauffeur",
+        "description": "Gerez votre profil chauffeur et les informations de votre vehicule.",
+        "tabs": {
+          "personal": "Infos personnelles",
+          "documents": "Documents",
+          "vehicle": "Vehicule"
+        },
+        "personal": {
+          "title": "Informations personnelles",
+          "description": "Mettez a jour vos informations personnelles et vos coordonnees."
+        },
+        "documents": {
+          "title": "Documents et permis",
+          "description": "Vos informations d'identite et de permis."
+        },
+        "vehicle": {
+          "title": "Informations du vehicule",
+          "description": "Details sur votre vehicule."
+        },
+        "fields": {
+          "fullName": "Nom complet",
+          "email": "Email",
+          "phone": "Telephone",
+          "city": "Ville",
+          "nationalIdNumber": "Numero de CNI",
+          "licenseNumber": "Numero de permis de conduire",
+          "insuranceNumber": "Numero de police d'assurance",
+          "roadTaxNumber": "Numero de vignette",
+          "technicalInspectionNumber": "Numero de visite technique",
+          "vehicleMake": "Marque du vehicule",
+          "vehicleModel": "Modele du vehicule",
+          "vehicleYear": "Annee du vehicule",
+          "vehicleColor": "Couleur du vehicule",
+          "registrationNumber": "Numero d'immatriculation"
+        },
+        "placeholders": {
+          "selectCity": "Selectionnez une ville",
+          "searchCity": "Rechercher des villes..."
+        },
+        "actions": {
+          "save": "Sauvegarder les modifications",
+          "saving": "Sauvegarde..."
+        },
+        "toast": {
+          "errorTitle": "Erreur",
+          "loadError": "Impossible de charger votre profil. Veuillez reessayer.",
+          "updatedTitle": "Profil mis a jour",
+          "updatedDescription": "Votre profil chauffeur a ete mis a jour avec succes.",
+          "updateError": "Impossible de mettre a jour votre profil. Veuillez reessayer."
+        },
+        "validation": {
+          "fullNameMin": "Le nom doit contenir au moins 2 caracteres",
+          "emailInvalid": "Adresse email invalide",
+          "phoneMin": "Le numero de telephone doit contenir au moins 10 chiffres",
+          "cityRequired": "La ville est requise",
+          "nationalIdRequired": "Le numero de CNI est requis",
+          "licenseRequired": "Le numero de permis est requis",
+          "registrationRequired": "Le numero d'immatriculation est requis",
+          "insuranceRequired": "Le numero d'assurance est requis",
+          "roadTaxRequired": "Le numero de vignette est requis",
+          "technicalInspectionRequired": "Le numero de visite technique est requis",
+          "vehicleMakeRequired": "La marque du vehicule est requise",
+          "vehicleModelRequired": "Le modele du vehicule est requis",
+          "vehicleYearRequired": "L'annee du vehicule est requise",
+          "vehicleColorRequired": "La couleur du vehicule est requise"
+        }
+      },
       "codeVerification": {
         "enterCode": "Veuillez entrer le code de vérification complet à 6 caractères",
         "verificationFailed": "Échec de la vérification",

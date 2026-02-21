@@ -1159,6 +1159,74 @@
           "goHome": "Go Home"
         }
       },
+      "profile": {
+        "title": "Driver Profile",
+        "description": "Manage your driver profile and vehicle information.",
+        "tabs": {
+          "personal": "Personal Info",
+          "documents": "Documents",
+          "vehicle": "Vehicle"
+        },
+        "personal": {
+          "title": "Personal Information",
+          "description": "Update your personal information and contact details."
+        },
+        "documents": {
+          "title": "Documents & Licenses",
+          "description": "Your identification and license information."
+        },
+        "vehicle": {
+          "title": "Vehicle Information",
+          "description": "Details about your vehicle."
+        },
+        "fields": {
+          "fullName": "Full Name",
+          "email": "Email",
+          "phone": "Phone",
+          "city": "City",
+          "nationalIdNumber": "National ID Number",
+          "licenseNumber": "Driver's License Number",
+          "insuranceNumber": "Insurance Policy Number",
+          "roadTaxNumber": "Road Tax Number",
+          "technicalInspectionNumber": "Technical Inspection Number",
+          "vehicleMake": "Vehicle Make",
+          "vehicleModel": "Vehicle Model",
+          "vehicleYear": "Vehicle Year",
+          "vehicleColor": "Vehicle Color",
+          "registrationNumber": "Vehicle Registration Number"
+        },
+        "placeholders": {
+          "selectCity": "Select a city",
+          "searchCity": "Search cities..."
+        },
+        "actions": {
+          "save": "Save Changes",
+          "saving": "Saving..."
+        },
+        "toast": {
+          "errorTitle": "Error",
+          "loadError": "Could not load your profile. Please try again.",
+          "updatedTitle": "Profile Updated",
+          "updatedDescription": "Your driver profile has been updated successfully.",
+          "updateError": "Could not update your profile. Please try again."
+        },
+        "validation": {
+          "fullNameMin": "Name must be at least 2 characters",
+          "emailInvalid": "Invalid email address",
+          "phoneMin": "Phone number must be at least 10 digits",
+          "cityRequired": "City is required",
+          "nationalIdRequired": "National ID is required",
+          "licenseRequired": "License number is required",
+          "registrationRequired": "Vehicle registration is required",
+          "insuranceRequired": "Insurance number is required",
+          "roadTaxRequired": "Road tax number is required",
+          "technicalInspectionRequired": "Technical inspection number is required",
+          "vehicleMakeRequired": "Vehicle make is required",
+          "vehicleModelRequired": "Vehicle model is required",
+          "vehicleYearRequired": "Vehicle year is required",
+          "vehicleColorRequired": "Vehicle color is required"
+        }
+      },
       "codeVerification": {
         "enterCode": "Please enter the complete 6-character verification code",
         "verificationFailed": "Verification failed",

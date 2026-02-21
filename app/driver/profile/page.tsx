@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { useLocale } from "@/hooks";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -15,7 +16,6 @@ import {
   CardTitle,
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -27,40 +27,46 @@ import {
   TabsList,
   TabsTrigger,
   AvatarUpload,
-  Separator,
-  Badge,
   SearchableSelect,
+  Skeleton,
 } from "@/components/ui";
-import { Car, FileText, Shield, User } from "lucide-react";
+import { Car, User } from "lucide-react";
 import { allCameroonCities } from "@/app/data/cities";
 
-const driverProfileSchema = z.object({
-  full_name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  city: z.string().min(2, "City is required"),
-  national_id_number: z.string().min(1, "National ID is required"),
-  license_number: z.string().min(1, "License number is required"),
-  registration_number: z.string().min(1, "Vehicle registration is required"),
-  insurance_number: z.string().min(1, "Insurance number is required"),
-  road_tax_number: z.string().min(1, "Road tax number is required"),
-  technical_inspection_number: z
-    .string()
-    .min(1, "Technical inspection number is required"),
-  vehicle_make: z.string().min(1, "Vehicle make is required"),
-  vehicle_model: z.string().min(1, "Vehicle model is required"),
-  vehicle_year: z.string().min(4, "Vehicle year is required"),
-  vehicle_color: z.string().min(1, "Vehicle color is required"),
-});
+const createDriverProfileSchema = (t: (key: string) => string) =>
+  z.object({
+    full_name: z
+      .string()
+      .min(2, t("pages.driver.profile.validation.fullNameMin")),
+    email: z.string().email(t("pages.driver.profile.validation.emailInvalid")),
+    phone: z
+      .string()
+      .min(10, t("pages.driver.profile.validation.phoneMin")),
+    city: z.string().min(2, t("pages.driver.profile.validation.cityRequired")),
+    vehicle_make: z
+      .string()
+      .min(1, t("pages.driver.profile.validation.vehicleMakeRequired")),
+    vehicle_model: z
+      .string()
+      .min(1, t("pages.driver.profile.validation.vehicleModelRequired")),
+    vehicle_year: z
+      .string()
+      .min(4, t("pages.driver.profile.validation.vehicleYearRequired")),
+    vehicle_color: z
+      .string()
+      .min(1, t("pages.driver.profile.validation.vehicleColorRequired")),
+  });
 
-type DriverProfileValues = z.infer<typeof driverProfileSchema>;
+type DriverProfileValues = z.infer<ReturnType<typeof createDriverProfileSchema>>;
 
 export default function DriverProfilePage() {
   const router = useRouter();
   const { supabase, user } = useSupabase();
-  const [loading, setLoading] = useState(true);
+  const { t } = useLocale();
+  const driverProfileSchema = createDriverProfileSchema(t);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [vehicleImages, setVehicleImages] = useState<string[]>([]);
 
   const form = useForm<DriverProfileValues>({
     resolver: zodResolver(driverProfileSchema),
@@ -69,12 +75,6 @@ export default function DriverProfilePage() {
       email: "",
       phone: "",
       city: "",
-      national_id_number: "",
-      license_number: "",
-      registration_number: "",
-      insurance_number: "",
-      road_tax_number: "",
-      technical_inspection_number: "",
       vehicle_make: "",
       vehicle_model: "",
       vehicle_year: "",
@@ -109,15 +109,6 @@ export default function DriverProfilePage() {
           email: profile.email || "",
           phone: profile.phone || "",
           city: profile.city || "",
-          national_id_number:
-            profile.driver_documents?.national_id_number || "",
-          license_number: profile.driver_documents?.license_number || "",
-          registration_number:
-            profile.driver_documents?.registration_number || "",
-          insurance_number: profile.driver_documents?.insurance_number || "",
-          road_tax_number: profile.driver_documents?.road_tax_number || "",
-          technical_inspection_number:
-            profile.driver_documents?.technical_inspection_number || "",
           vehicle_make: profile.driver_documents?.vehicle_make || "",
           vehicle_model: profile.driver_documents?.vehicle_model || "",
           vehicle_year: profile.driver_documents?.vehicle_year || "",
@@ -125,25 +116,24 @@ export default function DriverProfilePage() {
         });
 
         setAvatarUrl(profile.avatar_url);
-        setVehicleImages(profile.driver_documents?.vehicle_images || []);
       } catch (error) {
         console.error("Error loading profile:", error);
         toast({
-          title: "Error",
-          description: "Could not load your profile. Please try again.",
+          title: t("pages.driver.profile.toast.errorTitle"),
+          description: t("pages.driver.profile.toast.loadError"),
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        setIsInitialLoading(false);
       }
     };
 
     loadProfile();
-  }, [user, router, supabase, form]);
+  }, [user, router, supabase, form, t]);
 
   const onSubmit = async (values: DriverProfileValues) => {
     try {
-      setLoading(true);
+      setIsSaving(true);
 
       // Update profile
       const { error: profileError } = await supabase
@@ -163,12 +153,6 @@ export default function DriverProfilePage() {
       const { error: documentsError } = await supabase
         .from("driver_documents")
         .update({
-          national_id_number: values.national_id_number,
-          license_number: values.license_number,
-          registration_number: values.registration_number,
-          insurance_number: values.insurance_number,
-          road_tax_number: values.road_tax_number,
-          technical_inspection_number: values.technical_inspection_number,
           vehicle_make: values.vehicle_make,
           vehicle_model: values.vehicle_model,
           vehicle_year: values.vehicle_year,
@@ -180,39 +164,81 @@ export default function DriverProfilePage() {
       if (documentsError) throw documentsError;
 
       toast({
-        title: "Profile Updated",
-        description: "Your driver profile has been updated successfully.",
+        title: t("pages.driver.profile.toast.updatedTitle"),
+        description: t("pages.driver.profile.toast.updatedDescription"),
       });
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
-        title: "Error",
-        description: "Could not update your profile. Please try again.",
+        title: t("pages.driver.profile.toast.errorTitle"),
+        description: t("pages.driver.profile.toast.updateError"),
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  if (loading) {
-    return <div className="container py-10">Loading...</div>;
+  if (isInitialLoading) {
+    return (
+      <div className="container max-w-4xl py-10">
+        <div className="mb-8 space-y-3">
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-5 w-96 max-w-full" />
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+
+          <Card>
+            <CardHeader className="space-y-3">
+              <Skeleton className="h-6 w-64" />
+              <Skeleton className="h-4 w-96 max-w-full" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-center">
+                <Skeleton className="h-[150px] w-[150px] rounded-full" />
+              </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container max-w-4xl py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Driver Profile</h1>
+        <h1 className="text-3xl font-bold">
+          {t("pages.driver.profile.title")}
+        </h1>
         <p className="text-muted-foreground mt-2">
-          Manage your driver profile and vehicle information.
+          {t("pages.driver.profile.description")}
         </p>
       </div>
 
       <Tabs defaultValue="personal" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="personal">Personal Info</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="vehicle">Vehicle</TabsTrigger>
+          <TabsTrigger value="personal">
+            {t("pages.driver.profile.tabs.personal")}
+          </TabsTrigger>
+          <TabsTrigger value="vehicle">
+            {t("pages.driver.profile.tabs.vehicle")}
+          </TabsTrigger>
         </TabsList>
 
         <Form {...form}>
@@ -222,10 +248,10 @@ export default function DriverProfilePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="w-5 h-5" />
-                    Personal Information
+                    {t("pages.driver.profile.personal.title")}
                   </CardTitle>
                   <CardDescription>
-                    Update your personal information and contact details.
+                    {t("pages.driver.profile.personal.description")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -243,7 +269,9 @@ export default function DriverProfilePage() {
                       name="full_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.fullName")}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -256,7 +284,9 @@ export default function DriverProfilePage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.email")}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} type="email" />
                           </FormControl>
@@ -269,7 +299,9 @@ export default function DriverProfilePage() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.phone")}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} type="tel" />
                           </FormControl>
@@ -282,98 +314,21 @@ export default function DriverProfilePage() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.city")}
+                          </FormLabel>
                           <FormControl>
                             <SearchableSelect
                               options={allCameroonCities}
                               value={field.value}
                               onValueChange={field.onChange}
-                              placeholder="Select a city"
-                              searchPlaceholder="Search cities..."
+                              placeholder={t(
+                                "pages.driver.profile.placeholders.selectCity"
+                              )}
+                              searchPlaceholder={t(
+                                "pages.driver.profile.placeholders.searchCity"
+                              )}
                             />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="documents">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Documents & Licenses
-                  </CardTitle>
-                  <CardDescription>
-                    Your identification and license information.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="national_id_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>National ID Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="license_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Driver's License Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="insurance_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Insurance Policy Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="road_tax_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Road Tax Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="technical_inspection_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Technical Inspection Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -389,9 +344,11 @@ export default function DriverProfilePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Car className="w-5 h-5" />
-                    Vehicle Information
+                    {t("pages.driver.profile.vehicle.title")}
                   </CardTitle>
-                  <CardDescription>Details about your vehicle.</CardDescription>
+                  <CardDescription>
+                    {t("pages.driver.profile.vehicle.description")}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid gap-6 md:grid-cols-2">
@@ -400,7 +357,9 @@ export default function DriverProfilePage() {
                       name="vehicle_make"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Vehicle Make</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.vehicleMake")}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -413,7 +372,9 @@ export default function DriverProfilePage() {
                       name="vehicle_model"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Vehicle Model</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.vehicleModel")}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -426,7 +387,9 @@ export default function DriverProfilePage() {
                       name="vehicle_year"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Vehicle Year</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.vehicleYear")}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -439,20 +402,9 @@ export default function DriverProfilePage() {
                       name="vehicle_color"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Vehicle Color</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="registration_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Vehicle Registration Number</FormLabel>
+                          <FormLabel>
+                            {t("pages.driver.profile.fields.vehicleColor")}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -466,8 +418,10 @@ export default function DriverProfilePage() {
             </TabsContent>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
+              <Button type="submit" disabled={isSaving}>
+                {isSaving
+                  ? t("pages.driver.profile.actions.saving")
+                  : t("pages.driver.profile.actions.save")}
               </Button>
             </div>
           </form>
