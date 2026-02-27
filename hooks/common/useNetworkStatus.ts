@@ -12,16 +12,13 @@ interface NetworkStatusState {
   lastChangedAt: number | null;
 }
 
-const getInitialOnline = (fallback: boolean) => {
-  if (typeof navigator === "undefined") return fallback;
-  return navigator.onLine;
-};
-
 export function useNetworkStatus(options: NetworkStatusOptions = {}) {
   const { initialOnline = true, onStatusChange } = options;
 
   const [state, setState] = useState<NetworkStatusState>(() => ({
-    isOnline: getInitialOnline(initialOnline),
+    // Keep initial value deterministic between SSR and first client render.
+    // Real browser online/offline status is synchronized in useEffect.
+    isOnline: initialOnline,
     lastChangedAt: null,
   }));
 

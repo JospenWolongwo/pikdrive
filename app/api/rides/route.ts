@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: result.data,
       pagination: result.pagination,
+      search_metadata: result.search_metadata,
     });
   } catch (error) {
     console.error("Error in rides GET:", error);

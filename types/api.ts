@@ -5,6 +5,14 @@ export interface ApiResponse<T = any> {
   readonly message?: string;
 }
 
+export interface RideSearchMetadata {
+  readonly match_type: "exact" | "corridor_fallback";
+  readonly requested_from_city?: string;
+  readonly requested_to_city?: string;
+  readonly fallback_to_cities?: string[];
+  readonly notice_key?: string;
+}
+
 export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
   readonly pagination: {
     readonly page: number;
@@ -12,6 +20,7 @@ export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
     readonly total: number;
     readonly total_pages: number;
   };
+  readonly search_metadata?: RideSearchMetadata;
 }
 
 export interface ApiError {

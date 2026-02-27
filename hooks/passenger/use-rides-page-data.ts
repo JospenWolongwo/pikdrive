@@ -7,6 +7,7 @@ import { mapUnreadCountsByRideId } from "@/lib/utils/unread-counts";
 import { subscribeToNewRides } from "@/lib/services/client/rides";
 import type { RideFilters } from "./use-ride-filters";
 import type { UnreadCounts } from "@/lib/utils/unread-counts";
+import type { RideSearchMetadata } from "@/types";
 
 interface UseRidesPageDataReturn {
   loading: boolean;
@@ -15,6 +16,7 @@ interface UseRidesPageDataReturn {
     page: number;
     totalPages: number;
   };
+  searchMetadata: RideSearchMetadata | null;
   unreadCounts: UnreadCounts;
   loadRides: (filters?: Partial<RideFilters>, page?: number) => Promise<void>;
   currentPage: number;
@@ -33,6 +35,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     allRides,
     allRidesLoading,
     allRidesPagination,
+    allRidesSearchMetadata,
     searchRides,
     refreshAllRides,
     lastAllRidesFetch,
@@ -106,7 +109,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
         });
       }
     },
-    [currentPage, searchRides, refreshAllRides, allRidesPagination, toast]
+    [currentPage, searchRides, refreshAllRides, toast]
   );
 
   useEffect(() => {
@@ -170,7 +173,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     if (user?.id && fetchUserBookings) {
       fetchUserBookings(user.id); // Preload for instant modal
     }
-  }, [user?.id]);
+  }, [user?.id, fetchUserBookings]);
 
   return {
     loading: allRidesLoading,
@@ -179,6 +182,7 @@ export function useRidesPageData(): UseRidesPageDataReturn {
       page: currentPage,
       totalPages,
     },
+    searchMetadata: allRidesSearchMetadata,
     unreadCounts,
     loadRides,
     currentPage,
@@ -186,4 +190,3 @@ export function useRidesPageData(): UseRidesPageDataReturn {
     itemsPerPage: ITEMS_PER_PAGE,
   };
 }
-

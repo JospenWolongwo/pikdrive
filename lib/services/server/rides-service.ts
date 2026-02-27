@@ -12,6 +12,7 @@ import {
 } from './enrich-ride-pickup-point-names';
 import { validateAndProcessPickupPoints } from './validate-ride-pickup-points';
 import { getAvatarUrl } from '@/lib/utils/avatar-url';
+import { getCorridorFallbackDestinations } from './route-corridors';
 
 /** Thrown by API-oriented methods; route handlers map statusCode to HTTP status */
 export class RideApiError extends Error {
@@ -51,67 +52,101 @@ export class ServerRidesService {
     const limit = params?.limit || 10;
     const offset = (page - 1) * limit;
 
-    let query = this.supabase
-      .from('rides')
-      .select(`
-        *,
-        driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url),
-        bookings(id, seats, status, payment_status)
-      `)
-      .eq('status', 'active')
-      .order('departure_time', { ascending: true });
+    const fromCity = params?.from_city && params.from_city !== 'any' ? params.from_city : undefined;
+    const requestedToCity = params?.to_city && params.to_city !== 'any' ? params.to_city : undefined;
 
-    // Apply filters
-    if (params?.driver_id) {
-      query = query.eq('driver_id', params.driver_id);
-    }
-    if (params?.from_city && params.from_city !== 'any') {
-      query = query.eq('from_city', params.from_city);
-    }
-    if (params?.to_city && params.to_city !== 'any') {
-      query = query.eq('to_city', params.to_city);
-    }
-    if (params?.min_price) {
-      query = query.gte('price', params.min_price);
-    }
-    if (params?.max_price) {
-      query = query.lte('price', params.max_price);
-    }
-    if (params?.min_seats) {
-      query = query.gte('seats_available', params.min_seats);
-    }
-    if (params?.upcoming) {
-      query = query.gt('departure_time', new Date().toISOString());
-    }
+    const buildRidesQuery = (toCities?: readonly string[]) => {
+      let query = this.supabase
+        .from('rides')
+        .select(`
+          *,
+          driver:profiles!rides_driver_id_fkey(id, full_name, avatar_url),
+          bookings(id, seats, status, payment_status)
+        `)
+        .eq('status', 'active')
+        .order('departure_time', { ascending: true });
 
-    // Get total count
-    let countQuery = this.supabase
-      .from('rides')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'active');
+      if (params?.driver_id) query = query.eq('driver_id', params.driver_id);
+      if (fromCity) query = query.eq('from_city', fromCity);
+      if (toCities && toCities.length > 0) {
+        query = toCities.length === 1 ? query.eq('to_city', toCities[0]) : query.in('to_city', [...toCities]);
+      }
+      if (params?.min_price) query = query.gte('price', params.min_price);
+      if (params?.max_price) query = query.lte('price', params.max_price);
+      if (params?.min_seats) query = query.gte('seats_available', params.min_seats);
+      if (params?.upcoming) query = query.gt('departure_time', new Date().toISOString());
 
-    // Apply same filters to count query
-    if (params?.driver_id) countQuery = countQuery.eq('driver_id', params.driver_id);
-    if (params?.from_city && params.from_city !== 'any') countQuery = countQuery.eq('from_city', params.from_city);
-    if (params?.to_city && params.to_city !== 'any') countQuery = countQuery.eq('to_city', params.to_city);
-    if (params?.min_price) countQuery = countQuery.gte('price', params.min_price);
-    if (params?.max_price) countQuery = countQuery.lte('price', params.max_price);
-    if (params?.min_seats) countQuery = countQuery.gte('seats_available', params.min_seats);
-    if (params?.upcoming) countQuery = countQuery.gt('departure_time', new Date().toISOString());
+      return query;
+    };
 
-    const { count, error: countError } = await countQuery;
+    const buildCountQuery = (toCities?: readonly string[]) => {
+      let query = this.supabase
+        .from('rides')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
 
+      if (params?.driver_id) query = query.eq('driver_id', params.driver_id);
+      if (fromCity) query = query.eq('from_city', fromCity);
+      if (toCities && toCities.length > 0) {
+        query = toCities.length === 1 ? query.eq('to_city', toCities[0]) : query.in('to_city', [...toCities]);
+      }
+      if (params?.min_price) query = query.gte('price', params.min_price);
+      if (params?.max_price) query = query.lte('price', params.max_price);
+      if (params?.min_seats) query = query.gte('seats_available', params.min_seats);
+      if (params?.upcoming) query = query.gt('departure_time', new Date().toISOString());
+
+      return query;
+    };
+
+    let activeToCities: string[] | undefined = requestedToCity ? [requestedToCity] : undefined;
+    let matchType: 'exact' | 'corridor_fallback' = 'exact';
+    let fallbackToCities: string[] = [];
+
+    let countQuery = buildCountQuery(activeToCities);
+    let { count, error: countError } = await countQuery;
     if (countError) {
       throw new Error(`Failed to get ride count: ${countError.message}`);
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
-
-    const { data: rides, error: ridesError } = await query;
-
+    let { data: rides, error: ridesError } = await buildRidesQuery(activeToCities).range(offset, offset + limit - 1);
     if (ridesError) {
       throw new Error(`Failed to fetch rides: ${ridesError.message}`);
+    }
+
+    if (
+      (!rides || rides.length === 0) &&
+      fromCity &&
+      requestedToCity
+    ) {
+      fallbackToCities = getCorridorFallbackDestinations(fromCity, requestedToCity);
+      if (fallbackToCities.length > 0) {
+        activeToCities = fallbackToCities;
+        matchType = 'corridor_fallback';
+
+        countQuery = buildCountQuery(activeToCities);
+        ({ count, error: countError } = await countQuery);
+        if (countError) {
+          throw new Error(`Failed to get ride count: ${countError.message}`);
+        }
+
+        ({ data: rides, error: ridesError } = await buildRidesQuery(activeToCities).range(offset, offset + limit - 1));
+        if (ridesError) {
+          throw new Error(`Failed to fetch rides: ${ridesError.message}`);
+        }
+
+        if (rides && rides.length > 1) {
+          const fallbackOrder = new Map(
+            fallbackToCities.map((city, index) => [city.toLowerCase(), index])
+          );
+
+          rides = [...rides].sort((a: any, b: any) => {
+            const aOrder = fallbackOrder.get((a.to_city || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+            const bOrder = fallbackOrder.get((b.to_city || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            return new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime();
+          });
+        }
+      }
     }
 
     // Fetch vehicle images for all drivers
@@ -170,6 +205,15 @@ export class ServerRidesService {
         total: count || 0,
         total_pages: totalPages,
       },
+      search_metadata: requestedToCity
+        ? {
+            match_type: matchType,
+            requested_from_city: fromCity,
+            requested_to_city: requestedToCity,
+            fallback_to_cities: matchType === 'corridor_fallback' ? fallbackToCities : [],
+            notice_key: matchType === 'corridor_fallback' ? 'pages.rides.fallbackNotice' : undefined,
+          }
+        : undefined,
     };
   }
 

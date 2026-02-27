@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useLocale } from "@/hooks";
-import { Card, CardContent, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, Skeleton } from "@/components/ui";
+import { Alert, AlertDescription, AlertTitle, Card, CardContent, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, Skeleton } from "@/components/ui";
 import { BookingModal } from "./booking-modal";
 import {
   ChatDialog,
@@ -27,6 +27,7 @@ export default function RidesPage() {
     loading,
     rides,
     pagination,
+    searchMetadata,
     unreadCounts,
     loadRides,
     currentPage,
@@ -87,6 +88,11 @@ export default function RidesPage() {
   );
 
   const RIDE_CARD_SKELETON_COUNT = 6;
+  const fallbackTitle = t("pages.rides.fallbackNotice.title");
+  const fallbackDescription = t("pages.rides.fallbackNotice.description", {
+    requestedFromCity: searchMetadata?.requested_from_city || "",
+    requestedToCity: searchMetadata?.requested_to_city || "",
+  });
 
   return (
     <div className="container py-6 space-y-6 relative">
@@ -137,18 +143,26 @@ export default function RidesPage() {
         ) : rides.length === 0 ? (
           <RidesEmptyState hasFilters={hasFilters} />
         ) : (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {sortedRides.map((ride, index) => (
-              <PassengerRideCard
-                key={ride.id}
-                ride={ride}
-                index={index}
-                unreadCount={unreadCounts[ride.id] || 0}
-                user={user}
-                onBookingClick={handleBooking}
-                onChatClick={handleOpenChat}
-              />
-            ))}
+          <div className="space-y-4">
+            {searchMetadata?.match_type === "corridor_fallback" && (
+              <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+                <AlertTitle>{fallbackTitle}</AlertTitle>
+                <AlertDescription>{fallbackDescription}</AlertDescription>
+              </Alert>
+            )}
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {sortedRides.map((ride, index) => (
+                <PassengerRideCard
+                  key={ride.id}
+                  ride={ride}
+                  index={index}
+                  unreadCount={unreadCounts[ride.id] || 0}
+                  user={user}
+                  onBookingClick={handleBooking}
+                  onChatClick={handleOpenChat}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

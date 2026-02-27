@@ -7,7 +7,8 @@ import type {
   RideWithDriver,
   CreateRideRequest, 
   UpdateRideRequest,
-  PaginatedResponse 
+  PaginatedResponse,
+  RideSearchMetadata,
 } from "@/types";
 import { ridesApiClient } from "@/lib/api-client/rides";
 import { ApiError } from "@/lib/api-client/error";
@@ -25,6 +26,7 @@ interface RidesState {
     total: number;
     total_pages: number;
   } | null;
+  allRidesSearchMetadata: RideSearchMetadata | null;
   /** Last page fetched for "all rides" (used to only auto-refresh on new ride when viewing page 1) */
   lastAllRidesPage: number;
   /** Whether the last fetch used search filters (used to avoid auto-refresh when user is filtering) */
@@ -136,6 +138,7 @@ type RidesPersistedState = Pick<
   RidesState,
   | "allRides"
   | "allRidesPagination"
+  | "allRidesSearchMetadata"
   | "lastAllRidesFetch"
   | "lastAllRidesPage"
   | "lastAllRidesHadFilters"
@@ -155,6 +158,7 @@ export const useRidesStore = create<RidesState>()(
     allRidesError: null,
     lastAllRidesFetch: null,
     allRidesPagination: null,
+    allRidesSearchMetadata: null,
     lastAllRidesPage: 1,
     lastAllRidesHadFilters: false,
     realTimeChannel: null,
@@ -199,6 +203,7 @@ export const useRidesStore = create<RidesState>()(
             allRidesLoading: false,
             allRidesError: null,
             allRidesPagination: response.pagination,
+            allRidesSearchMetadata: response.search_metadata || null,
             lastAllRidesFetch: now,
             lastAllRidesPage: params.page ?? 1,
             lastAllRidesHadFilters: false,
@@ -231,6 +236,7 @@ export const useRidesStore = create<RidesState>()(
           allRidesError: null,
           lastAllRidesFetch: null,
           allRidesPagination: null,
+          allRidesSearchMetadata: null,
         });
       },
       
@@ -623,6 +629,7 @@ export const useRidesStore = create<RidesState>()(
             allRidesLoading: false,
             allRidesError: null,
             allRidesPagination: response.pagination,
+            allRidesSearchMetadata: response.search_metadata || null,
             lastAllRidesPage: filters.page ?? 1,
             lastAllRidesHadFilters: true,
           });
@@ -661,6 +668,7 @@ export const useRidesStore = create<RidesState>()(
       partialize: (state) => ({
         allRides: trimArray(state.allRides, CACHE_LIMITS.allRides),
         allRidesPagination: state.allRidesPagination,
+        allRidesSearchMetadata: state.allRidesSearchMetadata,
         lastAllRidesFetch: state.lastAllRidesFetch,
         lastAllRidesPage: state.lastAllRidesPage,
         lastAllRidesHadFilters: state.lastAllRidesHadFilters,

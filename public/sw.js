@@ -109,8 +109,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Never cache Next.js build chunks with cache-first.
+  // Stale chunk responses cause hydration/chunk-load failures after deploys.
   if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(cacheFirst(request, SHELL_CACHE));
+    event.respondWith(fetch(request));
     return;
   }
 

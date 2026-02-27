@@ -1386,6 +1386,10 @@
         "withFilters": "Modifiez vos critères pour découvrir plus de trajets.",
         "withoutFilters": "Aucun trajet disponible pour le moment. Revenez bientôt !"
       },
+      "fallbackNotice": {
+        "title": "Trajets alternatifs dans le meme corridor",
+        "description": "Aucun trajet exact n'a ete trouve pour {requestedFromCity} vers {requestedToCity}. Ces trajets empruntent le meme corridor regional. Contactez le chauffeur pour confirmer votre ville exacte de depose avant de reserver."
+      },
       "rideCard": {
         "vehicle": "Véhicule",
         "notSpecified": "Non spécifié",
@@ -1758,6 +1762,8 @@
     "description": "Connectez-vous avec des chauffeurs de confiance pour des voyages intercités sûrs et abordables au Cameroun."
   }
 }
+
+
 
 
 
