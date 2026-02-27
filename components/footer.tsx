@@ -20,6 +20,16 @@ export function Footer() {
             <p className="text-sm text-muted-foreground">
               {t("footer.tagline")}
             </p>
+            <p className="text-xs text-muted-foreground">
+              <Link
+                href="https://pokygroup.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary"
+              >
+                {t("footer.company")}
+              </Link>
+            </p>
           </div>
 
           <div>

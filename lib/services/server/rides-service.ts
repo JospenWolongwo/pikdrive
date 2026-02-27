@@ -24,6 +24,8 @@ export class RideApiError extends Error {
   }
 }
 
+const MAX_RIDE_PRICE_FCFA = 6000;
+
 /**
  * Server-side RidesService for use in API routes
  * Uses direct Supabase client access (no HTTP calls)
@@ -320,6 +322,9 @@ export class ServerRidesService {
     ) {
       throw new RideApiError('Missing required fields', 400);
     }
+    if (rideData.price > MAX_RIDE_PRICE_FCFA) {
+      throw new RideApiError('Our price limit is 6000 FCFA per ride.', 400);
+    }
 
     let processedPickupPoints: { id: string; order: number; time_offset_minutes: number }[] | null = null;
     try {
@@ -378,6 +383,10 @@ export class ServerRidesService {
    * Create a new ride
    */
   async createRide(rideData: CreateRideRequest, driverId: string): Promise<Ride> {
+    if (rideData.price > MAX_RIDE_PRICE_FCFA) {
+      throw new Error('Our price limit is 6000 FCFA per ride.');
+    }
+
     const insertData: any = {
       driver_id: driverId,
       from_city: rideData.from_city,
@@ -472,6 +481,13 @@ export class ServerRidesService {
       .from('bookings')
       .select('id, seats, payment_status, selected_pickup_point_id')
       .eq('ride_id', rideId);
+
+    if (
+      updateData.price !== undefined &&
+      updateData.price > MAX_RIDE_PRICE_FCFA
+    ) {
+      throw new RideApiError('Our price limit is 6000 FCFA per ride.', 400);
+    }
 
     const hasBookings = Array.isArray(bookings) && bookings.length > 0;
     const hasPaidBookings =

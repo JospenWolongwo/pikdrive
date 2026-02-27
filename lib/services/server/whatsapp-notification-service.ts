@@ -59,6 +59,7 @@ export class ServerWhatsAppNotificationService {
     // Template variable count mapping
     const templateVariableCounts: Record<string, number> = {
       booking_confirmation_v2: 9, // passenger_name, route, departure_time, pickup_point_name, pickup_time, seats, amount, verification_code, driver_phone
+      booking_confirmation_v3: 9, // same variables as v2; content adds support contact line
       booking_confirmation: 9, // passenger_name, route, departure_time, pickup_point_name, pickup_time, seats, amount, verification_code, driver_phone
       payment_confirmed: 4, // passenger_name, amount, route, transaction_id
       driver_new_booking_v2: 8, // driver_name, passenger_name, route, seats, amount, pickup_point_name, pickup_time, passenger_phone
@@ -72,6 +73,7 @@ export class ServerWhatsAppNotificationService {
       driver_application_status_update: 4, // driver_name, status_label, updated_at, next_step
       review_request_passenger: 4, // passenger_name, driver_name, route, review_link
       review_request_driver: 4, // driver_name, passenger_name, route, review_link
+      share_pickdrive_promo_v1: 1, // share_link
     };
 
     const expectedCount = templateVariableCounts[templateName];

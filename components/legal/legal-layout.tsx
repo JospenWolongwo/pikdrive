@@ -100,7 +100,17 @@ export function LegalLayout({
               <h3 className="font-semibold mb-3">{t('legal.contact.title')}</h3>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>
-                  <strong>PikDrive</strong>
+                  <strong>
+                    PikDrive by{" "}
+                    <a
+                      href="https://pokygroup.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-primary"
+                    >
+                      POKY GROUP
+                    </a>
+                  </strong>
                 </p>
                 <p>{t('legal.contact.address')}: Douala Cameroon</p>
                 <p>
@@ -136,4 +146,3 @@ export function LegalLayout({
     </div>
   );
 }
-

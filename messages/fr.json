@@ -1558,8 +1558,8 @@
     "placeholder": "+237 6 XX XX XX XX",
     "validNumber": "Numéro de téléphone valide",
     "errors": {
-      "invalidMTN": "Veuillez entrer un numéro MTN valide (650-654, 677-683)",
-      "invalidOrange": "Veuillez entrer un numéro Orange valide (655-659, 679, 690-699)",
+      "invalidMTN": "Veuillez entrer un numéro MTN valide (650-654, 670-679, 680-684)",
+      "invalidOrange": "Veuillez entrer un numéro Orange valide (640, 653, 655-659, 679, 689, 690-699)",
       "invalidCameroon": "Veuillez entrer un numéro de téléphone camerounais valide"
     }
   },
@@ -1750,6 +1750,7 @@
   },
   "footer": {
     "tagline": "Découvrez le Cameroun, Ensemble",
+    "company": "PikDrive by POKY GROUP",
     "copyright": "{year} PikDrive. Tous droits réservés."
   },
   "metadata": {

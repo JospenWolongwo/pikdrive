@@ -46,7 +46,11 @@ const createFormSchema = (t: (key: string) => string) => z.object({
   departureTime: z.date({
     required_error: t("pages.driver.newRide.validation.departureTimeRequired"),
   }),
-  price: z.number().min(1, t("pages.driver.newRide.validation.priceRequired")).optional(),
+  price: z
+    .number()
+    .min(1, t("pages.driver.newRide.validation.priceRequired"))
+    .max(6000, "Our price limit is 6000 FCFA per ride.")
+    .optional(),
   seatsAvailable: z
     .number()
     .min(1, t("pages.driver.newRide.validation.seatsRequired"))

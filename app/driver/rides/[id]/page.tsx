@@ -167,9 +167,9 @@ export default function ManageRidePage({ params }: { params: { id: string } }) {
     price: z.string().refine(
       (val) => {
         const parsed = parseInt(val);
-        return !isNaN(parsed) && parsed > 0;
+        return !isNaN(parsed) && parsed > 0 && parsed <= 6000;
       },
-      { message: t("pages.driver.manageRide.validation.pricePositive") }
+      { message: "Our price limit is 6000 FCFA per ride." }
     ),
     seats: z.string().refine(
       (val) => {

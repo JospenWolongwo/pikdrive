@@ -116,22 +116,38 @@ export class ServerMultiChannelNotificationService {
     // Conditionally send WhatsApp (with fallback - OneSignal always succeeds)
     const whatsappEnabled = await this.shouldSendWhatsApp(data.userId, data.phoneNumber);
     const whatsappPromise = whatsappEnabled
-      ? this.whatsappService.sendTemplateMessage({
-          templateName: 'booking_confirmation_v2',
-          phoneNumber: data.phoneNumber!,
-          variables: [
-            data.passengerName,
-            data.route,
-            formatDate(data.departureTime),
-            data.pickupPointName || 'Point de départ',
-            data.pickupTime ? formatDate(data.pickupTime) : formatDate(data.departureTime),
-            data.seats.toString(),
-            formatAmount(data.amount),
-            data.verificationCode,
-            data.driverPhone || 'Non renseigné',
-          ],
-          language: 'fr',
-        }).catch(err => {
+      ? (async () => {
+          const confirmationResult = await this.whatsappService.sendTemplateMessage({
+            templateName: 'booking_confirmation_v2',
+            phoneNumber: data.phoneNumber!,
+            variables: [
+              data.passengerName,
+              data.route,
+              formatDate(data.departureTime),
+              data.pickupPointName || 'Point de départ',
+              data.pickupTime ? formatDate(data.pickupTime) : formatDate(data.departureTime),
+              data.seats.toString(),
+              formatAmount(data.amount),
+              data.verificationCode,
+              data.driverPhone || 'Non renseigné',
+            ],
+            language: 'fr',
+          });
+
+          // Send promo template immediately after passenger confirmation.
+          if (confirmationResult.success) {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pikdrive.com';
+            const shareLink = `${baseUrl}/?utm_source=whatsapp&utm_medium=template&utm_campaign=share_pickdrive_promo_v1`;
+            await this.whatsappService.sendTemplateMessage({
+              templateName: 'share_pickdrive_promo_v1',
+              phoneNumber: data.phoneNumber!,
+              variables: [shareLink],
+              language: 'fr',
+            });
+          }
+
+          return confirmationResult;
+        })().catch(err => {
           // Non-critical: WhatsApp failure doesn't block OneSignal
           console.error('[MULTI-CHANNEL] WhatsApp send failed (non-critical, OneSignal still sent):', err);
           return { success: false, error: err.message };

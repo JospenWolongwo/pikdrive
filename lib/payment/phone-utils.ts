@@ -61,30 +61,28 @@ export function removeCallingCode(phoneNumber: string): string | null {
 
 /**
  * Check if phone number belongs to Orange Money network
- * Orange numbers: 653 (sandbox testing), 655-659, 679, 689, 690-699
+ * Orange numbers: 640, 653 (sandbox testing), 655-659, 679, 685-689, 690-699
  * Note: 653 is used by PawaPay sandbox for Orange Money testing
  */
 export function isOrangePhoneNumber(phoneNumber: string): boolean {
   const formattedPhone = removeCallingCode(phoneNumber);
   if (!formattedPhone) return false;
 
-  // Orange pattern: 653 (sandbox), 655-659 (65[5-9]), 679, 689, 690-699 (69[0-9])
-  // Fixed: 679 should match as 67[7-9], and 69[0-9] pattern corrected
-  const regexOrange = /^6(53|5[5-9]|79|89|9[0-9])[0-9]{6}$/;
+  // Orange pattern: 640, 653 (sandbox), 655-659, 679, 685-689, 690-699
+  const regexOrange = /^6(40|53|5[5-9]|79|8[5-9]|9[0-9])[0-9]{6}$/;
   return regexOrange.test(formattedPhone);
 }
 
 /**
  * Check if phone number belongs to MTN network
- * MTN numbers: 650-654, 670, 677-683
+ * MTN numbers: 650-654, 670-679, 680-684, 685-689
  */
 export function isMTNPhoneNumber(phoneNumber: string): boolean {
   const formattedPhone = removeCallingCode(phoneNumber);
   if (!formattedPhone) return false;
 
-  // MTN pattern: 650-654 (65[0-4]), 670, 677-683 (67[7-9] and 68[0-3])
-  // Fixed: Added 670 to the pattern
-  const regexMTN = /^6(5[0-4]|70|7[7-9]|8[0-3])[0-9]{6}$/;
+  // MTN pattern: 650-654, 670-679, 680-684, 685-689
+  const regexMTN = /^6(5[0-4]|7[0-9]|8[0-9])[0-9]{6}$/;
   return regexMTN.test(formattedPhone);
 }
 
