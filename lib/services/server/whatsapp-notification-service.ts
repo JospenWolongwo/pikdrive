@@ -60,6 +60,7 @@ export class ServerWhatsAppNotificationService {
     const templateVariableCounts: Record<string, number> = {
       booking_confirmation_v2: 9, // passenger_name, route, departure_time, pickup_point_name, pickup_time, seats, amount, verification_code, driver_phone
       booking_confirmation_v3: 9, // same variables as v2; content adds support contact line
+      booking_confirmation_v4: 9, // same variables as v2/v3; latest Meta-approved booking confirmation template
       booking_confirmation: 9, // passenger_name, route, departure_time, pickup_point_name, pickup_time, seats, amount, verification_code, driver_phone
       payment_confirmed: 4, // passenger_name, amount, route, transaction_id
       driver_new_booking_v2: 8, // driver_name, passenger_name, route, seats, amount, pickup_point_name, pickup_time, passenger_phone
@@ -221,3 +222,4 @@ export class ServerWhatsAppNotificationService {
     throw error;
   }
 }
+

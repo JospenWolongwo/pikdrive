@@ -118,7 +118,7 @@ export class ServerMultiChannelNotificationService {
     const whatsappPromise = whatsappEnabled
       ? (async () => {
           const confirmationResult = await this.whatsappService.sendTemplateMessage({
-            templateName: 'booking_confirmation_v2',
+            templateName: 'booking_confirmation_v4',
             phoneNumber: data.phoneNumber!,
             variables: [
               data.passengerName,
@@ -816,3 +816,4 @@ export class ServerMultiChannelNotificationService {
     };
   }
 }
+
