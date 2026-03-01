@@ -53,7 +53,7 @@ export class ServerBookingCoreService {
       let reservationResult, reservationError;
 
       if (existingBooking) {
-        console.log('ðŸ” [BOOKING SERVICE] Updating booking:', {
+        console.log(' [BOOKING SERVICE] Updating booking:', {
           bookingId: existingBooking.id,
           oldSeats: existingBooking.seats,
           newSeats: params.seats,
@@ -67,7 +67,7 @@ export class ServerBookingCoreService {
             p_booking_id: existingBooking.id,
           }));
       } else {
-        console.log('ðŸ” [BOOKING SERVICE] Creating new booking');
+        console.log('[BOOKING SERVICE] Creating new booking');
 
         ({ data: reservationResult, error: reservationError } =
           await this.supabase.rpc('reserve_ride_seats', {
@@ -79,7 +79,7 @@ export class ServerBookingCoreService {
       }
 
       if (reservationError) {
-        console.error('âŒ Atomic seat reservation error:', reservationError);
+        console.error('Atomic seat reservation error:', reservationError);
         throw new Error(`Failed to reserve seats: ${reservationError.message}`);
       }
 
@@ -87,7 +87,7 @@ export class ServerBookingCoreService {
 
       if (!result?.success) {
         const errorMsg = result?.error_message || 'Failed to reserve seats';
-        console.error('âŒ Seat reservation failed:', errorMsg);
+        console.error('Seat reservation failed:', errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -95,7 +95,7 @@ export class ServerBookingCoreService {
         throw new Error('Booking created but no ID returned');
       }
 
-      console.log(`âœ… Seats ${existingBooking ? 'updated' : 'reserved'} atomically:`, {
+      console.log(`Seats ${existingBooking ? 'updated' : 'reserved'} atomically:`, {
         bookingId: result.booking_id,
         rideId: params.ride_id,
         seats: params.seats,
@@ -110,7 +110,7 @@ export class ServerBookingCoreService {
         .single();
 
       if (fetchError) {
-        console.error('âŒ Error fetching booking:', fetchError);
+        console.error('Error fetching booking:', fetchError);
         throw new Error(`Failed to fetch booking: ${fetchError.message}`);
       }
 
@@ -131,21 +131,41 @@ export class ServerBookingCoreService {
         }
       }
 
+      const bookingUpdatePayload: {
+        selected_pickup_point_id?: string | null;
+        pickup_point_name?: string | null;
+        pickup_time?: string | null;
+        dropoff_point_name?: string | null;
+        updated_at: string;
+      } = {
+        updated_at: new Date().toISOString(),
+      };
+
       if (pickupPointInfo) {
+        bookingUpdatePayload.selected_pickup_point_id =
+          params.selected_pickup_point_id || null;
+        bookingUpdatePayload.pickup_point_name =
+          pickupPointInfo.pickup_point_name || null;
+        bookingUpdatePayload.pickup_time = pickupPointInfo.pickup_time || null;
+      }
+
+      if (params.dropoff_point_name) {
+        bookingUpdatePayload.dropoff_point_name = params.dropoff_point_name;
+      }
+
+      const shouldUpdateBooking =
+        pickupPointInfo !== null || !!params.dropoff_point_name;
+
+      if (shouldUpdateBooking) {
         const { data: updatedBooking, error: updateError } = await this.supabase
           .from('bookings')
-          .update({
-            selected_pickup_point_id: params.selected_pickup_point_id || null,
-            pickup_point_name: pickupPointInfo.pickup_point_name || null,
-            pickup_time: pickupPointInfo.pickup_time || null,
-            updated_at: new Date().toISOString(),
-          })
+          .update(bookingUpdatePayload)
           .eq('id', result.booking_id)
           .select()
           .single();
 
         if (updateError) {
-          console.error('âŒ Error updating booking with pickup point:', updateError);
+          console.error('Error updating booking with pickup/dropoff point:', updateError);
         } else if (updatedBooking) {
           Object.assign(booking, updatedBooking);
         }
@@ -165,7 +185,7 @@ export class ServerBookingCoreService {
         booking.payment_status !== 'completed' &&
         booking.payment_status !== 'partial_refund'
       ) {
-        console.log('ðŸ”„ [BOOKING SERVICE] Reconciling booking with completed payment:', {
+        console.log('[BOOKING SERVICE] Reconciling booking with completed payment:', {
           bookingId: result.booking_id,
           paymentId: completedPayment.id,
           currentPaymentStatus: booking.payment_status,
@@ -185,11 +205,11 @@ export class ServerBookingCoreService {
 
         if (updateError) {
           console.error(
-            'âŒ [BOOKING SERVICE] Error reconciling booking payment status:',
+            '[BOOKING SERVICE] Error reconciling booking payment status:',
             updateError
           );
         } else {
-          console.log('âœ… [BOOKING SERVICE] Booking reconciled successfully:', {
+          console.log('[BOOKING SERVICE] Booking reconciled successfully:', {
             bookingId: result.booking_id,
             paymentStatus: updatedBooking?.payment_status,
             status: updatedBooking?.status,

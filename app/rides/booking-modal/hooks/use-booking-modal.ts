@@ -334,6 +334,7 @@ export function useBookingModal({
           user_id: user.id,
           seats: seats,
           selected_pickup_point_id: selectedPickupPointId,
+          dropoff_point_name: ride.to_city,
         },
         { refreshUserBookings: false }
       ); // Don't auto-refresh for performance

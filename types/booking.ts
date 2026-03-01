@@ -12,6 +12,7 @@ export interface Booking {
   readonly selected_pickup_point_id?: string;
   readonly pickup_point_name?: string;
   readonly pickup_time?: string;
+  readonly dropoff_point_name?: string;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -62,6 +63,7 @@ export interface CreateBookingRequest {
   readonly ride_id: string;
   readonly seats: number;
   readonly selected_pickup_point_id?: string;
+  readonly dropoff_point_name?: string;
 }
 
 export interface UpdateBookingRequest {
@@ -85,6 +87,7 @@ export interface DashboardBooking {
   readonly selected_pickup_point_id?: string;
   readonly pickup_point_name?: string;
   readonly pickup_time?: string;
+  readonly dropoff_point_name?: string;
   readonly user: {
     readonly id: string;
     readonly full_name: string;
@@ -104,6 +107,7 @@ export interface DriverBooking {
   readonly selected_pickup_point_id?: string;
   readonly pickup_point_name?: string;
   readonly pickup_time?: string;
+  readonly dropoff_point_name?: string;
   readonly user_id: string;
   readonly user: {
     readonly id: string;

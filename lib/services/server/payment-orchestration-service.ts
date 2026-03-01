@@ -126,7 +126,7 @@ export class ServerPaymentOrchestrationService {
       // Get booking with explicit columns (avoids PostgREST relationship cache issues)
       let { data: bookingData, error: bookingError } = await this.supabase
         .from('bookings')
-        .select('id, ride_id, user_id, seats, status, verification_code, created_at, pickup_point_name, pickup_time')
+        .select('id, ride_id, user_id, seats, status, verification_code, created_at, pickup_point_name, pickup_time, dropoff_point_name')
         .eq('id', payment.booking_id)
         .single();
 
@@ -142,7 +142,7 @@ export class ServerPaymentOrchestrationService {
         // Try fallback: Fetch booking without relations and manually fetch related data
         const { data: simpleBooking, error: simpleError } = await this.supabase
           .from('bookings')
-          .select('id, ride_id, user_id, seats, status, verification_code, created_at, pickup_point_name, pickup_time')
+          .select('id, ride_id, user_id, seats, status, verification_code, created_at, pickup_point_name, pickup_time, dropoff_point_name')
           .eq('id', payment.booking_id)
           .single();
           
@@ -214,6 +214,7 @@ export class ServerPaymentOrchestrationService {
         ...bookingData,
         pickup_point_name: bookingData.pickup_point_name,
         pickup_time: bookingData.pickup_time,
+        dropoff_point_name: bookingData.dropoff_point_name,
         ride: {
           ...rideData,
           driver: driverData
@@ -283,6 +284,7 @@ export class ServerPaymentOrchestrationService {
             departureTime: booking.ride.departure_time,
             pickupPointName: booking.pickup_point_name,
             pickupTime: booking.pickup_time,
+            dropoffPointName: booking.dropoff_point_name || booking.ride.to_city,
             seats: booking.seats,
             amount: payment.amount,
             verificationCode: actualCode,

@@ -60,6 +60,7 @@ export class ServerMultiChannelNotificationService {
     readonly departureTime: string;
     readonly pickupPointName?: string;
     readonly pickupTime?: string;
+    readonly dropoffPointName?: string;
     readonly seats: number;
     readonly amount: number;
     readonly verificationCode: string;
@@ -79,6 +80,7 @@ export class ServerMultiChannelNotificationService {
         minute: '2-digit',
       });
     };
+    const dropoffPointName = data.dropoffPointName || 'Destination';
 
     // Build OneSignal message
     let message = `Votre réservation pour ${data.route} est confirmée.\n`;
@@ -88,6 +90,7 @@ export class ServerMultiChannelNotificationService {
     if (data.pickupPointName && data.pickupTime) {
       message += `Point de ramassage: ${data.pickupPointName} à ${formatDate(data.pickupTime)}\n`;
     }
+    message += `Point de dépose: ${dropoffPointName}\n`;
     if (data.driverPhone) {
       message += `\n📞 Contact chauffeur: ${data.driverPhone}`;
     }
@@ -118,7 +121,7 @@ export class ServerMultiChannelNotificationService {
     const whatsappPromise = whatsappEnabled
       ? (async () => {
           const confirmationResult = await this.whatsappService.sendTemplateMessage({
-            templateName: 'booking_confirmation_v4',
+            templateName: 'booking_confirmation_v5',
             phoneNumber: data.phoneNumber!,
             variables: [
               data.passengerName,
@@ -126,6 +129,7 @@ export class ServerMultiChannelNotificationService {
               formatDate(data.departureTime),
               data.pickupPointName || 'Point de départ',
               data.pickupTime ? formatDate(data.pickupTime) : formatDate(data.departureTime),
+              dropoffPointName,
               data.seats.toString(),
               formatAmount(data.amount),
               data.verificationCode,
@@ -816,4 +820,3 @@ export class ServerMultiChannelNotificationService {
     };
   }
 }
-

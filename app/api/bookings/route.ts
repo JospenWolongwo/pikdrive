@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json();
-    const { ride_id, seats, selected_pickup_point_id } = body;
+    const { ride_id, seats, selected_pickup_point_id, dropoff_point_name } = body;
 
     if (!ride_id || !seats) {
       return NextResponse.json(
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       seats,
       selected_pickup_point_id: selected_pickup_point_id || undefined,
+      dropoff_point_name: dropoff_point_name || undefined,
     });
 
     return NextResponse.json({
