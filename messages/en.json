@@ -1387,8 +1387,8 @@
         "withoutFilters": "No rides available at the moment. Come back soon!"
       },
       "fallbackNotice": {
-        "title": "Alternative rides in the same corridor",
-        "description": "No exact ride was found for {requestedFromCity} to {requestedToCity}. These rides use the same regional corridor. Please contact the driver to confirm your exact drop-off city before booking."
+        "title": "Rides on the same route",
+        "description": "We could not find a direct ride from {requestedFromCity} to {requestedToCity}. The rides below pass along the same route. Before booking, please contact the driver to confirm your exact drop-off point."
       },
       "rideCard": {
         "vehicle": "Vehicle",

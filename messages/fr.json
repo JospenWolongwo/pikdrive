@@ -339,7 +339,7 @@
         "title": "Questions FrÃ©quentes",
         "howWorks": {
           "question": "Comment fonctionne PikDrive exactement ?",
-          "answer": "PikDrive est une plateforme de covoiturage intercités au Cameroun qui fonctionne en 4 étapes simples : 1) Vous choisissez votre destination et un chauffeur vérifié. 2) Vous effectuez un paiement instantané via Mobile Money pour réserver votre place. 3) Vous recevez un code secret de vérification unique après paiement. 4) Vous donnez ce code secret au chauffeur une fois dans la voiture, ce qui valide le trajet et libère instantanément le paiement du chauffeur."
+          "answer": "PikDrive est une plateforme de covoiturage intercitï¿½s au Cameroun qui fonctionne en 4 ï¿½tapes simples : 1) Vous choisissez votre destination et un chauffeur vï¿½rifiï¿½. 2) Vous effectuez un paiement instantanï¿½ via Mobile Money pour rï¿½server votre place. 3) Vous recevez un code secret de vï¿½rification unique aprï¿½s paiement. 4) Vous donnez ce code secret au chauffeur une fois dans la voiture, ce qui valide le trajet et libï¿½re instantanï¿½ment le paiement du chauffeur."
         },
         "howBook": {
           "question": "Comment rÃ©server un trajet ?",
@@ -1387,8 +1387,8 @@
         "withoutFilters": "Aucun trajet disponible pour le moment. Revenez bientÃ´t !"
       },
       "fallbackNotice": {
-        "title": "Trajets alternatifs dans le meme corridor",
-        "description": "Aucun trajet exact n'a ete trouve pour {requestedFromCity} vers {requestedToCity}. Ces trajets empruntent le meme corridor regional. Contactez le chauffeur pour confirmer votre ville exacte de depose avant de reserver."
+        "title": "Trajets sur le meme axe",
+        "description": "On n'a pas trouve de trajet direct pour {requestedFromCity} vers {requestedToCity}. Les trajets ci-dessous passent sur le meme axe. Avant de reserver, contactez le chauffeur pour confirmer votre point de descente exact."
       },
       "rideCard": {
         "vehicle": "VÃ©hicule",
