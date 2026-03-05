@@ -38,7 +38,11 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof BookingApiError) {
       return NextResponse.json(
-        { success: false, error: error.message },
+        {
+          success: false,
+          error: error.message,
+          errorCode: error.errorCode,
+        },
         { status: error.statusCode }
       );
     }

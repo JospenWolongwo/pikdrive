@@ -33,7 +33,7 @@ import {
   SearchableSelect,
 } from "@/components/ui";
 import { useToast } from "@/hooks/ui";
-import { PickupPointsSelectForm } from "@/components";
+import { DropoffPointSelectForm, PickupPointsSelectForm } from "@/components";
 import { useLocale, useCityPickupPoints, useNotificationPromptTrigger } from "@/hooks";
 import { ridesApiClient, ApiError } from "@/lib/api-client";
 import { cn, getCurrentTimeUTC, dateToUTCDate } from "@/lib/utils";
@@ -43,6 +43,7 @@ import type { CityPickupPoint, RidePickupPointInput, Ride, RideWithDetails } fro
 const createFormSchema = (t: (key: string) => string) => z.object({
   fromCity: z.string().min(1, t("pages.driver.newRide.validation.fromCityRequired")),
   toCity: z.string().min(1, t("pages.driver.newRide.validation.toCityRequired")),
+  dropoffPointId: z.string().min(1, t("pages.rides.booking.pickupPoint.required")),
   departureTime: z.date({
     required_error: t("pages.driver.newRide.validation.departureTimeRequired"),
   }),
@@ -87,6 +88,7 @@ export default function NewRidePage() {
     defaultValues: {
       fromCity: "",
       toCity: "",
+      dropoffPointId: "",
       price: undefined,
       seatsAvailable: undefined,
       carModel: "",
@@ -96,15 +98,25 @@ export default function NewRidePage() {
   });
 
   const [pickupPoints, setPickupPoints] = useState<RidePickupPointInput[]>([]);
+  const [dropoffPointId, setDropoffPointId] = useState("");
   const fromCity = form.watch("fromCity");
+  const toCity = form.watch("toCity");
   const { cityPickupPoints, loading: pickupPointsLoading } =
     useCityPickupPoints(fromCity ?? "");
+  const { cityPickupPoints: cityDropoffPoints, loading: dropoffPointsLoading } =
+    useCityPickupPoints(toCity ?? "");
 
   useEffect(() => {
     if (!fromCity?.trim()) return;
     setPickupPoints([]);
     form.setValue("pickupPoints", []);
   }, [fromCity, form]);
+
+  useEffect(() => {
+    if (!toCity?.trim()) return;
+    setDropoffPointId("");
+    form.setValue("dropoffPointId", "");
+  }, [toCity, form]);
 
   async function onSubmit(values: z.infer<ReturnType<typeof createFormSchema>>) {
     if (!user) {
@@ -164,9 +176,19 @@ export default function NewRidePage() {
         return;
       }
 
+      if (!values.dropoffPointId) {
+        toast({
+          title: t("common.error"),
+          description: t("pages.rides.booking.pickupPoint.required"),
+          variant: "destructive",
+        });
+        return;
+      }
+
       const result = await ridesApiClient.createRide({
         from_city: values.fromCity,
         to_city: values.toCity,
+        dropoff_point_id: values.dropoffPointId,
         departure_time: departureUTC.toISOString(),
         price: values.price,
         seats_available: values.seatsAvailable,
@@ -321,6 +343,28 @@ export default function NewRidePage() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="dropoffPointId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <DropoffPointSelectForm
+                        cityDropoffPoints={cityDropoffPoints}
+                        value={dropoffPointId}
+                        onChange={(selectedId) => {
+                          setDropoffPointId(selectedId);
+                          field.onChange(selectedId);
+                        }}
+                        error={form.formState.errors.dropoffPointId?.message}
+                        loading={dropoffPointsLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

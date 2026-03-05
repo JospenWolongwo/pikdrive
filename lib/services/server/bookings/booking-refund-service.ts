@@ -4,8 +4,11 @@ import { Environment as EnvEnum, FeatureFlag, PawaPayApiUrl } from '@/types/paym
 import type { Environment } from '@/types/payment-ext';
 import { BookingApiError } from './booking-errors';
 import { assertOwner } from './booking-helpers';
+import { ServerBookingPolicyService } from './booking-policy-service';
 
 export class ServerBookingRefundService {
+  private readonly policyService = new ServerBookingPolicyService();
+
   constructor(
     private supabase: SupabaseClient,
     private serviceSupabase?: SupabaseClient
@@ -33,7 +36,9 @@ export class ServerBookingRefundService {
 
     const { data: booking } = await this.supabase
       .from('bookings')
-      .select('id, user_id, seats, payment_status, code_verified, ride:ride_id(id, price)')
+      .select(
+        'id, user_id, seats, status, payment_status, code_verified, pickup_time, no_show_marked_at, ride:ride_id(id, price, departure_time)'
+      )
       .eq('id', bookingId)
       .single();
 
@@ -43,10 +48,49 @@ export class ServerBookingRefundService {
 
     assertOwner(booking as { user_id?: string }, userId);
 
+    const policy = this.policyService.evaluatePolicy({
+      status: booking.status,
+      payment_status: booking.payment_status,
+      code_verified: booking.code_verified,
+      pickup_time: booking.pickup_time,
+      departure_time: (booking.ride as { departure_time?: string } | null)?.departure_time,
+      no_show_marked_at: booking.no_show_marked_at,
+    });
+
+    if (policy?.blockReason === 'already_no_show') {
+      throw new BookingApiError(
+        'This booking was already recorded as not taken at pickup time.',
+        403
+      );
+    }
+
+    if (policy?.blockReason === 'finalized') {
+      throw new BookingApiError(
+        'This booking can no longer be changed in its current state.',
+        403
+      );
+    }
+
     if (booking.code_verified === true) {
       throw new BookingApiError(
         'Seat reduction is not allowed after the driver has verified the code and been paid. Your trip is confirmed.',
-        403
+        403,
+        'CODE_VERIFIED_NO_REDUCE'
+      );
+    }
+
+    if (policy && !policy.canReduceSeats && policy.blockReason === 'late_window') {
+      console.info('[BOOKING POLICY] Late seat reduction blocked', {
+        bookingId,
+        userId,
+        travelStartAt: policy.travelStartAt,
+        cancellationCutoffAt: policy.cancellationCutoffAt,
+      });
+
+      throw new BookingApiError(
+        'Seat changes are locked because this booking is already within 6 hours of pickup or departure.',
+        403,
+        'LATE_SEAT_REDUCTION_LOCKED'
       );
     }
 

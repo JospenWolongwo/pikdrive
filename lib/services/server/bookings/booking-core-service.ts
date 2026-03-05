@@ -26,7 +26,7 @@ export class ServerBookingCoreService {
     try {
       const { data: ride, error: rideError } = await this.supabase
         .from('rides')
-        .select('id, status')
+        .select('id, status, to_city, dropoff_point_name')
         .eq('id', params.ride_id)
         .maybeSingle();
 
@@ -149,12 +149,14 @@ export class ServerBookingCoreService {
         bookingUpdatePayload.pickup_time = pickupPointInfo.pickup_time || null;
       }
 
-      if (params.dropoff_point_name) {
-        bookingUpdatePayload.dropoff_point_name = params.dropoff_point_name;
-      }
+      bookingUpdatePayload.dropoff_point_name =
+        params.dropoff_point_name ||
+        (ride as { dropoff_point_name?: string | null })?.dropoff_point_name ||
+        (ride as { to_city?: string | null })?.to_city ||
+        null;
 
       const shouldUpdateBooking =
-        pickupPointInfo !== null || !!params.dropoff_point_name;
+        pickupPointInfo !== null || !!bookingUpdatePayload.dropoff_point_name;
 
       if (shouldUpdateBooking) {
         const { data: updatedBooking, error: updateError } = await this.supabase

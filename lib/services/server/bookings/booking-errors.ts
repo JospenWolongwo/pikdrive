@@ -2,7 +2,8 @@
 export class BookingApiError extends Error {
   constructor(
     message: string,
-    public readonly statusCode: number
+    public readonly statusCode: number,
+    public readonly errorCode?: string
   ) {
     super(message);
     this.name = 'BookingApiError';

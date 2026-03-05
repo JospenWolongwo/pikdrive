@@ -197,6 +197,11 @@ export function PassengerRideCard({
                     <p className="text-muted-foreground text-sm font-medium">
                       {t("pages.rides.rideCard.destinationPoint")}
                     </p>
+                    {ride.dropoff_point_name && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {ride.dropoff_point_name}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

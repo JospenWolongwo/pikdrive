@@ -862,6 +862,18 @@
           "description": "Here are the current bookings for this ride",
           "bookingId": "Booking #{id}",
           "status": "Status: {status}",
+          "markNoShow": "Mark no-show",
+          "confirmingNoShow": "Recording...",
+          "markNoShowTitle": "Record passenger no-show?",
+          "markNoShowDescription": "Use this only after the pickup grace period has passed and you have tried to reach the passenger.",
+          "confirmMarkNoShow": "Confirm no-show",
+          "contactAttempted": "I tried to contact the passenger before marking no-show.",
+          "noteLabel": "Note (optional)",
+          "notePlaceholder": "Add any useful context for support or follow-up.",
+          "noShowRecorded": "No-show recorded",
+          "noShowHelp": "This booking was closed as a passenger no-show. No refund or payout is created in this flow.",
+          "noShowSuccessTitle": "No-show recorded",
+          "noShowSuccessDescription": "The booking has been closed and the passenger has been notified.",
           "viewDetails": "View details",
           "noBookings": "No bookings found"
         },
@@ -1349,7 +1361,10 @@
           "tryAnotherMethodOrange": "Please try Orange Money instead.",
           "cancelAndTryAnother": "Cancel and try another method",
           "promptNoticeTitle": "Payment confirmation",
-          "promptNoticeBody": "You may receive a prompt to enter your PIN or confirm the payment."
+          "promptNoticeBody": "You may receive a prompt to enter your PIN or confirm the payment.",
+          "cancellationPolicyTitle": "Cancellation policy",
+          "cancellationPolicyBody": "Free cancellation and seat changes close at {cutoff}. Your travel start for this booking is {travelStart}.",
+          "existingPaidBookingPolicy": "If you already paid for seats on this ride, those seats stay protected and cannot be reduced after the cutoff."
         },
         "success": {
           "title": "Booking Successful!",
@@ -1465,10 +1480,18 @@
         "seatsReducedSuccessWithRefund": "{seatsRemoved} seat(s) removed. Refund of {amount} {currency} is being processed.",
         "refundProcessing": "Refund processing",
         "refundProcessingDescription": "Your refund is being processed and will be sent to your payment number shortly.",
+        "statusNoShow": "No-show recorded",
+        "freeChangesUntil": "Free cancellation and seat changes until {cutoff}.",
+        "lateWindowLockedTitle": "Booking changes are locked",
+        "lateWindowLockedDescription": "Self-service cancellation and seat changes closed at {cutoff}. Travel for this booking starts at {travelStart}.",
+        "lateWindowDriverFault": "If the driver cancels or does not show up, your refund will still be handled by PickDrive support.",
+        "noShowRecorded": "This booking was recorded as not taken at pickup time.",
         "tripConfirmedNoChanges": "Trip confirmed with driver. Cancellation and seat changes are no longer possible.",
         "errors": {
           "codeVerifiedNoCancel": "Cancellation is not allowed after the driver has verified your trip. Your booking is confirmed.",
-          "codeVerifiedNoReduce": "Seat changes are not allowed after the driver has verified your trip. Your booking is confirmed."
+          "codeVerifiedNoReduce": "Seat changes are not allowed after the driver has verified your trip. Your booking is confirmed.",
+          "lateCancellationLocked": "Cancellation is no longer available within 6 hours of pickup or departure.",
+          "lateSeatReductionLocked": "Seat changes are no longer available within 6 hours of pickup or departure."
         }
       },
       "verificationCode": {
@@ -1762,5 +1785,3 @@
     "description": "Connect with trusted drivers for safe and affordable intercity travel in Cameroon."
   }
 }
-
-

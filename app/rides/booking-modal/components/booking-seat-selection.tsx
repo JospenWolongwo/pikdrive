@@ -176,6 +176,11 @@ export function BookingSeatSelection({
               <span className="text-muted-foreground">→</span>
               <span className="font-medium">{ride.to_city}</span>
             </div>
+            {ride.dropoff_point_name && (
+              <p className="text-sm text-muted-foreground">
+                {t("pages.rides.rideCard.destinationPoint")}: {ride.dropoff_point_name}
+              </p>
+            )}
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <div className="flex items-center">
                 <Clock className="mr-1 h-4 w-4" />

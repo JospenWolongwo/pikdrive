@@ -9,6 +9,7 @@ import type {
 import type { BookingSearchParams } from './bookings/booking-types';
 import { BookingApiError } from './bookings/booking-errors';
 import { ServerBookingCoreService } from './bookings/booking-core-service';
+import { ServerBookingNoShowService } from './bookings/booking-no-show-service';
 import { ServerBookingVerificationService } from './bookings/booking-verification-service';
 import { ServerBookingRefundService } from './bookings/booking-refund-service';
 import { ServerBookingPayoutService } from './bookings/booking-payout-service';
@@ -25,6 +26,7 @@ export class ServerBookingService {
   private verificationService: ServerBookingVerificationService;
   private refundService: ServerBookingRefundService;
   private payoutService: ServerBookingPayoutService;
+  private noShowService: ServerBookingNoShowService;
 
   constructor(
     private supabase: SupabaseClient,
@@ -34,6 +36,7 @@ export class ServerBookingService {
     this.verificationService = new ServerBookingVerificationService(supabase);
     this.refundService = new ServerBookingRefundService(supabase, serviceSupabase);
     this.payoutService = new ServerBookingPayoutService(supabase);
+    this.noShowService = new ServerBookingNoShowService(supabase, serviceSupabase);
   }
 
   async createBooking(
@@ -124,5 +127,17 @@ export class ServerBookingService {
     paymentCount: number;
   }> {
     return this.payoutService.verifyCodeAndHandlePayout(params);
+  }
+
+  async markPassengerNoShow(params: {
+    bookingId: string;
+    driverId: string;
+    contactAttempted: boolean;
+    note?: string;
+  }): Promise<{
+    status: 'completed';
+    noShowMarkedAt: string;
+  }> {
+    return this.noShowService.markPassengerNoShow(params);
   }
 }

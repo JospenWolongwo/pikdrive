@@ -28,6 +28,11 @@ export interface BookingReduceSeatsResponse extends BookingApiResponse<void> {
   seatsRemoved?: number;
 }
 
+export interface BookingNoShowResponse extends BookingApiResponse<{
+  status: 'completed';
+  noShowMarkedAt: string;
+}> {}
+
 export interface BookingVerificationCodeResponse {
   success: boolean;
   verificationCode?: string | null;
@@ -118,6 +123,16 @@ export class BookingApiClient {
    */
   async reduceBookingSeats(bookingId: string, newSeats: number): Promise<BookingReduceSeatsResponse> {
     return apiClient.post(`/api/bookings/${bookingId}/reduce-seats`, { newSeats });
+  }
+
+  /**
+   * Record a passenger no-show (driver only)
+   */
+  async markBookingNoShow(
+    bookingId: string,
+    params: { contactAttempted: boolean; note?: string }
+  ): Promise<BookingNoShowResponse> {
+    return apiClient.post(`/api/bookings/${bookingId}/no-show`, params);
   }
 
   /**

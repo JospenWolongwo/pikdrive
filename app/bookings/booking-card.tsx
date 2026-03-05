@@ -81,10 +81,20 @@ export function BookingCard({ booking }: BookingCardProps) {
     setShowVerification(false);
   }, []);
   useBookingVerificationSubscription(booking.id, onVerified);
+  const policy = booking.policy;
+  const isNoShow = Boolean(booking.no_show_marked_at);
+  const cutoffLabel = policy
+    ? format(new Date(policy.cancellationCutoffAt), "PPP p")
+    : null;
+  const travelStartLabel = policy
+    ? format(new Date(policy.travelStartAt), "PPP p")
+    : null;
+  const hasActiveStatus = ["pending", "confirmed", "pending_verification"].includes(displayStatus);
 
   // Determine if we should show verification code (use displayStatus for instant UI)
   // Include 'partial' and 'partial_refund' so user still sees code after reducing seats (one paid seat left)
   const shouldShowVerification =
+    !isNoShow &&
     !codeVerified &&
     (displayStatus === "pending_verification" ||
       displayStatus === "confirmed") &&
@@ -95,14 +105,27 @@ export function BookingCard({ booking }: BookingCardProps) {
   // Use displayStatus so the card updates instantly when we optimistically set cancelled
   // Block cancel/reduce once driver has verified code (driver already paid – company protection)
   const canCancel =
-    ["pending", "confirmed", "pending_verification"].includes(displayStatus) &&
-    !codeVerified;
+    hasActiveStatus &&
+    !codeVerified &&
+    !isNoShow &&
+    (policy ? policy.canCancel : true);
 
   // Determine if booking can have seats reduced (paid booking with > 1 seat, and not yet verified)
   const canReduceSeats =
     (booking.payment_status === "completed" || booking.payment_status === "partial_refund") &&
     booking.seats > 1 &&
-    canCancel;
+    !isNoShow &&
+    (policy ? policy.canReduceSeats : canCancel);
+
+  const showCutoffHint = Boolean(policy && hasActiveStatus && policy.canCancel && cutoffLabel);
+  const showLateWindowHint = Boolean(
+    policy &&
+      hasActiveStatus &&
+      !isNoShow &&
+      policy.blockReason === "late_window" &&
+      cutoffLabel &&
+      travelStartLabel
+  );
 
   // Handle booking cancellation
   const handleCancelBooking = async () => {
@@ -117,6 +140,8 @@ export function BookingCard({ booking }: BookingCardProps) {
       if (!data.success) {
         const message = data.errorCode === 'CODE_VERIFIED_NO_CANCEL'
           ? t("pages.bookings.card.errors.codeVerifiedNoCancel")
+          : data.errorCode === 'LATE_CANCELLATION_LOCKED'
+          ? t("pages.bookings.card.errors.lateCancellationLocked")
           : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
         throw new Error(message);
       }
@@ -154,6 +179,9 @@ export function BookingCard({ booking }: BookingCardProps) {
           const code = (error.data as { errorCode?: string } | undefined)?.errorCode;
           if (code === 'CODE_VERIFIED_NO_CANCEL') {
             return t("pages.bookings.card.errors.codeVerifiedNoCancel");
+          }
+          if (code === 'LATE_CANCELLATION_LOCKED') {
+            return t("pages.bookings.card.errors.lateCancellationLocked");
           }
           return error.getDisplayMessage();
         }
@@ -194,6 +222,8 @@ export function BookingCard({ booking }: BookingCardProps) {
       if (!data.success) {
         const message = data.errorCode === 'CODE_VERIFIED_NO_REDUCE'
           ? t("pages.bookings.card.errors.codeVerifiedNoReduce")
+          : data.errorCode === 'LATE_SEAT_REDUCTION_LOCKED'
+          ? t("pages.bookings.card.errors.lateSeatReductionLocked")
           : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
         throw new Error(message);
       }
@@ -224,6 +254,9 @@ export function BookingCard({ booking }: BookingCardProps) {
           const code = (error.data as { errorCode?: string } | undefined)?.errorCode;
           if (code === 'CODE_VERIFIED_NO_REDUCE') {
             return t("pages.bookings.card.errors.codeVerifiedNoReduce");
+          }
+          if (code === 'LATE_SEAT_REDUCTION_LOCKED') {
+            return t("pages.bookings.card.errors.lateSeatReductionLocked");
           }
           return error.getDisplayMessage();
         }
@@ -319,6 +352,11 @@ export function BookingCard({ booking }: BookingCardProps) {
               )}
             </div>
           )}
+          {booking.dropoff_point_name && (
+            <div>
+              <strong>{t("pages.rides.rideCard.destinationPoint")}</strong> {booking.dropoff_point_name}
+            </div>
+          )}
           <div>
             <strong>{t("pages.bookings.card.total")}</strong>{" "}
             {payment 
@@ -331,7 +369,9 @@ export function BookingCard({ booking }: BookingCardProps) {
             <strong>{t("pages.bookings.card.status")}</strong>{" "}
             <span
               className={`inline-block px-2 py-1 text-sm rounded-full ${
-                displayStatus === "confirmed"
+                isNoShow
+                  ? "bg-amber-100 text-amber-800"
+                  : displayStatus === "confirmed"
                   ? "bg-green-100 text-green-800"
                   : displayStatus === "pending"
                   ? "bg-yellow-100 text-yellow-800"
@@ -340,7 +380,9 @@ export function BookingCard({ booking }: BookingCardProps) {
                   : "bg-yellow-100 text-yellow-800"
               }`}
             >
-              {displayStatus === "confirmed"
+              {isNoShow
+                ? t("pages.bookings.card.statusNoShow")
+                : displayStatus === "confirmed"
                 ? t("pages.bookings.card.statusConfirmed")
                 : displayStatus === "pending"
                 ? t("pages.bookings.card.statusPending")
@@ -363,6 +405,31 @@ export function BookingCard({ booking }: BookingCardProps) {
               >
                 {isCompleted ? t("pages.bookings.card.paymentCompleted") : t("pages.bookings.card.paymentPending")}
               </span>
+            </div>
+          )}
+
+          {showCutoffHint && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+              <p className="font-medium">
+                {t("pages.bookings.card.freeChangesUntil", { cutoff: cutoffLabel })}
+              </p>
+            </div>
+          )}
+
+          {showLateWindowHint && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="font-medium">
+                {t("pages.bookings.card.lateWindowLockedTitle")}
+              </p>
+              <p className="mt-1">
+                {t("pages.bookings.card.lateWindowLockedDescription", {
+                  cutoff: cutoffLabel,
+                  travelStart: travelStartLabel,
+                })}
+              </p>
+              <p className="mt-2 text-amber-800/90">
+                {t("pages.bookings.card.lateWindowDriverFault")}
+              </p>
             </div>
           )}
 
@@ -394,7 +461,11 @@ export function BookingCard({ booking }: BookingCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-3">
-        {codeVerified && (
+        {isNoShow ? (
+          <p className="text-sm text-muted-foreground w-full">
+            {t("pages.bookings.card.noShowRecorded")}
+          </p>
+        ) : codeVerified && (
           <p className="text-sm text-muted-foreground w-full">
             {t("pages.bookings.card.tripConfirmedNoChanges")}
           </p>

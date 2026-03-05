@@ -130,7 +130,11 @@ export async function DELETE(
     console.error("Booking cancellation error:", error);
     if (error instanceof BookingCancellationError) {
       return NextResponse.json(
-        { success: false, error: error.message },
+        {
+          success: false,
+          error: error.message,
+          errorCode: error.errorCode,
+        },
         { status: error.statusCode }
       );
     }

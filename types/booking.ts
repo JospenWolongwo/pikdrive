@@ -1,6 +1,24 @@
 import type { Ride, RideWithDriver } from './ride';
 import type { UserProfile } from './user';
 
+export type BookingPolicyBlockReason =
+  | 'none'
+  | 'late_window'
+  | 'code_verified'
+  | 'finalized'
+  | 'already_no_show';
+
+export interface BookingPolicy {
+  readonly travelStartAt: string;
+  readonly cancellationCutoffAt: string;
+  readonly noShowEligibleAt: string;
+  readonly canCancel: boolean;
+  readonly canReduceSeats: boolean;
+  readonly canDriverMarkNoShow: boolean;
+  readonly blockReason: BookingPolicyBlockReason;
+  readonly isLateWindow: boolean;
+}
+
 export interface Booking {
   readonly id: string;
   readonly ride_id: string;
@@ -13,6 +31,11 @@ export interface Booking {
   readonly pickup_point_name?: string;
   readonly pickup_time?: string;
   readonly dropoff_point_name?: string;
+  readonly no_show_marked_at?: string | null;
+  readonly no_show_marked_by?: string | null;
+  readonly no_show_contact_attempted?: boolean | null;
+  readonly no_show_note?: string | null;
+  readonly policy?: BookingPolicy;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -88,6 +111,11 @@ export interface DashboardBooking {
   readonly pickup_point_name?: string;
   readonly pickup_time?: string;
   readonly dropoff_point_name?: string;
+  readonly no_show_marked_at?: string | null;
+  readonly no_show_marked_by?: string | null;
+  readonly no_show_contact_attempted?: boolean | null;
+  readonly no_show_note?: string | null;
+  readonly policy?: BookingPolicy;
   readonly user: {
     readonly id: string;
     readonly full_name: string;
@@ -108,6 +136,11 @@ export interface DriverBooking {
   readonly pickup_point_name?: string;
   readonly pickup_time?: string;
   readonly dropoff_point_name?: string;
+  readonly no_show_marked_at?: string | null;
+  readonly no_show_marked_by?: string | null;
+  readonly no_show_contact_attempted?: boolean | null;
+  readonly no_show_note?: string | null;
+  readonly policy?: BookingPolicy;
   readonly user_id: string;
   readonly user: {
     readonly id: string;

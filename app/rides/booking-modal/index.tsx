@@ -136,6 +136,7 @@ export function BookingModal({
             existingBooking={existingBooking}
             ride={ride}
             seats={seats}
+            selectedPickupPointId={selectedPickupPointId}
             paymentError={paymentStatus === "FAILED" ? statusMessage : undefined}
             onProviderSelect={setSelectedProvider}
             onPhoneNumberChange={setPhoneNumber}

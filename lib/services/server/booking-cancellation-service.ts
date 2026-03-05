@@ -1,15 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ServerOneSignalNotificationService } from "./onesignal-notification-service";
 import { ServerPaymentInitiationService } from "./payment-initiation-service";
+import { ServerBookingPolicyService } from "./bookings/booking-policy-service";
 import { getTranslation, formatAmount } from "@/lib/utils/server-translations";
 
 export class BookingCancellationError extends Error {
   statusCode: number;
+  errorCode?: string;
 
-  constructor(message: string, statusCode = 500) {
+  constructor(message: string, statusCode = 500, errorCode?: string) {
     super(message);
     this.name = "BookingCancellationError";
     this.statusCode = statusCode;
+    this.errorCode = errorCode;
   }
 }
 
@@ -22,9 +25,11 @@ type CancelBookingResult = {
 
 export class ServerBookingCancellationService {
   private notificationService: ServerOneSignalNotificationService;
+  private policyService: ServerBookingPolicyService;
 
   constructor(private supabase: SupabaseClient) {
     this.notificationService = new ServerOneSignalNotificationService(supabase);
+    this.policyService = new ServerBookingPolicyService();
   }
 
   async cancelBooking(params: {
@@ -59,10 +64,52 @@ export class ServerBookingCancellationService {
       throw new BookingCancellationError("Booking not found", 404);
     }
 
+    const policy = this.policyService.evaluatePolicy({
+      status: booking.status,
+      payment_status: booking.payment_status,
+      code_verified: booking.code_verified,
+      pickup_time: booking.pickup_time,
+      departure_time: booking.ride?.departure_time,
+      no_show_marked_at: booking.no_show_marked_at,
+    });
+
+    if (
+      booking.no_show_marked_at ||
+      policy?.blockReason === "already_no_show"
+    ) {
+      throw new BookingCancellationError(
+        "This booking was already recorded as not taken at pickup time.",
+        403
+      );
+    }
+
+    if (policy?.blockReason === "finalized") {
+      throw new BookingCancellationError(
+        "This booking can no longer be cancelled in its current state.",
+        403
+      );
+    }
+
     if (booking.code_verified === true) {
       throw new BookingCancellationError(
         "Cancellation is not allowed after the driver has verified the code and been paid. Your trip is confirmed.",
-        403
+        403,
+        "CODE_VERIFIED_NO_CANCEL"
+      );
+    }
+
+    if (policy && !policy.canCancel && policy.blockReason === "late_window") {
+      console.info("[BOOKING POLICY] Late cancellation blocked", {
+        bookingId,
+        userId,
+        travelStartAt: policy.travelStartAt,
+        cancellationCutoffAt: policy.cancellationCutoffAt,
+      });
+
+      throw new BookingCancellationError(
+        "Cancellation is locked because this booking is already within 6 hours of pickup or departure.",
+        403,
+        "LATE_CANCELLATION_LOCKED"
       );
     }
 
@@ -87,7 +134,7 @@ export class ServerBookingCancellationService {
       refundPhoneNumber = primaryPayment.phone_number;
 
       console.log(
-        "ðŸ”„ [CANCELLATION] Starting atomic cancellation with refund preparation:",
+      "[CANCELLATION] Starting atomic cancellation with refund preparation:",
         {
           bookingId,
           userId,
@@ -110,7 +157,7 @@ export class ServerBookingCancellationService {
         });
 
       if (atomicError) {
-        console.error("âŒ [CANCELLATION] Atomic cancellation failed:", {
+        console.error("[CANCELLATION] Atomic cancellation failed:", {
           error: atomicError.message,
           code: atomicError.code,
           details: atomicError.details,
@@ -123,14 +170,14 @@ export class ServerBookingCancellationService {
       }
 
       if (!atomicResult || atomicResult.length === 0) {
-        console.error("âŒ [CANCELLATION] Atomic function returned no result");
+        console.error(" [CANCELLATION] Atomic function returned no result");
         throw new BookingCancellationError("Atomic cancellation returned no result");
       }
 
       cancellationResult = atomicResult[0];
 
       if (!cancellationResult.success) {
-        console.error("âŒ [CANCELLATION] Atomic cancellation failed:", {
+        console.error("[CANCELLATION] Atomic cancellation failed:", {
           success: cancellationResult.success,
           booking_cancelled: cancellationResult.booking_cancelled,
           error_message: cancellationResult.error_message,
@@ -144,7 +191,7 @@ export class ServerBookingCancellationService {
 
       refundRecordId = cancellationResult.refund_record_id;
 
-      console.log("âœ… [CANCELLATION] Atomic cancellation succeeded:", {
+      console.log(" [CANCELLATION] Atomic cancellation succeeded:", {
         bookingId,
         booking_cancelled: cancellationResult.booking_cancelled,
         refund_record_id: refundRecordId,
@@ -152,7 +199,7 @@ export class ServerBookingCancellationService {
       });
 
       try {
-        console.log("ðŸ’¸ [REFUND] Processing external refund API call:", {
+        console.log("[REFUND] Processing external refund API call:", {
           bookingId,
           refundRecordId,
           totalAmount: totalPaid,
@@ -174,7 +221,7 @@ export class ServerBookingCancellationService {
         });
 
         if (refundResult.response.success) {
-          console.log("âœ… [REFUND] External refund API succeeded:", {
+          console.log("[REFUND] External refund API succeeded:", {
             refundRecordId,
             transactionId: refundResult.response.refundId,
             amount: totalPaid,
@@ -191,7 +238,7 @@ export class ServerBookingCancellationService {
 
               if (fetchError) {
                 console.error(
-                  "âŒ [REFUND] Failed to fetch existing refund record:",
+                  "[REFUND] Failed to fetch existing refund record:",
                   {
                     refundRecordId,
                     error: fetchError.message,
@@ -230,18 +277,18 @@ export class ServerBookingCancellationService {
                 });
               } else {
                 console.log(
-                  "âœ… [REFUND] Refund record updated with transaction ID"
+                  "[REFUND] Refund record updated with transaction ID"
                 );
               }
             } catch (err) {
               console.error(
-                "âŒ [REFUND] Exception updating refund record:",
+                "[REFUND] Exception updating refund record:",
                 err
               );
             }
           }
         } else {
-          console.error("âŒ [REFUND] External refund API failed:", {
+          console.error("[REFUND] External refund API failed:", {
             refundRecordId,
             error: refundResult.response.message,
             bookingId,
@@ -258,7 +305,7 @@ export class ServerBookingCancellationService {
 
               if (fetchError) {
                 console.error(
-                  "âŒ [REFUND] Failed to fetch existing refund record:",
+                  "[REFUND] Failed to fetch existing refund record:",
                   {
                     refundRecordId,
                     error: fetchError.message,
@@ -287,7 +334,7 @@ export class ServerBookingCancellationService {
 
               if (updateError) {
                 console.error(
-                  "âŒ [REFUND] Failed to update refund record status:",
+                  "[REFUND] Failed to update refund record status:",
                   {
                     refundRecordId,
                     error: updateError.message,
@@ -295,7 +342,7 @@ export class ServerBookingCancellationService {
                 );
               } else {
                 console.log(
-                  "âš ï¸ [REFUND] Refund record marked as failed (can be retried later)"
+                  "[REFUND] Refund record marked as failed (can be retried later)"
                 );
               }
             } catch (err) {
@@ -340,14 +387,14 @@ export class ServerBookingCancellationService {
               .eq("id", refundRecordId);
           } catch (err) {
             console.error(
-              "âŒ [REFUND] Failed to update refund record after exception:",
+              "[REFUND] Failed to update refund record after exception:",
               err
             );
           }
         }
       }
     } else {
-      console.log("ðŸ”„ [CANCELLATION] Cancelling unpaid booking:", {
+      console.log("[CANCELLATION] Cancelling unpaid booking:", {
         bookingId,
         userId,
       });
@@ -358,7 +405,7 @@ export class ServerBookingCancellationService {
         });
 
       if (cancelError) {
-        console.error("âŒ [CANCELLATION] Booking cancellation failed:", {
+        console.error("[CANCELLATION] Booking cancellation failed:", {
           error: cancelError.message,
           code: cancelError.code,
           details: cancelError.details,
@@ -371,7 +418,7 @@ export class ServerBookingCancellationService {
       }
 
       if (!cancelResult) {
-        console.error("âŒ [CANCELLATION] Cancellation function returned false");
+        console.error("[CANCELLATION] Cancellation function returned false");
         throw new BookingCancellationError("Failed to cancel booking");
       }
 
@@ -392,7 +439,7 @@ export class ServerBookingCancellationService {
         })
         .catch((err) => {
           console.error(
-            "âŒ Driver cancellation notification error (non-critical):",
+            "[CANCELLATION] Driver cancellation notification error (non-critical):",
             err
           );
         }),
@@ -451,7 +498,7 @@ export class ServerBookingCancellationService {
         });
       })().catch((err) => {
         console.error(
-          "âŒ Passenger cancellation notification error (non-critical):",
+          "[CANCELLATION] Passenger cancellation notification error (non-critical):",
           err
         );
       }),

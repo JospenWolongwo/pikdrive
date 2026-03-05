@@ -1,6 +1,6 @@
-import type { Booking, DashboardBooking } from './booking';
 import { Passenger } from './passenger';
 import type { RideMessage } from './chat';
+import type { Booking, DashboardBooking } from './booking';
 
 /** Admin-defined pickup point per city (table city_pickup_points) */
 export interface CityPickupPoint {
@@ -34,6 +34,8 @@ export interface Ride {
   readonly status?: 'active' | 'cancelled';
   readonly from_city: string;
   readonly to_city: string;
+  readonly dropoff_point_id?: string | null;
+  readonly dropoff_point_name?: string | null;
   readonly departure_time: string;
   readonly price: number;
   readonly seats_available: number;
@@ -89,6 +91,7 @@ export interface RideWithBookings extends Ride {
 export interface CreateRideRequest {
   readonly from_city: string;
   readonly to_city: string;
+  readonly dropoff_point_id: string;
   readonly departure_time: string;
   readonly price: number;
   readonly seats_available: number;
@@ -101,6 +104,7 @@ export interface CreateRideRequest {
 export interface UpdateRideRequest {
   readonly from_city?: string;
   readonly to_city?: string;
+  readonly dropoff_point_id?: string;
   readonly departure_time?: string;
   readonly price?: number;
   readonly seats_available?: number;

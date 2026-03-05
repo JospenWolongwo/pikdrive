@@ -23,21 +23,19 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { newSeats } = body ?? {};
+    const { contactAttempted, note } = body ?? {};
 
-    const result = await bookingService.reduceSeatsWithRefund({
+    const result = await bookingService.markPassengerNoShow({
       bookingId: params.id,
-      userId: user.id,
-      newSeats,
+      driverId: user.id,
+      contactAttempted: Boolean(contactAttempted),
+      note: typeof note === 'string' ? note : undefined,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Seats reduced successfully',
-      refundInitiated: result.refundInitiated,
-      refundAmount: result.refundAmount,
-      newSeats: result.newSeats,
-      seatsRemoved: result.seatsRemoved,
+      message: 'No-show recorded successfully',
+      data: result,
     });
   } catch (error) {
     if (error instanceof BookingApiError) {
@@ -50,9 +48,14 @@ export async function POST(
         { status: error.statusCode }
       );
     }
-    console.error('Partial cancellation error:', error);
+
+    console.error('Booking no-show error:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to reduce seats' },
+      {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to record passenger no-show',
+      },
       { status: 500 }
     );
   }

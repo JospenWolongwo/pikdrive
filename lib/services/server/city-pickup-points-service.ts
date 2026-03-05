@@ -107,14 +107,18 @@ export class ServerCityPickupPointsService {
   async delete(id: string): Promise<void> {
     const { data: rides } = await this.supabase
       .from("rides")
-      .select("id, pickup_points");
+      .select("id, pickup_points, dropoff_point_id");
     const usedBy = (rides ?? []).filter((ride: { pickup_points: unknown }) => {
       const pp = ride.pickup_points;
       if (!pp || !Array.isArray(pp)) return false;
       return pp.some((p: { id?: string }) => p.id === id);
     });
-    if (usedBy.length > 0) {
-      throw new Error(`Cannot delete: used by ${usedBy.length} ride(s)`);
+    const usedByDropoff = (rides ?? []).filter(
+      (ride: { dropoff_point_id?: string | null }) => ride.dropoff_point_id === id
+    );
+    const totalUsed = usedBy.length + usedByDropoff.length;
+    if (totalUsed > 0) {
+      throw new Error(`Cannot delete: used by ${totalUsed} ride(s)`);
     }
     const { error } = await this.supabase
       .from("city_pickup_points")

@@ -33,6 +33,7 @@ export { ChatWindow } from "./chat/chat-window";
 export { CodeVerificationForm } from "./driver/code-verification-form";
 export { PickupPointsForm } from "./driver/pickup-points-form";
 export { PickupPointsSelectForm } from "./driver/pickup-points-select-form";
+export { DropoffPointSelectForm } from "./driver/dropoff-point-select-form";
 export { CancellationNotifications } from "./driver/dashboard/cancellation-notifications";
 export { DashboardHeader } from "./driver/dashboard/dashboard-header";
 export { PaginationComponent } from "./driver/dashboard/pagination";
