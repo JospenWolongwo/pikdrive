@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "loading": "Loading...",
     "error": "Error",
@@ -130,8 +130,8 @@
     },
     "home": {
       "hero": {
-        "title1": "Discover",
-        "title2": "Cameroon, Together",
+        "title1": "Book",
+        "title2": "and travel together",
         "subtitle": "Connect with trusted drivers and explore the wonders of Cameroon safely",
         "findRide": "Find a Ride",
         "publishRide": "Publish a Ride",
@@ -1776,7 +1776,7 @@
     }
   },
   "footer": {
-    "tagline": "Discover Cameroon, Together",
+    "tagline": "Book and travel together",
     "company": "PikDrive by POKY GROUP",
     "copyright": "{year} PikDrive. All rights reserved."
   },

@@ -1,4 +1,4 @@
-{
+ï»¿{
     "common":  {
                    "loading":  "Chargement...",
                    "error":  "Erreur",
@@ -130,8 +130,8 @@
                             },
                   "home":  {
                                "hero":  {
-                                            "title1":  "DÃ©couvrez",
-                                            "title2":  "le Cameroun, Ensemble",
+                                            "title1":  "Reserve",
+                                            "title2":  "et on voyage ensemble",
                                             "subtitle":  "Connectez-vous avec des chauffeurs de confiance et explorez les merveilles du Cameroun en toute sÃ©curitÃ©",
                                             "findRide":  "Trouver un Trajet",
                                             "publishRide":  "Publier un trajet",
@@ -866,15 +866,15 @@
                                                                      "markNoShow":  "Signaler absence",
                                                                      "confirmingNoShow":  "Enregistrement...",
                                                                      "markNoShowTitle":  "Confirmer l\u0027absence du passager ?",
-                                                                     "markNoShowDescription":  "Utilisez cette action seulement après le délai de grâce au point de ramassage et après avoir essayé de joindre le passager.",
+                                                                     "markNoShowDescription":  "Utilisez cette action seulement aprï¿½s le dï¿½lai de grï¿½ce au point de ramassage et aprï¿½s avoir essayï¿½ de joindre le passager.",
                                                                      "confirmMarkNoShow":  "Confirmer l\u0027absence",
-                                                                     "contactAttempted":  "J\u0027ai essayé de contacter le passager avant de signaler son absence.",
+                                                                     "contactAttempted":  "J\u0027ai essayï¿½ de contacter le passager avant de signaler son absence.",
                                                                      "noteLabel":  "Note (optionnelle)",
                                                                      "notePlaceholder":  "Ajoutez un contexte utile pour le support ou le suivi.",
-                                                                     "noShowRecorded":  "Absence signalée",
-                                                                     "noShowHelp":  "Cette réservation a été clôturée comme absence du passager. Aucun remboursement ni paiement chauffeur n\u0027est créé dans ce flux.",
-                                                                     "noShowSuccessTitle":  "Absence signalée",
-                                                                     "noShowSuccessDescription":  "La réservation a été clôturée et le passager a été notifié."
+                                                                     "noShowRecorded":  "Absence signalï¿½e",
+                                                                     "noShowHelp":  "Cette rï¿½servation a ï¿½tï¿½ clï¿½turï¿½e comme absence du passager. Aucun remboursement ni paiement chauffeur n\u0027est crï¿½ï¿½ dans ce flux.",
+                                                                     "noShowSuccessTitle":  "Absence signalï¿½e",
+                                                                     "noShowSuccessDescription":  "La rï¿½servation a ï¿½tï¿½ clï¿½turï¿½e et le passager a ï¿½tï¿½ notifiï¿½."
                                                                  },
                                                     "pickupPoints":  {
                                                                          "requiredForPaidPassenger":  "Requis pour un passager ayant payÃ©"
@@ -1362,8 +1362,8 @@
                                                                 "promptNoticeTitle":  "Confirmation du paiement",
                                                                 "promptNoticeBody":  "Vous pouvez recevoir une demande pour saisir votre code PIN ou confirmer le paiement.",
                                                                 "cancellationPolicyTitle":  "Politique d\u0027annulation",
-                                                                "cancellationPolicyBody":  "L\u0027annulation gratuite et les modifications de places ferment à {cutoff}. Le départ pris en compte pour cette réservation est {travelStart}.",
-                                                                "existingPaidBookingPolicy":  "Si vous avez déjà payé des places sur ce trajet, elles restent protégées et ne peuvent plus être réduites après l\u0027échéance."
+                                                                "cancellationPolicyBody":  "L\u0027annulation gratuite et les modifications de places ferment ï¿½ {cutoff}. Le dï¿½part pris en compte pour cette rï¿½servation est {travelStart}.",
+                                                                "existingPaidBookingPolicy":  "Si vous avez dï¿½jï¿½ payï¿½ des places sur ce trajet, elles restent protï¿½gï¿½es et ne peuvent plus ï¿½tre rï¿½duites aprï¿½s l\u0027ï¿½chï¿½ance."
                                                             },
                                                 "success":  {
                                                                 "title":  "RÃ©servation rÃ©ussie !",
@@ -1483,15 +1483,15 @@
                                                 "errors":  {
                                                                "codeVerifiedNoCancel":  "L\u0027annulation n\u0027est plus possible aprÃ¨s que le chauffeur a vÃ©rifiÃ© votre trajet. Votre rÃ©servation est confirmÃ©e.",
                                                                "codeVerifiedNoReduce":  "Les modifications de places ne sont plus possibles aprÃ¨s que le chauffeur a vÃ©rifiÃ© votre trajet. Votre rÃ©servation est confirmÃ©e.",
-                                                               "lateCancellationLocked":  "L\u0027annulation n\u0027est plus disponible dans les 6 heures avant le ramassage ou le départ.",
-                                                               "lateSeatReductionLocked":  "Les modifications de places ne sont plus disponibles dans les 6 heures avant le ramassage ou le départ."
+                                                               "lateCancellationLocked":  "L\u0027annulation n\u0027est plus disponible dans les 6 heures avant le ramassage ou le dï¿½part.",
+                                                               "lateSeatReductionLocked":  "Les modifications de places ne sont plus disponibles dans les 6 heures avant le ramassage ou le dï¿½part."
                                                            },
-                                                "statusNoShow":  "Absence signalée",
+                                                "statusNoShow":  "Absence signalï¿½e",
                                                 "freeChangesUntil":  "Annulation gratuite et modifications de places jusqu\u0027au {cutoff}.",
-                                                "lateWindowLockedTitle":  "Modifications verrouillées",
-                                                "lateWindowLockedDescription":  "L\u0027annulation et les modifications de places en libre-service ont fermé à {cutoff}. Le départ pris en compte pour cette réservation est {travelStart}.",
-                                                "lateWindowDriverFault":  "Si le chauffeur annule ou ne se présente pas, votre remboursement sera toujours géré par le support PickDrive.",
-                                                "noShowRecorded":  "Cette réservation a été signalée comme non prise au point de ramassage."
+                                                "lateWindowLockedTitle":  "Modifications verrouillï¿½es",
+                                                "lateWindowLockedDescription":  "L\u0027annulation et les modifications de places en libre-service ont fermï¿½ ï¿½ {cutoff}. Le dï¿½part pris en compte pour cette rï¿½servation est {travelStart}.",
+                                                "lateWindowDriverFault":  "Si le chauffeur annule ou ne se prï¿½sente pas, votre remboursement sera toujours gï¿½rï¿½ par le support PickDrive.",
+                                                "noShowRecorded":  "Cette rï¿½servation a ï¿½tï¿½ signalï¿½e comme non prise au point de ramassage."
                                             },
                                    "verificationCode":  {
                                                             "title":  "Code de VÃ©rification",
@@ -1775,7 +1775,7 @@
                                 }
                 },
     "footer":  {
-                   "tagline":  "DÃ©couvrez le Cameroun, Ensemble",
+                   "tagline":  "Reserve et on voyage ensemble",
                    "company":  "PikDrive by POKY GROUP",
                    "copyright":  "{year} PikDrive. Tous droits rÃ©servÃ©s."
                },
