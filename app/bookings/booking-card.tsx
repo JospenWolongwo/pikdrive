@@ -1,48 +1,17 @@
 "use client";
 
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui";
-import { useToast } from "@/hooks/ui";
+import { BookingModal } from "@/app/rides/booking-modal";
+import { ChatDialog, PendingSyncBadge } from "@/components";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui";
+import { useLocale } from "@/hooks";
 import { formatDate } from "@/lib/utils";
-import { format } from "date-fns";
-import { useState, useEffect, useCallback } from "react";
-import { ChevronDown, ChevronUp, X, MessageCircle, Minus } from "lucide-react";
-import { useSupabase } from "@/providers/SupabaseProvider";
-import { useRouter } from "next/navigation";
-import { useBookingStore, useChatStore } from "@/stores";
-import { PendingSyncBadge, ChatDialog, VerificationCodeDisplay } from "@/components";
-import { useLocale, useBookingVerificationSubscription } from "@/hooks";
-import { ApiError, bookingApiClient } from "@/lib/api-client";
 
-import type { BookingWithPayments, RideWithDriver } from "@/types";
+import type { BookingWithPayments } from "@/types";
 
+import { BookingCardActions } from "./booking-card-actions";
+import { BookingCardDetails } from "./booking-card-details";
+import { ReduceSeatsDialog } from "./reduce-seats-dialog";
+import { useBookingCard } from "./use-booking-card";
 
 interface BookingCardProps {
   booking: BookingWithPayments;
@@ -50,560 +19,117 @@ interface BookingCardProps {
 
 export function BookingCard({ booking }: BookingCardProps) {
   const { t } = useLocale();
-  const payment = booking.payments?.[0];
-  const isCompleted =
-    payment?.payment_time && payment?.metadata?.financialTransactionId;
-  const [showVerification, setShowVerification] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [codeVerified, setCodeVerified] = useState(booking.code_verified || false);
-  const [selectedChatRide, setSelectedChatRide] = useState<{
-    ride: RideWithDriver;
-    conversationId: string;
-  } | null>(null);
-  const [showReduceSeatsDialog, setShowReduceSeatsDialog] = useState(false);
-  const [newSeats, setNewSeats] = useState<string>("");
-  const [isReducingSeats, setIsReducingSeats] = useState(false);
-  const [displayStatus, setDisplayStatus] = useState(booking.status);
-  const { supabase, user } = useSupabase();
-  const { toast } = useToast();
-  const router = useRouter();
-  const { conversations } = useChatStore();
-  const { refreshUserBookingsSilent } = useBookingStore();
-
-  // Keep displayStatus and codeVerified in sync when booking prop updates (e.g. after refetch)
-  useEffect(() => {
-    setDisplayStatus(booking.status);
-    setCodeVerified(Boolean(booking.code_verified));
-  }, [booking.status, booking.code_verified]);
-
-  const onVerified = useCallback(() => {
-    setCodeVerified(true);
-    setShowVerification(false);
-  }, []);
-  useBookingVerificationSubscription(booking.id, onVerified);
-  const policy = booking.policy;
-  const isNoShow = Boolean(booking.no_show_marked_at);
-  const cutoffLabel = policy
-    ? format(new Date(policy.cancellationCutoffAt), "PPP p")
-    : null;
-  const travelStartLabel = policy
-    ? format(new Date(policy.travelStartAt), "PPP p")
-    : null;
-  const hasActiveStatus = ["pending", "confirmed", "pending_verification"].includes(displayStatus);
-
-  // Determine if we should show verification code (use displayStatus for instant UI)
-  // Include 'partial' and 'partial_refund' so user still sees code after reducing seats (one paid seat left)
-  const shouldShowVerification =
-    !isNoShow &&
-    !codeVerified &&
-    (displayStatus === "pending_verification" ||
-      displayStatus === "confirmed") &&
-    (booking.payment_status === "completed" ||
-      booking.payment_status === "partial" ||
-      booking.payment_status === "partial_refund");
-
-  // Use displayStatus so the card updates instantly when we optimistically set cancelled
-  // Block cancel/reduce once driver has verified code (driver already paid – company protection)
-  const canCancel =
-    hasActiveStatus &&
-    !codeVerified &&
-    !isNoShow &&
-    (policy ? policy.canCancel : true);
-
-  // Determine if booking can have seats reduced (paid booking with > 1 seat, and not yet verified)
-  const canReduceSeats =
-    (booking.payment_status === "completed" || booking.payment_status === "partial_refund") &&
-    booking.seats > 1 &&
-    !isNoShow &&
-    (policy ? policy.canReduceSeats : canCancel);
-
-  const showCutoffHint = Boolean(policy && hasActiveStatus && policy.canCancel && cutoffLabel);
-  const showLateWindowHint = Boolean(
-    policy &&
-      hasActiveStatus &&
-      !isNoShow &&
-      policy.blockReason === "late_window" &&
-      cutoffLabel &&
-      travelStartLabel
-  );
-
-  // Handle booking cancellation
-  const handleCancelBooking = async () => {
-    if (!canCancel) return;
-
-    try {
-      setIsCancelling(true);
-
-      // Use the DELETE API endpoint which handles atomic cancellation with refunds
-      const data = await bookingApiClient.cancelBooking(booking.id);
-
-      if (!data.success) {
-        const message = data.errorCode === 'CODE_VERIFIED_NO_CANCEL'
-          ? t("pages.bookings.card.errors.codeVerifiedNoCancel")
-          : data.errorCode === 'LATE_CANCELLATION_LOCKED'
-          ? t("pages.bookings.card.errors.lateCancellationLocked")
-          : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
-        throw new Error(message);
-      }
-
-      // Update card immediately so user sees "Cancelled" and toast is not wiped by a reload
-      setDisplayStatus("cancelled");
-
-      if (data.refundInitiated && data.refundAmount) {
-        const refundAmount = data.refundAmount.toLocaleString();
-        const currency = payment?.currency || "XAF";
-        toast({
-          title: t("pages.bookings.card.cancelledSuccess"),
-          description: t("pages.bookings.card.cancelledSuccessWithRefund", {
-            amount: refundAmount,
-            currency,
-          }),
-          duration: 6000,
-        });
-      } else {
-        toast({
-          title: t("pages.bookings.card.cancelledSuccess"),
-          description: t("pages.bookings.card.cancelledSuccessNoRefund"),
-          duration: 5000,
-        });
-      }
-
-      // Silent refresh so list updates without loading state – success toast stays visible
-      if (user?.id) {
-        setTimeout(() => refreshUserBookingsSilent(user.id), 300);
-      }
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-      const message = (() => {
-        if (error instanceof ApiError) {
-          const code = (error.data as { errorCode?: string } | undefined)?.errorCode;
-          if (code === 'CODE_VERIFIED_NO_CANCEL') {
-            return t("pages.bookings.card.errors.codeVerifiedNoCancel");
-          }
-          if (code === 'LATE_CANCELLATION_LOCKED') {
-            return t("pages.bookings.card.errors.lateCancellationLocked");
-          }
-          return error.getDisplayMessage();
-        }
-        return error instanceof Error
-          ? error.message
-          : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
-      })();
-      toast({
-        title: t("common.error"),
-        description: message,
-        variant: "destructive",
-        duration: 6000,
-      });
-    } finally {
-      setIsCancelling(false);
-    }
-  };
-
-  // Handle reducing seats
-  const handleReduceSeats = async () => {
-    if (!newSeats || !canReduceSeats) return;
-
-    const seatsToKeep = parseInt(newSeats);
-    if (seatsToKeep >= booking.seats) {
-      toast({
-        title: "Erreur",
-        description: "Le nombre de places doit être inférieur au nombre actuel.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsReducingSeats(true);
-
-      const data = await bookingApiClient.reduceBookingSeats(booking.id, seatsToKeep);
-
-      if (!data.success) {
-        const message = data.errorCode === 'CODE_VERIFIED_NO_REDUCE'
-          ? t("pages.bookings.card.errors.codeVerifiedNoReduce")
-          : data.errorCode === 'LATE_SEAT_REDUCTION_LOCKED'
-          ? t("pages.bookings.card.errors.lateSeatReductionLocked")
-          : (data.error || t("pages.bookings.card.cancelDescription", { seats: booking.seats }));
-        throw new Error(message);
-      }
-
-      // Show success message with refund information
-      const refundAmount = data.refundAmount?.toLocaleString() || "0";
-      const currency = payment?.currency || "XAF";
-      
-      toast({
-        title: t("pages.bookings.card.seatsReducedSuccess"),
-        description: t("pages.bookings.card.seatsReducedSuccessWithRefund", {
-          seatsRemoved: data.seatsRemoved,
-          amount: refundAmount,
-          currency,
-        }),
-        duration: 6000,
-      });
-
-      setShowReduceSeatsDialog(false);
-      // Silent refresh so list updates without loading state – success toast stays visible
-      if (user?.id) {
-        setTimeout(() => refreshUserBookingsSilent(user.id), 300);
-      }
-    } catch (error) {
-      console.error("Error reducing seats:", error);
-      const message = (() => {
-        if (error instanceof ApiError) {
-          const code = (error.data as { errorCode?: string } | undefined)?.errorCode;
-          if (code === 'CODE_VERIFIED_NO_REDUCE') {
-            return t("pages.bookings.card.errors.codeVerifiedNoReduce");
-          }
-          if (code === 'LATE_SEAT_REDUCTION_LOCKED') {
-            return t("pages.bookings.card.errors.lateSeatReductionLocked");
-          }
-          return error.getDisplayMessage();
-        }
-        return error instanceof Error
-          ? error.message
-          : t("pages.bookings.card.cancelDescription", { seats: booking.seats });
-      })();
-      toast({
-        title: t("common.error"),
-        description: message,
-        variant: "destructive",
-        duration: 6000,
-      });
-    } finally {
-      setIsReducingSeats(false);
-    }
-  };
-
-  // Handle opening chat with driver
-  const handleOpenChat = async () => {
-    if (!user) {
-      toast({
-        title: "Connexion requise",
-        description: "Veuillez vous connecter pour contacter le conducteur.",
-        variant: "destructive",
-      });
-      router.replace("/auth?redirect=/bookings");
-      return;
-    }
-
-    if (!booking.ride.driver_id) {
-      toast({
-        title: "Erreur",
-        description: "Informations du chauffeur non disponibles.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Find the conversation for this ride and driver
-    const conversation = conversations.find(
-      (conv) =>
-        conv.rideId === booking.ride.id &&
-        conv.otherUserId === booking.ride.driver_id
-    );
-
-    if (conversation) {
-      setSelectedChatRide({
-        ride: booking.ride as RideWithDriver,
-        conversationId: conversation.id,
-      });
-    } else {
-      // If no conversation exists, use the rideId as a fallback and let the ChatDialog handle creation
-      setSelectedChatRide({
-        ride: booking.ride as RideWithDriver,
-        conversationId: booking.ride.id,
-      });
-    }
-  };
+  const {
+    payment,
+    isCompleted,
+    showVerification,
+    toggleVerification,
+    isCancelling,
+    codeVerified,
+    selectedChatRide,
+    closeChat,
+    showReduceSeatsDialog,
+    openReduceSeatsDialog,
+    closeReduceSeatsDialog,
+    showAddSeatsDialog,
+    openAddSeatsDialog,
+    closeAddSeatsDialog,
+    newSeats,
+    setNewSeats,
+    isReducingSeats,
+    displayStatus,
+    isNoShow,
+    cutoffLabel,
+    travelStartLabel,
+    shouldShowVerification,
+    canCancel,
+    canReduceSeats,
+    canAddSeats,
+    showCutoffHint,
+    showLateWindowHint,
+    handleCancelBooking,
+    handleReduceSeats,
+    handleOpenChat,
+    handleAddSeatsComplete,
+  } = useBookingCard(booking);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>
-          {booking.ride.from_city} → {booking.ride.to_city}
+          {booking.ride.from_city} {"\u2192"} {booking.ride.to_city}
           <span className="ml-2">
             <PendingSyncBadge rideId={booking.ride.id} />
           </span>
         </CardTitle>
-        <CardDescription>
-          {formatDate(booking.ride.departure_time)}
-        </CardDescription>
+        <CardDescription>{formatDate(booking.ride.departure_time)}</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-2">
-          <div>
-            <strong>{t("pages.bookings.card.driver")}</strong> {booking.ride.driver?.full_name || t("pages.bookings.card.notAvailable")}
-          </div>
-          <div>
-            <strong>{t("pages.bookings.card.car")}</strong> {booking.ride.car_model || t("pages.bookings.card.notSpecified")} (
-            {booking.ride.car_color || t("pages.bookings.card.notSpecified")})
-          </div>
-          <div>
-            <strong>{t("pages.bookings.card.seats")}</strong> {booking.seats}
-          </div>
-          {booking.pickup_point_name && (
-            <div>
-              <strong>{t("pages.bookings.card.pickupPoint")}</strong> {booking.pickup_point_name}
-              {booking.pickup_time && (
-                <span className="text-muted-foreground text-sm ml-2">
-                  ({format(new Date(booking.pickup_time), "h:mm a")})
-                </span>
-              )}
-            </div>
-          )}
-          {booking.dropoff_point_name && (
-            <div>
-              <strong>{t("pages.rides.rideCard.destinationPoint")}</strong> {booking.dropoff_point_name}
-            </div>
-          )}
-          <div>
-            <strong>{t("pages.bookings.card.total")}</strong>{" "}
-            {payment 
-              ? `${payment.amount} ${payment.currency}` 
-              : booking.ride?.price 
-                ? `${(booking.seats * booking.ride.price).toLocaleString()} FCFA`
-                : "N/A"}
-          </div>
-          <div>
-            <strong>{t("pages.bookings.card.status")}</strong>{" "}
-            <span
-              className={`inline-block px-2 py-1 text-sm rounded-full ${
-                isNoShow
-                  ? "bg-amber-100 text-amber-800"
-                  : displayStatus === "confirmed"
-                  ? "bg-green-100 text-green-800"
-                  : displayStatus === "pending"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : displayStatus === "cancelled"
-                  ? "bg-red-100 text-red-800"
-                  : "bg-yellow-100 text-yellow-800"
-              }`}
-            >
-              {isNoShow
-                ? t("pages.bookings.card.statusNoShow")
-                : displayStatus === "confirmed"
-                ? t("pages.bookings.card.statusConfirmed")
-                : displayStatus === "pending"
-                ? t("pages.bookings.card.statusPending")
-                : displayStatus === "cancelled"
-                ? t("pages.bookings.card.statusCancelled")
-                : displayStatus === "pending_verification"
-                ? t("pages.bookings.card.statusPendingVerification")
-                : displayStatus}
-            </span>
-          </div>
-          {payment && (
-            <div>
-              <strong>{t("pages.bookings.card.payment")}</strong>{" "}
-              <span
-                className={`inline-block px-2 py-1 text-sm rounded-full ${
-                  isCompleted
-                    ? "bg-green-100 text-green-800"
-                    : "bg-yellow-100 text-yellow-800"
-                }`}
-              >
-                {isCompleted ? t("pages.bookings.card.paymentCompleted") : t("pages.bookings.card.paymentPending")}
-              </span>
-            </div>
-          )}
 
-          {showCutoffHint && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-              <p className="font-medium">
-                {t("pages.bookings.card.freeChangesUntil", { cutoff: cutoffLabel })}
-              </p>
-            </div>
-          )}
+      <BookingCardDetails
+        booking={booking}
+        payment={payment}
+        isCompleted={isCompleted}
+        displayStatus={displayStatus}
+        isNoShow={isNoShow}
+        showCutoffHint={showCutoffHint}
+        cutoffLabel={cutoffLabel}
+        showLateWindowHint={showLateWindowHint}
+        travelStartLabel={travelStartLabel}
+        shouldShowVerification={shouldShowVerification}
+        showVerification={showVerification}
+        onToggleVerification={toggleVerification}
+      />
 
-          {showLateWindowHint && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              <p className="font-medium">
-                {t("pages.bookings.card.lateWindowLockedTitle")}
-              </p>
-              <p className="mt-1">
-                {t("pages.bookings.card.lateWindowLockedDescription", {
-                  cutoff: cutoffLabel,
-                  travelStart: travelStartLabel,
-                })}
-              </p>
-              <p className="mt-2 text-amber-800/90">
-                {t("pages.bookings.card.lateWindowDriverFault")}
-              </p>
-            </div>
-          )}
+      <BookingCardActions
+        booking={booking}
+        isNoShow={isNoShow}
+        codeVerified={codeVerified}
+        canAddSeats={canAddSeats}
+        canReduceSeats={canReduceSeats}
+        canCancel={canCancel}
+        isCancelling={isCancelling}
+        onOpenChat={handleOpenChat}
+        onOpenAddSeats={openAddSeatsDialog}
+        onOpenReduceSeats={openReduceSeatsDialog}
+        onCancelBooking={handleCancelBooking}
+      />
 
-          {shouldShowVerification && (
-            <div className="mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full flex items-center justify-between"
-                onClick={() => setShowVerification(!showVerification)}
-              >
-                <span>
-                  {showVerification ? t("pages.bookings.card.hideCode") : t("pages.bookings.card.showCode")}
-                </span>
-                {showVerification ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
+      <ReduceSeatsDialog
+        open={showReduceSeatsDialog}
+        onOpenChange={(open) => {
+          if (open) {
+            openReduceSeatsDialog();
+          } else {
+            closeReduceSeatsDialog();
+          }
+        }}
+        currentSeats={booking.seats}
+        ridePrice={booking.ride.price}
+        paymentPhoneNumber={payment?.phone_number}
+        newSeats={newSeats}
+        onNewSeatsChange={setNewSeats}
+        isReducingSeats={isReducingSeats}
+        onConfirm={handleReduceSeats}
+      />
 
-              {showVerification && (
-                <div className="mt-4">
-                  <VerificationCodeDisplay bookingId={booking.id} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-3">
-        {isNoShow ? (
-          <p className="text-sm text-muted-foreground w-full">
-            {t("pages.bookings.card.noShowRecorded")}
-          </p>
-        ) : codeVerified && (
-          <p className="text-sm text-muted-foreground w-full">
-            {t("pages.bookings.card.tripConfirmedNoChanges")}
-          </p>
-        )}
-        <div className="flex justify-end flex-wrap gap-2 w-full">
-        {booking.ride.driver_id && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleOpenChat}
-            className="flex items-center gap-2"
-          >
-            <MessageCircle className="h-4 w-4" />
-            {t("pages.bookings.card.contact")}
-          </Button>
-        )}
-
-        {canReduceSeats && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowReduceSeatsDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <Minus className="h-4 w-4" />
-            Réduire places
-          </Button>
-        )}
-
-        {canCancel && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                size="sm"
-                disabled={isCancelling}
-                className="flex items-center gap-2"
-              >
-                <X className="h-4 w-4" />
-                {isCancelling ? t("pages.bookings.card.cancelling") : t("pages.bookings.card.cancel")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("pages.bookings.card.cancelTitle")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("pages.bookings.card.cancelDescription", { seats: booking.seats })}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>
-                  {t("pages.bookings.card.keepBooking")}
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleCancelBooking}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {t("pages.bookings.card.confirmCancel")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-
-        {booking.receipt && (
-          <Button variant="outline" asChild>
-            <a
-              href={`/receipts/${booking.receipt.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t("pages.bookings.card.viewReceipt")}
-            </a>
-          </Button>
-        )}
-        </div>
-      </CardFooter>
-
-      <Dialog open={showReduceSeatsDialog} onOpenChange={setShowReduceSeatsDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Réduire le nombre de places</DialogTitle>
-            <DialogDescription>
-              Sélectionnez le nombre de places que vous souhaitez conserver. 
-              La différence vous sera remboursée sur le {payment?.phone_number || "numéro de paiement"}.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <label className="block text-sm font-medium mb-2">
-              Places actuelles: {booking.seats}
-            </label>
-            <Select value={newSeats} onValueChange={setNewSeats}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez le nombre de places à conserver" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: booking.seats - 1 }, (_, i) => i + 1).map(n => (
-                  <SelectItem key={n} value={n.toString()}>
-                    {n} place{n > 1 ? "s" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {newSeats && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Montant du remboursement: {((booking.seats - parseInt(newSeats)) * (booking.ride?.price || 0)).toLocaleString()} XAF
-              </p>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowReduceSeatsDialog(false)}
-              disabled={isReducingSeats}
-            >
-              Annuler
-            </Button>
-            <Button
-              onClick={handleReduceSeats}
-              disabled={!newSeats || isReducingSeats}
-            >
-              {isReducingSeats ? "En cours..." : "Confirmer la réduction"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BookingModal
+        isOpen={showAddSeatsDialog}
+        onClose={closeAddSeatsDialog}
+        ride={booking.ride}
+        onBookingComplete={handleAddSeatsComplete}
+      />
 
       {selectedChatRide && (
         <ChatDialog
           isOpen={!!selectedChatRide}
-          onClose={() => setSelectedChatRide(null)}
+          onClose={closeChat}
           rideId={selectedChatRide.ride.id}
           conversationId={selectedChatRide.conversationId}
           otherUserId={selectedChatRide.ride.driver_id}
-          otherUserName={selectedChatRide.ride.driver?.full_name || t("pages.bookings.card.driver").replace(":", "")}
+          otherUserName={
+            selectedChatRide.ride.driver?.full_name ||
+            t("pages.bookings.card.driver").replace(":", "")
+          }
           otherUserAvatar={selectedChatRide.ride.driver?.avatar_url}
         />
       )}
